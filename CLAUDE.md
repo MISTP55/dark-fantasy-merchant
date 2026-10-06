@@ -11,7 +11,31 @@ Dark Fantasy Merchant is a maritime trade management and simulation game. The pl
 
 ## Project state
 
-Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. There is no game code yet: `Assets/` holds only starter content (`SampleScene`, URP settings, default input actions, and the `TutorialInfo/` readme helper, which is template boilerplate and not part of the game). Update this file as real architecture appears.
+Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The first subsystem is the world map; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
+
+## Architecture
+
+Code is split into assemblies, each with its own `.asmdef`:
+
+| Assembly | Folder | Role |
+|---|---|---|
+| `DarkFantasyMerchant.Core` | `Assets/Scripts/Core` | Plain C# logic and runtime state. No `MonoBehaviour`, nothing that needs a scene. |
+| `DarkFantasyMerchant.Game` | `Assets/Scripts/Game` | ScriptableObject definitions and thin MonoBehaviour adapters over `Core`. |
+| `DarkFantasyMerchant.Editor` | `Assets/Scripts/Editor` | Editor-only tools. |
+| `DarkFantasyMerchant.Tests.EditMode` | `Assets/Tests/EditMode` | EditMode tests for `Core`. |
+
+Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, prefabs in `Assets/Prefabs`.
+
+### World map
+
+- Positions on the map are **normalized** (`(0,0)` bottom-left, `(1,1)` top-right) and converted to world space only through `MapProjection`. The map is centered on the world origin and sized by `WorldMapDefinition.worldWidth`, so the map image can be replaced by one of another resolution without moving anything.
+- `Assets/Art/WorldMap/WorldMap.jpg` is a placeholder for future pixel art.
+- `WorldMapView` owns the scene's `MapSelectionState<CityDefinition>` (hovered and selected city). Markers and the UI panel both react to it and do not know about each other.
+- `WorldMapInput` is the only reader of the `WorldMap` action map; it raises click, drag and zoom events and ignores pointer input that starts over the UI.
+- Camera clamping and zoom math are in `MapCameraModel`; picking is `CityPicker` (nearest city within a screen-pixel radius, no colliders).
+- Cities are placed by dragging their handles in the Scene view (`CityPlacementTool`).
+- `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) regenerates any missing scene, prefab or sample asset and never overwrites existing ones.
+
 
 ## Conventions
 
@@ -26,7 +50,7 @@ There is no CLI build or lint step; compilation happens in the Unity Editor. The
 
 Editor path: `C:\Program Files\Unity\Hub\Editor\6000.6.4f1\Editor\Unity.exe`
 
-Tests use the Unity Test Framework (`com.unity.test-framework`); no test assemblies exist yet. Batch-mode runs require the project to be closed in the Editor:
+Tests use the Unity Test Framework (`com.unity.test-framework`); EditMode tests are in `Assets/Tests/EditMode`. Batch-mode runs require the project to be closed in the Editor. `Unity.exe` is a GUI executable, so `& $unity ...` returns before the run ends; wrap it in `Start-Process -Wait -PassThru` and read `ExitCode` (`0` passed, `2` test failures, `1` compile error) when the result matters:
 
 ```powershell
 $unity = "C:\Program Files\Unity\Hub\Editor\6000.6.4f1\Editor\Unity.exe"
@@ -44,8 +68,10 @@ When the Editor is open, prefer the `unity-mcp` MCP tools (`Unity_RunCommand`, `
 
 - **Rendering**: URP 17.6 with the **2D Renderer**, linear color space. A single quality level, `PC`, uses `Assets/Settings/PC_RPAsset` → `Renderer2D`. Sprites are lit by 2D lights (`Light2D`); 3D lights and 3D-only URP features (SSAO, GPU Resident Drawer, shadow cascades) do not apply.
 - **2D**: the Editor's default behavior mode is 2D (textures import as sprites). The `com.unity.feature.2d` feature set is installed (tilemaps, sprite tooling, Aseprite/PSD importers, 2D animation). No Pixel Perfect Camera is set up yet.
-- **Input**: the new Input System is the only active handler — the legacy `UnityEngine.Input` API will throw. `Assets/InputSystem_Actions.inputactions` is registered as the project-wide actions asset; its `Player` map is the template's action-game default (Move, Jump, Attack, Sprint…) and does not reflect this game's controls.
-- **Build scenes**: only `Assets/Scenes/SampleScene.unity`.
+- **Input**: the new Input System is the only active handler — the legacy `UnityEngine.Input` API will throw. `Assets/InputSystem_Actions.inputactions` is registered as the project-wide actions asset. The game uses its `WorldMap` action map (Point, Click, PanDrag, PanMove, Zoom, Cancel); the `Player` map is the template's action-game default and is unused.
+
+- **Build scenes**: only `Assets/Scenes/WorldMap.unity`. Its sprites are lit by a global `Light2D`.
+
 
 ## Unity conventions
 
