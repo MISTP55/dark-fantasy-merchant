@@ -1,0 +1,17 @@
+{
+    "name": "DarkFantasyMerchant.Game",
+    "rootNamespace": "DarkFantasyMerchant.Game",
+    "references": [
+        "DarkFantasyMerchant.Core",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
