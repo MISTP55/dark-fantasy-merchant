@@ -4,8 +4,8 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// Feeds input to a <see cref="MapCameraModel"/> and applies its state to the camera.
-    /// Holds no clamping or zoom math of its own.
+    /// Feeds input to a <see cref="MapCameraModel"/> and shows its state on the camera,
+    /// eased by a <see cref="MapCameraSmoother"/>. Holds no clamping, zoom or easing math of its own.
     /// </summary>
     [RequireComponent(typeof(Camera))]
     public sealed class WorldMapCameraController : MonoBehaviour
@@ -21,13 +21,20 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Keyboard pan speed, in visible screen heights per second.")]
         [SerializeField, Min(0f)] private float keyboardPanSpeed = 0.75f;
 
+        [Tooltip("Seconds for the camera to cover most of the way to where the input sent it. 0 disables smoothing.")]
+        [SerializeField, Min(0f)] private float smoothTime = 0.12f;
+
         private Camera mapCamera;
+
+        // The model is where the input has sent the camera; the smoother is what is displayed.
         private MapCameraModel model;
+        private MapCameraSmoother smoother;
         private float appliedAspect;
 
         public bool IsReady => model != null;
 
-        public float WorldUnitsPerPixel => model.WorldUnitsPerPixel(Screen.height);
+        /// <summary>World units per screen pixel of the view currently displayed.</summary>
+        public float WorldUnitsPerPixel => 2f * smoother.OrthographicSize / Screen.height;
 
         private void Awake()
         {
@@ -54,6 +61,7 @@ namespace DarkFantasyMerchant.Game
             appliedAspect = IsValidAspect(mapCamera.aspect) ? mapCamera.aspect : FallbackAspect;
             model = new MapCameraModel(
                 mapView.Projection.WorldRect, appliedAspect, mapView.Definition.MaxZoomInOrthographicSize);
+            smoother = new MapCameraSmoother(model.Position, model.OrthographicSize);
 
             input.Dragged += OnDragged;
             input.Zoomed += OnZoomed;
@@ -83,6 +91,9 @@ namespace DarkFantasyMerchant.Game
             {
                 model.SetAspect(aspect);
                 appliedAspect = aspect;
+
+                // A resized view must fit the map at once, not ease into it.
+                smoother.SnapTo(model.Position, model.OrthographicSize);
             }
 
             Vector2 move = input.MoveAxis;
@@ -93,6 +104,7 @@ namespace DarkFantasyMerchant.Game
                 model.Pan(move * (unitsPerSecond * Time.unscaledDeltaTime));
             }
 
+            smoother.Advance(model.Position, model.OrthographicSize, Time.unscaledDeltaTime, smoothTime);
             Apply();
         }
 
@@ -110,8 +122,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             // Dragging the map to the right moves the camera to the left.
-            model.Pan(-screenDelta * WorldUnitsPerPixel);
-            Apply();
+            model.Pan(-screenDelta * model.WorldUnitsPerPixel(Screen.height));
         }
 
         private void OnZoomed(float step, Vector2 screenPosition)
@@ -121,15 +132,17 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            model.Zoom(Mathf.Pow(zoomStepFactor, step), ScreenToWorld(screenPosition));
-            Apply();
+            // Anchor in the view the camera is heading to, not the one displayed, so that
+            // several quick scroll steps keep zooming on the same point.
+            Vector2 anchor = model.ViewportToWorld(mapCamera.ScreenToViewportPoint(screenPosition));
+            model.Zoom(Mathf.Pow(zoomStepFactor, step), anchor);
         }
 
         private void Apply()
         {
             Transform cameraTransform = mapCamera.transform;
-            cameraTransform.position = new Vector3(model.Position.x, model.Position.y, cameraTransform.position.z);
-            mapCamera.orthographicSize = model.OrthographicSize;
+            cameraTransform.position = new Vector3(smoother.Position.x, smoother.Position.y, cameraTransform.position.z);
+            mapCamera.orthographicSize = smoother.OrthographicSize;
         }
 
         private static bool IsValidAspect(float aspect)

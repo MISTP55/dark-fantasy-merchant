@@ -98,6 +98,17 @@ namespace DarkFantasyMerchant.Core
             ClampPosition();
         }
 
+        /// <summary>
+        /// World position of a viewport point, where (0,0) is the bottom-left corner
+        /// of the view and (1,1) the top-right.
+        /// </summary>
+        public Vector2 ViewportToWorld(Vector2 viewportPoint)
+        {
+            return Position + new Vector2(
+                (viewportPoint.x - 0.5f) * 2f * OrthographicSize * aspect,
+                (viewportPoint.y - 0.5f) * 2f * OrthographicSize);
+        }
+
         public float WorldUnitsPerPixel(float screenHeightPixels)
         {
             if (!IsFinitePositive(screenHeightPixels))

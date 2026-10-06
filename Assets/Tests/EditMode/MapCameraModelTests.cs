@@ -197,6 +197,18 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void ViewportToWorld_MapsTheViewCenterAndCorners()
+        {
+            var model = new MapCameraModel(Map, 2f, 2f);
+            model.Zoom(0.5f, Vector2.zero); // size 5: half extents are 10 x 5.
+            model.Pan(new Vector2(3f, 1f));
+
+            TestAssert.AreEqual(new Vector2(3f, 1f), model.ViewportToWorld(new Vector2(0.5f, 0.5f)));
+            TestAssert.AreEqual(new Vector2(13f, 6f), model.ViewportToWorld(new Vector2(1f, 1f)));
+            TestAssert.AreEqual(new Vector2(-7f, -4f), model.ViewportToWorld(new Vector2(0f, 0f)));
+        }
+
+        [Test]
         public void WorldUnitsPerPixel_IsVisibleHeightDividedByScreenHeight()
         {
             var model = new MapCameraModel(Map, 2f, 2f); // size 10: 20 units visible.
