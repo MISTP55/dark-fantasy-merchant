@@ -22,7 +22,7 @@ namespace DarkFantasyMerchant.Game
         [SerializeField, Min(0f)] private float keyboardPanSpeed = 0.75f;
 
         [Tooltip("Seconds for the camera to cover most of the way to where the input sent it. 0 disables smoothing.")]
-        [SerializeField, Min(0f)] private float smoothTime = 0.12f;
+        [SerializeField, Min(0f)] private float smoothTime = 0.09f;
 
         private Camera mapCamera;
 

@@ -451,6 +451,7 @@ MonoBehaviour:
   input: {fileID: 935350161}
   zoomStepFactor: 0.85
   keyboardPanSpeed: 0.75
+  smoothTime: 0.09
 --- !u!81 &1418061171
 AudioListener:
   m_ObjectHideFlags: 0
