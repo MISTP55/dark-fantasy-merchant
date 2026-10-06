@@ -441,8 +441,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(0f, ship.WorldPosition.y, 1e-3f);
         }
 
-        // The destination is 4 world units away, one second of travel.
-        [TestCase(1f)]
+        // The destination is 4 world units away, one second of travel. Exactly one second
+        // is left out: rounding decides whether that step reaches the point or the next one.
+        [TestCase(1.01f)]
         [TestCase(2f)]
         [TestCase(1e6f)]
         [TestCase(float.PositiveInfinity)]
