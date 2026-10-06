@@ -79,6 +79,8 @@ namespace DarkFantasyMerchant.Game
 
             if (!definition.TryCreateProjection(out MapProjection projection))
             {
+                // Do not keep showing a sprite left over from an earlier layout.
+                mapRenderer.sprite = null;
                 Debug.LogError(
                     $"WorldMapDefinition '{definition.name}' has no map sprite or an invalid world width.",
                     definition);
@@ -97,6 +99,33 @@ namespace DarkFantasyMerchant.Game
             mapTransform.localScale = new Vector3(scale, scale, 1f);
             mapTransform.position = -(sprite.bounds.center * scale);
             return true;
+        }
+
+        /// <summary>
+        /// Whether the map sprite in the scene already matches what <see cref="LayOutMap"/>
+        /// would produce. False after the map image or its world width has changed.
+        /// </summary>
+        public bool IsMapLaidOut()
+        {
+            if (definition == null || mapRenderer == null)
+            {
+                return true;
+            }
+
+            if (!definition.TryCreateProjection(out MapProjection projection))
+            {
+                return mapRenderer.sprite == null;
+            }
+
+            Sprite sprite = definition.MapSprite;
+            float scale = projection.WorldRect.width / sprite.bounds.size.x;
+            Transform mapTransform = mapRenderer.transform;
+            Vector3 expectedPosition = -(sprite.bounds.center * scale);
+
+            return mapRenderer.sprite == sprite
+                && Mathf.Approximately(mapTransform.localScale.x, scale)
+                && Mathf.Approximately(mapTransform.localScale.y, scale)
+                && (mapTransform.position - expectedPosition).sqrMagnitude < 1e-6f;
         }
 
         public Vector2 GetWorldPosition(CityDefinition city)

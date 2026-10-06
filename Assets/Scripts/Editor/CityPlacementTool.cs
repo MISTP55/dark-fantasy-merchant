@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using DarkFantasyMerchant.Core;
 using DarkFantasyMerchant.Game;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace DarkFantasyMerchant.Editor
@@ -29,12 +30,15 @@ namespace DarkFantasyMerchant.Editor
                 return;
             }
 
-            WorldMapDefinition definition = FindDefinition();
+            WorldMapView view = Object.FindAnyObjectByType<WorldMapView>();
+            WorldMapDefinition definition = FindDefinition(view);
 
             if (definition == null || !definition.TryCreateProjection(out MapProjection projection))
             {
                 return;
             }
+
+            RefreshMapLayout(view);
 
             DrawMapOutline(projection.WorldRect);
 
@@ -49,15 +53,29 @@ namespace DarkFantasyMerchant.Editor
             }
         }
 
-        private static WorldMapDefinition FindDefinition()
+        private static WorldMapDefinition FindDefinition(WorldMapView view)
         {
             if (Selection.activeObject is WorldMapDefinition selected)
             {
                 return selected;
             }
 
-            WorldMapView view = Object.FindAnyObjectByType<WorldMapView>();
             return view != null ? view.Definition : null;
+        }
+
+        /// <summary>
+        /// Keeps the map sprite in the scene in step with its definition, so cities are
+        /// placed against a backdrop that matches the handles after the map image changes.
+        /// </summary>
+        public static void RefreshMapLayout(WorldMapView view)
+        {
+            if (view == null || view.IsMapLaidOut())
+            {
+                return;
+            }
+
+            view.LayOutMap();
+            EditorSceneManager.MarkSceneDirty(view.gameObject.scene);
         }
 
         private static void DrawMapOutline(Rect rect)

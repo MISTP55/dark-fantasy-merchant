@@ -72,6 +72,12 @@ namespace DarkFantasyMerchant.Editor
         [MenuItem("Tools/Dark Fantasy Merchant/Build World Map Scene")]
         public static void Build()
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError("The world map setup cannot run in Play mode.");
+                return;
+            }
+
             EnsureFolders();
 
             Sprite mapSprite = ImportMapSprite();
@@ -278,6 +284,13 @@ namespace DarkFantasyMerchant.Editor
                 throw new FileNotFoundException("The city panel UXML is missing.", PanelTemplatePath);
             }
 
+            // Creating the scene replaces the open one; never lose unsaved work for it.
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+            {
+                Debug.Log("World map scene not created: the open scene has unsaved changes.");
+                return;
+            }
+
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             // Opening a new scene unloads unreferenced assets, which turns asset references
@@ -340,7 +353,27 @@ namespace DarkFantasyMerchant.Editor
             SetReference(interaction, "cameraController", cameraController);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
+            EditorBuildSettings.scenes = WithSceneFirst(EditorBuildSettings.scenes, ScenePath);
+        }
+
+        /// <summary>
+        /// Returns the build scene list with <paramref name="scenePath"/> first. A list that
+        /// already contains it is returned unchanged; other scenes are always kept.
+        /// </summary>
+        public static EditorBuildSettingsScene[] WithSceneFirst(EditorBuildSettingsScene[] scenes, string scenePath)
+        {
+            foreach (EditorBuildSettingsScene existing in scenes)
+            {
+                if (existing.path == scenePath)
+                {
+                    return scenes;
+                }
+            }
+
+            var result = new EditorBuildSettingsScene[scenes.Length + 1];
+            result[0] = new EditorBuildSettingsScene(scenePath, true);
+            scenes.CopyTo(result, 1);
+            return result;
         }
 
         private static void SetReference(Object target, string propertyName, Object value)

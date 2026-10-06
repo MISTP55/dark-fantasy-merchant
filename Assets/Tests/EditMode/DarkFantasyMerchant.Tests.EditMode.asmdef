@@ -3,6 +3,8 @@
     "rootNamespace": "DarkFantasyMerchant.Tests.EditMode",
     "references": [
         "DarkFantasyMerchant.Core",
+        "DarkFantasyMerchant.Game",
+        "DarkFantasyMerchant.Editor",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
