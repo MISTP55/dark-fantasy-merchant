@@ -296,8 +296,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             Ship ship = CreateShip();
 
-            // 0.004 world units to the west: far below Vector2's equality epsilon once squared.
-            ship.SetDestination(new Vector2(0.4999f, 0.5f));
+            // About 0.000004 world units to the west: Vector2 equality calls anything
+            // shorter than 0.00001 zero.
+            ship.SetDestination(new Vector2(0.4999999f, 0.5f));
 
             Assert.IsTrue(ship.IsMoving);
             Assert.AreEqual(CompassDirection.W, ship.Heading);
