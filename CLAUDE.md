@@ -11,7 +11,7 @@ Dark Fantasy Merchant is a maritime trade management and simulation game. The pl
 
 ## Project state
 
-Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The first subsystem is the world map; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
+Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The world map is the first subsystem, and the player has one ship to sail on it; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
 
 ## Architecture
 
@@ -35,7 +35,15 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 - `MapCameraModel` is where input has sent the camera (the target); `MapCameraSmoother` is what is displayed, eased towards the target. Position and size share one easing factor on purpose: that keeps the zoom anchor fixed during the transition, so do not split it into separate pan and zoom settings. Hover, picking and marker size follow the displayed view.
 - Camera clamping and zoom math are in `MapCameraModel`; picking is `CityPicker` (nearest city within a screen-pixel radius, no colliders).
 - Cities are placed by dragging their handles in the Scene view (`CityPlacementTool`).
-- `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates the scene, the marker prefab, the panel settings or the map definition when one is missing, and leaves existing ones untouched. It offers to save the open scene first, and adds `WorldMap.unity` to the build list without removing other scenes. Sample cities are only recreated together with a missing map definition.
+- `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates the scene, the marker and ship prefabs, the panel settings, the map definition or the ship definition when one is missing, and leaves existing ones untouched. The one exception is the `Ships` object: it is also added to an existing scene that has none, and that scene is saved unless it already had unsaved changes. The tool offers to save the open scene first, and adds `WorldMap.unity` to the build list without removing other scenes. Sample cities are only recreated together with a missing map definition.
+
+### Ships
+
+- `Ship` (Core) is the runtime state of one ship: normalized position, destination, heading. `ShipDefinition` (Game) is its static definition: name, speed in world units per second, and eight sprites indexed by `CompassDirection` (`N, NE, E, SE, S, SW, W, NW`, the order of the sprite sheets).
+- Ships sail in a straight line and ignore land. Steps are measured in world space through `MapProjection`, not in normalized space, so the speed is the same in every direction on a map that is not square.
+- `ShipsView` owns the ships, their `ShipView`s and a `MapSelectionState<Ship>`, and advances the ships with `Time.deltaTime`. It holds a list although there is a single player ship, which starts on `startCity` or the first city of the map.
+- `WorldMapInteraction` arbitrates between the two selection states: a ship is picked before the cities, and selecting one clears the other, so at most one thing is hovered and one selected. A right click sends the selected ship to the clicked point.
+- Ships keep a constant on-screen size, like city markers, and are picked with `CityPicker` on their current world positions.
 
 
 ## Conventions
@@ -69,7 +77,7 @@ When the Editor is open, prefer the `unity-mcp` MCP tools (`Unity_RunCommand`, `
 
 - **Rendering**: URP 17.6 with the **2D Renderer**, linear color space. A single quality level, `PC`, uses `Assets/Settings/PC_RPAsset` → `Renderer2D`. Sprites are lit by 2D lights (`Light2D`); 3D lights and 3D-only URP features (SSAO, GPU Resident Drawer, shadow cascades) do not apply.
 - **2D**: the Editor's default behavior mode is 2D (textures import as sprites). The `com.unity.feature.2d` feature set is installed (tilemaps, sprite tooling, Aseprite/PSD importers, 2D animation). No Pixel Perfect Camera is set up yet.
-- **Input**: the new Input System is the only active handler — the legacy `UnityEngine.Input` API will throw. `Assets/InputSystem_Actions.inputactions` is registered as the project-wide actions asset. The game uses its `WorldMap` action map (Point, Click, PanDrag, PanMove, Zoom, Cancel); the `Player` map is the template's action-game default and is unused.
+- **Input**: the new Input System is the only active handler — the legacy `UnityEngine.Input` API will throw. `Assets/InputSystem_Actions.inputactions` is registered as the project-wide actions asset. The game uses its `WorldMap` action map (Point, Click, PanDrag, PanMove, Zoom, Cancel, Command — the right mouse button, which gives orders and never pans); the `Player` map is the template's action-game default and is unused.
 
 - **Build scenes**: only `Assets/Scenes/WorldMap.unity`. Its sprites are lit by a global `Light2D`.
 

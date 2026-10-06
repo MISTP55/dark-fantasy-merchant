@@ -2157,3 +2157,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ```
 
 `git status --short` before the commit must show nothing unstaged under `Assets/`. If Unity rewrote unrelated files (`ProjectSettings/`, `Packages/packages-lock.json`), inspect the diff and leave them out unless the change is explained by this task.
+
+---
+
+## Deviations made during execution
+
+- **Task 2:** the `Advance_StopsExactlyOnTheDestination_WithoutOvershooting(1f)` case became `1.01f`. At exactly distance / speed, float rounding decides whether that step or the next one reaches the point.
+- **Task 6, `CreateShipDefinition`:** the instance is filled in *before* `AssetDatabase.CreateAsset`. Applied after it, as written above, the values were not persisted and `ShipContentTests` failed on an empty asset.
+- **Task 6, `AddShipsToScene`:** it takes a `bool sceneHadUnsavedChanges` that `Build` reads before creating anything. Creating the ship prefab instantiates a temporary object in the open scene and marks it as modified, so reading `scene.isDirty` inside `AddShipsToScene`, as written above, always found the scene modified and never saved it.
+- Tests were run through the `unity-mcp` tools (`TestRunnerApi`), the Editor being open, instead of batch mode.

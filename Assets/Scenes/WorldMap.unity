@@ -187,7 +187,9 @@ MonoBehaviour:
   mapView: {fileID: 935350158}
   input: {fileID: 935350161}
   cameraController: {fileID: 1418061170}
+  shipsView: {fileID: 948842205}
   pickRadiusPixels: 20
+  shipPickRadiusPixels: 24
 --- !u!114 &935350161
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -202,6 +204,55 @@ MonoBehaviour:
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.WorldMapInput
   ui: {fileID: 950679376}
   dragThresholdPixels: 6
+--- !u!1 &948842204
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 948842206}
+  - component: {fileID: 948842205}
+  m_Layer: 0
+  m_Name: Ships
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &948842205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 948842204}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09e3bed525b29d145af5c4ae8357aa21, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.ShipsView
+  mapView: {fileID: 935350158}
+  shipPrefab: {fileID: 5632966371277847169, guid: 80e95f523fa6cfe4593cd70b6aa116ac, type: 3}
+  playerShipDefinition: {fileID: 11400000, guid: 18b3e3fb8dac72947b20f2d72f48a95a, type: 2}
+  startCity: {fileID: 0}
+  shipScreenPixelsPerUnit: 32
+--- !u!4 &948842206
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 948842204}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &950679375
 GameObject:
   m_ObjectHideFlags: 0
@@ -618,3 +669,4 @@ SceneRoots:
   - {fileID: 1589188215}
   - {fileID: 935350159}
   - {fileID: 950679378}
+  - {fileID: 948842206}

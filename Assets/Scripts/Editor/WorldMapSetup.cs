@@ -1,4 +1,5 @@
 using System.IO;
+using DarkFantasyMerchant.Core;
 using DarkFantasyMerchant.Game;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -10,8 +11,9 @@ using UnityEngine.UIElements;
 namespace DarkFantasyMerchant.Editor
 {
     /// <summary>
-    /// Generates the world map scene, the city marker prefab and the sample content.
-    /// Safe to run again: existing assets and an existing scene are left untouched.
+    /// Generates the world map scene, the city marker and ship prefabs and the sample content.
+    /// Safe to run again: existing assets are left untouched, and an existing scene only
+    /// gains the ships object when it has none.
     /// </summary>
     public static class WorldMapSetup
     {
@@ -28,6 +30,16 @@ namespace DarkFantasyMerchant.Editor
         private const string PanelTemplatePath = UiFolder + "/CityInfoPanel.uxml";
         private const string ThemePath = "Assets/UI/DefaultRuntimeTheme.tss";
         private const string ScenePath = "Assets/Scenes/WorldMap.unity";
+
+        private const string ShipTexturePath = "Assets/Art/Ships/MerchantShip.png";
+        private const string ShipSpritePrefix = "MerchantShip_";
+        private const string ShipDataFolder = "Assets/Data/Ships";
+        private const string ShipPrefabFolder = "Assets/Prefabs/Ships";
+        private const string ShipDefinitionPath = ShipDataFolder + "/MerchantShip.asset";
+        private const string ShipPrefabPath = ShipPrefabFolder + "/Ship.prefab";
+
+        private const float MerchantShipSpeed = 1.5f;
+        private const int ShipSortingOrder = 20;
 
         private const float MarkerPixelsPerUnit = 16f;
 
@@ -78,6 +90,11 @@ namespace DarkFantasyMerchant.Editor
                 return;
             }
 
+            // Read before anything is created: building a prefab instantiates a temporary
+            // object in the open scene and marks it as modified.
+            Scene openMapScene = SceneManager.GetSceneByPath(ScenePath);
+            bool mapSceneHadUnsavedChanges = openMapScene.isLoaded && openMapScene.isDirty;
+
             EnsureFolders();
 
             Sprite mapSprite = ImportMapSprite();
@@ -89,8 +106,12 @@ namespace DarkFantasyMerchant.Editor
             CreateDefinition(mapSprite);
             CreatePanelSettings();
 
+            ShipDefinition shipDefinition = CreateShipDefinition();
+            CreateShipPrefab(shipDefinition);
+
             AssetDatabase.SaveAssets();
             BuildScene();
+            AddShipsToScene(mapSceneHadUnsavedChanges);
             AssetDatabase.SaveAssets();
 
             Debug.Log("World map setup finished.");
@@ -98,7 +119,11 @@ namespace DarkFantasyMerchant.Editor
 
         private static void EnsureFolders()
         {
-            foreach (string folder in new[] { ArtFolder, CitiesFolder, MapDataFolder, PrefabFolder, UiFolder, "Assets/Scenes" })
+            foreach (string folder in new[]
+            {
+                ArtFolder, CitiesFolder, MapDataFolder, PrefabFolder, UiFolder,
+                ShipDataFolder, ShipPrefabFolder, "Assets/Scenes",
+            })
             {
                 Directory.CreateDirectory(folder);
             }
@@ -269,6 +294,74 @@ namespace DarkFantasyMerchant.Editor
             return panelSettings;
         }
 
+        private static ShipDefinition CreateShipDefinition()
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<ShipDefinition>(ShipDefinitionPath);
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            Object[] subAssets = AssetDatabase.LoadAllAssetRepresentationsAtPath(ShipTexturePath);
+            string[] directionNames = System.Enum.GetNames(typeof(CompassDirection));
+
+            // Filled in before the asset is created, so the file is written complete.
+            var definition = ScriptableObject.CreateInstance<ShipDefinition>();
+            var serialized = new SerializedObject(definition);
+            serialized.FindProperty("displayName").stringValue = "Merchant Ship";
+            serialized.FindProperty("speed").floatValue = MerchantShipSpeed;
+
+            SerializedProperty sprites = serialized.FindProperty("directionSprites");
+            sprites.arraySize = directionNames.Length;
+
+            for (int i = 0; i < directionNames.Length; i++)
+            {
+                sprites.GetArrayElementAtIndex(i).objectReferenceValue =
+                    FindShipSprite(subAssets, ShipSpritePrefix + directionNames[i]);
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.CreateAsset(definition, ShipDefinitionPath);
+            return definition;
+        }
+
+        private static Sprite FindShipSprite(Object[] subAssets, string spriteName)
+        {
+            foreach (Object subAsset in subAssets)
+            {
+                if (subAsset is Sprite sprite && sprite.name == spriteName)
+                {
+                    return sprite;
+                }
+            }
+
+            throw new FileNotFoundException($"Sprite '{spriteName}' is missing from the ship sprite sheet.", ShipTexturePath);
+        }
+
+        private static ShipView CreateShipPrefab(ShipDefinition definition)
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<ShipView>(ShipPrefabPath);
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            // ObjectFactory applies the render pipeline's default sprite material.
+            GameObject instance = ObjectFactory.CreateGameObject("Ship", typeof(SpriteRenderer), typeof(ShipView));
+
+            var spriteRenderer = instance.GetComponent<SpriteRenderer>();
+            spriteRenderer.sprite = definition.SpriteFor(CompassDirection.S);
+            spriteRenderer.sortingOrder = ShipSortingOrder;
+
+            SetReference(instance.GetComponent<ShipView>(), "spriteRenderer", spriteRenderer);
+
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(instance, ShipPrefabPath);
+            Object.DestroyImmediate(instance);
+            return prefab.GetComponent<ShipView>();
+        }
+
         private static void BuildScene()
         {
             if (File.Exists(ScenePath))
@@ -354,6 +447,113 @@ namespace DarkFantasyMerchant.Editor
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = WithSceneFirst(EditorBuildSettings.scenes, ScenePath);
+        }
+
+        // Unlike the rest of the scene, the ships object is also added to a scene that
+        // already exists, so a map built before ships existed gains them.
+        private static void AddShipsToScene(bool sceneHadUnsavedChanges)
+        {
+            // The scene is missing when its creation was cancelled.
+            if (!File.Exists(ScenePath))
+            {
+                return;
+            }
+
+            Scene scene = SceneManager.GetSceneByPath(ScenePath);
+
+            if (!scene.isLoaded)
+            {
+                if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                {
+                    Debug.Log("Ships not added to the world map scene: the open scene has unsaved changes.");
+                    return;
+                }
+
+                scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            }
+
+            var mapView = FindInScene<WorldMapView>(scene);
+
+            if (mapView == null)
+            {
+                Debug.LogWarning($"{ScenePath} has no WorldMapView; ships not added.");
+                return;
+            }
+
+            bool changed = false;
+            var shipsView = FindInScene<ShipsView>(scene);
+
+            if (shipsView == null)
+            {
+                // Loaded only now: opening a scene unloads unreferenced assets.
+                var shipDefinition = AssetDatabase.LoadAssetAtPath<ShipDefinition>(ShipDefinitionPath);
+                var shipPrefab = AssetDatabase.LoadAssetAtPath<ShipView>(ShipPrefabPath);
+
+                if (shipDefinition == null || shipPrefab == null)
+                {
+                    throw new FileNotFoundException("A generated ship asset could not be loaded.");
+                }
+
+                var shipsObject = new GameObject("Ships");
+                SceneManager.MoveGameObjectToScene(shipsObject, scene);
+
+                shipsView = shipsObject.AddComponent<ShipsView>();
+                SetReference(shipsView, "mapView", mapView);
+                SetReference(shipsView, "shipPrefab", shipPrefab);
+                SetReference(shipsView, "playerShipDefinition", shipDefinition);
+                changed = true;
+            }
+
+            var interaction = FindInScene<WorldMapInteraction>(scene);
+
+            if (interaction != null && IsReferenceEmpty(interaction, "shipsView"))
+            {
+                SetReference(interaction, "shipsView", shipsView);
+                changed = true;
+            }
+
+            if (!changed)
+            {
+                return;
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+
+            // Saving would also write the user's own pending edits; leave that to them.
+            if (sceneHadUnsavedChanges)
+            {
+                Debug.Log($"Ships added to {ScenePath}. The scene had unsaved changes: save it to keep them.");
+                return;
+            }
+
+            EditorSceneManager.SaveScene(scene);
+        }
+
+        private static T FindInScene<T>(Scene scene) where T : Component
+        {
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                T component = root.GetComponentInChildren<T>(true);
+
+                if (component != null)
+                {
+                    return component;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool IsReferenceEmpty(Object target, string propertyName)
+        {
+            SerializedProperty property = new SerializedObject(target).FindProperty(propertyName);
+
+            if (property == null)
+            {
+                throw new System.MissingFieldException(target.GetType().Name, propertyName);
+            }
+
+            return property.objectReferenceValue == null;
         }
 
         /// <summary>
