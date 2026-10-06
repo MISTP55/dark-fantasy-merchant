@@ -1,0 +1,59 @@
+.map-ui-root {
+    flex-grow: 1;
+}
+
+.hover-label {
+    position: absolute;
+    padding: 2px 8px;
+    color: rgb(240, 226, 196);
+    background-color: rgba(20, 14, 10, 0.85);
+    border-width: 1px;
+    border-color: rgb(110, 84, 52);
+    font-size: 16px;
+    -unity-font-style: bold;
+}
+
+.city-panel {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    width: 340px;
+    padding: 16px;
+    background-color: rgba(24, 17, 12, 0.94);
+    border-width: 2px;
+    border-color: rgb(110, 84, 52);
+}
+
+.city-panel__header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.city-panel__name {
+    flex-shrink: 1;
+    color: rgb(240, 226, 196);
+    font-size: 24px;
+    -unity-font-style: bold;
+    white-space: normal;
+}
+
+.city-panel__close {
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    padding: 0;
+}
+
+.city-panel__tag {
+    color: rgb(190, 164, 120);
+    font-size: 14px;
+}
+
+.city-panel__description {
+    margin-top: 12px;
+    color: rgb(222, 210, 188);
+    font-size: 15px;
+    white-space: normal;
+}

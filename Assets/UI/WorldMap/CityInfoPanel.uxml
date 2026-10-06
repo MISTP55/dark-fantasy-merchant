@@ -1,0 +1,15 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="CityInfoPanel.uss" />
+    <ui:VisualElement name="map-ui-root" picking-mode="Ignore" class="map-ui-root">
+        <ui:Label name="hover-label" picking-mode="Ignore" class="hover-label" />
+        <ui:VisualElement name="city-panel" class="city-panel">
+            <ui:VisualElement class="city-panel__header">
+                <ui:Label name="city-name" class="city-panel__name" />
+                <ui:Button name="close-button" text="X" class="city-panel__close" />
+            </ui:VisualElement>
+            <ui:Label name="city-size" class="city-panel__tag" />
+            <ui:Label name="city-access" class="city-panel__tag" />
+            <ui:Label name="city-description" class="city-panel__description" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
