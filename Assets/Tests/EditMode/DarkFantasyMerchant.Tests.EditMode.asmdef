@@ -5,6 +5,7 @@
         "DarkFantasyMerchant.Core",
         "DarkFantasyMerchant.Game",
         "DarkFantasyMerchant.Editor",
+        "Unity.InputSystem",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

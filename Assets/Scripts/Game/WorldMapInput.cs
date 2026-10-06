@@ -25,9 +25,11 @@ namespace DarkFantasyMerchant.Game
         private InputAction panMoveAction;
         private InputAction zoomAction;
         private InputAction cancelAction;
+        private InputAction commandAction;
 
         private PointerGesture clickGesture;
         private PointerGesture panGesture;
+        private PointerGesture commandGesture;
 
         /// <summary>Raised with the screen position of a click on the map.</summary>
         public event Action<Vector2> Clicked;
@@ -39,6 +41,9 @@ namespace DarkFantasyMerchant.Game
         public event Action<float, Vector2> Zoomed;
 
         public event Action Cancelled;
+
+        /// <summary>Raised with the screen position of a right click on the map.</summary>
+        public event Action<Vector2> Commanded;
 
         public Vector2 PointerPosition { get; private set; }
 
@@ -52,6 +57,7 @@ namespace DarkFantasyMerchant.Game
         {
             clickGesture = new PointerGesture(dragThresholdPixels);
             panGesture = new PointerGesture(0f);
+            commandGesture = new PointerGesture(dragThresholdPixels);
         }
 
         private void OnEnable()
@@ -71,6 +77,7 @@ namespace DarkFantasyMerchant.Game
             panMoveAction = actionMap.FindAction("PanMove", true);
             zoomAction = actionMap.FindAction("Zoom", true);
             cancelAction = actionMap.FindAction("Cancel", true);
+            commandAction = actionMap.FindAction("Command", true);
             actionMap.Enable();
         }
 
@@ -96,8 +103,11 @@ namespace DarkFantasyMerchant.Game
             MoveAxis = panMoveAction.ReadValue<Vector2>();
             IsPointerOverUi = ui != null && ui.IsPointerOverUi(PointerPosition);
 
-            UpdateGesture(clickAction, clickGesture, true);
-            UpdateGesture(panDragAction, panGesture, false);
+            UpdateGesture(clickAction, clickGesture, true, Clicked);
+            UpdateGesture(panDragAction, panGesture, true, null);
+
+            // The right button gives orders: holding it and moving must not pan the map.
+            UpdateGesture(commandAction, commandGesture, false, Commanded);
 
             // Scroll magnitude differs between devices and platforms; only its direction is used.
             float scroll = zoomAction.ReadValue<Vector2>().y;
@@ -113,7 +123,7 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        private void UpdateGesture(InputAction button, PointerGesture gesture, bool raisesClick)
+        private void UpdateGesture(InputAction button, PointerGesture gesture, bool pansMap, Action<Vector2> clicked)
         {
             if (button.WasPressedThisFrame() && !IsPointerOverUi)
             {
@@ -122,14 +132,14 @@ namespace DarkFantasyMerchant.Game
 
             Vector2 delta = gesture.Move(PointerPosition);
 
-            if (delta != Vector2.zero)
+            if (pansMap && delta != Vector2.zero)
             {
                 Dragged?.Invoke(delta);
             }
 
-            if (button.WasReleasedThisFrame() && gesture.Release() && raisesClick)
+            if (button.WasReleasedThisFrame() && gesture.Release())
             {
-                Clicked?.Invoke(PointerPosition);
+                clicked?.Invoke(PointerPosition);
             }
         }
 
@@ -137,6 +147,7 @@ namespace DarkFantasyMerchant.Game
         {
             clickGesture?.Cancel();
             panGesture?.Cancel();
+            commandGesture?.Cancel();
         }
     }
 }
