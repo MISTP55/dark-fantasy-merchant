@@ -11,7 +11,7 @@ Dark Fantasy Merchant is a maritime trade management and simulation game. The pl
 
 ## Project state
 
-Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The world map is the first subsystem, and the player has one ship to sail on it; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
+Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The world map is the first subsystem, the player has one ship to sail on it, and the navigable areas of the map can be painted but are not used yet; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
 
 ## Architecture
 
@@ -34,7 +34,7 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 - `WorldMapInput` is the only reader of the `WorldMap` action map; it raises click, drag and zoom events and ignores pointer input that starts over the UI.
 - `MapCameraModel` is where input has sent the camera (the target); `MapCameraSmoother` is what is displayed, eased towards the target. Position and size share one easing factor on purpose: that keeps the zoom anchor fixed during the transition, so do not split it into separate pan and zoom settings. Hover, picking and marker size follow the displayed view.
 - Camera clamping and zoom math are in `MapCameraModel`; picking is `CityPicker` (nearest city within a screen-pixel radius, no colliders).
-- Cities are placed by dragging their handles in the Scene view (`CityPlacementTool`).
+- Cities are placed by dragging their handles in the Scene view (`CityPlacementTool`). It and the navigation mask tool find the map to work on through `WorldMapEditorContext`.
 - `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates the scene, the marker and ship prefabs, the panel settings, the map definition or the ship definition when one is missing, and leaves existing ones untouched. The one exception is the `Ships` object: it is also added to an existing scene that has none, and that scene is saved unless it already had unsaved changes. The tool offers to save the open scene first, and adds `WorldMap.unity` to the build list without removing other scenes. Sample cities are only recreated together with a missing map definition.
 
 ### Ships
@@ -44,6 +44,15 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 - `ShipsView` owns the ships, their `ShipView`s and a `MapSelectionState<Ship>`, and advances the ships with `Time.deltaTime`. It holds a list although there is a single player ship, which starts on `startCity` or the first city of the map.
 - `WorldMapInteraction` arbitrates between the two selection states: a ship is picked before the cities, and selecting one clears the other, so at most one thing is hovered and one selected. A right click sends the selected ship to the clicked point.
 - Ships keep a constant on-screen size, like city markers, and are picked with `CityPicker` on their current world positions.
+
+### Navigation mask
+
+- `NavigationGrid` (Core) says which cells of the map ships can sail on: one bit per cell, cell `(0,0)` bottom-left like normalized positions, queried by cell or by normalized point. It also holds the painting logic (disc, stroke, 4-connected fill, resample). `NavigationMaskDefinition` (Game) stores a grid's size and bits and is referenced by `WorldMapDefinition.navigationMask`; a map without a mask is valid.
+- Nothing in the running game reads the mask yet: ships still ignore land.
+- The grid is defined over normalized space, 1024 cells wide by default, with a height that follows the map's aspect ratio so cells are square. Replacing the map image by one of another shape needs a **Resize** in the tool, not a repaint.
+- The mask is painted in the Scene view (2D mode) with the **Navigation Mask** tool of the Scene view toolbar (`NavigationMaskTool`, settings in the `NavigationMaskOverlay` panel): brush, eraser, fill bucket, and a detection that marks low-saturation pixels of the map image as water (`WaterColorClassifier`). Shift swaps brush and eraser; `[` and `]` resize the brush. While this tool is active, `CityPlacementTool` draws no handles.
+- `NavigationMaskSession` is the tool's working copy of the grid. It is written to the asset once per stroke through `NavigationMaskAuthoring.Apply`, which is what makes a stroke one undo step, and rebuilt from the asset after an undo or redo.
+- The mask's fields are hidden in the Inspector on purpose: its size and bits only make sense together.
 
 
 ## Conventions
