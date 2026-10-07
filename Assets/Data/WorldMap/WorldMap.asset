@@ -23,3 +23,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a585531eb3956004296cbf0f973c6d96, type: 2}
   - {fileID: 11400000, guid: 60bc9c60a10caae4189e4518394e89dc, type: 2}
   maxZoomInOrthographicSize: 3
+  navigationMask: {fileID: 11400000, guid: 49547ce99a366fa48a2253f39361ee06, type: 2}
