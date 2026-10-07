@@ -30,8 +30,8 @@ namespace DarkFantasyMerchant.Editor
                 return;
             }
 
-            WorldMapView view = Object.FindAnyObjectByType<WorldMapView>();
-            WorldMapDefinition definition = FindDefinition(view);
+            WorldMapView view = WorldMapEditorContext.FindView();
+            WorldMapDefinition definition = WorldMapEditorContext.FindDefinition(view);
 
             if (definition == null || !definition.TryCreateProjection(out MapProjection projection))
             {
@@ -51,16 +51,6 @@ namespace DarkFantasyMerchant.Editor
                     DrawCityHandle(cities[i], projection);
                 }
             }
-        }
-
-        private static WorldMapDefinition FindDefinition(WorldMapView view)
-        {
-            if (Selection.activeObject is WorldMapDefinition selected)
-            {
-                return selected;
-            }
-
-            return view != null ? view.Definition : null;
         }
 
         /// <summary>
