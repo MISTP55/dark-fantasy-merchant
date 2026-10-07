@@ -167,6 +167,117 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void Paint_AfterTheAssetChangedElsewhere_BuildsOnItsNewContent()
+        {
+            // The asset is rewritten behind the session's back: a version-control
+            // checkout, or anything else that is not an undo.
+            NavigationGrid elsewhere = mask.CreateGrid();
+            elsewhere.SetNavigable(7, 3, true);
+            mask.SetGrid(elsewhere);
+
+            session.Paint(Cell(1, 0), Cell(1, 0), 0.5f, true);
+            session.Commit("Paint");
+
+            NavigationGrid stored = mask.CreateGrid();
+            Assert.IsTrue(stored.IsNavigable(1, 0), "the new stroke");
+            Assert.IsTrue(stored.IsNavigable(7, 3), "what was already in the asset");
+            Assert.AreEqual(2, GridAssert.CountNavigable(stored));
+        }
+
+        [Test]
+        public void Fill_AfterTheAssetChangedElsewhere_BuildsOnItsNewContent()
+        {
+            NavigationGrid elsewhere = mask.CreateGrid();
+
+            for (int y = 0; y < 4; y++)
+            {
+                elsewhere.SetNavigable(4, y, true);
+            }
+
+            mask.SetGrid(elsewhere);
+
+            session.Fill(Cell(0, 0), true);
+            session.Commit("Fill");
+
+            Assert.AreEqual(5 * 4, GridAssert.CountNavigable(mask.CreateGrid()), "stopped by the new coastline");
+        }
+
+        [Test]
+        public void Paint_AfterTheAssetChangedSize_UsesTheNewSize()
+        {
+            mask.SetGrid(new NavigationGrid(16, 8));
+
+            session.Paint(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), 0.5f, true);
+
+            Assert.AreEqual(16, session.Grid.Width);
+            Assert.AreEqual(8, session.Grid.Height);
+            Assert.IsTrue(session.Grid.IsNavigable(8, 4));
+        }
+
+        [Test]
+        public void SyncWithAsset_ReloadsAChangedAsset_ButKeepsUnwrittenPaint()
+        {
+            session.Paint(Cell(2, 1), Cell(2, 1), 0.5f, true);
+            mask.SetGrid(new NavigationGrid(8, 4));
+
+            session.SyncWithAsset();
+            Assert.IsTrue(session.Grid.IsNavigable(2, 1), "a stroke in progress is ahead of the asset on purpose");
+
+            session.Commit("Paint");
+            NavigationGrid elsewhere = mask.CreateGrid();
+            elsewhere.SetNavigable(6, 2, true);
+            mask.SetGrid(elsewhere);
+
+            session.SyncWithAsset();
+            Assert.IsTrue(session.Grid.IsNavigable(6, 2));
+            Assert.AreEqual(1f, session.GetPreview().GetPixel(6, 2).a, 0.01f);
+        }
+
+        [Test]
+        public void Preview_MatchesTheGrid_AfterStrokesFillsAndReloads()
+        {
+            var large = new NavigationGrid(64, 32);
+            session.Replace(large, "Resize");
+            session.GetPreview();
+
+            session.Paint(new Vector2(0.1f, 0.2f), new Vector2(0.6f, 0.9f), 3f, true);
+            AssertPreviewMatchesGrid();
+
+            // Partly outside the map.
+            session.Paint(new Vector2(-0.5f, 0.5f), new Vector2(0.3f, 1.4f), 5f, true);
+            session.Paint(new Vector2(0.9f, 0.1f), new Vector2(0.95f, 0.1f), 2f, true);
+            AssertPreviewMatchesGrid();
+
+            session.Paint(new Vector2(0.2f, 0.3f), new Vector2(0.4f, 0.6f), 1.5f, false);
+            AssertPreviewMatchesGrid();
+
+            session.Fill(new Vector2(0.99f, 0.99f), true);
+            AssertPreviewMatchesGrid();
+
+            session.Reload();
+            AssertPreviewMatchesGrid();
+        }
+
+        private void AssertPreviewMatchesGrid()
+        {
+            Color32[] pixels = session.GetPreview().GetPixels32();
+            NavigationGrid grid = session.Grid;
+
+            for (int y = 0; y < grid.Height; y++)
+            {
+                for (int x = 0; x < grid.Width; x++)
+                {
+                    byte expected = grid.IsNavigable(x, y) ? (byte)255 : (byte)0;
+
+                    if (pixels[y * grid.Width + x].a != expected)
+                    {
+                        Assert.Fail($"Preview pixel ({x}, {y}) has alpha {pixels[y * grid.Width + x].a}, expected {expected}.");
+                    }
+                }
+            }
+        }
+
+        [Test]
         public void Reload_DropsUncommittedPaint()
         {
             session.Paint(Cell(2, 1), Cell(2, 1), 0.5f, true);

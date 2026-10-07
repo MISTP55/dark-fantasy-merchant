@@ -180,9 +180,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void PaintStroke_FromFarOutsideTheMap_PaintsOnlyThePartOverTheMap()
         {
-            // A million map widths to the left: without clipping this would be
-            // sixteen million samples.
-            var from = new Vector2(-1e6f, 4.5f / 8f);
+            // A million million map widths to the left: more samples than can be counted,
+            // let alone walked, unless the stroke is clipped to the map first.
+            var from = new Vector2(-1e12f, 4.5f / 8f);
             Vector2 to = GridAssert.CellCenter(grid, 4, 4);
 
             bool changed = grid.PaintStroke(from, to, 0.1f, true);
@@ -195,6 +195,24 @@ namespace DarkFantasyMerchant.Tests.EditMode
             }
 
             Assert.AreEqual(5, GridAssert.CountNavigable(grid));
+        }
+
+        [Test]
+        public void PaintStroke_ToFarOutsideTheMap_PaintsOnlyThePartOverTheMap()
+        {
+            Vector2 from = GridAssert.CellCenter(grid, 4, 4);
+            var to = new Vector2(4.5f / 8f, 1e12f);
+
+            bool changed = grid.PaintStroke(from, to, 0.1f, true);
+
+            Assert.IsTrue(changed);
+
+            for (int y = 4; y <= 7; y++)
+            {
+                Assert.IsTrue(grid.IsNavigable(4, y), $"(4, {y})");
+            }
+
+            Assert.AreEqual(4, GridAssert.CountNavigable(grid));
         }
 
         [Test]

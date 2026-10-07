@@ -1,6 +1,7 @@
 using System;
 using DarkFantasyMerchant.Core;
 using DarkFantasyMerchant.Game;
+using Unity.Collections;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -16,9 +17,16 @@ namespace DarkFantasyMerchant.Editor
         private static readonly Color32 EmptyColor = new Color32(0, 0, 0, 0);
 
         private Texture2D preview;
-        private Color32[] previewPixels;
         private bool previewIsStale;
         private bool hasUncommittedChanges;
+
+        // Cells a stroke may have changed since the preview was last written. Rewriting
+        // only these keeps painting smooth on a large grid.
+        private bool hasStaleCells;
+        private int staleMinX;
+        private int staleMinY;
+        private int staleMaxX;
+        private int staleMaxY;
 
         public WorldMapDefinition Map { get; private set; }
 
@@ -78,17 +86,58 @@ namespace DarkFantasyMerchant.Editor
             previewIsStale = true;
         }
 
+        /// <summary>
+        /// Reloads the working copy when the asset no longer holds the same grid: it was
+        /// changed by something other than this session, such as a version-control
+        /// checkout. Editing a stale copy would write it over the newer asset.
+        /// </summary>
+        public void SyncWithAsset()
+        {
+            // With unwritten changes the working copy is ahead of the asset on purpose.
+            if (hasUncommittedChanges || Grid == null || Mask == null)
+            {
+                return;
+            }
+
+            NavigationGrid stored = Mask.CreateGrid();
+
+            if (stored.Width == Grid.Width
+                && stored.Height == Grid.Height
+                && HaveSameContent(stored.ToBytes(), Grid.ToBytes()))
+            {
+                return;
+            }
+
+            Grid = stored;
+            previewIsStale = true;
+        }
+
         public void Paint(Vector2 from, Vector2 to, float radiusInCells, bool navigable)
         {
-            if (Grid != null && Grid.PaintStroke(from, to, radiusInCells, navigable))
+            if (Grid == null)
             {
-                MarkChanged();
+                return;
+            }
+
+            SyncWithAsset();
+
+            if (Grid.PaintStroke(from, to, radiusInCells, navigable))
+            {
+                hasUncommittedChanges = true;
+                MarkCellsStale(from, to, radiusInCells);
             }
         }
 
         public void Fill(Vector2 point, bool navigable)
         {
-            if (Grid != null && Grid.Fill(point, navigable))
+            if (Grid == null)
+            {
+                return;
+            }
+
+            SyncWithAsset();
+
+            if (Grid.Fill(point, navigable))
             {
                 MarkChanged();
             }
@@ -148,28 +197,87 @@ namespace DarkFantasyMerchant.Editor
                     hideFlags = HideFlags.HideAndDontSave,
                 };
 
-                previewPixels = new Color32[Grid.Width * Grid.Height];
                 previewIsStale = true;
             }
 
             if (previewIsStale)
             {
-                for (int y = 0; y < Grid.Height; y++)
-                {
-                    int row = y * Grid.Width;
-
-                    for (int x = 0; x < Grid.Width; x++)
-                    {
-                        previewPixels[row + x] = Grid.IsNavigable(x, y) ? NavigableColor : EmptyColor;
-                    }
-                }
-
-                preview.SetPixels32(previewPixels);
-                preview.Apply(false);
-                previewIsStale = false;
+                WritePreview(0, 0, Grid.Width - 1, Grid.Height - 1);
+            }
+            else if (hasStaleCells)
+            {
+                WritePreview(staleMinX, staleMinY, staleMaxX, staleMaxY);
             }
 
+            previewIsStale = false;
+            hasStaleCells = false;
             return preview;
+        }
+
+        private void WritePreview(int minX, int minY, int maxX, int maxY)
+        {
+            // Written in place: no copy of the whole texture per stroke.
+            NativeArray<Color32> pixels = preview.GetPixelData<Color32>(0);
+
+            for (int y = minY; y <= maxY; y++)
+            {
+                int row = y * Grid.Width;
+
+                for (int x = minX; x <= maxX; x++)
+                {
+                    pixels[row + x] = Grid.IsNavigable(x, y) ? NavigableColor : EmptyColor;
+                }
+            }
+
+            preview.Apply(false);
+        }
+
+        /// <summary>Adds the cells a stroke can have touched to those the preview must rewrite.</summary>
+        private void MarkCellsStale(Vector2 from, Vector2 to, float radiusInCells)
+        {
+            float reach = Mathf.Max(radiusInCells, 0f) + 1f;
+            int minX = ClampToCell(Mathf.Min(from.x, to.x) * Grid.Width - reach, Grid.Width);
+            int maxX = ClampToCell(Mathf.Max(from.x, to.x) * Grid.Width + reach, Grid.Width);
+            int minY = ClampToCell(Mathf.Min(from.y, to.y) * Grid.Height - reach, Grid.Height);
+            int maxY = ClampToCell(Mathf.Max(from.y, to.y) * Grid.Height + reach, Grid.Height);
+
+            if (hasStaleCells)
+            {
+                minX = Mathf.Min(minX, staleMinX);
+                maxX = Mathf.Max(maxX, staleMaxX);
+                minY = Mathf.Min(minY, staleMinY);
+                maxY = Mathf.Max(maxY, staleMaxY);
+            }
+
+            hasStaleCells = true;
+            staleMinX = minX;
+            staleMaxX = maxX;
+            staleMinY = minY;
+            staleMaxY = maxY;
+        }
+
+        // Clamped before the conversion: casting a float beyond the int range is undefined.
+        private static int ClampToCell(float value, int size)
+        {
+            return (int)Mathf.Floor(Mathf.Clamp(value, 0f, size - 1));
+        }
+
+        private static bool HaveSameContent(byte[] first, byte[] second)
+        {
+            if (first.Length != second.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < first.Length; i++)
+            {
+                if (first[i] != second[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public void Dispose()
@@ -191,7 +299,6 @@ namespace DarkFantasyMerchant.Editor
             }
 
             preview = null;
-            previewPixels = null;
         }
     }
 }

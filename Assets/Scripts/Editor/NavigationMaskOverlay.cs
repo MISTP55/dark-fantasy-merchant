@@ -171,7 +171,14 @@ namespace DarkFantasyMerchant.Editor
         {
             session = NavigationMaskTool.ActiveSession;
 
-            return session != null && session.Map != null && session.HasMask;
+            if (session == null || session.Map == null || !session.HasMask)
+            {
+                return false;
+            }
+
+            // Detect, Resize and Clear all start from the grid the asset holds now.
+            session.SyncWithAsset();
+            return true;
         }
 
         private void CreateMask()
