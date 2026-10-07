@@ -135,6 +135,35 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void Apply_OfALargeChange_IsUndoneAndRedoneQuickly()
+        {
+            // Half of a full-size grid at once, as a fill does. Recorded property by
+            // property, undoing this took more than ten seconds.
+            mask.SetGrid(new NavigationGrid(1024, 879));
+            var grid = new NavigationGrid(1024, 879);
+
+            for (int y = 0; y < 440; y++)
+            {
+                grid.PaintStroke(new Vector2(0f, (y + 0.5f) / 879f), new Vector2(1f, (y + 0.5f) / 879f), 0f, true);
+            }
+
+            Undo.IncrementCurrentGroup();
+            NavigationMaskAuthoring.Apply(mask, grid, "Test Navigation Mask");
+            Undo.FlushUndoRecordObjects();
+
+            double start = EditorApplication.timeSinceStartup;
+            Undo.PerformUndo();
+            Undo.PerformRedo();
+            double seconds = EditorApplication.timeSinceStartup - start;
+
+            Assert.Less(seconds, 1.0, "undo and redo of a large change");
+            CollectionAssert.AreEqual(grid.ToBytes(), mask.CreateGrid().ToBytes());
+
+            Undo.PerformUndo();
+            Assert.AreEqual(0, GridAssert.CountNavigable(mask.CreateGrid()));
+        }
+
+        [Test]
         public void Detect_PutsCellZeroAtTheBottomLeftOfTheImage()
         {
             CreateTexture(2, 2, 0, 0);

@@ -51,7 +51,9 @@ namespace DarkFantasyMerchant.Editor
         /// <summary>Writes a grid into a mask asset as one undo step.</summary>
         public static void Apply(NavigationMaskDefinition mask, NavigationGrid grid, string undoName)
         {
-            Undo.RecordObject(mask, undoName);
+            // The whole object, not Undo.RecordObject: that one stores a change per array
+            // element, and undoing a filled sea then takes most of a minute.
+            Undo.RegisterCompleteObjectUndo(mask, undoName);
             mask.SetGrid(grid);
             EditorUtility.SetDirty(mask);
         }
