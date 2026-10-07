@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using DarkFantasyMerchant.Core;
 using DarkFantasyMerchant.Game;
 using UnityEditor;
+using UnityEditor.EditorTools;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -26,6 +27,12 @@ namespace DarkFantasyMerchant.Editor
         {
             // Positions are authored at edit time only.
             if (Application.isPlaying)
+            {
+                return;
+            }
+
+            // A city handle under the brush would take the click meant for the mask.
+            if (ToolManager.activeToolType == typeof(NavigationMaskTool))
             {
                 return;
             }
