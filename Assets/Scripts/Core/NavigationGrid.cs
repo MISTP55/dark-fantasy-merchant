@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DarkFantasyMerchant.Core
@@ -180,6 +181,66 @@ namespace DarkFantasyMerchant.Core
             return changed;
         }
 
+        /// <summary>
+        /// Sets the region of cells connected to the one under a normalized point that
+        /// share its value. Cells are connected by their sides, not their corners, so a
+        /// one-cell-thick diagonal coastline holds.
+        /// </summary>
+        /// <returns>True when at least one cell changed.</returns>
+        public bool Fill(Vector2 point, bool navigable)
+        {
+            if (!TryGetCell(point, out int startX, out int startY) || IsNavigable(startX, startY) == navigable)
+            {
+                return false;
+            }
+
+            // Iterative: a sea can hold hundreds of thousands of cells. A cell is set when
+            // it is pushed, so it is never pushed twice.
+            var pending = new Stack<int>();
+            SetNavigable(startX, startY, navigable);
+            pending.Push(startY * Width + startX);
+
+            while (pending.Count > 0)
+            {
+                int index = pending.Pop();
+                int x = index % Width;
+                int y = index / Width;
+
+                FillNeighbour(x - 1, y, navigable, pending);
+                FillNeighbour(x + 1, y, navigable, pending);
+                FillNeighbour(x, y - 1, navigable, pending);
+                FillNeighbour(x, y + 1, navigable, pending);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// A grid of another size in which each cell takes the value of the cell of this
+        /// grid under its center.
+        /// </summary>
+        public NavigationGrid Resampled(int width, int height)
+        {
+            var result = new NavigationGrid(width, height);
+
+            for (int y = 0; y < height; y++)
+            {
+                int sourceY = Math.Min((int)((y + 0.5) * Height / height), Height - 1);
+
+                for (int x = 0; x < width; x++)
+                {
+                    int sourceX = Math.Min((int)((x + 0.5) * Width / width), Width - 1);
+
+                    if (IsNavigable(sourceX, sourceY))
+                    {
+                        result.SetNavigable(x, y, true);
+                    }
+                }
+            }
+
+            return result;
+        }
+
         /// <returns>A copy of the packed cells.</returns>
         public byte[] ToBytes()
         {
@@ -274,6 +335,15 @@ namespace DarkFantasyMerchant.Core
             first = Math.Max(first, enter);
             last = Math.Min(last, exit);
             return first <= last;
+        }
+
+        // SetNavigable ignores cells outside the grid and cells that already have the value.
+        private void FillNeighbour(int x, int y, bool navigable, Stack<int> pending)
+        {
+            if (SetNavigable(x, y, navigable))
+            {
+                pending.Push(y * Width + x);
+            }
         }
 
         private void ClearUnusedBits()
