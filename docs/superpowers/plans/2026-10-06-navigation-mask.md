@@ -1496,6 +1496,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var serialized = new SerializedObject(mask);
             serialized.FindProperty("width").intValue = width;
             serialized.FindProperty("height").intValue = height;
+
+            // Emptied and applied first: Unity does not apply a byte array that is only
+            // shortened to a non-zero length.
+            serialized.FindProperty("bits").ClearArray();
+            serialized.ApplyModifiedPropertiesWithoutUndo();
             serialized.FindProperty("bits").arraySize = byteCount;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }

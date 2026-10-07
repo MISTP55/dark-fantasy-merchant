@@ -18,6 +18,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Smallest orthographic size the camera may reach when zooming in.")]
         [SerializeField, Min(0.01f)] private float maxZoomInOrthographicSize = 3f;
 
+        [Tooltip("Where ships can sail. Painted with the Navigation Mask tool of the Scene view.")]
+        [SerializeField] private NavigationMaskDefinition navigationMask;
+
         public Sprite MapSprite => mapSprite;
 
         public float WorldWidth => worldWidth;
@@ -25,6 +28,9 @@ namespace DarkFantasyMerchant.Game
         public IReadOnlyList<CityDefinition> Cities => cities;
 
         public float MaxZoomInOrthographicSize => maxZoomInOrthographicSize;
+
+        /// <summary>Navigable areas of the map, or null when none has been painted.</summary>
+        public NavigationMaskDefinition NavigationMask => navigationMask;
 
         /// <summary>
         /// Builds the projection for this map. Fails when the sprite is missing or
