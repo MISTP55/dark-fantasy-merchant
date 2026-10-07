@@ -12,6 +12,9 @@ namespace DarkFantasyMerchant.Core
         /// <summary>Largest width or height, so that cell indexes fit in an int.</summary>
         public const int MaxSize = 16384;
 
+        // Distance between two discs of a stroke, in cells.
+        private const double StrokeSpacing = 0.5;
+
         // Row by row from the bottom row, eight cells per byte, least significant bit
         // first. Unused bits of the last byte stay at zero.
         private readonly byte[] bits;
@@ -116,6 +119,67 @@ namespace DarkFantasyMerchant.Core
             ClearUnusedBits();
         }
 
+        /// <summary>
+        /// Sets every cell whose center is within the radius of a normalized point, and
+        /// always the cell under the point.
+        /// </summary>
+        /// <returns>True when at least one cell changed.</returns>
+        public bool PaintDisc(Vector2 center, float radiusInCells, bool navigable)
+        {
+            if (!IsFinite(center) || !IsFinite(radiusInCells))
+            {
+                return false;
+            }
+
+            return PaintDiscAt(center.x * Width, center.y * Height, radiusInCells, navigable);
+        }
+
+        /// <summary>Paints discs along a segment, close enough to leave no gap.</summary>
+        /// <returns>True when at least one cell changed.</returns>
+        public bool PaintStroke(Vector2 from, Vector2 to, float radiusInCells, bool navigable)
+        {
+            if (!IsFinite(from) || !IsFinite(to) || !IsFinite(radiusInCells))
+            {
+                return false;
+            }
+
+            // In doubles: a pointer dragged far outside the map gives coordinates whose
+            // float precision is coarser than a cell.
+            double startX = (double)from.x * Width;
+            double startY = (double)from.y * Height;
+            double deltaX = (double)to.x * Width - startX;
+            double deltaY = (double)to.y * Height - startY;
+
+            // Only the part of the segment within reach of the grid can paint anything;
+            // walking the rest would cost time in proportion to the pointer's distance.
+            double reach = Math.Max(radiusInCells, 0f) + 1.0;
+            double first = 0.0;
+            double last = 1.0;
+
+            if (!ClipToRange(startX, deltaX, -reach, Width + reach, ref first, ref last)
+                || !ClipToRange(startY, deltaY, -reach, Height + reach, ref first, ref last))
+            {
+                return false;
+            }
+
+            double length = Math.Sqrt(deltaX * deltaX + deltaY * deltaY) * (last - first);
+            int steps = Math.Max(1, (int)Math.Ceiling(length / StrokeSpacing));
+            bool changed = false;
+
+            for (int i = 0; i <= steps; i++)
+            {
+                double t = first + (last - first) * i / steps;
+
+                changed |= PaintDiscAt(
+                    (float)(startX + deltaX * t),
+                    (float)(startY + deltaY * t),
+                    radiusInCells,
+                    navigable);
+            }
+
+            return changed;
+        }
+
         /// <returns>A copy of the packed cells.</returns>
         public byte[] ToBytes()
         {
@@ -137,6 +201,79 @@ namespace DarkFantasyMerchant.Core
             x = Mathf.Min((int)(normalized.x * Width), Width - 1);
             y = Mathf.Min((int)(normalized.y * Height), Height - 1);
             return true;
+        }
+
+        /// <param name="centerX">In cells: cell (x, y) spans x to x + 1.</param>
+        private bool PaintDiscAt(float centerX, float centerY, float radiusInCells, bool navigable)
+        {
+            float radius = Mathf.Max(radiusInCells, 0f);
+            bool changed = false;
+
+            // The cell under the point is always painted, so a brush smaller than a cell
+            // still draws.
+            if (centerX >= 0f && centerX <= Width && centerY >= 0f && centerY <= Height)
+            {
+                changed |= SetNavigable(
+                    Mathf.Min((int)centerX, Width - 1),
+                    Mathf.Min((int)centerY, Height - 1),
+                    navigable);
+            }
+
+            int minX = FloorClamped(centerX - radius, Width - 1);
+            int maxX = FloorClamped(centerX + radius, Width - 1);
+            int minY = FloorClamped(centerY - radius, Height - 1);
+            int maxY = FloorClamped(centerY + radius, Height - 1);
+            float squaredRadius = radius * radius;
+
+            for (int y = minY; y <= maxY; y++)
+            {
+                float offsetY = y + 0.5f - centerY;
+
+                for (int x = minX; x <= maxX; x++)
+                {
+                    float offsetX = x + 0.5f - centerX;
+
+                    if (offsetX * offsetX + offsetY * offsetY <= squaredRadius)
+                    {
+                        changed |= SetNavigable(x, y, navigable);
+                    }
+                }
+            }
+
+            return changed;
+        }
+
+        // Clamped before the conversion: casting a float beyond the int range is undefined.
+        private static int FloorClamped(float value, int max)
+        {
+            return (int)Mathf.Floor(Mathf.Clamp(value, 0f, max));
+        }
+
+        /// <summary>
+        /// Narrows the part [first, last] of a segment to where one of its coordinates,
+        /// start + delta * t, lies in [min, max]. False when no part remains.
+        /// </summary>
+        private static bool ClipToRange(
+            double start, double delta, double min, double max, ref double first, ref double last)
+        {
+            if (delta == 0.0)
+            {
+                return start >= min && start <= max;
+            }
+
+            double enter = (min - start) / delta;
+            double exit = (max - start) / delta;
+
+            if (enter > exit)
+            {
+                double swap = enter;
+                enter = exit;
+                exit = swap;
+            }
+
+            first = Math.Max(first, enter);
+            last = Math.Min(last, exit);
+            return first <= last;
         }
 
         private void ClearUnusedBits()
