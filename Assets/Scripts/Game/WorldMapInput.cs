@@ -128,13 +128,14 @@ namespace DarkFantasyMerchant.Game
                 AnyInput?.Invoke();
             }
 
+            // A consumed press is not a click, but the button it holds can still drag the map.
+            UpdateGesture(clickAction, clickGesture, Clicked, !inputConsumed);
+            UpdateGesture(panDragAction, panGesture, null, !inputConsumed);
+
             if (inputConsumed)
             {
                 return;
             }
-
-            UpdateGesture(clickAction, clickGesture, Clicked);
-            UpdateGesture(panDragAction, panGesture, null);
 
             // The right button gives its order as soon as it is pressed, wherever it is
             // released: an order given while the pointer is moving must not be lost.
@@ -155,9 +156,9 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// For a listener of <see cref="AnyInput"/> that used the input up: nothing else is
-        /// raised this frame and no gesture starts, so the release of the button that was
-        /// just pressed is not a click.
+        /// For a listener of <see cref="AnyInput"/> that used the input up: no click, order,
+        /// zoom or cancel comes from it, this frame or when the button that was just pressed
+        /// is released. That button can still drag the map.
         /// </summary>
         public void ConsumeInput()
         {
@@ -195,11 +196,18 @@ namespace DarkFantasyMerchant.Game
             return false;
         }
 
-        private void UpdateGesture(InputAction button, PointerGesture gesture, Action<Vector2> clicked)
+        private void UpdateGesture(InputAction button, PointerGesture gesture, Action<Vector2> clicked, bool canClick)
         {
             if (button.WasPressedThisFrame() && !IsPointerOverUi)
             {
-                gesture.Press(PointerPosition);
+                if (canClick)
+                {
+                    gesture.Press(PointerPosition);
+                }
+                else
+                {
+                    gesture.PressWithoutClick(PointerPosition);
+                }
             }
 
             Vector2 delta = gesture.Move(PointerPosition);

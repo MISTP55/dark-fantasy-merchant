@@ -137,6 +137,42 @@ namespace DarkFantasyMerchant.Tests.EditMode
             TestAssert.AreEqual(new Vector2(1f, 0f), delta);
         }
 
+        [Test]
+        public void APressWithoutClick_IsNotAClick_WhenReleasedInPlace()
+        {
+            var gesture = new PointerGesture(6f);
+
+            gesture.PressWithoutClick(new Vector2(100f, 100f));
+
+            Assert.IsTrue(gesture.IsPressed);
+            Assert.IsFalse(gesture.Release());
+        }
+
+        [Test]
+        public void APressWithoutClick_StillDrags()
+        {
+            var gesture = new PointerGesture(6f);
+            gesture.PressWithoutClick(new Vector2(100f, 100f));
+
+            Vector2 delta = gesture.Move(new Vector2(110f, 100f));
+
+            Assert.IsTrue(gesture.IsDragging);
+            TestAssert.AreEqual(new Vector2(10f, 0f), delta);
+            Assert.IsFalse(gesture.Release());
+        }
+
+        [Test]
+        public void APressAfterAPressWithoutClick_IsAClickAgain()
+        {
+            var gesture = new PointerGesture(6f);
+            gesture.PressWithoutClick(new Vector2(100f, 100f));
+            gesture.Release();
+
+            gesture.Press(new Vector2(100f, 100f));
+
+            Assert.IsTrue(gesture.Release());
+        }
+
         [TestCase(-1f)]
         [TestCase(float.NaN)]
         public void Constructor_RejectsInvalidThreshold(float threshold)

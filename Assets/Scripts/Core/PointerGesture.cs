@@ -12,6 +12,7 @@ namespace DarkFantasyMerchant.Core
         private readonly float sqrDragThreshold;
         private Vector2 pressPosition;
         private Vector2 lastPosition;
+        private bool canClick;
 
         public PointerGesture(float dragThresholdPixels)
         {
@@ -29,6 +30,19 @@ namespace DarkFantasyMerchant.Core
         public bool IsDragging { get; private set; }
 
         public void Press(Vector2 screenPosition)
+        {
+            canClick = true;
+            Begin(screenPosition);
+        }
+
+        /// <summary>A press that can become a drag but is never a click.</summary>
+        public void PressWithoutClick(Vector2 screenPosition)
+        {
+            canClick = false;
+            Begin(screenPosition);
+        }
+
+        private void Begin(Vector2 screenPosition)
         {
             IsPressed = true;
             IsDragging = false;
@@ -62,7 +76,7 @@ namespace DarkFantasyMerchant.Core
         /// <returns>True when the gesture was a click.</returns>
         public bool Release()
         {
-            bool isClick = IsPressed && !IsDragging;
+            bool isClick = IsPressed && !IsDragging && canClick;
             Cancel();
             return isClick;
         }
