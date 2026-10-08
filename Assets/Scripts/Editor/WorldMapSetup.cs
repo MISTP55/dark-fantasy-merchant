@@ -11,9 +11,10 @@ using UnityEngine.UIElements;
 namespace DarkFantasyMerchant.Editor
 {
     /// <summary>
-    /// Generates the world map scene, the city marker and ship prefabs and the sample content.
-    /// Safe to run again: existing assets are left untouched, and an existing scene only
-    /// gains the ships object when it has none, and the references to it that are empty.
+    /// Generates the world map scene, the city marker, ship and ship route prefabs and the
+    /// sample content. Safe to run again: existing assets are left untouched, and an
+    /// existing scene only gains the ships and ship route objects when it has none, and
+    /// the references to them that are empty.
     /// </summary>
     public static class WorldMapSetup
     {
@@ -38,8 +39,19 @@ namespace DarkFantasyMerchant.Editor
         private const string ShipDefinitionPath = ShipDataFolder + "/MerchantShip.asset";
         private const string ShipPrefabPath = ShipPrefabFolder + "/Ship.prefab";
 
+        private const string ShipArtFolder = "Assets/Art/Ships";
+        private const string RouteDashTexturePath = ShipArtFolder + "/ShipRouteDash.png";
+        private const string RouteMarkerSpritePath = ShipArtFolder + "/ShipRouteDestination.png";
+        private const string RouteSailedMaterialPath = ShipArtFolder + "/ShipRouteSailed.mat";
+        private const string RouteRemainingMaterialPath = ShipArtFolder + "/ShipRouteRemaining.mat";
+        private const string ShipRoutePrefabPath = ShipPrefabFolder + "/ShipRoute.prefab";
+        private const string UnlitSpriteShaderName = "Universal Render Pipeline/2D/Sprite-Unlit-Default";
+
         private const float MerchantShipSpeed = 1.5f;
         private const int ShipSortingOrder = 20;
+
+        // Above the map, below the city markers.
+        private const int RouteSortingOrder = 5;
 
         private const float MarkerPixelsPerUnit = 16f;
 
@@ -108,6 +120,7 @@ namespace DarkFantasyMerchant.Editor
 
             ShipDefinition shipDefinition = CreateShipDefinition();
             CreateShipPrefab(shipDefinition);
+            CreateShipRoutePrefab();
 
             AssetDatabase.SaveAssets();
             BuildScene();
@@ -122,7 +135,7 @@ namespace DarkFantasyMerchant.Editor
             foreach (string folder in new[]
             {
                 ArtFolder, CitiesFolder, MapDataFolder, PrefabFolder, UiFolder,
-                ShipDataFolder, ShipPrefabFolder, "Assets/Scenes",
+                ShipArtFolder, ShipDataFolder, ShipPrefabFolder, "Assets/Scenes",
             })
             {
                 Directory.CreateDirectory(folder);
@@ -175,21 +188,27 @@ namespace DarkFantasyMerchant.Editor
                     }
                 }
 
-                File.WriteAllBytes(path, texture.EncodeToPNG());
-                Object.DestroyImmediate(texture);
-                AssetDatabase.ImportAsset(path);
-
-                var importer = (TextureImporter)AssetImporter.GetAtPath(path);
-                importer.textureType = TextureImporterType.Sprite;
-                importer.spriteImportMode = SpriteImportMode.Single;
-                importer.spritePixelsPerUnit = MarkerPixelsPerUnit;
-                importer.filterMode = FilterMode.Point;
-                importer.textureCompression = TextureImporterCompression.Uncompressed;
-                importer.mipmapEnabled = false;
-                importer.SaveAndReimport();
+                SaveAsPixelSprite(texture, path);
             }
 
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
+        /// <summary>Writes the texture to a PNG imported as one pixel art sprite, and destroys it.</summary>
+        private static void SaveAsPixelSprite(Texture2D texture, string path)
+        {
+            File.WriteAllBytes(path, texture.EncodeToPNG());
+            Object.DestroyImmediate(texture);
+            AssetDatabase.ImportAsset(path);
+
+            var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.spritePixelsPerUnit = MarkerPixelsPerUnit;
+            importer.filterMode = FilterMode.Point;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.mipmapEnabled = false;
+            importer.SaveAndReimport();
         }
 
         private static CityMarkerView CreateMarkerPrefab(Sprite village, Sprite town, Sprite capital)
@@ -362,6 +381,146 @@ namespace DarkFantasyMerchant.Editor
             return prefab.GetComponent<ShipView>();
         }
 
+        private static ShipRouteView CreateShipRoutePrefab()
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<ShipRouteView>(ShipRoutePrefabPath);
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            Material sailedMaterial = CreateRouteMaterial(RouteSailedMaterialPath, CreateRouteDashTexture());
+            Material remainingMaterial = CreateRouteMaterial(RouteRemainingMaterialPath, null);
+            Sprite markerSprite = CreateRouteMarkerSprite();
+
+            var instance = new GameObject("ShipRoute", typeof(ShipRouteView));
+            LineRenderer sailedLine = CreateRouteLine("Sailed", instance.transform, sailedMaterial);
+            LineRenderer remainingLine = CreateRouteLine("Remaining", instance.transform, remainingMaterial);
+
+            // The dashes are the material's texture, repeated along the line.
+            sailedLine.textureMode = LineTextureMode.Tile;
+
+            // ObjectFactory applies the render pipeline's default sprite material.
+            GameObject markerObject = ObjectFactory.CreateGameObject("Destination", typeof(SpriteRenderer));
+            markerObject.transform.SetParent(instance.transform, false);
+
+            var markerRenderer = markerObject.GetComponent<SpriteRenderer>();
+            markerRenderer.sprite = markerSprite;
+            markerRenderer.sortingOrder = RouteSortingOrder + 1;
+
+            var routeView = instance.GetComponent<ShipRouteView>();
+            SetReference(routeView, "sailedLine", sailedLine);
+            SetReference(routeView, "remainingLine", remainingLine);
+            SetReference(routeView, "destinationMarker", markerRenderer);
+
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(instance, ShipRoutePrefabPath);
+            Object.DestroyImmediate(instance);
+            return prefab.GetComponent<ShipRouteView>();
+        }
+
+        private static LineRenderer CreateRouteLine(string objectName, Transform parent, Material material)
+        {
+            var lineObject = new GameObject(objectName, typeof(LineRenderer));
+            lineObject.transform.SetParent(parent, false);
+
+            var line = lineObject.GetComponent<LineRenderer>();
+            line.sharedMaterial = material;
+            line.useWorldSpace = true;
+            line.positionCount = 0;
+            line.numCornerVertices = 2;
+            line.sortingOrder = RouteSortingOrder;
+            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            line.receiveShadows = false;
+            return line;
+        }
+
+        // Unlit: the route is drawn over the map, not lit as a part of it.
+        private static Material CreateRouteMaterial(string path, Texture2D texture)
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+
+            if (existing != null)
+            {
+                // A material that outlived its texture would draw the dashed line solid.
+                if (texture != null && existing.mainTexture == null)
+                {
+                    existing.mainTexture = texture;
+                    EditorUtility.SetDirty(existing);
+                }
+
+                return existing;
+            }
+
+            Shader shader = Shader.Find(UnlitSpriteShaderName);
+
+            if (shader == null)
+            {
+                throw new FileNotFoundException($"Shader '{UnlitSpriteShaderName}' is missing.");
+            }
+
+            var material = new Material(shader);
+
+            if (texture != null)
+            {
+                material.mainTexture = texture;
+            }
+
+            AssetDatabase.CreateAsset(material, path);
+            return material;
+        }
+
+        // One dash and the gap after it: a white pixel and a clear one, repeated.
+        private static Texture2D CreateRouteDashTexture()
+        {
+            if (!File.Exists(RouteDashTexturePath))
+            {
+                var texture = new Texture2D(2, 1, TextureFormat.RGBA32, false);
+                texture.SetPixel(0, 0, Color.white);
+                texture.SetPixel(1, 0, Color.clear);
+
+                File.WriteAllBytes(RouteDashTexturePath, texture.EncodeToPNG());
+                Object.DestroyImmediate(texture);
+                AssetDatabase.ImportAsset(RouteDashTexturePath);
+
+                // Not a sprite, which the 2D project default would make it: a line repeats it.
+                var importer = (TextureImporter)AssetImporter.GetAtPath(RouteDashTexturePath);
+                importer.textureType = TextureImporterType.Default;
+                importer.wrapMode = TextureWrapMode.Repeat;
+                importer.filterMode = FilterMode.Point;
+                importer.alphaIsTransparency = true;
+                importer.npotScale = TextureImporterNPOTScale.None;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.mipmapEnabled = false;
+                importer.SaveAndReimport();
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(RouteDashTexturePath);
+        }
+
+        // Placeholder marker: a white diagonal cross, tinted by the route view.
+        private static Sprite CreateRouteMarkerSprite()
+        {
+            if (!File.Exists(RouteMarkerSpritePath))
+            {
+                const int sizePixels = 12;
+                var texture = new Texture2D(sizePixels, sizePixels, TextureFormat.RGBA32, false);
+
+                for (int y = 0; y < sizePixels; y++)
+                {
+                    for (int x = 0; x < sizePixels; x++)
+                    {
+                        bool onCross = Mathf.Abs(x - y) <= 1 || Mathf.Abs(x + y - (sizePixels - 1)) <= 1;
+                        texture.SetPixel(x, y, onCross ? Color.white : Color.clear);
+                    }
+                }
+
+                SaveAsPixelSprite(texture, RouteMarkerSpritePath);
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Sprite>(RouteMarkerSpritePath);
+        }
+
         private static void BuildScene()
         {
             if (File.Exists(ScenePath))
@@ -504,6 +663,28 @@ namespace DarkFantasyMerchant.Editor
                 changed = true;
             }
 
+            // Like the ships object, the route of the selected ship is added to a scene
+            // built before it existed.
+            if (IsReferenceEmpty(shipsView, "routeView"))
+            {
+                var routeView = FindInScene<ShipRouteView>(scene);
+
+                if (routeView == null)
+                {
+                    var routePrefab = AssetDatabase.LoadAssetAtPath<ShipRouteView>(ShipRoutePrefabPath);
+
+                    if (routePrefab == null)
+                    {
+                        throw new FileNotFoundException("The ship route prefab could not be loaded.", ShipRoutePrefabPath);
+                    }
+
+                    routeView = (ShipRouteView)PrefabUtility.InstantiatePrefab(routePrefab, shipsView.transform);
+                }
+
+                SetReference(shipsView, "routeView", routeView);
+                changed = true;
+            }
+
             var interaction = FindInScene<WorldMapInteraction>(scene);
 
             if (interaction != null && IsReferenceEmpty(interaction, "shipsView"))
@@ -531,7 +712,7 @@ namespace DarkFantasyMerchant.Editor
             // Saving would also write the user's own pending edits; leave that to them.
             if (sceneHadUnsavedChanges)
             {
-                Debug.Log($"Ships added to {ScenePath}. The scene had unsaved changes: save it to keep them.");
+                Debug.Log($"Ships or their route added to {ScenePath}. The scene had unsaved changes: save it to keep them.");
                 return;
             }
 

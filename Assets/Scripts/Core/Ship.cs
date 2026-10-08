@@ -18,6 +18,9 @@ namespace DarkFantasyMerchant.Core
         // Waypoints not reached yet, the next one first.
         private readonly List<Vector2> waypoints = new List<Vector2>();
 
+        // Where the current route started, then the waypoints reached since.
+        private readonly List<Vector2> sailedWaypoints = new List<Vector2>();
+
         // Where an order is worked out, so that an order that fails leaves the route alone.
         private readonly List<Vector2> orderedRoute = new List<Vector2>();
 
@@ -74,6 +77,13 @@ namespace DarkFantasyMerchant.Core
         /// </summary>
         public IReadOnlyList<Vector2> RemainingWaypoints => waypoints;
 
+        /// <summary>
+        /// Normalized map positions the ship has sailed through on its current route:
+        /// where it was when it was ordered, then the waypoints it reached. The ship's
+        /// own position is not in it. Empty when idle, and started again by every order.
+        /// </summary>
+        public IReadOnlyList<Vector2> SailedWaypoints => sailedWaypoints;
+
         public bool IsMoving => waypoints.Count > 0;
 
         public CompassDirection Heading { get; private set; }
@@ -109,6 +119,14 @@ namespace DarkFantasyMerchant.Core
             waypoints.AddRange(orderedRoute);
             SkipWaypointsAlreadyReached();
             FaceNextWaypoint();
+
+            sailedWaypoints.Clear();
+
+            if (IsMoving)
+            {
+                sailedWaypoints.Add(Position);
+            }
+
             return true;
         }
 
@@ -156,9 +174,13 @@ namespace DarkFantasyMerchant.Core
                 Position = waypoints[0];
                 worldPosition = WorldPosition;
                 step -= distance;
+                sailedWaypoints.Add(waypoints[0]);
                 waypoints.RemoveAt(0);
                 FaceNextWaypoint();
             }
+
+            // The route is over: an idle ship has none, sailed or not.
+            sailedWaypoints.Clear();
         }
 
         private void SkipWaypointsAlreadyReached()

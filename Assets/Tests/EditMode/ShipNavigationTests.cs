@@ -238,6 +238,102 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void AnIdleShip_HasSailedNothing()
+        {
+            Ship ship = CreateShip();
+
+            Assert.IsEmpty(ship.SailedWaypoints);
+        }
+
+        [Test]
+        public void AnOrder_StartsTheSailedRoute_WhereTheShipIs()
+        {
+            Ship ship = CreateShip();
+
+            ship.SetDestination(Cell(5, 0));
+
+            Assert.AreEqual(1, ship.SailedWaypoints.Count);
+            TestAssert.AreEqual(Cell(1, 0), ship.SailedWaypoints[0]);
+        }
+
+        [Test]
+        public void Advance_OnALeg_AddsNothingToTheSailedRoute()
+        {
+            Ship ship = CreateShip();
+            ship.SetDestination(Cell(5, 0));
+
+            ship.Advance(1f);
+
+            Assert.AreEqual(1, ship.SailedWaypoints.Count);
+            TestAssert.AreEqual(Cell(1, 0), ship.SailedWaypoints[0]);
+        }
+
+        [Test]
+        public void Advance_PastAWaypoint_MovesItToTheSailedRoute()
+        {
+            Ship ship = CreateShip();
+            ship.SetDestination(Cell(5, 0));
+
+            // Twenty world units: the whole first leg and part of the second.
+            ship.Advance(5f);
+
+            Assert.AreEqual(2, ship.SailedWaypoints.Count);
+            TestAssert.AreEqual(Cell(1, 0), ship.SailedWaypoints[0]);
+            TestAssert.AreEqual(Cell(2, 3), ship.SailedWaypoints[1]);
+            Assert.AreEqual(2, ship.RemainingWaypoints.Count);
+        }
+
+        [Test]
+        public void AShipThatHasArrived_HasSailedNothing()
+        {
+            Ship ship = CreateShip();
+            ship.SetDestination(Cell(5, 0));
+
+            ship.Advance(100f);
+
+            Assert.IsEmpty(ship.SailedWaypoints);
+        }
+
+        [Test]
+        public void AnOrderUnderWay_StartsTheSailedRouteAgain_FromWhereTheShipIs()
+        {
+            Ship ship = CreateShip();
+            ship.SetDestination(Cell(5, 0));
+            ship.Advance(5f);
+            Vector2 turningPoint = ship.Position;
+
+            ship.SetDestination(Cell(0, 3));
+
+            Assert.AreEqual(1, ship.SailedWaypoints.Count);
+            TestAssert.AreEqual(turningPoint, ship.SailedWaypoints[0]);
+        }
+
+        [Test]
+        public void AnIgnoredOrder_KeepsTheSailedRoute()
+        {
+            Ship ship = CreateShip();
+            ship.SetDestination(Cell(5, 0));
+            ship.Advance(5f);
+
+            ship.SetDestination(new Vector2(float.NaN, 0.5f));
+
+            Assert.AreEqual(2, ship.SailedWaypoints.Count);
+        }
+
+        [Test]
+        public void AnOrderToWhereTheShipIs_UnderWay_EndsTheSailedRoute()
+        {
+            Ship ship = CreateShip();
+            ship.SetDestination(Cell(5, 0));
+            ship.Advance(5f);
+
+            ship.SetDestination(ship.Position);
+
+            Assert.IsFalse(ship.IsMoving);
+            Assert.IsEmpty(ship.SailedWaypoints);
+        }
+
+        [Test]
         public void AnOrderToWhereTheShipIs_LeavesItIdle_AndItsHeadingUnchanged()
         {
             Ship ship = CreateShip();

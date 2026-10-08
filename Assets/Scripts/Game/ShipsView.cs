@@ -6,7 +6,8 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// Owns the ships of the map, their views, the ship selection state and which ships
-    /// lie in which city's port, and sails the ships every frame.
+    /// lie in which city's port, sails the ships every frame and shows the route of the
+    /// selected one.
     /// </summary>
     public sealed class ShipsView : MonoBehaviour
     {
@@ -24,6 +25,9 @@ namespace DarkFantasyMerchant.Game
 
         [Tooltip("On-screen size, in pixels, of one world unit of ship sprite.")]
         [SerializeField] private float shipScreenPixelsPerUnit = 32f;
+
+        [Tooltip("Optional. Shows the route of the selected ship.")]
+        [SerializeField] private ShipRouteView routeView;
 
         private readonly List<Ship> ships = new List<Ship>();
         private readonly List<Vector2> shipWorldPositions = new List<Vector2>();
@@ -115,6 +119,20 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
+        // LateUpdate, not Update: the selection and the orders of this frame are in.
+        private void LateUpdate()
+        {
+            if (routeView == null)
+            {
+                return;
+            }
+
+            Ship ship = Selection.Selected;
+
+            // A city marks the end of a route that enters its port.
+            routeView.Show(ship, mapView.Projection, Docking.DestinationPortOf(ship) == null);
+        }
+
         /// <returns>The name of the ship's definition, or null for a ship that is not on this map.</returns>
         public string DisplayNameOf(Ship ship)
         {
@@ -130,6 +148,11 @@ namespace DarkFantasyMerchant.Game
             foreach (ShipView view in views)
             {
                 view.SetBaseScale(scale);
+            }
+
+            if (routeView != null)
+            {
+                routeView.SetScale(worldUnitsPerPixel);
             }
         }
 

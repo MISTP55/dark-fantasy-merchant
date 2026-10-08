@@ -11,6 +11,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
     {
         private const string DefinitionPath = "Assets/Data/Ships/MerchantShip.asset";
         private const string PrefabPath = "Assets/Prefabs/Ships/Ship.prefab";
+        private const string RoutePrefabPath = "Assets/Prefabs/Ships/ShipRoute.prefab";
 
         [Test]
         public void MerchantShip_HasTheRightSpriteForEveryDirection()
@@ -48,6 +49,49 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsNotNull(spriteRenderer);
             Assert.Greater(spriteRenderer.sortingOrder, 10);
             Assert.IsNotNull(spriteRenderer.sprite);
+        }
+
+        [Test]
+        public void ShipRoutePrefab_DrawsADashedAndASolidLine_BelowCityMarkers()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<ShipRouteView>(RoutePrefabPath);
+            Assert.IsNotNull(prefab, RoutePrefabPath);
+
+            LineRenderer[] lines = prefab.GetComponentsInChildren<LineRenderer>(true);
+            Assert.AreEqual(2, lines.Length);
+
+            int dashedLines = 0;
+
+            foreach (LineRenderer line in lines)
+            {
+                Assert.IsNotNull(line.sharedMaterial, line.name);
+                Assert.IsTrue(line.useWorldSpace, line.name);
+                Assert.That(line.sortingOrder, Is.InRange(1, 9), line.name);
+
+                if (line.textureMode == LineTextureMode.Tile)
+                {
+                    dashedLines++;
+                    Texture dashes = line.sharedMaterial.mainTexture;
+                    Assert.IsNotNull(dashes, "the dashed line has no dash texture");
+                    Assert.AreEqual(TextureWrapMode.Repeat, dashes.wrapMode);
+                }
+            }
+
+            Assert.AreEqual(1, dashedLines);
+
+            // Dashes on the remaining line would start at the ship and slide with it.
+            var serialized = new SerializedObject(prefab);
+            var sailedLine = serialized.FindProperty("sailedLine").objectReferenceValue as LineRenderer;
+            var remainingLine = serialized.FindProperty("remainingLine").objectReferenceValue as LineRenderer;
+            Assert.IsNotNull(sailedLine, "sailedLine");
+            Assert.IsNotNull(remainingLine, "remainingLine");
+            Assert.AreEqual(LineTextureMode.Tile, sailedLine.textureMode);
+            Assert.AreNotEqual(LineTextureMode.Tile, remainingLine.textureMode);
+
+            var marker = serialized.FindProperty("destinationMarker").objectReferenceValue as SpriteRenderer;
+            Assert.IsNotNull(marker);
+            Assert.IsNotNull(marker.sprite);
+            Assert.That(marker.sortingOrder, Is.InRange(1, 9));
         }
     }
 }
