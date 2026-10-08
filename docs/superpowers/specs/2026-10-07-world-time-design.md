@@ -173,7 +173,7 @@ It gets an optional reference to the `WorldClock`.
 - When it ends: `SetView` with the saved view. The wheel step or the key that
   ended it is not applied in that frame.
 
-Both transitions are eased by the existing smoother. A key that is still
+Both transitions are instant, without the smoother's easing (changed after play testing; they were eased at first). A key that is still
 held once back at normal speed pans as usual.
 
 ### `TimeHudController`

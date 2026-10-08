@@ -167,22 +167,30 @@ namespace DarkFantasyMerchant.Game
             model.Zoom(Mathf.Pow(zoomStepFactor, step), anchor);
         }
 
-        // Both ways are eased by the smoother, like any other move of the camera.
+        // Both ways are a cut, not an eased move: the mode changes at once.
         private void OnFastForwardChanged(bool isFastForward)
         {
-            if (isFastForward && !isLocked)
+            if (isFastForward == isLocked)
+            {
+                return;
+            }
+
+            if (isFastForward)
             {
                 viewBeforeLockPosition = model.Position;
                 viewBeforeLockSize = model.OrthographicSize;
                 model.ZoomOutFully();
                 isLocked = true;
             }
-            else if (!isFastForward && isLocked)
+            else
             {
                 // Clamped: the window may have been resized meanwhile.
                 model.SetView(viewBeforeLockPosition, viewBeforeLockSize);
                 isLocked = false;
             }
+
+            smoother.SnapTo(model.Position, model.OrthographicSize);
+            Apply();
         }
 
         private void Apply()
