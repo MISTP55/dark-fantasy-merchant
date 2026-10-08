@@ -263,12 +263,42 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void SetDestination_TellsWhetherTheOrderWasTaken()
+        {
+            Ship ship = CreateShip();
+
+            Assert.IsTrue(ship.SetDestination(Cell(5, 0)));
+            Assert.IsTrue(ship.SetDestination(ship.Position), "an order to where the ship is");
+            Assert.IsFalse(ship.SetDestination(new Vector2(float.NaN, 0.5f)));
+        }
+
+        [Test]
+        public void AnchorageAt_IsThePointOnWater_AndTheNearestWaterOnLand()
+        {
+            Ship ship = CreateShip();
+            Vector2 onWater = GridAssert.CellPoint(grid, 5.2f, 0.7f);
+
+            TestAssert.AreEqual(onWater, ship.AnchorageAt(onWater));
+
+            // In the wall, nearer its west side.
+            TestAssert.AreEqual(Cell(2, 1), ship.AnchorageAt(GridAssert.CellPoint(grid, 3.2f, 1.5f)));
+        }
+
+        [Test]
+        public void AnchorageAt_WithoutAPathfinder_IsThePointClampedToTheMap()
+        {
+            var ship = new Ship(projection, new Vector2(0.5f, 0.5f), Speed);
+
+            TestAssert.AreEqual(new Vector2(1f, 0.25f), ship.AnchorageAt(new Vector2(1.5f, 0.25f)));
+        }
+
+        [Test]
         public void OnAGridWithoutWater_TheShipStaysWhereItIs_AndIgnoresOrders()
         {
             var noWater = new NavigationPathfinder(new NavigationGrid(8, 4));
             var ship = new Ship(projection, new Vector2(0.3f, 0.4f), Speed, noWater);
 
-            ship.SetDestination(new Vector2(0.8f, 0.8f));
+            Assert.IsFalse(ship.SetDestination(new Vector2(0.8f, 0.8f)));
             ship.Advance(1f);
 
             Assert.IsFalse(ship.IsMoving);

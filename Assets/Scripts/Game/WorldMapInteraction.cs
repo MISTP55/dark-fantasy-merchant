@@ -6,7 +6,8 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// Turns the cursor and clicks into hover and selection of ships and cities, and
-    /// right clicks into move orders. At most one thing is hovered, and one selected.
+    /// right clicks into move orders. At most one thing is hovered, and one selected,
+    /// except that a ship in port is selected together with the city it lies in.
     /// </summary>
     public sealed class WorldMapInteraction : MonoBehaviour
     {
@@ -37,16 +38,27 @@ namespace DarkFantasyMerchant.Game
             input.Clicked += OnClicked;
             input.Commanded += OnCommanded;
             input.Cancelled += OnCancelled;
+            mapView.Selection.SelectedChanged += OnCitySelected;
             isBound = true;
         }
 
         private void OnDestroy()
         {
-            if (isBound && input != null)
+            if (!isBound)
+            {
+                return;
+            }
+
+            if (input != null)
             {
                 input.Clicked -= OnClicked;
                 input.Commanded -= OnCommanded;
                 input.Cancelled -= OnCancelled;
+            }
+
+            if (mapView != null)
+            {
+                mapView.Selection.SelectedChanged -= OnCitySelected;
             }
         }
 
@@ -130,9 +142,43 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            // The ship clamps the point to the map and ignores an unusable one.
-            Vector2 worldPosition = cameraController.ScreenToWorld(screenPosition);
-            ship.SetDestination(mapView.Projection.WorldToNormalized(worldPosition));
+            CityDefinition city = PickCity(screenPosition);
+
+            if (city != null)
+            {
+                // The ship enters the city's port when it arrives.
+                shipsView.Docking.OrderToPort(ship, city, city.MapPosition);
+            }
+            else
+            {
+                // The ship clamps the point to the map and ignores an unusable one.
+                Vector2 worldPosition = cameraController.ScreenToWorld(screenPosition);
+                shipsView.Docking.OrderToPoint(ship, mapView.Projection.WorldToNormalized(worldPosition));
+            }
+
+            // A ship that left its port is on the map again: its city's panel closes,
+            // which leaves the ship alone selected.
+            if (!shipsView.Docking.IsDocked(ship))
+            {
+                mapView.Selection.ClearSelection();
+            }
+        }
+
+        // A ship in port is only selected while the panel of its city is open.
+        private void OnCitySelected(CityDefinition city)
+        {
+            if (shipsView == null)
+            {
+                return;
+            }
+
+            Ship ship = shipsView.Selection.Selected;
+
+            if (ship != null && shipsView.Docking.IsDocked(ship)
+                && !ReferenceEquals(shipsView.Docking.PortOf(ship), city))
+            {
+                shipsView.Selection.ClearSelection();
+            }
         }
 
         private void OnCancelled()

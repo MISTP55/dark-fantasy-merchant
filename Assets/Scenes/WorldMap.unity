@@ -285,6 +285,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityInfoPanelController
   mapView: {fileID: 935350158}
   mapCamera: {fileID: 1418061169}
+  shipsView: {fileID: 948842205}
   hoverLabelOffset: {x: 14, y: -30}
 --- !u!114 &950679377
 MonoBehaviour:

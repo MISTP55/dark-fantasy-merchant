@@ -57,3 +57,43 @@
     font-size: 15px;
     white-space: normal;
 }
+
+.city-panel__section {
+    margin-top: 16px;
+    margin-bottom: 4px;
+    padding-top: 8px;
+    border-top-width: 1px;
+    border-top-color: rgb(110, 84, 52);
+    color: rgb(240, 226, 196);
+    font-size: 16px;
+    -unity-font-style: bold;
+}
+
+.city-panel__empty {
+    color: rgb(140, 124, 100);
+    font-size: 14px;
+    -unity-font-style: italic;
+}
+
+.city-panel__ship {
+    margin: 2px 0;
+    padding: 6px 8px;
+    color: rgb(222, 210, 188);
+    background-color: rgba(60, 44, 30, 0.9);
+    border-width: 1px;
+    border-radius: 0;
+    border-color: rgb(110, 84, 52);
+    font-size: 15px;
+    -unity-text-align: middle-left;
+}
+
+.city-panel__ship:hover {
+    background-color: rgb(84, 62, 40);
+}
+
+.city-panel__ship--selected,
+.city-panel__ship--selected:hover {
+    color: rgb(24, 17, 12);
+    background-color: rgb(255, 140, 51);
+    border-color: rgb(240, 226, 196);
+}

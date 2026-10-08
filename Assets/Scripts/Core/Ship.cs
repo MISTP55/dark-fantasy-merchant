@@ -84,11 +84,12 @@ namespace DarkFantasyMerchant.Core
         /// sail to is replaced by the nearest one it can. A NaN point is ignored, and so
         /// is an order for which there is no route.
         /// </summary>
-        public void SetDestination(Vector2 destination)
+        /// <returns>False when the order was ignored, which leaves the route as it was.</returns>
+        public bool SetDestination(Vector2 destination)
         {
             if (IsNaN(destination))
             {
-                return;
+                return false;
             }
 
             Vector2 clamped = ClampToMap(destination);
@@ -101,13 +102,28 @@ namespace DarkFantasyMerchant.Core
             }
             else if (!navigation.TryFindPath(Position, clamped, orderedRoute))
             {
-                return;
+                return false;
             }
 
             waypoints.Clear();
             waypoints.AddRange(orderedRoute);
             SkipWaypointsAlreadyReached();
             FaceNextWaypoint();
+            return true;
+        }
+
+        /// <summary>
+        /// Where a ship lies when it is at a point of the map, a city for instance: the
+        /// point itself, clamped to the map, or the nearest water when the ship has a
+        /// pathfinder. That water can be in a sea this ship cannot sail to.
+        /// </summary>
+        public Vector2 AnchorageAt(Vector2 point)
+        {
+            Vector2 clamped = ClampToMap(point);
+
+            return navigation != null && navigation.TryGetNearestNavigable(clamped, out Vector2 onWater)
+                ? onWater
+                : clamped;
         }
 
         public void Advance(float deltaTime)

@@ -13,7 +13,7 @@ namespace DarkFantasyMerchant.Editor
     /// <summary>
     /// Generates the world map scene, the city marker and ship prefabs and the sample content.
     /// Safe to run again: existing assets are left untouched, and an existing scene only
-    /// gains the ships object when it has none.
+    /// gains the ships object when it has none, and the references to it that are empty.
     /// </summary>
     public static class WorldMapSetup
     {
@@ -509,6 +509,15 @@ namespace DarkFantasyMerchant.Editor
             if (interaction != null && IsReferenceEmpty(interaction, "shipsView"))
             {
                 SetReference(interaction, "shipsView", shipsView);
+                changed = true;
+            }
+
+            // The city panel lists the ships in port.
+            var panelController = FindInScene<CityInfoPanelController>(scene);
+
+            if (panelController != null && IsReferenceEmpty(panelController, "shipsView"))
+            {
+                SetReference(panelController, "shipsView", shipsView);
                 changed = true;
             }
 

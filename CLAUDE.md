@@ -11,7 +11,7 @@ Dark Fantasy Merchant is a maritime trade management and simulation game. The pl
 
 ## Project state
 
-Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The world map is the first subsystem, the player has one ship that sails on it over the navigable areas painted on the map; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
+Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The world map is the first subsystem, the player has one ship that sails on it over the navigable areas painted on the map and can lie in the port of a city; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
 
 ## Architecture
 
@@ -35,7 +35,7 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 - `MapCameraModel` is where input has sent the camera (the target); `MapCameraSmoother` is what is displayed, eased towards the target. Position and size share one easing factor on purpose: that keeps the zoom anchor fixed during the transition, so do not split it into separate pan and zoom settings. Hover, picking and marker size follow the displayed view.
 - Camera clamping and zoom math are in `MapCameraModel`; picking is `CityPicker` (nearest city within a screen-pixel radius, no colliders).
 - Cities are placed by dragging their handles in the Scene view (`CityPlacementTool`). It and the navigation mask tool find the map to work on through `WorldMapEditorContext`.
-- `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates the scene, the marker and ship prefabs, the panel settings, the map definition or the ship definition when one is missing, and leaves existing ones untouched. The one exception is the `Ships` object: it is also added to an existing scene that has none, and that scene is saved unless it already had unsaved changes. The tool offers to save the open scene first, and adds `WorldMap.unity` to the build list without removing other scenes. Sample cities are only recreated together with a missing map definition.
+- `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates the scene, the marker and ship prefabs, the panel settings, the map definition or the ship definition when one is missing, and leaves existing ones untouched. The one exception is the `Ships` object: it is also added to an existing scene that has none, as are the empty references to it of `WorldMapInteraction` and `CityInfoPanelController`, and that scene is saved unless it already had unsaved changes. The tool offers to save the open scene first, and adds `WorldMap.unity` to the build list without removing other scenes. Sample cities are only recreated together with a missing map definition.
 
 ### Ships
 
@@ -44,8 +44,16 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 - Steps are measured in world space through `MapProjection`, not in normalized space, so the speed is the same in every direction on a map that is not square.
 - A ship is created on the water nearest to the position it is given: cities are on land, so the player ship starts beside its start city, not on it.
 - `ShipsView` owns the ships, their `ShipView`s and a `MapSelectionState<Ship>`, and advances the ships with `Time.deltaTime`. It holds a list although there is a single player ship, which starts on `startCity` or the first city of the map.
-- `WorldMapInteraction` arbitrates between the two selection states: a ship is picked before the cities, and selecting one clears the other, so at most one thing is hovered and one selected. Pressing the right button sends the selected ship to the pointer, at once and without waiting for the release (an order given while the pointer moves must not be lost), or to the nearest water it can reach when that point is on land or in another sea.
+- `WorldMapInteraction` arbitrates between the two selection states: a ship is picked before the cities, and selecting one clears the other, so at most one thing is hovered and one selected (the one exception is a ship in port, see below). Pressing the right button sends the selected ship to the pointer, at once and without waiting for the release (an order given while the pointer moves must not be lost), or to the nearest water it can reach when that point is on land or in another sea. When the pointer is on a city, the ship is sent to that city's port instead.
 - Ships keep a constant on-screen size, like city markers, and are picked with `CityPicker` on their current world positions.
+
+### Ports
+
+- `ShipDocking<TPort>` (Core, generic like `MapSelectionState<T>`) says which ships lie in which port and which are sailing to one. `ShipsView` owns the one of the map, with `CityDefinition` as the port, and updates it after the ships have advanced. Orders go through it (`OrderToPort`, `OrderToPoint`), not straight to `Ship.SetDestination`.
+- A ship enters a port only when it was ordered to that city and has arrived: an order to the water beside a city does not dock, and any other order under way cancels the entry. A ship in port leaves on its next order, except one to its own city. The ship starts at sea, beside its start city.
+- A port is entered from `Ship.AnchorageAt(city position)`, where a ship that starts on that city is put. A city the ship cannot sail to is not entered: the ship stops as near as it can and stays at sea.
+- A ship in port stays where it anchored but is not on the map: its view is inactive, its entry in `ShipWorldPositions` is NaN (which `CityPicker` skips), and it is deselected when it arrives.
+- The city panel lists the ships in port (`CityInfoPanelController`, which reads `ShipsView`). Clicking a row selects the ship while its city stays selected, the only case where two things are selected; `WorldMapInteraction` clears that ship selection as soon as another city, or none, is selected. A right click then orders the ship out, which closes the panel.
 
 ### Navigation mask
 

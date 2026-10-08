@@ -10,6 +10,9 @@
             <ui:Label name="city-size" class="city-panel__tag" />
             <ui:Label name="city-access" class="city-panel__tag" />
             <ui:Label name="city-description" class="city-panel__description" />
+            <ui:Label text="Ships in port" class="city-panel__section" />
+            <ui:Label name="no-ship-label" text="No ship in port" class="city-panel__empty" />
+            <ui:VisualElement name="ship-list" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

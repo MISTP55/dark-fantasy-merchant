@@ -5,12 +5,15 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// Owns the ships of the map, their views and the ship selection state, and sails
-    /// the ships every frame.
+    /// Owns the ships of the map, their views, the ship selection state and which ships
+    /// lie in which city's port, and sails the ships every frame.
     /// </summary>
     public sealed class ShipsView : MonoBehaviour
     {
         private static readonly Vector2 MapCenter = new Vector2(0.5f, 0.5f);
+
+        // CityPicker skips NaN positions.
+        private static readonly Vector2 NotOnMap = new Vector2(float.NaN, float.NaN);
 
         [SerializeField] private WorldMapView mapView;
         [SerializeField] private ShipView shipPrefab;
@@ -25,6 +28,7 @@ namespace DarkFantasyMerchant.Game
         private readonly List<Ship> ships = new List<Ship>();
         private readonly List<Vector2> shipWorldPositions = new List<Vector2>();
         private readonly List<ShipView> views = new List<ShipView>();
+        private readonly List<ShipDefinition> definitions = new List<ShipDefinition>();
 
         // Null on a map without a navigation mask: ships then sail in a straight line.
         private NavigationPathfinder navigation;
@@ -34,9 +38,18 @@ namespace DarkFantasyMerchant.Game
 
         public MapSelectionState<Ship> Selection { get; } = new MapSelectionState<Ship>();
 
+        /// <summary>
+        /// Ships in port. Orders go through it, so that a ship enters the city it was
+        /// sent to and leaves the one it is in.
+        /// </summary>
+        public ShipDocking<CityDefinition> Docking { get; } = new ShipDocking<CityDefinition>();
+
         public IReadOnlyList<Ship> Ships => ships;
 
-        /// <summary>World position of each entry of <see cref="Ships"/>, in the same order.</summary>
+        /// <summary>
+        /// World position of each entry of <see cref="Ships"/>, in the same order. NaN for
+        /// a ship in port: it is not on the map and cannot be picked there.
+        /// </summary>
         public IReadOnlyList<Vector2> ShipWorldPositions => shipWorldPositions;
 
         public bool IsReady => ships.Count > 0;
@@ -74,22 +87,40 @@ namespace DarkFantasyMerchant.Game
             Spawn(playerShipDefinition, StartPosition());
             Selection.HoveredChanged += OnHoveredChanged;
             Selection.SelectedChanged += OnSelectedChanged;
+            Docking.Docked += OnDocked;
+            Docking.Undocked += OnUndocked;
         }
 
         private void OnDestroy()
         {
             Selection.HoveredChanged -= OnHoveredChanged;
             Selection.SelectedChanged -= OnSelectedChanged;
+            Docking.Docked -= OnDocked;
+            Docking.Undocked -= OnUndocked;
         }
 
         private void Update()
         {
+            foreach (Ship ship in ships)
+            {
+                ship.Advance(Time.deltaTime);
+            }
+
+            Docking.Update();
+
             for (int i = 0; i < ships.Count; i++)
             {
-                ships[i].Advance(Time.deltaTime);
-                shipWorldPositions[i] = ships[i].WorldPosition;
+                shipWorldPositions[i] = Docking.IsDocked(ships[i]) ? NotOnMap : ships[i].WorldPosition;
                 views[i].Refresh();
             }
+        }
+
+        /// <returns>The name of the ship's definition, or null for a ship that is not on this map.</returns>
+        public string DisplayNameOf(Ship ship)
+        {
+            int index = ship != null ? ships.IndexOf(ship) : -1;
+
+            return index >= 0 ? definitions[index].DisplayName : null;
         }
 
         public void SetShipScale(float worldUnitsPerPixel)
@@ -156,6 +187,42 @@ namespace DarkFantasyMerchant.Game
             ships.Add(ship);
             shipWorldPositions.Add(ship.WorldPosition);
             views.Add(view);
+            definitions.Add(definition);
+        }
+
+        // A ship in port is not on the map: it is neither shown, hovered nor selected
+        // there. It can be selected again from its city's panel.
+        private void OnDocked(Ship ship, CityDefinition city)
+        {
+            if (ReferenceEquals(Selection.Hovered, ship))
+            {
+                Selection.SetHovered(null);
+            }
+
+            if (ReferenceEquals(Selection.Selected, ship))
+            {
+                Selection.ClearSelection();
+            }
+
+            int index = ships.IndexOf(ship);
+
+            if (index >= 0)
+            {
+                shipWorldPositions[index] = NotOnMap;
+                views[index].gameObject.SetActive(false);
+            }
+        }
+
+        private void OnUndocked(Ship ship, CityDefinition city)
+        {
+            int index = ships.IndexOf(ship);
+
+            if (index >= 0)
+            {
+                shipWorldPositions[index] = ship.WorldPosition;
+                views[index].gameObject.SetActive(true);
+                views[index].Refresh();
+            }
         }
 
         private void OnHoveredChanged(Ship ship)
