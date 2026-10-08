@@ -26,6 +26,9 @@ namespace DarkFantasyMerchant.Game
         private readonly List<Vector2> shipWorldPositions = new List<Vector2>();
         private readonly List<ShipView> views = new List<ShipView>();
 
+        // Null on a map without a navigation mask: ships then sail in a straight line.
+        private NavigationPathfinder navigation;
+
         private Ship hoveredShip;
         private Ship selectedShip;
 
@@ -67,6 +70,7 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
+            navigation = CreateNavigation();
             Spawn(playerShipDefinition, StartPosition());
             Selection.HoveredChanged += OnHoveredChanged;
             Selection.SelectedChanged += OnSelectedChanged;
@@ -114,6 +118,28 @@ namespace DarkFantasyMerchant.Game
             return MapCenter;
         }
 
+        private NavigationPathfinder CreateNavigation()
+        {
+            // The definition is set: the map view is ready.
+            NavigationMaskDefinition mask = mapView.Definition.NavigationMask;
+
+            if (mask == null)
+            {
+                return null;
+            }
+
+            var pathfinder = new NavigationPathfinder(mask.CreateGrid());
+
+            if (!pathfinder.HasNavigableCells)
+            {
+                Debug.LogWarning(
+                    $"NavigationMaskDefinition '{mask.name}' has no navigable cell; ships cannot move.",
+                    mask);
+            }
+
+            return pathfinder;
+        }
+
         private void Spawn(ShipDefinition definition, Vector2 position)
         {
             // A NaN city position would be rejected by the ship.
@@ -122,7 +148,8 @@ namespace DarkFantasyMerchant.Game
                 position = MapCenter;
             }
 
-            var ship = new Ship(mapView.Projection, position, definition.Speed);
+            // With a pathfinder, a ship that starts on a city starts on the water beside it.
+            var ship = new Ship(mapView.Projection, position, definition.Speed, navigation);
             ShipView view = Instantiate(shipPrefab, transform);
             view.Initialize(ship, definition);
 

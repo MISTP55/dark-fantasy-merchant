@@ -11,7 +11,7 @@ Dark Fantasy Merchant is a maritime trade management and simulation game. The pl
 
 ## Project state
 
-Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The world map is the first subsystem, the player has one ship to sail on it, and the navigable areas of the map can be painted but are not used yet; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
+Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The world map is the first subsystem, the player has one ship that sails on it over the navigable areas painted on the map; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
 
 ## Architecture
 
@@ -40,19 +40,28 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 ### Ships
 
 - `Ship` (Core) is the runtime state of one ship: normalized position, destination, heading. `ShipDefinition` (Game) is its static definition: name, speed in world units per second, and eight sprites indexed by `CompassDirection` (`N, NE, E, SE, S, SW, W, NW`, the order of the sprite sheets).
-- Ships sail in a straight line and ignore land. Steps are measured in world space through `MapProjection`, not in normalized space, so the speed is the same in every direction on a map that is not square.
+- A ship follows a route: a list of waypoints, exposed as `RemainingWaypoints`, with `Destination` the last one. `SetDestination` asks the ship's `NavigationPathfinder` for the route, so the ship sails over water only; without a pathfinder (a map with no mask) the route is one straight leg. What is left of a step after a waypoint is spent on the next leg, so the speed is constant through turns.
+- Steps are measured in world space through `MapProjection`, not in normalized space, so the speed is the same in every direction on a map that is not square.
+- A ship is created on the water nearest to the position it is given: cities are on land, so the player ship starts beside its start city, not on it.
 - `ShipsView` owns the ships, their `ShipView`s and a `MapSelectionState<Ship>`, and advances the ships with `Time.deltaTime`. It holds a list although there is a single player ship, which starts on `startCity` or the first city of the map.
-- `WorldMapInteraction` arbitrates between the two selection states: a ship is picked before the cities, and selecting one clears the other, so at most one thing is hovered and one selected. A right click sends the selected ship to the clicked point.
+- `WorldMapInteraction` arbitrates between the two selection states: a ship is picked before the cities, and selecting one clears the other, so at most one thing is hovered and one selected. A right click sends the selected ship to the clicked point, or to the nearest water it can reach when that point is on land or in another sea.
 - Ships keep a constant on-screen size, like city markers, and are picked with `CityPicker` on their current world positions.
 
 ### Navigation mask
 
 - `NavigationGrid` (Core) says which cells of the map ships can sail on: one bit per cell, cell `(0,0)` bottom-left like normalized positions, queried by cell or by normalized point. It also holds the painting logic (disc, stroke, 4-connected fill, resample). `NavigationMaskDefinition` (Game) stores a grid's size and bits and is referenced by `WorldMapDefinition.navigationMask`; a map without a mask is valid.
-- Nothing in the running game reads the mask yet: ships still ignore land.
+- `ShipsView` builds one `NavigationPathfinder` from the mask at startup and gives it to its ships. The mask is not expected to change while the game runs.
 - The grid is defined over normalized space, 1024 cells wide by default, with a height that follows the map's aspect ratio so cells are square. Replacing the map image by one of another shape needs a **Resize** in the tool, not a repaint.
 - The mask is painted in the Scene view (2D mode) with the **Navigation Mask** tool of the Scene view toolbar (`NavigationMaskTool`, settings in the `NavigationMaskOverlay` panel): brush, eraser, fill bucket, and a detection that marks low-saturation pixels of the map image as water (`WaterColorClassifier`). Shift swaps brush and eraser; `[` and `]` resize the brush. While this tool is active, `CityPlacementTool` draws no handles.
 - `NavigationMaskSession` is the tool's working copy of the grid. It is written to the asset once per stroke through `NavigationMaskAuthoring.Apply`, which is what makes a stroke one undo step, and rebuilt from the asset after an undo or redo, or at the start of an edit when the asset was changed by something else (`SyncWithAsset`). Its preview texture is rewritten only where a stroke passed; do not go back to rebuilding it whole on every drag event.
 - The mask's fields are hidden in the Inspector on purpose: its size and bits only make sense together.
+
+### Pathfinding
+
+- Movement rules, shared by the search and by route smoothing: a ship moves to a side neighbour, or to a diagonal one only when both cells beside the move are navigable; a straight leg is allowed only when every cell it touches, even by a corner, is navigable (`NavigationLineOfSight`, with a margin of a thousandth of a cell because positions are floats). A diagonal coastline one cell thick therefore holds, as it does for the fill bucket, and two cells are reachable from one another exactly when they are in the same 4-connected region.
+- `NavigationCellSearch` is an A* over the cells; its buffers are allocated once and reused, so an order allocates nothing. `NavigationPathfinder` labels the regions, picks the start and goal cells, runs the search and drops the waypoints a straight leg can skip.
+- An order ends on the clicked point itself when it is on water the ship can reach, otherwise on the center of the nearest cell of the ship's own region.
+- A search runs synchronously on the click. About 16 bytes per cell are held for the regions and the search, about 14 MB for a 1024-cell-wide grid.
 
 
 ## Conventions
