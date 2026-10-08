@@ -10,7 +10,8 @@ namespace DarkFantasyMerchant.Game
     /// except that a ship in port is selected together with the city it lies in.
     /// During fast forward nothing is hovered, selected or ordered, and any input goes
     /// back to normal speed, as does the arrival of the ship that was selected and under
-    /// way when it started.
+    /// way when it started. The ship that was selected is selected again afterwards, or
+    /// the city it has entered meanwhile.
     /// </summary>
     public sealed class WorldMapInteraction : MonoBehaviour
     {
@@ -33,8 +34,11 @@ namespace DarkFantasyMerchant.Game
         private bool isBound;
         private GameClock clock;
 
-        // The ship that was selected and under way when fast forward started: the player
-        // was waiting for it, so its arrival ends the fast forward.
+        // The ship that was selected when fast forward started, to select again when it ends.
+        private Ship shipBeforeFastForward;
+
+        // That ship when it was under way: the player was waiting for it, so its arrival
+        // ends the fast forward.
         private Ship awaitedShip;
 
         private bool IsFastForward => clock != null && clock.IsFastForward;
@@ -238,13 +242,18 @@ namespace DarkFantasyMerchant.Game
         {
             if (!isFastForward)
             {
+                Ship ship = shipBeforeFastForward;
+                shipBeforeFastForward = null;
                 awaitedShip = null;
+                SelectAgain(ship);
                 return;
             }
 
             // Read before the selection is cleared.
-            Ship selectedShip = shipsView != null ? shipsView.Selection.Selected : null;
-            awaitedShip = selectedShip != null && selectedShip.IsMoving ? selectedShip : null;
+            shipBeforeFastForward = shipsView != null ? shipsView.Selection.Selected : null;
+            awaitedShip = shipBeforeFastForward != null && shipBeforeFastForward.IsMoving
+                ? shipBeforeFastForward
+                : null;
 
             input.CancelGestures();
             mapView.Selection.SetHovered(null);
@@ -254,6 +263,25 @@ namespace DarkFantasyMerchant.Game
             {
                 shipsView.Selection.SetHovered(null);
                 shipsView.Selection.ClearSelection();
+            }
+        }
+
+        // A ship that entered a port during the fast forward is not on the map any more:
+        // its city is selected in its place.
+        private void SelectAgain(Ship ship)
+        {
+            if (ship == null || shipsView == null)
+            {
+                return;
+            }
+
+            if (shipsView.Docking.IsDocked(ship))
+            {
+                mapView.Selection.Select(shipsView.Docking.PortOf(ship));
+            }
+            else
+            {
+                shipsView.Selection.Select(ship);
             }
         }
 

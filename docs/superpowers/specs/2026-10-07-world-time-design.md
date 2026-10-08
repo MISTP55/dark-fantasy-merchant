@@ -47,6 +47,7 @@ Agreed with the user before writing this spec:
 | Leaving fast forward | Any player input: a mouse button (left, right, middle), the mouse wheel, any keyboard key, or the button itself. Moving the mouse is not an input. |
 | The input that leaves fast forward | Does nothing else: a click on a city selects nothing, a right click gives no order, a wheel step does not zoom. One exception, added after play testing: a left or middle button that stays held can drag the map, as at normal speed. |
 | Arrival of the awaited ship | Added after play testing: when a ship was selected and under way as fast forward started, fast forward ends by itself when that ship arrives, at its destination or in a port. |
+| Selection after fast forward | Added after play testing: the ship that was selected when fast forward started is selected again when it ends, however it ends. If it has entered a port meanwhile, that city is selected instead. A city that was selected is not selected again. |
 | UI text | English, like the city panel: `1 Janus 932`, button `Fast forward` / `Normal speed`. |
 
 Month names, in the calendar asset and editable there: Janus, Febrin, Martis,
