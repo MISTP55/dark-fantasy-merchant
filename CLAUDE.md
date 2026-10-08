@@ -44,7 +44,7 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 - Steps are measured in world space through `MapProjection`, not in normalized space, so the speed is the same in every direction on a map that is not square.
 - A ship is created on the water nearest to the position it is given: cities are on land, so the player ship starts beside its start city, not on it.
 - `ShipsView` owns the ships, their `ShipView`s and a `MapSelectionState<Ship>`, and advances the ships with `Time.deltaTime`. It holds a list although there is a single player ship, which starts on `startCity` or the first city of the map.
-- `WorldMapInteraction` arbitrates between the two selection states: a ship is picked before the cities, and selecting one clears the other, so at most one thing is hovered and one selected. A right click sends the selected ship to the clicked point, or to the nearest water it can reach when that point is on land or in another sea.
+- `WorldMapInteraction` arbitrates between the two selection states: a ship is picked before the cities, and selecting one clears the other, so at most one thing is hovered and one selected. Pressing the right button sends the selected ship to the pointer, at once and without waiting for the release (an order given while the pointer moves must not be lost), or to the nearest water it can reach when that point is on land or in another sea.
 - Ships keep a constant on-screen size, like city markers, and are picked with `CityPicker` on their current world positions.
 
 ### Navigation mask
