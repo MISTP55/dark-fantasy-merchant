@@ -11,7 +11,7 @@ Dark Fantasy Merchant is a maritime trade management and simulation game. The pl
 
 ## Project state
 
-Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The world map is the first subsystem, the player has one ship that sails on it over the navigable areas painted on the map and can lie in the port of a city, and the world has a date that passes, with a fast forward; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
+Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The world map is the first subsystem, the player has one ship that sails on it over the navigable areas painted on the map and can lie in the port of a city, the world has a date that passes, with a fast forward, and the player has a treasury of gold; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
 
 ## Architecture
 
@@ -31,11 +31,12 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 - Positions on the map are **normalized** (`(0,0)` bottom-left, `(1,1)` top-right) and converted to world space only through `MapProjection`. The map is centered on the world origin and sized by `WorldMapDefinition.worldWidth`, so the map image can be replaced by one of another resolution without moving anything.
 - `Assets/Art/WorldMap/WorldMap.jpg` is a placeholder for future pixel art.
 - `WorldMapView` owns the scene's `MapSelectionState<CityDefinition>` (hovered and selected city). Markers and the UI panel both react to it and do not know about each other.
+- The panel of the selected city is centered on the screen (by its root, in `CityInfoPanel.uss`), over the map and possibly over the city itself: the top right corner belongs to the treasury.
 - `WorldMapInput` is the only reader of the `WorldMap` action map; it raises click, drag and zoom events and ignores pointer input that starts over the UI.
 - `MapCameraModel` is where input has sent the camera (the target); `MapCameraSmoother` is what is displayed, eased towards the target. Position and size share one easing factor on purpose: that keeps the zoom anchor fixed during the transition, so do not split it into separate pan and zoom settings. Hover, picking and marker size follow the displayed view.
 - Camera clamping and zoom math are in `MapCameraModel`; picking is `CityPicker` (nearest city within a screen-pixel radius, no colliders).
 - Cities are placed by dragging their handles in the Scene view (`CityPlacementTool`). It and the navigation mask tool find the map to work on through `WorldMapEditorContext`.
-- `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates the scene, the marker, ship and ship route prefabs, the panel settings, the map definition, the ship definition or the calendar when one is missing, and leaves existing ones untouched. The exceptions are the `Ships` object with the `ShipRoute` object under it, the `World Clock` object and the `Time HUD` object: they are also added to an existing scene that has none, as are the empty references to them (`shipsView` of `WorldMapInteraction` and `CityInfoPanelController`, `routeView` of `ShipsView`, `worldClock` of `ShipsView`, `WorldMapInteraction` and `WorldMapCameraController`), and that scene is saved unless it already had unsaved changes. The tool offers to save the open scene first, and adds `WorldMap.unity` to the build list without removing other scenes. Sample cities are only recreated together with a missing map definition.
+- `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates the scene, the marker, ship and ship route prefabs, the panel settings, the map definition, the ship definition, the calendar or the player start when one is missing, and leaves existing ones untouched. The exceptions are the `Ships` object with the `ShipRoute` object under it, the `World Clock`, `Time HUD`, `Player Treasury` and `Treasury HUD` objects: they are also added to an existing scene that has none, as are the empty references to them (`shipsView` of `WorldMapInteraction` and `CityInfoPanelController`, `routeView` of `ShipsView`, `worldClock` of `ShipsView`, `WorldMapInteraction` and `WorldMapCameraController`, `playerTreasury` of `TreasuryHudController`), and that scene is saved unless it already had unsaved changes. The tool offers to save the open scene first, and adds `WorldMap.unity` to the build list without removing other scenes. Sample cities are only recreated together with a missing map definition.
 
 ### Ships
 
@@ -82,6 +83,12 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 - `WorldMapCameraController` saves the view when fast forward starts, shows the whole map, ignores the input while it lasts and returns to the saved view afterwards. When it is the arrival of the awaited ship that ends the fast forward, `WorldMapInteraction` then replaces that view by a close-up of where the ship arrived (`ShowCloseUp`: `MapCameraModel.ZoomInFullyOn`, the smallest size, centered on the ship as far as the map allows). These changes of view are instant (`MapCameraSmoother.SnapTo`), unlike every other move of the camera.
 - `TimeHudController` shows the date and the button (`Assets/UI/WorldMap/TimeHud.uxml`), in a second `UIDocument` that uses the same `PanelSettings` as the city panel: one panel, so `CityInfoPanelController.IsPointerOverUi` sees the button too. The date label is rewritten when a day starts, not every frame.
 - Keyboard keys are read from `Keyboard.current.allKeys`, not from an action: the "any key" control does not see a key pressed while another is held.
+
+### Treasury
+
+- `Treasury` (Core) is the player's gold, in whole coins. It can be negative: the player is then in debt (`IsInDebt`). `Withdraw` always takes the amount and is for what is paid whatever the gold left (wages); `TryWithdraw` takes it only when `CanAfford` and is for what a lack of gold must block (buying goods). `Changed` is raised with the new gold, only on an actual change. Nothing deposits or withdraws yet.
+- `PlayerStartDefinition` (Game, `Assets/Data/Player/PlayerStart.asset`) holds the starting gold (10000). `PlayerTreasury` owns the treasury and creates it in `Awake`, before the components that read it (execution order -100, like `WorldClock`).
+- `TreasuryHudController` shows the gold at the top right of the screen (`Assets/UI/WorldMap/TreasuryHud.uxml`, "10,000 gold", in red when in debt), in a third `UIDocument` on the same `PanelSettings`. Its label ignores the pointer, so the map under it stays reachable, and is rewritten on `Changed`, not every frame.
 
 ## Conventions
 

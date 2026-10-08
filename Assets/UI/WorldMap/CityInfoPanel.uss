@@ -1,5 +1,7 @@
 .map-ui-root {
     flex-grow: 1;
+    align-items: center;
+    justify-content: center;
 }
 
 .hover-label {
@@ -13,10 +15,8 @@
     -unity-font-style: bold;
 }
 
+/* Centered on the screen by its root: the top right corner belongs to the treasury. */
 .city-panel {
-    position: absolute;
-    top: 24px;
-    right: 24px;
     width: 340px;
     padding: 16px;
     background-color: rgba(24, 17, 12, 0.94);

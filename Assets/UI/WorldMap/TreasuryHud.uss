@@ -1,0 +1,20 @@
+.treasury-hud {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+}
+
+.treasury-hud__gold {
+    padding: 4px 18px;
+    color: rgb(240, 226, 196);
+    background-color: rgba(24, 17, 12, 0.94);
+    border-width: 2px;
+    border-color: rgb(110, 84, 52);
+    font-size: 22px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.treasury-hud__gold--debt {
+    color: rgb(226, 92, 72);
+}

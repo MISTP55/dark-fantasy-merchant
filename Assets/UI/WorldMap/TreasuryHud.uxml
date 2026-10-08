@@ -1,0 +1,6 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="TreasuryHud.uss" />
+    <ui:VisualElement name="treasury-hud" picking-mode="Ignore" class="treasury-hud">
+        <ui:Label name="gold-label" picking-mode="Ignore" class="treasury-hud__gold" />
+    </ui:VisualElement>
+</ui:UXML>

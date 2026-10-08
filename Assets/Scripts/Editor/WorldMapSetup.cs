@@ -13,8 +13,9 @@ namespace DarkFantasyMerchant.Editor
     /// <summary>
     /// Generates the world map scene, the city marker, ship and ship route prefabs and the
     /// sample content. Safe to run again: existing assets are left untouched, and an
-    /// existing scene only gains the ships, ship route, world clock and time HUD objects
-    /// when it has none, and the references to them that are empty.
+    /// existing scene only gains the ships, ship route, world clock, time HUD, player
+    /// treasury and treasury HUD objects when it has none, and the references to them that
+    /// are empty.
     /// </summary>
     public static class WorldMapSetup
     {
@@ -35,6 +36,10 @@ namespace DarkFantasyMerchant.Editor
         private const string CalendarFolder = "Assets/Data/Calendar";
         private const string CalendarPath = CalendarFolder + "/Calendar.asset";
         private const string TimeHudTemplatePath = UiFolder + "/TimeHud.uxml";
+
+        private const string PlayerDataFolder = "Assets/Data/Player";
+        private const string PlayerStartPath = PlayerDataFolder + "/PlayerStart.asset";
+        private const string TreasuryHudTemplatePath = UiFolder + "/TreasuryHud.uxml";
 
         private const string ShipTexturePath = "Assets/Art/Ships/MerchantShip.png";
         private const string ShipSpritePrefix = "MerchantShip_";
@@ -126,11 +131,13 @@ namespace DarkFantasyMerchant.Editor
             CreateShipPrefab(shipDefinition);
             CreateShipRoutePrefab();
             CreateCalendar();
+            CreatePlayerStart();
 
             AssetDatabase.SaveAssets();
             BuildScene();
             AddShipsToScene(mapSceneHadUnsavedChanges);
             AddTimeToScene(mapSceneHadUnsavedChanges);
+            AddTreasuryToScene(mapSceneHadUnsavedChanges);
             AssetDatabase.SaveAssets();
 
             Debug.Log("World map setup finished.");
@@ -141,7 +148,8 @@ namespace DarkFantasyMerchant.Editor
             foreach (string folder in new[]
             {
                 ArtFolder, CitiesFolder, MapDataFolder, PrefabFolder, UiFolder,
-                ShipArtFolder, ShipDataFolder, ShipPrefabFolder, CalendarFolder, "Assets/Scenes",
+                ShipArtFolder, ShipDataFolder, ShipPrefabFolder, CalendarFolder, PlayerDataFolder,
+                "Assets/Scenes",
             })
             {
                 Directory.CreateDirectory(folder);
@@ -332,6 +340,21 @@ namespace DarkFantasyMerchant.Editor
             var calendar = ScriptableObject.CreateInstance<CalendarDefinition>();
             AssetDatabase.CreateAsset(calendar, CalendarPath);
             return calendar;
+        }
+
+        // Like the calendar, a new player start is the game's: its defaults are the content.
+        private static PlayerStartDefinition CreatePlayerStart()
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<PlayerStartDefinition>(PlayerStartPath);
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var playerStart = ScriptableObject.CreateInstance<PlayerStartDefinition>();
+            AssetDatabase.CreateAsset(playerStart, PlayerStartPath);
+            return playerStart;
         }
 
         private static ShipDefinition CreateShipDefinition()
@@ -754,28 +777,11 @@ namespace DarkFantasyMerchant.Editor
                     throw new FileNotFoundException("The time HUD UXML is missing.", TimeHudTemplatePath);
                 }
 
-                // The same panel as the city panel, so that the map sees the pointer over
-                // the HUD's button as it does over the panel.
-                var cityPanel = FindInScene<CityInfoPanelController>(scene);
-                PanelSettings panelSettings = cityPanel != null
-                    ? cityPanel.GetComponent<UIDocument>().panelSettings
-                    : null;
-
-                if (panelSettings == null)
-                {
-                    panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(PanelSettingsPath);
-                }
-
-                if (panelSettings == null)
-                {
-                    throw new FileNotFoundException("The panel settings could not be loaded.", PanelSettingsPath);
-                }
-
                 var hudObject = new GameObject("Time HUD");
                 SceneManager.MoveGameObjectToScene(hudObject, scene);
 
                 var document = hudObject.AddComponent<UIDocument>();
-                document.panelSettings = panelSettings;
+                document.panelSettings = FindPanelSettings(scene);
                 document.visualTreeAsset = hudTemplate;
 
                 SetReference(hudObject.AddComponent<TimeHudController>(), "worldClock", worldClock);
@@ -803,6 +809,92 @@ namespace DarkFantasyMerchant.Editor
             {
                 SaveSceneChanges(scene, sceneHadUnsavedChanges, "The world clock or the time HUD");
             }
+        }
+
+        // Like the world clock, the player's treasury and its HUD are added to a scene built
+        // before they existed.
+        private static void AddTreasuryToScene(bool sceneHadUnsavedChanges)
+        {
+            if (!TryOpenMapScene("The player's treasury", out Scene scene))
+            {
+                return;
+            }
+
+            bool changed = false;
+            var playerTreasury = FindInScene<PlayerTreasury>(scene);
+
+            if (playerTreasury == null)
+            {
+                // Loaded only now: opening a scene unloads unreferenced assets.
+                var playerStart = AssetDatabase.LoadAssetAtPath<PlayerStartDefinition>(PlayerStartPath);
+
+                if (playerStart == null)
+                {
+                    throw new FileNotFoundException("The player start could not be loaded.", PlayerStartPath);
+                }
+
+                var treasuryObject = new GameObject("Player Treasury");
+                SceneManager.MoveGameObjectToScene(treasuryObject, scene);
+
+                playerTreasury = treasuryObject.AddComponent<PlayerTreasury>();
+                SetReference(playerTreasury, "playerStart", playerStart);
+                changed = true;
+            }
+
+            var hud = FindInScene<TreasuryHudController>(scene);
+
+            if (hud == null)
+            {
+                var hudTemplate = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(TreasuryHudTemplatePath);
+
+                if (hudTemplate == null)
+                {
+                    throw new FileNotFoundException("The treasury HUD UXML is missing.", TreasuryHudTemplatePath);
+                }
+
+                var hudObject = new GameObject("Treasury HUD");
+                SceneManager.MoveGameObjectToScene(hudObject, scene);
+
+                var document = hudObject.AddComponent<UIDocument>();
+                document.panelSettings = FindPanelSettings(scene);
+                document.visualTreeAsset = hudTemplate;
+
+                hud = hudObject.AddComponent<TreasuryHudController>();
+            }
+
+            // Also for a scene whose treasury was deleted and made again.
+            if (IsReferenceEmpty(hud, "playerTreasury"))
+            {
+                SetReference(hud, "playerTreasury", playerTreasury);
+                changed = true;
+            }
+
+            if (changed)
+            {
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The player's treasury or its HUD");
+            }
+        }
+
+        // The HUDs share the city panel's panel, so that the map sees the pointer over
+        // their buttons as it does over the panel.
+        private static PanelSettings FindPanelSettings(Scene scene)
+        {
+            var cityPanel = FindInScene<CityInfoPanelController>(scene);
+            PanelSettings panelSettings = cityPanel != null
+                ? cityPanel.GetComponent<UIDocument>().panelSettings
+                : null;
+
+            if (panelSettings == null)
+            {
+                panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(PanelSettingsPath);
+            }
+
+            if (panelSettings == null)
+            {
+                throw new FileNotFoundException("The panel settings could not be loaded.", PanelSettingsPath);
+            }
+
+            return panelSettings;
         }
 
         /// <returns>False when the scene does not exist or could not be opened.</returns>
