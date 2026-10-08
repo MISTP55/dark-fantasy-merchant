@@ -2,6 +2,7 @@ using System;
 using DarkFantasyMerchant.Core;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 namespace DarkFantasyMerchant.Game
 {
@@ -30,6 +31,8 @@ namespace DarkFantasyMerchant.Game
         private PointerGesture clickGesture;
         private PointerGesture panGesture;
 
+        private bool inputConsumed;
+
         /// <summary>Raised with the screen position of a click on the map.</summary>
         public event Action<Vector2> Clicked;
 
@@ -46,6 +49,13 @@ namespace DarkFantasyMerchant.Game
         /// on the map.
         /// </summary>
         public event Action<Vector2> Commanded;
+
+        /// <summary>
+        /// Raised when the player does anything but move the pointer: a keyboard key is
+        /// pressed, or a mouse button is pressed or the wheel turned on the map. Raised
+        /// before the other events of the frame, so that a listener can consume the input.
+        /// </summary>
+        public event Action AnyInput;
 
         public Vector2 PointerPosition { get; private set; }
 
@@ -104,6 +114,25 @@ namespace DarkFantasyMerchant.Game
             MoveAxis = panMoveAction.ReadValue<Vector2>();
             IsPointerOverUi = ui != null && ui.IsPointerOverUi(PointerPosition);
 
+            // Scroll magnitude differs between devices and platforms; only its direction is used.
+            float scroll = zoomAction.ReadValue<Vector2>().y;
+
+            // The UI handles the pointer input that starts over it; the keyboard is the map's.
+            bool pointerInput = clickAction.WasPressedThisFrame() || panDragAction.WasPressedThisFrame()
+                || commandAction.WasPressedThisFrame() || scroll != 0f;
+
+            inputConsumed = false;
+
+            if (WasAnyKeyPressedThisFrame() || (pointerInput && !IsPointerOverUi))
+            {
+                AnyInput?.Invoke();
+            }
+
+            if (inputConsumed)
+            {
+                return;
+            }
+
             UpdateGesture(clickAction, clickGesture, Clicked);
             UpdateGesture(panDragAction, panGesture, null);
 
@@ -114,9 +143,6 @@ namespace DarkFantasyMerchant.Game
                 Commanded?.Invoke(PointerPosition);
             }
 
-            // Scroll magnitude differs between devices and platforms; only its direction is used.
-            float scroll = zoomAction.ReadValue<Vector2>().y;
-
             if (scroll != 0f && !IsPointerOverUi)
             {
                 Zoomed?.Invoke(Mathf.Sign(scroll), PointerPosition);
@@ -126,6 +152,47 @@ namespace DarkFantasyMerchant.Game
             {
                 Cancelled?.Invoke();
             }
+        }
+
+        /// <summary>
+        /// For a listener of <see cref="AnyInput"/> that used the input up: nothing else is
+        /// raised this frame and no gesture starts, so the release of the button that was
+        /// just pressed is not a click.
+        /// </summary>
+        public void ConsumeInput()
+        {
+            inputConsumed = true;
+            MoveAxis = Vector2.zero;
+            CancelGestures();
+        }
+
+        /// <summary>Drops the click and the drag in progress.</summary>
+        public void CancelGestures()
+        {
+            clickGesture?.Cancel();
+            panGesture?.Cancel();
+        }
+
+        // Not the keyboard's "any key" control: it stays pressed while one key is held,
+        // and would miss a second key pressed meanwhile.
+        private static bool WasAnyKeyPressedThisFrame()
+        {
+            Keyboard keyboard = Keyboard.current;
+
+            if (keyboard == null)
+            {
+                return false;
+            }
+
+            foreach (KeyControl key in keyboard.allKeys)
+            {
+                if (key != null && key.wasPressedThisFrame)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void UpdateGesture(InputAction button, PointerGesture gesture, Action<Vector2> clicked)
@@ -146,12 +213,6 @@ namespace DarkFantasyMerchant.Game
             {
                 clicked?.Invoke(PointerPosition);
             }
-        }
-
-        private void CancelGestures()
-        {
-            clickGesture?.Cancel();
-            panGesture?.Cancel();
         }
     }
 }
