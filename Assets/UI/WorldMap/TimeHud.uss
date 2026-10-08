@@ -1,0 +1,44 @@
+.time-hud {
+    position: absolute;
+    top: 16px;
+    left: 0;
+    right: 0;
+    align-items: center;
+}
+
+.time-hud__date {
+    padding: 4px 18px;
+    color: rgb(240, 226, 196);
+    background-color: rgba(24, 17, 12, 0.94);
+    border-width: 2px;
+    border-color: rgb(110, 84, 52);
+    font-size: 22px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.time-hud__button {
+    margin: 6px 0 0 0;
+    padding: 4px 14px;
+    color: rgb(222, 210, 188);
+    background-color: rgba(60, 44, 30, 0.9);
+    border-width: 1px;
+    border-radius: 0;
+    border-color: rgb(110, 84, 52);
+    font-size: 15px;
+}
+
+.time-hud__button:hover {
+    background-color: rgb(84, 62, 40);
+}
+
+.time-hud__button:active {
+    background-color: rgb(110, 84, 52);
+}
+
+.time-hud__button--active,
+.time-hud__button--active:hover {
+    color: rgb(24, 17, 12);
+    background-color: rgb(255, 140, 51);
+    border-color: rgb(240, 226, 196);
+}

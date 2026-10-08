@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="TimeHud.uss" />
+    <ui:VisualElement name="time-hud" picking-mode="Ignore" class="time-hud">
+        <ui:Label name="date-label" picking-mode="Ignore" class="time-hud__date" />
+        <ui:Button name="fast-forward-button" text="Fast forward" class="time-hud__button" />
+    </ui:VisualElement>
+</ui:UXML>

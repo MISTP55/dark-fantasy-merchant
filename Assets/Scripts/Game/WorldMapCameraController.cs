@@ -6,6 +6,7 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// Feeds input to a <see cref="MapCameraModel"/> and shows its state on the camera,
     /// eased by a <see cref="MapCameraSmoother"/>. Holds no clamping, zoom or easing math of its own.
+    /// During fast forward it shows the whole map and ignores the input.
     /// </summary>
     [RequireComponent(typeof(Camera))]
     public sealed class WorldMapCameraController : MonoBehaviour
@@ -14,6 +15,9 @@ namespace DarkFantasyMerchant.Game
 
         [SerializeField] private WorldMapView mapView;
         [SerializeField] private WorldMapInput input;
+
+        [Tooltip("Optional. With it, the view shows the whole map and is locked during fast forward.")]
+        [SerializeField] private WorldClock worldClock;
 
         [Tooltip("Orthographic size multiplier for one scroll step towards the map.")]
         [SerializeField, Range(0.5f, 0.99f)] private float zoomStepFactor = 0.85f;
@@ -30,6 +34,12 @@ namespace DarkFantasyMerchant.Game
         private MapCameraModel model;
         private MapCameraSmoother smoother;
         private float appliedAspect;
+
+        // The view to return to after fast forward, during which the camera is locked.
+        private GameClock clock;
+        private bool isLocked;
+        private Vector2 viewBeforeLockPosition;
+        private float viewBeforeLockSize;
 
         public bool IsReady => model != null;
 
@@ -65,6 +75,14 @@ namespace DarkFantasyMerchant.Game
 
             input.Dragged += OnDragged;
             input.Zoomed += OnZoomed;
+
+            if (worldClock != null && worldClock.IsReady)
+            {
+                clock = worldClock.Clock;
+                clock.FastForwardChanged += OnFastForwardChanged;
+                OnFastForwardChanged(clock.IsFastForward);
+            }
+
             Apply();
         }
 
@@ -74,6 +92,11 @@ namespace DarkFantasyMerchant.Game
             {
                 input.Dragged -= OnDragged;
                 input.Zoomed -= OnZoomed;
+            }
+
+            if (clock != null)
+            {
+                clock.FastForwardChanged -= OnFastForwardChanged;
             }
         }
 
@@ -92,13 +115,19 @@ namespace DarkFantasyMerchant.Game
                 model.SetAspect(aspect);
                 appliedAspect = aspect;
 
+                // A locked view shows the whole map, whatever the window's shape.
+                if (isLocked)
+                {
+                    model.ZoomOutFully();
+                }
+
                 // A resized view must fit the map at once, not ease into it.
                 smoother.SnapTo(model.Position, model.OrthographicSize);
             }
 
             Vector2 move = input.MoveAxis;
 
-            if (move != Vector2.zero)
+            if (move != Vector2.zero && !isLocked)
             {
                 float unitsPerSecond = keyboardPanSpeed * 2f * model.OrthographicSize;
                 model.Pan(move * (unitsPerSecond * Time.unscaledDeltaTime));
@@ -116,7 +145,7 @@ namespace DarkFantasyMerchant.Game
 
         private void OnDragged(Vector2 screenDelta)
         {
-            if (model == null || Screen.height <= 0)
+            if (model == null || isLocked || Screen.height <= 0)
             {
                 return;
             }
@@ -127,7 +156,7 @@ namespace DarkFantasyMerchant.Game
 
         private void OnZoomed(float step, Vector2 screenPosition)
         {
-            if (model == null || Screen.height <= 0)
+            if (model == null || isLocked || Screen.height <= 0)
             {
                 return;
             }
@@ -136,6 +165,24 @@ namespace DarkFantasyMerchant.Game
             // several quick scroll steps keep zooming on the same point.
             Vector2 anchor = model.ViewportToWorld(mapCamera.ScreenToViewportPoint(screenPosition));
             model.Zoom(Mathf.Pow(zoomStepFactor, step), anchor);
+        }
+
+        // Both ways are eased by the smoother, like any other move of the camera.
+        private void OnFastForwardChanged(bool isFastForward)
+        {
+            if (isFastForward && !isLocked)
+            {
+                viewBeforeLockPosition = model.Position;
+                viewBeforeLockSize = model.OrthographicSize;
+                model.ZoomOutFully();
+                isLocked = true;
+            }
+            else if (!isFastForward && isLocked)
+            {
+                // Clamped: the window may have been resized meanwhile.
+                model.SetView(viewBeforeLockPosition, viewBeforeLockSize);
+                isLocked = false;
+            }
         }
 
         private void Apply()

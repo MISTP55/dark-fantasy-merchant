@@ -8,6 +8,8 @@ namespace DarkFantasyMerchant.Game
     /// Turns the cursor and clicks into hover and selection of ships and cities, and
     /// right clicks into move orders. At most one thing is hovered, and one selected,
     /// except that a ship in port is selected together with the city it lies in.
+    /// During fast forward nothing is hovered, selected or ordered, and any input goes
+    /// back to normal speed.
     /// </summary>
     public sealed class WorldMapInteraction : MonoBehaviour
     {
@@ -18,6 +20,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Optional. Without it, only cities can be hovered and selected.")]
         [SerializeField] private ShipsView shipsView;
 
+        [Tooltip("Optional. With it, nothing can be hovered, selected or ordered during fast forward, and any input ends it.")]
+        [SerializeField] private WorldClock worldClock;
+
         [Tooltip("How close to a city the cursor must be, in screen pixels, at any zoom level.")]
         [SerializeField, Min(0f)] private float pickRadiusPixels = 20f;
 
@@ -25,6 +30,9 @@ namespace DarkFantasyMerchant.Game
         [SerializeField, Min(0f)] private float shipPickRadiusPixels = 24f;
 
         private bool isBound;
+        private GameClock clock;
+
+        private bool IsFastForward => clock != null && clock.IsFastForward;
 
         private void Start()
         {
@@ -39,6 +47,14 @@ namespace DarkFantasyMerchant.Game
             input.Commanded += OnCommanded;
             input.Cancelled += OnCancelled;
             mapView.Selection.SelectedChanged += OnCitySelected;
+
+            if (worldClock != null && worldClock.IsReady)
+            {
+                clock = worldClock.Clock;
+                clock.FastForwardChanged += OnFastForwardChanged;
+                input.AnyInput += OnAnyInput;
+            }
+
             isBound = true;
         }
 
@@ -54,11 +70,17 @@ namespace DarkFantasyMerchant.Game
                 input.Clicked -= OnClicked;
                 input.Commanded -= OnCommanded;
                 input.Cancelled -= OnCancelled;
+                input.AnyInput -= OnAnyInput;
             }
 
             if (mapView != null)
             {
                 mapView.Selection.SelectedChanged -= OnCitySelected;
+            }
+
+            if (clock != null)
+            {
+                clock.FastForwardChanged -= OnFastForwardChanged;
             }
         }
 
@@ -69,7 +91,8 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            bool pointerIsBusy = input.IsPointerOverUi || input.IsDragging;
+            // Nothing is hovered during fast forward: the map is only watched.
+            bool pointerIsBusy = input.IsPointerOverUi || input.IsDragging || IsFastForward;
 
             // A ship hides the city it sails over.
             Ship ship = pointerIsBusy ? null : PickShip(input.PointerPosition);
@@ -100,7 +123,7 @@ namespace DarkFantasyMerchant.Game
 
         private void OnClicked(Vector2 screenPosition)
         {
-            if (!CanPick())
+            if (!CanPick() || IsFastForward)
             {
                 return;
             }
@@ -130,7 +153,7 @@ namespace DarkFantasyMerchant.Game
 
         private void OnCommanded(Vector2 screenPosition)
         {
-            if (!CanPick() || !HasShips())
+            if (!CanPick() || !HasShips() || IsFastForward)
             {
                 return;
             }
@@ -189,8 +212,46 @@ namespace DarkFantasyMerchant.Game
 
         private void OnCancelled()
         {
+            if (IsFastForward)
+            {
+                return;
+            }
+
             mapView.Selection.ClearSelection();
             ClearShipSelection();
+        }
+
+        // The map is only watched during fast forward: nothing stays hovered or selected,
+        // and a click that was started before it is dropped.
+        private void OnFastForwardChanged(bool isFastForward)
+        {
+            if (!isFastForward)
+            {
+                return;
+            }
+
+            input.CancelGestures();
+            mapView.Selection.SetHovered(null);
+            mapView.Selection.ClearSelection();
+
+            if (shipsView != null)
+            {
+                shipsView.Selection.SetHovered(null);
+                shipsView.Selection.ClearSelection();
+            }
+        }
+
+        // Any input ends the fast forward, and does nothing else: a click on a city only
+        // goes back to normal speed.
+        private void OnAnyInput()
+        {
+            if (!IsFastForward)
+            {
+                return;
+            }
+
+            clock.SetFastForward(false);
+            input.ConsumeInput();
         }
 
         private void ClearShipSelection()

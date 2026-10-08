@@ -29,6 +29,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Optional. Shows the route of the selected ship.")]
         [SerializeField] private ShipRouteView routeView;
 
+        [Tooltip("Optional. Without it, ships sail in real time.")]
+        [SerializeField] private WorldClock worldClock;
+
         private readonly List<Ship> ships = new List<Ship>();
         private readonly List<Vector2> shipWorldPositions = new List<Vector2>();
         private readonly List<ShipView> views = new List<ShipView>();
@@ -105,9 +108,12 @@ namespace DarkFantasyMerchant.Game
 
         private void Update()
         {
+            // The world's time: ships sail faster in fast forward.
+            float deltaTime = worldClock != null && worldClock.IsReady ? worldClock.Clock.DeltaTime : Time.deltaTime;
+
             foreach (Ship ship in ships)
             {
-                ship.Advance(Time.deltaTime);
+                ship.Advance(deltaTime);
             }
 
             Docking.Update();
