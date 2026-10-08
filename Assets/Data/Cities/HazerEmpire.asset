@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
   displayName: Hazer Empire
   description: The imperial seat guarding the strait, its customs houses taxing every hull bound for the desert coast.
-  mapPosition: {x: 0.586, y: 0.627}
+  mapPosition: {x: 0.58361024, y: 0.625956}
   access: 0
   size: 2
