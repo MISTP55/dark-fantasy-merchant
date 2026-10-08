@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: MerchantShip
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.ShipDefinition
   displayName: Merchant Ship
-  speed: 1.5
+  speed: 0.07
   directionSprites:
   - {fileID: 1857714450, guid: f6306e7a7c04e4f4998be967f31e1f4d, type: 3}
   - {fileID: -1966677907, guid: f6306e7a7c04e4f4998be967f31e1f4d, type: 3}
