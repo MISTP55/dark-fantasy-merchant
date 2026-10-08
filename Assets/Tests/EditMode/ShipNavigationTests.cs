@@ -34,7 +34,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
         private Ship CreateShip()
         {
-            return new Ship(projection, Cell(1, 0), Speed, navigation);
+            return new Ship(projection, Cell(1, 0), Speed, TestCrew.Full, navigation);
         }
 
         [Test]
@@ -42,7 +42,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             Vector2 position = GridAssert.CellPoint(grid, 1.2f, 0.7f);
 
-            var ship = new Ship(projection, position, Speed, navigation);
+            var ship = new Ship(projection, position, Speed, TestCrew.Full, navigation);
 
             TestAssert.AreEqual(position, ship.Position);
             Assert.IsFalse(ship.IsMoving);
@@ -52,7 +52,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AShipCreatedOnLand_StartsOnTheNearestWater()
         {
             // In the wall, nearer its west side.
-            var ship = new Ship(projection, GridAssert.CellPoint(grid, 3.2f, 1.5f), Speed, navigation);
+            var ship = new Ship(projection, GridAssert.CellPoint(grid, 3.2f, 1.5f), Speed, TestCrew.Full, navigation);
 
             TestAssert.AreEqual(Cell(2, 1), ship.Position);
             Assert.IsFalse(ship.IsMoving);
@@ -61,7 +61,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AShipCreatedOutsideTheMap_IsClampedBeforeLookingForWater()
         {
-            var ship = new Ship(projection, new Vector2(-3f, 0.1f), Speed, navigation);
+            var ship = new Ship(projection, new Vector2(-3f, 0.1f), Speed, TestCrew.Full, navigation);
 
             TestAssert.AreEqual(new Vector2(0f, 0.1f), ship.Position);
         }
@@ -383,7 +383,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AnchorageAt_WithoutAPathfinder_IsThePointClampedToTheMap()
         {
-            var ship = new Ship(projection, new Vector2(0.5f, 0.5f), Speed);
+            var ship = new Ship(projection, new Vector2(0.5f, 0.5f), Speed, TestCrew.Full);
 
             TestAssert.AreEqual(new Vector2(1f, 0.25f), ship.AnchorageAt(new Vector2(1.5f, 0.25f)));
         }
@@ -392,7 +392,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void OnAGridWithoutWater_TheShipStaysWhereItIs_AndIgnoresOrders()
         {
             var noWater = new NavigationPathfinder(new NavigationGrid(8, 4));
-            var ship = new Ship(projection, new Vector2(0.3f, 0.4f), Speed, noWater);
+            var ship = new Ship(projection, new Vector2(0.3f, 0.4f), Speed, TestCrew.Full, noWater);
 
             Assert.IsFalse(ship.SetDestination(new Vector2(0.8f, 0.8f)));
             ship.Advance(1f);

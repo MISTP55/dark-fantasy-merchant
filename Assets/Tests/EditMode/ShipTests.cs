@@ -22,7 +22,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
         private Ship CreateShip()
         {
-            return new Ship(projection, Center, Speed);
+            return new Ship(projection, Center, Speed, TestCrew.Full);
         }
 
         [Test]
@@ -40,7 +40,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void Constructor_RejectsANullProjection()
         {
-            Assert.Throws<ArgumentNullException>(() => new Ship(null, Center, Speed));
+            Assert.Throws<ArgumentNullException>(() => new Ship(null, Center, Speed, TestCrew.Full));
         }
 
         [TestCase(0f)]
@@ -49,20 +49,74 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase(float.PositiveInfinity)]
         public void Constructor_RejectsAnInvalidSpeed(float speed)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Ship(projection, Center, speed));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Ship(projection, Center, speed, TestCrew.Full));
+        }
+
+        [Test]
+        public void Constructor_RejectsANullCrew()
+        {
+            Assert.Throws<ArgumentNullException>(() => new Ship(projection, Center, Speed, null));
+        }
+
+        [Test]
+        public void Crew_IsTheOneTheShipWasGiven()
+        {
+            var crew = new ShipCrew(28, 12);
+
+            Assert.AreSame(crew, new Ship(projection, Center, Speed, crew).Crew);
+        }
+
+        [Test]
+        public void Advance_IsSlowedByAShortCrew()
+        {
+            // 30 sailors of 100: three quarters of the speed.
+            var ship = new Ship(projection, Center, Speed, new ShipCrew(100, 30));
+            ship.SetDestination(new Vector2(1f, 0.5f));
+
+            ship.Advance(1f);
+
+            TestAssert.AreEqual(new Vector2(3f, 0f), ship.WorldPosition);
+        }
+
+        [Test]
+        public void Advance_IsAtHalfSpeed_WithATenthOfTheCrew()
+        {
+            var ship = new Ship(projection, Center, Speed, new ShipCrew(100, 10));
+            ship.SetDestination(new Vector2(1f, 0.5f));
+
+            ship.Advance(1f);
+
+            TestAssert.AreEqual(new Vector2(2f, 0f), ship.WorldPosition);
+        }
+
+        [Test]
+        public void Advance_DoesNotMoveAShipWithoutASailor_WhichKeepsItsRoute()
+        {
+            var ship = new Ship(projection, Center, Speed, new ShipCrew(28, 0));
+            var destination = new Vector2(1f, 0.5f);
+            ship.SetDestination(destination);
+
+            ship.Advance(float.PositiveInfinity);
+            ship.Advance(1f);
+
+            Assert.AreEqual(Center, ship.Position);
+            Assert.IsTrue(ship.IsMoving);
+            Assert.AreEqual(destination, ship.Destination.Value);
+            Assert.AreEqual(1, ship.SailedWaypoints.Count);
+            Assert.AreEqual(1, ship.RemainingWaypoints.Count);
         }
 
         [Test]
         public void Constructor_RejectsANaNPosition()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new Ship(projection, new Vector2(float.NaN, 0.5f), Speed));
+                () => new Ship(projection, new Vector2(float.NaN, 0.5f), Speed, TestCrew.Full));
         }
 
         [Test]
         public void Constructor_ClampsThePositionToTheMap()
         {
-            var ship = new Ship(projection, new Vector2(-1f, 3f), Speed);
+            var ship = new Ship(projection, new Vector2(-1f, 3f), Speed, TestCrew.Full);
 
             TestAssert.AreEqual(new Vector2(0f, 1f), ship.Position);
         }

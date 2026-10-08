@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: PlayerStart
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.PlayerStartDefinition
   startingGold: 10000
+  startingCrew: 12

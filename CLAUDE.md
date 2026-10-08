@@ -11,7 +11,7 @@ Dark Fantasy Merchant is a maritime trade management and simulation game. The pl
 
 ## Project state
 
-Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The world map is the first subsystem, the player has one ship that sails on it over the navigable areas painted on the map and can lie in the port of a city, the world has a date that passes, with a fast forward, and the player has a treasury of gold; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
+Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The world map is the first subsystem, the player has one ship that sails on it over the navigable areas painted on the map and can lie in the port of a city, the ship has a crew of sailors that sets its speed, the world has a date that passes, with a fast forward, and the player has a treasury of gold; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
 
 ## Architecture
 
@@ -36,11 +36,11 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 - `MapCameraModel` is where input has sent the camera (the target); `MapCameraSmoother` is what is displayed, eased towards the target. Position and size share one easing factor on purpose: that keeps the zoom anchor fixed during the transition, so do not split it into separate pan and zoom settings. Hover, picking and marker size follow the displayed view.
 - Camera clamping and zoom math are in `MapCameraModel`; picking is `CityPicker` (nearest city within a screen-pixel radius, no colliders).
 - Cities are placed by dragging their handles in the Scene view (`CityPlacementTool`). It and the navigation mask tool find the map to work on through `WorldMapEditorContext`.
-- `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates the scene, the marker, ship and ship route prefabs, the panel settings, the map definition, the ship definition, the calendar or the player start when one is missing, and leaves existing ones untouched. The exceptions are the `Ships` object with the `ShipRoute` object under it, the `World Clock`, `Time HUD`, `Player Treasury` and `Treasury HUD` objects: they are also added to an existing scene that has none, as are the empty references to them (`shipsView` of `WorldMapInteraction` and `CityInfoPanelController`, `routeView` of `ShipsView`, `worldClock` of `ShipsView`, `WorldMapInteraction` and `WorldMapCameraController`, `playerTreasury` of `TreasuryHudController`), and that scene is saved unless it already had unsaved changes. The tool offers to save the open scene first, and adds `WorldMap.unity` to the build list without removing other scenes. Sample cities are only recreated together with a missing map definition.
+- `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates the scene, the marker, ship and ship route prefabs, the panel settings, the map definition, the ship definition, the calendar or the player start when one is missing, and leaves existing ones untouched. The exceptions are the `Ships` object with the `ShipRoute` object under it, the `World Clock`, `Time HUD`, `Player Treasury` and `Treasury HUD` objects: they are also added to an existing scene that has none, as are the empty references to them (`shipsView` of `WorldMapInteraction` and `CityInfoPanelController`, `routeView` and `playerStart` of `ShipsView`, `worldClock` of `ShipsView`, `WorldMapInteraction` and `WorldMapCameraController`, `playerTreasury` of `TreasuryHudController`), and that scene is saved unless it already had unsaved changes. The tool offers to save the open scene first, and adds `WorldMap.unity` to the build list without removing other scenes. Sample cities are only recreated together with a missing map definition.
 
 ### Ships
 
-- `Ship` (Core) is the runtime state of one ship: normalized position, destination, heading. `ShipDefinition` (Game) is its static definition: name, speed in world units per second, and eight sprites indexed by `CompassDirection` (`N, NE, E, SE, S, SW, W, NW`, the order of the sprite sheets).
+- `Ship` (Core) is the runtime state of one ship: normalized position, destination, heading. `ShipDefinition` (Game) is its static definition: name, speed in world units per second, crew capacity (see Crew), and eight sprites indexed by `CompassDirection` (`N, NE, E, SE, S, SW, W, NW`, the order of the sprite sheets).
 - A ship follows a route: a list of waypoints, exposed as `RemainingWaypoints`, with `Destination` the last one. `SetDestination` asks the ship's `NavigationPathfinder` for the route, so the ship sails over water only; without a pathfinder (a map with no mask) the route is one straight leg. What is left of a step after a waypoint is spent on the next leg, so the speed is constant through turns.
 - Steps are measured in world space through `MapProjection`, not in normalized space, so the speed is the same in every direction on a map that is not square.
 - A ship is created on the water nearest to the position it is given: cities are on land, so the player ship starts beside its start city, not on it.
@@ -49,6 +49,13 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 - Ships keep a constant on-screen size, like city markers, and are picked with `CityPicker` on their current world positions.
 - The route of the selected ship is drawn on the map while it is under way (`ShipRouteView`, driven by `ShipsView`): a solid line over what it has sailed, a dashed one over what is left, and a marker where the route ends, unless the route enters a city's port. `Ship.SailedWaypoints` is what the solid line follows: where the ship was when it was ordered, then the waypoints it reached. Every order the ship takes starts it again and it is empty when idle, so an idle ship, or one in port, has no route to show.
 - The two lines are `LineRenderer`s with an unlit sprite material, drawn above the map and below the city markers, with widths and dashes in screen pixels. The dashes are a repeated two-pixel texture laid out from the destination, not from the ship (the dashed line's points run from the destination back to the ship), so they do not slide while it sails (they do rescale around the destination when zooming).
+
+### Crew
+
+- `ShipCrew` (Core) is the sailors aboard one ship (`Count`) out of those it has room for (`Capacity`); `Ship.Crew` holds it. Nothing changes a crew yet: sailors will be hired in cities.
+- The crew sets the share of its speed a ship sails at (`SpeedFactor`), from the occupancy (`Count / Capacity`): half speed up to 10 % of the capacity, then rising in a straight line to full speed at 50 %. More sailors do not make it faster. A ship without a sailor does not move and keeps its route: it stays under way, so it never enters the port it was ordered to, and a fast forward that awaits it ends only on input. `Ship.Advance` reads the factor on every step, and `ShipDefinition.Speed` is the speed at a factor of 1.
+- `ShipDefinition.crewCapacity` is the capacity of a kind of ship (28 for the merchant ship); `PlayerStartDefinition.startingCrew` (12) is what the player ship starts with, cut down to the capacity with a warning when it exceeds it (`ShipsView` also warns of a start without a sailor). `ShipsView` reads it through its `playerStart` reference, which is optional: without it the ship starts with a full crew.
+- The crew is not shown anywhere yet.
 
 ### Ports
 
@@ -87,7 +94,7 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 ### Treasury
 
 - `Treasury` (Core) is the player's gold, in whole coins. It can be negative: the player is then in debt (`IsInDebt`). `Withdraw` always takes the amount and is for what is paid whatever the gold left (wages); `TryWithdraw` takes it only when `CanAfford` and is for what a lack of gold must block (buying goods). `Changed` is raised with the new gold, only on an actual change. Nothing deposits or withdraws yet.
-- `PlayerStartDefinition` (Game, `Assets/Data/Player/PlayerStart.asset`) holds the starting gold (10000). `PlayerTreasury` owns the treasury and creates it in `Awake`, before the components that read it (execution order -100, like `WorldClock`).
+- `PlayerStartDefinition` (Game, `Assets/Data/Player/PlayerStart.asset`) holds the starting gold (10000) and the starting crew of the player ship (see Crew). `PlayerTreasury` owns the treasury and creates it in `Awake`, before the components that read it (execution order -100, like `WorldClock`).
 - `TreasuryHudController` shows the gold at the top right of the screen (`Assets/UI/WorldMap/TreasuryHud.uxml`, "10,000 gold", in red when in debt), in a third `UIDocument` on the same `PanelSettings`. Its label ignores the pointer, so the map under it stays reachable, and is rewritten on `Changed`, not every frame.
 
 ## Conventions

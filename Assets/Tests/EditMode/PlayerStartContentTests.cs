@@ -17,5 +17,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(10000, playerStart.CreateTreasury().Gold);
         }
+
+        [Test]
+        public void ThePlayerShip_StartsWithTwelveSailors()
+        {
+            var playerStart = AssetDatabase.LoadAssetAtPath<PlayerStartDefinition>(PlayerStartPath);
+            Assert.IsNotNull(playerStart, PlayerStartPath);
+
+            Assert.AreEqual(12, playerStart.StartingCrew);
+        }
     }
 }

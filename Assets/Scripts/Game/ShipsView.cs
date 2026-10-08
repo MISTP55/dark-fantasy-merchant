@@ -23,6 +23,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("City the player ship starts on. Empty uses the first city of the map.")]
         [SerializeField] private CityDefinition startCity;
 
+        [Tooltip("Optional. Without it, the player ship starts with a full crew.")]
+        [SerializeField] private PlayerStartDefinition playerStart;
+
         [Tooltip("On-screen size, in pixels, of one world unit of ship sprite.")]
         [SerializeField] private float shipScreenPixelsPerUnit = 32f;
 
@@ -90,8 +93,19 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
+            int crewCapacity = playerShipDefinition.CrewCapacity;
+
+            if (crewCapacity < 1)
+            {
+                Debug.LogError(
+                    $"ShipDefinition '{playerShipDefinition.name}' has an invalid crew capacity ({crewCapacity}).",
+                    playerShipDefinition);
+                enabled = false;
+                return;
+            }
+
             navigation = CreateNavigation();
-            Spawn(playerShipDefinition, StartPosition());
+            Spawn(playerShipDefinition, StartPosition(), CreatePlayerCrew(crewCapacity));
             Selection.HoveredChanged += OnHoveredChanged;
             Selection.SelectedChanged += OnSelectedChanged;
             Docking.Docked += OnDocked;
@@ -200,7 +214,33 @@ namespace DarkFantasyMerchant.Game
             return pathfinder;
         }
 
-        private void Spawn(ShipDefinition definition, Vector2 position)
+        private ShipCrew CreatePlayerCrew(int capacity)
+        {
+            if (playerStart == null)
+            {
+                return new ShipCrew(capacity, capacity);
+            }
+
+            if (playerStart.StartingCrew > capacity)
+            {
+                Debug.LogWarning(
+                    $"PlayerStartDefinition '{playerStart.name}' starts with {playerStart.StartingCrew} sailors; "
+                    + $"the player ship only has room for {capacity}.",
+                    playerStart);
+            }
+
+            // Nothing hires sailors yet: a ship that starts without one never sails.
+            if (playerStart.StartingCrew < 1)
+            {
+                Debug.LogWarning(
+                    $"PlayerStartDefinition '{playerStart.name}' starts with no sailor; the player ship cannot sail.",
+                    playerStart);
+            }
+
+            return playerStart.CreateShipCrew(capacity);
+        }
+
+        private void Spawn(ShipDefinition definition, Vector2 position, ShipCrew crew)
         {
             // A NaN city position would be rejected by the ship.
             if (float.IsNaN(position.x) || float.IsNaN(position.y))
@@ -209,7 +249,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             // With a pathfinder, a ship that starts on a city starts on the water beside it.
-            var ship = new Ship(mapView.Projection, position, definition.Speed, navigation);
+            var ship = new Ship(mapView.Projection, position, definition.Speed, crew, navigation);
             ShipView view = Instantiate(shipPrefab, transform);
             view.Initialize(ship, definition);
 

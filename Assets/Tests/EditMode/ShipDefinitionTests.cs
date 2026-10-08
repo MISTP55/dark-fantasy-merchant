@@ -47,6 +47,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void NewDefinition_HasRoomForACrew()
+        {
+            Assert.Greater(definition.CrewCapacity, 0);
+        }
+
+        [Test]
         public void SpriteFor_ReturnsTheSpriteOfEachDirection()
         {
             SetSprites(sprites.Length);

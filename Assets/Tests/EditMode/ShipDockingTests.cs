@@ -45,7 +45,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
         private Ship CreateShip()
         {
-            return new Ship(projection, Cell(1, 0), Speed, navigation);
+            return new Ship(projection, Cell(1, 0), Speed, TestCrew.Full, navigation);
         }
 
         private Ship CreateDockedShip()
@@ -98,6 +98,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsNull(docking.DestinationPortOf(ship));
             CollectionAssert.AreEqual(new[] { ship }, ShipsIn(port));
             CollectionAssert.AreEqual(new[] { "docked" }, events);
+        }
+
+        [Test]
+        public void AShipWithoutASailor_OrderedToAPort_DoesNotEnterIt()
+        {
+            var ship = new Ship(projection, Cell(1, 0), Speed, new ShipCrew(28, 0), navigation);
+
+            bool accepted = docking.OrderToPort(ship, port, Cell(5, 0));
+            ship.Advance(100f);
+            docking.Update();
+
+            Assert.IsTrue(accepted);
+            Assert.IsFalse(docking.IsDocked(ship));
+            Assert.AreSame(port, docking.DestinationPortOf(ship));
+            Assert.IsEmpty(events);
         }
 
         [Test]
@@ -212,8 +227,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AShipOrderedAwayByAListener_WhileAnotherDocks_StaysAtSea()
         {
-            var first = new Ship(projection, Cell(4, 0), Speed, navigation);
-            var second = new Ship(projection, Cell(6, 3), Speed, navigation);
+            var first = new Ship(projection, Cell(4, 0), Speed, TestCrew.Full, navigation);
+            var second = new Ship(projection, Cell(6, 3), Speed, TestCrew.Full, navigation);
             docking.OrderToPort(first, port, Cell(5, 0));
             docking.OrderToPort(second, port, Cell(5, 0));
             first.Advance(100f);
@@ -312,8 +327,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void ShipsInAPort_AreListedInOrderOfArrival()
         {
             Ship first = CreateDockedShip();
-            var far = new Ship(projection, Cell(0, 3), Speed, navigation);
-            var near = new Ship(projection, Cell(4, 0), Speed, navigation);
+            var far = new Ship(projection, Cell(0, 3), Speed, TestCrew.Full, navigation);
+            var near = new Ship(projection, Cell(4, 0), Speed, TestCrew.Full, navigation);
             docking.OrderToPort(far, port, Cell(5, 0));
             docking.OrderToPort(near, port, Cell(5, 0));
 
@@ -329,7 +344,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void WithoutAPathfinder_AShipEntersAPortAtItsPosition()
         {
-            var ship = new Ship(projection, new Vector2(0.1f, 0.5f), Speed);
+            var ship = new Ship(projection, new Vector2(0.1f, 0.5f), Speed, TestCrew.Full);
 
             Assert.IsTrue(docking.OrderToPort(ship, port, new Vector2(0.4f, 0.5f)));
 

@@ -11,8 +11,11 @@ namespace DarkFantasyMerchant.Game
 
         [SerializeField] private string displayName;
 
-        [Tooltip("Sailing speed, in world units per second.")]
+        [Tooltip("Sailing speed, in world units per second, with a crew of half the capacity or more.")]
         [SerializeField, Min(0.01f)] private float speed = 1.5f;
+
+        [Tooltip("Sailors the ship has room for.")]
+        [SerializeField, Min(1)] private int crewCapacity = 10;
 
         [Tooltip("One sprite per heading, clockwise from north: N, NE, E, SE, S, SW, W, NW.")]
         [SerializeField] private Sprite[] directionSprites = new Sprite[DirectionCount];
@@ -20,6 +23,8 @@ namespace DarkFantasyMerchant.Game
         public string DisplayName => displayName;
 
         public float Speed => speed;
+
+        public int CrewCapacity => crewCapacity;
 
         /// <returns>The sprite for a heading, or null when none is assigned.</returns>
         public Sprite SpriteFor(CompassDirection direction)

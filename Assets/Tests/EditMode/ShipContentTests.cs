@@ -40,6 +40,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void MerchantShip_HasRoomForTwentyEightSailors()
+        {
+            var definition = AssetDatabase.LoadAssetAtPath<ShipDefinition>(DefinitionPath);
+            Assert.IsNotNull(definition, DefinitionPath);
+
+            Assert.AreEqual(28, definition.CrewCapacity);
+        }
+
+        [Test]
         public void ShipPrefab_DrawsAboveCityMarkers()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<ShipView>(PrefabPath);

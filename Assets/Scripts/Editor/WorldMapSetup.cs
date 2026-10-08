@@ -57,6 +57,7 @@ namespace DarkFantasyMerchant.Editor
         private const string UnlitSpriteShaderName = "Universal Render Pipeline/2D/Sprite-Unlit-Default";
 
         private const float MerchantShipSpeed = 1.5f;
+        private const int MerchantShipCrewCapacity = 28;
         private const int ShipSortingOrder = 20;
 
         // Above the map, below the city markers.
@@ -374,6 +375,7 @@ namespace DarkFantasyMerchant.Editor
             var serialized = new SerializedObject(definition);
             serialized.FindProperty("displayName").stringValue = "Merchant Ship";
             serialized.FindProperty("speed").floatValue = MerchantShipSpeed;
+            serialized.FindProperty("crewCapacity").intValue = MerchantShipCrewCapacity;
 
             SerializedProperty sprites = serialized.FindProperty("directionSprites");
             sprites.arraySize = directionNames.Length;
@@ -715,6 +717,21 @@ namespace DarkFantasyMerchant.Editor
                 changed = true;
             }
 
+            // The player ship takes its starting crew from the player start, also in a
+            // scene built before ships had a crew.
+            if (IsReferenceEmpty(shipsView, "playerStart"))
+            {
+                var playerStart = AssetDatabase.LoadAssetAtPath<PlayerStartDefinition>(PlayerStartPath);
+
+                if (playerStart == null)
+                {
+                    throw new FileNotFoundException("The player start could not be loaded.", PlayerStartPath);
+                }
+
+                SetReference(shipsView, "playerStart", playerStart);
+                changed = true;
+            }
+
             var interaction = FindInScene<WorldMapInteraction>(scene);
 
             if (interaction != null && IsReferenceEmpty(interaction, "shipsView"))
@@ -734,7 +751,7 @@ namespace DarkFantasyMerchant.Editor
 
             if (changed)
             {
-                SaveSceneChanges(scene, sceneHadUnsavedChanges, "Ships or their route");
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "Ships, their route or their starting crew");
             }
         }
 

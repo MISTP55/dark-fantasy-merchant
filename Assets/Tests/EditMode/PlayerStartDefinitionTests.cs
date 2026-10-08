@@ -26,6 +26,32 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void ANewDefinition_IsTheGamesStart()
         {
             Assert.AreEqual(10000, playerStart.StartingGold);
+            Assert.AreEqual(12, playerStart.StartingCrew);
+        }
+
+        [Test]
+        public void CreateShipCrew_StartsWithTheStartingCrew_InAShipOfTheGivenCapacity()
+        {
+            ShipCrew crew = playerStart.CreateShipCrew(28);
+
+            Assert.AreEqual(12, crew.Count);
+            Assert.AreEqual(28, crew.Capacity);
+        }
+
+        [Test]
+        public void CreateShipCrew_LeavesAshoreTheSailorsTheShipHasNoRoomFor()
+        {
+            Assert.AreEqual(8, playerStart.CreateShipCrew(8).Count);
+        }
+
+        [Test]
+        public void CreateShipCrew_TakesANegativeStartingCrewAsNone()
+        {
+            var serialized = new SerializedObject(playerStart);
+            serialized.FindProperty("startingCrew").intValue = -3;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.AreEqual(0, playerStart.CreateShipCrew(28).Count);
         }
 
         [Test]

@@ -6,8 +6,8 @@ namespace DarkFantasyMerchant.Core
 {
     /// <summary>
     /// Runtime state of one ship: where it is, the route it follows and which way it
-    /// faces. Sails at constant speed: over water only when it was given a pathfinder,
-    /// otherwise in a straight line.
+    /// faces. Sails at constant speed, the share of its own that its crew allows: over
+    /// water only when it was given a pathfinder, otherwise in a straight line.
     /// </summary>
     public sealed class Ship
     {
@@ -28,12 +28,18 @@ namespace DarkFantasyMerchant.Core
         /// Normalized map position; clamped to the map, then moved to the nearest water
         /// when the ship has a pathfinder.
         /// </param>
-        /// <param name="speed">World units per second.</param>
+        /// <param name="speed">World units per second, with a crew that sails it at full speed.</param>
+        /// <param name="crew">The sailors aboard; the ship does not move without one.</param>
         /// <param name="navigation">
         /// Where the ship can sail. Null for a map without a navigation mask: the ship
         /// then sails in a straight line.
         /// </param>
-        public Ship(MapProjection projection, Vector2 position, float speed, NavigationPathfinder navigation = null)
+        public Ship(
+            MapProjection projection,
+            Vector2 position,
+            float speed,
+            ShipCrew crew,
+            NavigationPathfinder navigation = null)
         {
             this.projection = projection ?? throw new ArgumentNullException(nameof(projection));
 
@@ -48,6 +54,8 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentOutOfRangeException(nameof(speed));
             }
 
+            Crew = crew ?? throw new ArgumentNullException(nameof(crew));
+
             this.speed = speed;
             this.navigation = navigation;
             Position = ClampToMap(position);
@@ -59,6 +67,9 @@ namespace DarkFantasyMerchant.Core
                 Position = onWater;
             }
         }
+
+        /// <summary>The sailors aboard, who set how much of its speed the ship sails at.</summary>
+        public ShipCrew Crew { get; }
 
         /// <summary>Normalized map position.</summary>
         public Vector2 Position { get; private set; }
@@ -152,10 +163,18 @@ namespace DarkFantasyMerchant.Core
                 return;
             }
 
+            float step = speed * Crew.SpeedFactor * deltaTime;
+
+            // A ship without a sailor does not move, and keeps its route. The negated
+            // comparison also rejects the NaN of an infinite step that nobody sails.
+            if (!(step > 0f))
+            {
+                return;
+            }
+
             // Steps are measured in world space: on a map that is not square, a
             // normalized step would be faster along one axis than the other.
             Vector2 worldPosition = WorldPosition;
-            float step = speed * deltaTime;
 
             while (waypoints.Count > 0)
             {
