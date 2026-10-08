@@ -179,6 +179,56 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void APortWhoseNearestWaterIsInAnotherSea_IsNotEntered()
+        {
+            Ship ship = CreateShip();
+
+            // On land, nearer the pond than the sea the ship is in.
+            bool accepted = docking.OrderToPort(ship, port, GridAssert.CellPoint(grid, 6.8f, 0.5f));
+            ship.Advance(100f);
+            docking.Update();
+
+            Assert.IsFalse(accepted);
+            Assert.IsFalse(docking.IsDocked(ship));
+        }
+
+        [Test]
+        public void AnOrderToAnotherPort_UnderWay_ReplacesTheDestinationPort()
+        {
+            Ship ship = CreateShip();
+            var other = new Port();
+            docking.OrderToPort(ship, port, Cell(5, 0));
+            ship.Advance(1f);
+
+            docking.OrderToPort(ship, other, Cell(0, 3));
+            ship.Advance(100f);
+            docking.Update();
+
+            Assert.AreSame(other, docking.PortOf(ship));
+            Assert.IsEmpty(ShipsIn(port));
+            CollectionAssert.AreEqual(new[] { "docked elsewhere" }, events);
+        }
+
+        [Test]
+        public void AShipOrderedAwayByAListener_WhileAnotherDocks_StaysAtSea()
+        {
+            var first = new Ship(projection, Cell(4, 0), Speed, navigation);
+            var second = new Ship(projection, Cell(6, 3), Speed, navigation);
+            docking.OrderToPort(first, port, Cell(5, 0));
+            docking.OrderToPort(second, port, Cell(5, 0));
+            first.Advance(100f);
+            second.Advance(100f);
+
+            // Whichever docks first sends the other away, in the same update.
+            docking.Docked += (docked, where) =>
+                docking.OrderToPoint(ReferenceEquals(docked, first) ? second : first, Cell(0, 3));
+            docking.Update();
+
+            Assert.AreEqual(1, ShipsIn(port).Count);
+            Assert.AreNotEqual(docking.IsDocked(first), docking.IsDocked(second));
+        }
+
+        [Test]
         public void ADockedShip_OrderedToAPoint_LeavesThePort()
         {
             Ship ship = CreateDockedShip();

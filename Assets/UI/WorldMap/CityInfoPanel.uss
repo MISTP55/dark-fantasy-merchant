@@ -91,6 +91,10 @@
     background-color: rgb(84, 62, 40);
 }
 
+.city-panel__ship:active {
+    background-color: rgb(110, 84, 52);
+}
+
 .city-panel__ship--selected,
 .city-panel__ship--selected:hover {
     color: rgb(24, 17, 12);

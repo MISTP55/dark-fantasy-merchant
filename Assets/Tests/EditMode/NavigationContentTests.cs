@@ -57,6 +57,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
                     // A route always ends somewhere: a city cut off from the others
                     // would give one that stops on the nearest shore of the start's sea.
+                    // Entering a port relies on this too: a ship docks only where
+                    // its route ends on the city's harbour.
                     Vector2 end = waypoints.Count > 0 ? waypoints[waypoints.Count - 1] : harbours[from];
                     Assert.AreEqual(harbours[to], end, $"{route}: the ship cannot sail there");
 

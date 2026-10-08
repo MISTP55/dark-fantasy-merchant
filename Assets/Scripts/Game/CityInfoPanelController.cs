@@ -188,6 +188,9 @@ namespace DarkFantasyMerchant.Game
                 var row = new Button(() => shipsView.Selection.Select(
                     ReferenceEquals(shipsView.Selection.Selected, ship) ? null : ship));
                 row.text = shipsView.DisplayNameOf(ship);
+
+                // Rows are clicked, not navigated: the keyboard pans the map.
+                row.focusable = false;
                 row.AddToClassList(ShipRowClass);
                 shipList.Add(row);
             }

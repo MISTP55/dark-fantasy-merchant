@@ -147,7 +147,13 @@ namespace DarkFantasyMerchant.Game
             if (city != null)
             {
                 // The ship enters the city's port when it arrives.
-                shipsView.Docking.OrderToPort(ship, city, city.MapPosition);
+                if (!shipsView.Docking.OrderToPort(ship, city, city.MapPosition))
+                {
+                    // Otherwise the ship sails to the city and stays outside for no visible reason.
+                    Debug.LogWarning(
+                        $"The ship cannot enter the port of '{city.name}': the water nearest to the city is not water it can sail to.",
+                        city);
+                }
             }
             else
             {

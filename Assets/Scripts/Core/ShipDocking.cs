@@ -11,7 +11,9 @@ namespace DarkFantasyMerchant.Core
     /// </summary>
     public sealed class ShipDocking<TPort> where TPort : class
     {
-        // Far below the size of a navigation cell, in normalized map units.
+        // Far below the size of a navigation cell, in normalized map units. Not zero:
+        // a ship skips a waypoint it is on in world space, so it can lie a rounding
+        // error away from its anchorage.
         private const float SamePointTolerance = 1e-6f;
 
         // Port each ship under way is sailing to.
