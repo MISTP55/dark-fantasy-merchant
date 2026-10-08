@@ -225,5 +225,100 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.Throws<ArgumentOutOfRangeException>(() => model.WorldUnitsPerPixel(screenHeight));
         }
+
+        [Test]
+        public void ZoomOutFully_ShowsTheWholeMap_FromAnyView()
+        {
+            var model = new MapCameraModel(Map, 2f, 2f);
+            model.Zoom(0.5f, Vector2.zero);
+            model.Pan(new Vector2(5f, 2f));
+
+            model.ZoomOutFully();
+
+            Assert.AreEqual(10f, model.OrthographicSize, 1e-4f);
+            TestAssert.AreEqual(Vector2.zero, model.Position);
+        }
+
+        [Test]
+        public void SetView_GoesToTheGivenView()
+        {
+            var model = new MapCameraModel(Map, 2f, 2f);
+
+            model.SetView(new Vector2(3f, 1f), 5f);
+
+            Assert.AreEqual(5f, model.OrthographicSize, 1e-4f);
+            TestAssert.AreEqual(new Vector2(3f, 1f), model.Position);
+        }
+
+        [Test]
+        public void SetView_RestoresTheViewLeftByZoomOutFully()
+        {
+            var model = new MapCameraModel(Map, 2f, 2f);
+            model.Zoom(0.3f, new Vector2(4f, -2f));
+            model.Pan(new Vector2(-6f, 1f));
+            Vector2 savedPosition = model.Position;
+            float savedSize = model.OrthographicSize;
+
+            model.ZoomOutFully();
+            model.SetView(savedPosition, savedSize);
+
+            Assert.AreEqual(savedSize, model.OrthographicSize, 1e-4f);
+            TestAssert.AreEqual(savedPosition, model.Position);
+        }
+
+        [TestCase(0.5f, 2f)]
+        [TestCase(100f, 10f)]
+        public void SetView_ClampsTheSize(float requestedSize, float expectedSize)
+        {
+            var model = new MapCameraModel(Map, 2f, 2f);
+
+            model.SetView(Vector2.zero, requestedSize);
+
+            Assert.AreEqual(expectedSize, model.OrthographicSize, 1e-4f);
+        }
+
+        [Test]
+        public void SetView_ClampsThePositionToTheMap()
+        {
+            var model = new MapCameraModel(Map, 2f, 2f);
+
+            // Size 5: half extents are 10 x 5, so the center stays within (-10..10, -5..5).
+            model.SetView(new Vector2(100f, -100f), 5f);
+
+            TestAssert.AreEqual(new Vector2(10f, -5f), model.Position);
+        }
+
+        [Test]
+        public void SetView_AfterTheAspectChanged_GivesTheNearestValidView()
+        {
+            var model = new MapCameraModel(Map, 2f, 2f);
+            model.SetView(new Vector2(8f, 0f), 8f);
+            Vector2 savedPosition = model.Position;
+            float savedSize = model.OrthographicSize;
+
+            // A wider window: the largest size becomes 40 / (2 * 4) = 5.
+            model.ZoomOutFully();
+            model.SetAspect(4f);
+            model.SetView(savedPosition, savedSize);
+
+            // The view is as wide as the map: it can only be centered.
+            Assert.AreEqual(5f, model.OrthographicSize, 1e-4f);
+            TestAssert.AreEqual(Vector2.zero, model.Position);
+        }
+
+        [Test]
+        public void SetView_IgnoresAnInvalidView()
+        {
+            var model = new MapCameraModel(Map, 2f, 2f);
+            model.SetView(new Vector2(3f, 1f), 5f);
+
+            model.SetView(new Vector2(float.NaN, 0f), 4f);
+            model.SetView(Vector2.zero, 0f);
+            model.SetView(Vector2.zero, float.NaN);
+            model.SetView(Vector2.zero, float.PositiveInfinity);
+
+            Assert.AreEqual(5f, model.OrthographicSize, 1e-4f);
+            TestAssert.AreEqual(new Vector2(3f, 1f), model.Position);
+        }
     }
 }

@@ -98,6 +98,29 @@ namespace DarkFantasyMerchant.Core
             ClampPosition();
         }
 
+        /// <summary>Shows as much of the map as the view can.</summary>
+        public void ZoomOutFully()
+        {
+            OrthographicSize = MaxOrthographicSize;
+            ClampPosition();
+        }
+
+        /// <summary>
+        /// Goes to a view, clamped to the size limits and to the map: the nearest valid
+        /// view when the given one is not. An invalid view is ignored.
+        /// </summary>
+        public void SetView(Vector2 position, float orthographicSize)
+        {
+            if (!IsFinite(position) || !IsFinitePositive(orthographicSize))
+            {
+                return;
+            }
+
+            OrthographicSize = Mathf.Clamp(orthographicSize, MinOrthographicSize, MaxOrthographicSize);
+            Position = position;
+            ClampPosition();
+        }
+
         /// <summary>
         /// World position of a viewport point, where (0,0) is the bottom-left corner
         /// of the view and (1,1) the top-right.
