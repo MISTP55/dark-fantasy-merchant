@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DarkFantasyMerchant.Core;
 using UnityEngine;
@@ -40,6 +41,8 @@ namespace DarkFantasyMerchant.Game
         private readonly List<ShipView> views = new List<ShipView>();
         private readonly List<ShipDefinition> definitions = new List<ShipDefinition>();
 
+        private ShipArrivals<CityDefinition> arrivals;
+
         // Null on a map without a navigation mask: ships then sail in a straight line.
         private NavigationPathfinder navigation;
 
@@ -53,6 +56,12 @@ namespace DarkFantasyMerchant.Game
         /// sent to and leaves the one it is in.
         /// </summary>
         public ShipDocking<CityDefinition> Docking { get; } = new ShipDocking<CityDefinition>();
+
+        /// <summary>
+        /// Raised when a ship arrives (see <see cref="ShipArrivals{TPort}"/>), with the city
+        /// whose port it has entered, or null when it stopped at sea.
+        /// </summary>
+        public event Action<Ship, CityDefinition> ShipArrived;
 
         public IReadOnlyList<Ship> Ships => ships;
 
@@ -105,6 +114,8 @@ namespace DarkFantasyMerchant.Game
             }
 
             navigation = CreateNavigation();
+            arrivals = new ShipArrivals<CityDefinition>(Docking);
+            arrivals.Arrived += OnShipArrived;
             Spawn(playerShipDefinition, StartPosition(), CreatePlayerCrew(crewCapacity));
             Selection.HoveredChanged += OnHoveredChanged;
             Selection.SelectedChanged += OnSelectedChanged;
@@ -131,6 +142,9 @@ namespace DarkFantasyMerchant.Game
             }
 
             Docking.Update();
+
+            // After the docking's update, so that a ship that arrived at its port is in it.
+            arrivals.Report();
 
             for (int i = 0; i < ships.Count; i++)
             {
@@ -252,6 +266,7 @@ namespace DarkFantasyMerchant.Game
             var ship = new Ship(mapView.Projection, position, definition.Speed, crew, navigation);
             ShipView view = Instantiate(shipPrefab, transform);
             view.Initialize(ship, definition);
+            arrivals.Track(ship);
 
             ships.Add(ship);
             shipWorldPositions.Add(ship.WorldPosition);
@@ -292,6 +307,11 @@ namespace DarkFantasyMerchant.Game
                 views[index].gameObject.SetActive(true);
                 views[index].Refresh();
             }
+        }
+
+        private void OnShipArrived(Ship ship, CityDefinition city)
+        {
+            ShipArrived?.Invoke(ship, city);
         }
 
         private void OnHoveredChanged(Ship ship)

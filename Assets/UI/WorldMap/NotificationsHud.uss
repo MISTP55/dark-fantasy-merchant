@@ -1,0 +1,20 @@
+/* Under the treasury, which is at the top right of the screen (TreasuryHud.uss). */
+.notifications-hud {
+    position: absolute;
+    top: 62px;
+    right: 16px;
+    max-width: 380px;
+    align-items: flex-end;
+}
+
+.notifications-hud__item {
+    margin-bottom: 6px;
+    padding: 4px 12px;
+    color: rgb(240, 226, 196);
+    background-color: rgba(24, 17, 12, 0.94);
+    border-width: 2px;
+    border-color: rgb(110, 84, 52);
+    font-size: 16px;
+    white-space: normal;
+    -unity-text-align: middle-right;
+}

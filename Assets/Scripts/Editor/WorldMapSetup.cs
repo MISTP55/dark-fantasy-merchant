@@ -14,8 +14,8 @@ namespace DarkFantasyMerchant.Editor
     /// Generates the world map scene, the city marker, ship and ship route prefabs and the
     /// sample content. Safe to run again: existing assets are left untouched, and an
     /// existing scene only gains the ships, ship route, ship panel, world clock, time HUD,
-    /// player treasury and treasury HUD objects when it has none, and the references to
-    /// them that are empty.
+    /// player treasury, treasury HUD, player notifications, notifications HUD and ship
+    /// arrival notifier objects when it has none, and the references to them that are empty.
     /// </summary>
     public static class WorldMapSetup
     {
@@ -41,6 +41,7 @@ namespace DarkFantasyMerchant.Editor
         private const string PlayerDataFolder = "Assets/Data/Player";
         private const string PlayerStartPath = PlayerDataFolder + "/PlayerStart.asset";
         private const string TreasuryHudTemplatePath = UiFolder + "/TreasuryHud.uxml";
+        private const string NotificationsHudTemplatePath = UiFolder + "/NotificationsHud.uxml";
 
         private const string ShipTexturePath = "Assets/Art/Ships/MerchantShip.png";
         private const string ShipSpritePrefix = "MerchantShip_";
@@ -141,6 +142,7 @@ namespace DarkFantasyMerchant.Editor
             AddShipPanelToScene(mapSceneHadUnsavedChanges);
             AddTimeToScene(mapSceneHadUnsavedChanges);
             AddTreasuryToScene(mapSceneHadUnsavedChanges);
+            AddNotificationsToScene(mapSceneHadUnsavedChanges);
             AssetDatabase.SaveAssets();
 
             Debug.Log("World map setup finished.");
@@ -937,6 +939,88 @@ namespace DarkFantasyMerchant.Editor
             if (changed)
             {
                 SaveSceneChanges(scene, sceneHadUnsavedChanges, "The player's treasury or its HUD");
+            }
+        }
+
+        // Like the treasury, the player's notifications, their HUD and what posts the arrivals of
+        // the ships are added to a scene built before they existed.
+        private static void AddNotificationsToScene(bool sceneHadUnsavedChanges)
+        {
+            if (!TryOpenMapScene("The player's notifications", out Scene scene))
+            {
+                return;
+            }
+
+            bool changed = false;
+            var playerNotifications = FindInScene<PlayerNotifications>(scene);
+
+            if (playerNotifications == null)
+            {
+                var notificationsObject = new GameObject("Player Notifications");
+                SceneManager.MoveGameObjectToScene(notificationsObject, scene);
+
+                playerNotifications = notificationsObject.AddComponent<PlayerNotifications>();
+                changed = true;
+            }
+
+            var hud = FindInScene<NotificationsHudController>(scene);
+
+            if (hud == null)
+            {
+                var hudTemplate = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(NotificationsHudTemplatePath);
+
+                if (hudTemplate == null)
+                {
+                    throw new FileNotFoundException("The notifications HUD UXML is missing.", NotificationsHudTemplatePath);
+                }
+
+                var hudObject = new GameObject("Notifications HUD");
+                SceneManager.MoveGameObjectToScene(hudObject, scene);
+
+                var document = hudObject.AddComponent<UIDocument>();
+                document.panelSettings = FindPanelSettings(scene);
+                document.visualTreeAsset = hudTemplate;
+
+                hud = hudObject.AddComponent<NotificationsHudController>();
+            }
+
+            // Also for a scene whose notifications were deleted and made again.
+            if (IsReferenceEmpty(hud, "playerNotifications"))
+            {
+                SetReference(hud, "playerNotifications", playerNotifications);
+                changed = true;
+            }
+
+            var shipsView = FindInScene<ShipsView>(scene);
+            var arrivalNotifier = FindInScene<ShipArrivalNotifier>(scene);
+
+            // Without ships, nothing arrives.
+            if (arrivalNotifier == null && shipsView != null)
+            {
+                var notifierObject = new GameObject("Ship Arrival Notifier");
+                SceneManager.MoveGameObjectToScene(notifierObject, scene);
+
+                arrivalNotifier = notifierObject.AddComponent<ShipArrivalNotifier>();
+            }
+
+            if (arrivalNotifier != null)
+            {
+                if (shipsView != null && IsReferenceEmpty(arrivalNotifier, "shipsView"))
+                {
+                    SetReference(arrivalNotifier, "shipsView", shipsView);
+                    changed = true;
+                }
+
+                if (IsReferenceEmpty(arrivalNotifier, "playerNotifications"))
+                {
+                    SetReference(arrivalNotifier, "playerNotifications", playerNotifications);
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The player's notifications, their HUD or the ship arrival notifier");
             }
         }
 

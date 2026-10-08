@@ -100,6 +100,12 @@ namespace DarkFantasyMerchant.Core
         public CompassDirection Heading { get; private set; }
 
         /// <summary>
+        /// Raised with the ship when it reaches the end of its route; it is idle by then.
+        /// An order that replaces the route does not raise it.
+        /// </summary>
+        public event Action<Ship> Arrived;
+
+        /// <summary>
         /// Orders the ship to a normalized map position, replacing any order in progress.
         /// The point is clamped to the map; with a pathfinder, a point the ship cannot
         /// sail to is replaced by the nearest one it can. A NaN point is ignored, and so
@@ -200,6 +206,7 @@ namespace DarkFantasyMerchant.Core
 
             // The route is over: an idle ship has none, sailed or not.
             sailedWaypoints.Clear();
+            Arrived?.Invoke(this);
         }
 
         private void SkipWaypointsAlreadyReached()

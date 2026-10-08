@@ -220,6 +220,80 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(destination, ship.Position);
         }
 
+        [Test]
+        public void Arrived_IsRaisedOnce_WhenTheShipReachesItsDestination()
+        {
+            Ship ship = CreateShip();
+            Ship arrived = null;
+            int count = 0;
+            ship.Arrived += s =>
+            {
+                arrived = s;
+                count++;
+            };
+            ship.SetDestination(new Vector2(0.6f, 0.5f));
+
+            ship.Advance(5f);
+            ship.Advance(5f);
+
+            Assert.AreEqual(1, count);
+            Assert.AreSame(ship, arrived);
+        }
+
+        [Test]
+        public void Arrived_IsRaisedWhenTheShipIsIdle()
+        {
+            Ship ship = CreateShip();
+            bool wasMoving = true;
+            ship.Arrived += s => wasMoving = s.IsMoving;
+            ship.SetDestination(new Vector2(0.6f, 0.5f));
+
+            ship.Advance(5f);
+
+            Assert.IsFalse(wasMoving);
+        }
+
+        [Test]
+        public void Arrived_IsNotRaised_WhileTheShipIsUnderWay()
+        {
+            Ship ship = CreateShip();
+            int count = 0;
+            ship.Arrived += _ => count++;
+            ship.SetDestination(new Vector2(1f, 0.5f));
+
+            ship.Advance(1f);
+
+            Assert.AreEqual(0, count);
+        }
+
+        [Test]
+        public void Arrived_IsNotRaised_ByAnOrderThatReplacesTheRoute()
+        {
+            Ship ship = CreateShip();
+            int count = 0;
+            ship.Arrived += _ => count++;
+            ship.SetDestination(new Vector2(1f, 0.5f));
+            ship.Advance(1f);
+
+            ship.SetDestination(new Vector2(0f, 0.5f));
+            ship.Advance(1f);
+
+            Assert.AreEqual(0, count);
+        }
+
+        [Test]
+        public void Arrived_IsNotRaised_ByAnOrderToWhereTheShipIs()
+        {
+            Ship ship = CreateShip();
+            int count = 0;
+            ship.Arrived += _ => count++;
+
+            ship.SetDestination(Center);
+            ship.Advance(1f);
+
+            Assert.AreEqual(0, count);
+        }
+
         [TestCase(0f)]
         [TestCase(-1f)]
         [TestCase(float.NaN)]

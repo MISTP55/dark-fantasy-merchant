@@ -1,0 +1,4 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="NotificationsHud.uss" />
+    <ui:VisualElement name="notifications-list" picking-mode="Ignore" class="notifications-hud" />
+</ui:UXML>
