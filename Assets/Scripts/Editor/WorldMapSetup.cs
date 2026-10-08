@@ -783,8 +783,10 @@ namespace DarkFantasyMerchant.Editor
             }
 
             // Ships sail in the world's time; the map and its camera follow the fast forward.
+            // The HUD is in the list for a scene whose clock was deleted and made again.
             foreach (Component follower in new Component[]
             {
+                FindInScene<TimeHudController>(scene),
                 FindInScene<ShipsView>(scene),
                 FindInScene<WorldMapInteraction>(scene),
                 FindInScene<WorldMapCameraController>(scene),
