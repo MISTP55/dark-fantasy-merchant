@@ -89,19 +89,19 @@ namespace DarkFantasyMerchant.Editor
         private static readonly SampleCity[] SampleCities =
         {
             new SampleCity("Sparia", 0.115f, 0.645f, CityAccess.Coastal, CitySize.Town,
-                "A weathered harbor town on the western cape, first landfall for ships crossing the West Aedean Sea."),
+                "Une ville portuaire battue par les vents sur le cap occidental, première terre en vue des navires qui traversent la mer d'Aedean occidentale."),
             new SampleCity("Elforth", 0.196f, 0.609f, CityAccess.Coastal, CitySize.Village,
-                "A fishing village sheltered by the southern woods, known for salted cod and quiet smugglers."),
+                "Un village de pêcheurs abrité par les bois du sud, connu pour sa morue salée et ses contrebandiers discrets."),
             new SampleCity("Bactfied", 0.374f, 0.554f, CityAccess.Coastal, CitySize.Town,
-                "A crowded market port on the Eamiq Sea where river barges meet seagoing hulls."),
+                "Un port marchand animé sur la mer d'Eamiq, où les barges fluviales rencontrent les navires de haute mer."),
             new SampleCity("Hitrun", 0.470f, 0.598f, CityAccess.Coastal, CitySize.Village,
-                "A hill village above a narrow cove, trading wool and stone to passing coasters."),
+                "Un village perché au-dessus d'une crique étroite, qui vend laine et pierre aux caboteurs de passage."),
             new SampleCity("Cerbias", 0.554f, 0.500f, CityAccess.Coastal, CitySize.Village,
-                "A lonely anchorage at the tip of the southern spit, last shelter before the open Rakmitag Sea."),
+                "Un mouillage isolé à la pointe de la langue de sable méridionale, dernier abri avant le large de la mer de Rakmitag."),
             new SampleCity("Hazer Empire", 0.586f, 0.627f, CityAccess.Coastal, CitySize.Capital,
-                "The imperial seat guarding the strait, its customs houses taxing every hull bound for the desert coast."),
+                "La capitale impériale qui garde le détroit, dont les douanes taxent chaque navire en route vers la côte du désert."),
             new SampleCity("Liveria", 0.345f, 0.651f, CityAccess.River, CitySize.Capital,
-                "A spired river capital at the heart of the Crownwoods, reached only by barge."),
+                "Une capitale fluviale hérissée de clochers au cœur des Bois de la Couronne, que l'on ne rejoint qu'en barge."),
         };
 
         [MenuItem("Tools/Dark Fantasy Merchant/Build World Map Scene")]
@@ -375,7 +375,7 @@ namespace DarkFantasyMerchant.Editor
             // Filled in before the asset is created, so the file is written complete.
             var definition = ScriptableObject.CreateInstance<ShipDefinition>();
             var serialized = new SerializedObject(definition);
-            serialized.FindProperty("displayName").stringValue = "Merchant Ship";
+            serialized.FindProperty("displayName").stringValue = "Navire marchand";
             serialized.FindProperty("speed").floatValue = MerchantShipSpeed;
             serialized.FindProperty("crewCapacity").intValue = MerchantShipCrewCapacity;
 

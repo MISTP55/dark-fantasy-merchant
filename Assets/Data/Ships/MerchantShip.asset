@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b27314a241dc5b24c88558b06c1fd23b, type: 3}
   m_Name: MerchantShip
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.ShipDefinition
-  displayName: Merchant Ship
+  displayName: Navire marchand
   speed: 0.07
   crewCapacity: 28
   directionSprites:

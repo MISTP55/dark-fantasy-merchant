@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Liveria
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
   displayName: Liveria
-  description: A spired river capital at the heart of the Crownwoods, reached only by barge.
+  description: "Une capitale fluviale h\xE9riss\xE9e de clochers au c\u0153ur des Bois de la Couronne, que l'on ne rejoint qu'en barge."
   mapPosition: {x: 0.3139332, y: 0.63255626}
   access: 1
   size: 2

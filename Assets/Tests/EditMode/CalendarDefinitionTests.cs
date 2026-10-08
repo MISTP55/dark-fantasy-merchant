@@ -38,8 +38,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             string[] expected =
             {
-                "Janus", "Febrin", "Martis", "Aprilis", "Maius", "Junis",
-                "Julis", "Augustis", "Septem", "Octem", "Novem", "Decem",
+                "Janvis", "Févrin", "Marsis", "Avrilis", "Maïus", "Juinis",
+                "Juillis", "Aoûtis", "Septem", "Octem", "Novem", "Décem",
             };
 
             for (int month = 1; month <= expected.Length; month++)
@@ -51,8 +51,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void Format_IsDayMonthNameYear()
         {
-            Assert.AreEqual("1 Janus 932", calendar.Format(new GameDate(932, 1, 1)));
-            Assert.AreEqual("30 Decem 933", calendar.Format(new GameDate(933, 12, 30)));
+            Assert.AreEqual("1 Janvis 932", calendar.Format(new GameDate(932, 1, 1)));
+            Assert.AreEqual("30 Décem 933", calendar.Format(new GameDate(933, 12, 30)));
         }
 
         [Test]
@@ -60,14 +60,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             GameClock clock = calendar.CreateClock();
 
-            Assert.AreEqual("1 Janus 932", calendar.Format(clock.Date));
+            Assert.AreEqual("1 Janvis 932", calendar.Format(clock.Date));
 
             clock.Advance(30f);
-            Assert.AreEqual("2 Janus 932", calendar.Format(clock.Date));
+            Assert.AreEqual("2 Janvis 932", calendar.Format(clock.Date));
 
             clock.SetFastForward(true);
             clock.Advance(0.5f);
-            Assert.AreEqual("3 Janus 932", calendar.Format(clock.Date));
+            Assert.AreEqual("3 Janvis 932", calendar.Format(clock.Date));
         }
 
         [TestCase(0)]
@@ -75,7 +75,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase(-1)]
         public void AMonthWithoutAName_IsNamedByItsNumber(int month)
         {
-            Assert.AreEqual($"Month {month}", calendar.MonthName(month));
+            Assert.AreEqual($"Mois {month}", calendar.MonthName(month));
         }
 
         [Test]
@@ -85,7 +85,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             serialized.FindProperty("monthNames").GetArrayElementAtIndex(2).stringValue = "  ";
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
-            Assert.AreEqual("4 Month 3 932", calendar.Format(new GameDate(932, 3, 4)));
+            Assert.AreEqual("4 Mois 3 932", calendar.Format(new GameDate(932, 3, 4)));
         }
 
         [Test]

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Sparia
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
   displayName: Sparia
-  description: A weathered harbor town on the western cape, first landfall for ships crossing the West Aedean Sea.
+  description: "Une ville portuaire battue par les vents sur le cap occidental, premi\xE8re terre en vue des navires qui traversent la mer d'Aedean occidentale."
   mapPosition: {x: 0.1250095, y: 0.62660563}
   access: 0
   size: 1

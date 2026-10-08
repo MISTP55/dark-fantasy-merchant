@@ -23,20 +23,20 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             for (int month = 1; month <= calendar.MonthsPerYear; month++)
             {
-                // A month without a name falls back to "Month <n>".
-                Assert.IsFalse(calendar.MonthName(month).StartsWith("Month "), $"month {month} has no name");
+                // A month without a name falls back to "Mois <n>".
+                Assert.IsFalse(calendar.MonthName(month).StartsWith("Mois "), $"month {month} has no name");
             }
         }
 
         [Test]
-        public void Calendar_StartsTheGameOnTheFirstOfJanus932()
+        public void Calendar_StartsTheGameOnTheFirstOfJanvis932()
         {
             var calendar = AssetDatabase.LoadAssetAtPath<CalendarDefinition>(CalendarPath);
             Assert.IsNotNull(calendar, CalendarPath);
 
             GameClock clock = calendar.CreateClock();
 
-            Assert.AreEqual("1 Janus 932", calendar.Format(clock.Date));
+            Assert.AreEqual("1 Janvis 932", calendar.Format(clock.Date));
         }
     }
 }

@@ -9,13 +9,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void FormatCrew_WritesTheSailorsAboard_OutOfTheCapacity()
         {
-            Assert.AreEqual("Crew: 12 / 28", ShipInfoPanelController.FormatCrew(new ShipCrew(28, 12)));
+            Assert.AreEqual("Équipage : 12 / 28", ShipInfoPanelController.FormatCrew(new ShipCrew(28, 12)));
         }
 
         [Test]
         public void FormatCrew_WritesAShipWithoutASailor()
         {
-            Assert.AreEqual("Crew: 0 / 28", ShipInfoPanelController.FormatCrew(new ShipCrew(28, 0)));
+            Assert.AreEqual("Équipage : 0 / 28", ShipInfoPanelController.FormatCrew(new ShipCrew(28, 0)));
         }
     }
 }

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Cerbias
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
   displayName: Cerbias
-  description: A lonely anchorage at the tip of the southern spit, last shelter before the open Rakmitag Sea.
+  description: "Un mouillage isol\xE9 \xE0 la pointe de la langue de sable m\xE9ridionale, dernier abri avant le large de la mer de Rakmitag."
   mapPosition: {x: 0.55937696, y: 0.48921213}
   access: 0
   size: 0

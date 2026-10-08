@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Elforth
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
   displayName: Elforth
-  description: A fishing village sheltered by the southern woods, known for salted cod and quiet smugglers.
+  description: "Un village de p\xEAcheurs abrit\xE9 par les bois du sud, connu pour sa morue sal\xE9e et ses contrebandiers discrets."
   mapPosition: {x: 0.17747942, y: 0.6037801}
   access: 0
   size: 0

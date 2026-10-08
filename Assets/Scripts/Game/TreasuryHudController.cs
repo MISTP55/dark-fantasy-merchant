@@ -14,6 +14,9 @@ namespace DarkFantasyMerchant.Game
     {
         private const string DebtClass = "treasury-hud__gold--debt";
 
+        // Not the French culture: its separator and its minus sign depend on the platform.
+        private static readonly NumberFormatInfo GoldFormat = new NumberFormatInfo { NumberGroupSeparator = "\u00A0" };
+
         [SerializeField] private PlayerTreasury playerTreasury;
 
         private Treasury treasury;
@@ -73,10 +76,13 @@ namespace DarkFantasyMerchant.Game
             isBound = false;
         }
 
-        /// <summary>The gold as the HUD writes it: "10,000 gold", or "-250 gold" for a debt.</summary>
+        /// <summary>
+        /// The gold as the HUD writes it: "10 000 or", or "-250 or" for a debt. Thousands
+        /// are separated by a no-break space, as in French.
+        /// </summary>
         public static string FormatGold(long gold)
         {
-            return gold.ToString("N0", CultureInfo.InvariantCulture) + " gold";
+            return gold.ToString("N0", GoldFormat) + " or";
         }
 
         private void ShowGold(long gold)

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Hitrun
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
   displayName: Hitrun
-  description: A hill village above a narrow cove, trading wool and stone to passing coasters.
+  description: "Un village perch\xE9 au-dessus d'une crique \xE9troite, qui vend laine et pierre aux caboteurs de passage."
   mapPosition: {x: 0.46342817, y: 0.57712024}
   access: 0
   size: 0

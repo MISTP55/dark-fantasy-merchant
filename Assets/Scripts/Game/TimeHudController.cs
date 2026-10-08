@@ -12,8 +12,8 @@ namespace DarkFantasyMerchant.Game
     public sealed class TimeHudController : MonoBehaviour
     {
         private const string ActiveButtonClass = "time-hud__button--active";
-        private const string FastForwardText = "Fast forward";
-        private const string NormalSpeedText = "Normal speed";
+        private const string FastForwardText = "Avance rapide";
+        private const string NormalSpeedText = "Vitesse normale";
 
         [SerializeField] private WorldClock worldClock;
 

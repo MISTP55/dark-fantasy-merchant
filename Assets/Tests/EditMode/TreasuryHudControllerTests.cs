@@ -8,21 +8,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void FormatGold_WritesThousandsSeparators()
         {
-            Assert.AreEqual("10,000 gold", TreasuryHudController.FormatGold(10000));
-            Assert.AreEqual("1,234,567 gold", TreasuryHudController.FormatGold(1234567));
+            Assert.AreEqual("10\u00A0000 or", TreasuryHudController.FormatGold(10000));
+            Assert.AreEqual("1\u00A0234\u00A0567 or", TreasuryHudController.FormatGold(1234567));
         }
 
         [Test]
         public void FormatGold_WritesSmallAmountsPlainly()
         {
-            Assert.AreEqual("0 gold", TreasuryHudController.FormatGold(0));
-            Assert.AreEqual("999 gold", TreasuryHudController.FormatGold(999));
+            Assert.AreEqual("0 or", TreasuryHudController.FormatGold(0));
+            Assert.AreEqual("999 or", TreasuryHudController.FormatGold(999));
         }
 
         [Test]
         public void FormatGold_WritesADebtWithAMinusSign()
         {
-            Assert.AreEqual("-1,250 gold", TreasuryHudController.FormatGold(-1250));
+            Assert.AreEqual("-1\u00A0250 or", TreasuryHudController.FormatGold(-1250));
         }
     }
 }

@@ -14,18 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CalendarDefinition
   startYear: 932
   monthNames:
-  - Janus
-  - Febrin
-  - Martis
-  - Aprilis
-  - Maius
-  - Junis
-  - Julis
-  - Augustis
+  - Janvis
+  - "F\xE9vrin"
+  - Marsis
+  - Avrilis
+  - "Ma\xEFus"
+  - Juinis
+  - Juillis
+  - "Ao\xFBtis"
   - Septem
   - Octem
   - Novem
-  - Decem
+  - "D\xE9cem"
   daysPerMonth: 30
   secondsPerDay: 30
   fastForwardMultiplier: 60

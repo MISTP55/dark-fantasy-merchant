@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: HazerEmpire
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
   displayName: Hazer Empire
-  description: The imperial seat guarding the strait, its customs houses taxing every hull bound for the desert coast.
+  description: "La capitale imp\xE9riale qui garde le d\xE9troit, dont les douanes taxent chaque navire en route vers la c\xF4te du d\xE9sert."
   mapPosition: {x: 0.58361024, y: 0.625956}
   access: 0
   size: 2

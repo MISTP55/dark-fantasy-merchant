@@ -81,10 +81,10 @@ namespace DarkFantasyMerchant.Game
             isBound = false;
         }
 
-        /// <summary>The crew as the panel writes it: "Crew: 12 / 28", the sailors aboard out of the capacity.</summary>
+        /// <summary>The crew as the panel writes it: "Équipage : 12 / 28", the sailors aboard out of the capacity.</summary>
         public static string FormatCrew(ShipCrew crew)
         {
-            return $"Crew: {crew.Count} / {crew.Capacity}";
+            return $"Équipage : {crew.Count} / {crew.Capacity}";
         }
 
         private void ShowSelected(Ship ship)

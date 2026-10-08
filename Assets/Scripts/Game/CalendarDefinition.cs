@@ -16,8 +16,8 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("One name per month, in order. Their number is the number of months of a year.")]
         [SerializeField] private string[] monthNames =
         {
-            "Janus", "Febrin", "Martis", "Aprilis", "Maius", "Junis",
-            "Julis", "Augustis", "Septem", "Octem", "Novem", "Decem",
+            "Janvis", "Févrin", "Marsis", "Avrilis", "Maïus", "Juinis",
+            "Juillis", "Aoûtis", "Septem", "Octem", "Novem", "Décem",
         };
 
         [SerializeField, Min(1)] private int daysPerMonth = 30;
@@ -54,7 +54,7 @@ namespace DarkFantasyMerchant.Game
             int index = month - 1;
             string monthName = index >= 0 && index < MonthsPerYear ? monthNames[index] : null;
 
-            return string.IsNullOrWhiteSpace(monthName) ? $"Month {month}" : monthName;
+            return string.IsNullOrWhiteSpace(monthName) ? $"Mois {month}" : monthName;
         }
 
         public string Format(GameDate date)

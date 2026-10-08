@@ -236,9 +236,9 @@ namespace DarkFantasyMerchant.Game
             switch (size)
             {
                 case CitySize.Capital:
-                    return "Capital";
+                    return "Capitale";
                 case CitySize.Town:
-                    return "Town";
+                    return "Ville";
                 default:
                     return "Village";
             }
@@ -246,7 +246,7 @@ namespace DarkFantasyMerchant.Game
 
         private static string AccessText(CityAccess access)
         {
-            return access == CityAccess.River ? "River port" : "Coastal port";
+            return access == CityAccess.River ? "Port fluvial" : "Port maritime";
         }
     }
 }

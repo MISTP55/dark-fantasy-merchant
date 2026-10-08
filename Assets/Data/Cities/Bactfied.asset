@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Bactfied
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
   displayName: Bactfied
-  description: A crowded market port on the Eamiq Sea where river barges meet seagoing hulls.
+  description: "Un port marchand anim\xE9 sur la mer d'Eamiq, o\xF9 les barges fluviales rencontrent les navires de haute mer."
   mapPosition: {x: 0.38744238, y: 0.55086803}
   access: 0
   size: 1

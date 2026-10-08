@@ -56,7 +56,7 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 - `ShipCrew` (Core) is the sailors aboard one ship (`Count`) out of those it has room for (`Capacity`); `Ship.Crew` holds it. Nothing changes a crew yet: sailors will be hired in cities.
 - The crew sets the share of its speed a ship sails at (`SpeedFactor`), from the occupancy (`Count / Capacity`): half speed up to 10 % of the capacity, then rising in a straight line to full speed at 50 %. More sailors do not make it faster. A ship without a sailor does not move and keeps its route: it stays under way, so it never enters the port it was ordered to, and a fast forward that awaits it ends only on input. `Ship.Advance` reads the factor on every step, and `ShipDefinition.Speed` is the speed at a factor of 1.
 - `ShipDefinition.crewCapacity` is the capacity of a kind of ship (28 for the merchant ship); `PlayerStartDefinition.startingCrew` (12) is what the player ship starts with, cut down to the capacity with a warning when it exceeds it (`ShipsView` also warns of a start without a sailor). `ShipsView` reads it through its `playerStart` reference, which is optional: without it the ship starts with a full crew.
-- The panel of the selected ship shows the crew ("Crew: 12 / 28", see Ships). It is written on selection: a crew that changes will need an event to refresh it.
+- The panel of the selected ship shows the crew ("Équipage : 12 / 28", see Ships). It is written on selection: a crew that changes will need an event to refresh it.
 
 ### Ports
 
@@ -96,11 +96,12 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 
 - `Treasury` (Core) is the player's gold, in whole coins. It can be negative: the player is then in debt (`IsInDebt`). `Withdraw` always takes the amount and is for what is paid whatever the gold left (wages); `TryWithdraw` takes it only when `CanAfford` and is for what a lack of gold must block (buying goods). `Changed` is raised with the new gold, only on an actual change. Nothing deposits or withdraws yet.
 - `PlayerStartDefinition` (Game, `Assets/Data/Player/PlayerStart.asset`) holds the starting gold (10000) and the starting crew of the player ship (see Crew). `PlayerTreasury` owns the treasury and creates it in `Awake`, before the components that read it (execution order -100, like `WorldClock`).
-- `TreasuryHudController` shows the gold at the top right of the screen (`Assets/UI/WorldMap/TreasuryHud.uxml`, "10,000 gold", in red when in debt), in a third `UIDocument` on the same `PanelSettings`. Its label ignores the pointer, so the map under it stays reachable, and is rewritten on `Changed`, not every frame.
+- `TreasuryHudController` shows the gold at the top right of the screen (`Assets/UI/WorldMap/TreasuryHud.uxml`, "10 000 or", in red when in debt), in a third `UIDocument` on the same `PanelSettings`. Its label ignores the pointer, so the map under it stays reachable, and is rewritten on `Changed`, not every frame.
 
 ## Conventions
 
 - **Language**: all code is in English — identifiers, comments, log messages, asset and folder names. Conversation with the user is in French.
+- **Interface language**: everything the player reads is in French — UXML texts, the strings the controllers write, and the names and descriptions held by the data assets (and the defaults `WorldMapSetup` gives them). Numbers are written the French way (thousands separated by a no-break space). There is no localization system: the French text is written directly where the English one would be. City names are proper names and are not translated; the invented month names are French-sounding ("Janvis", "Févrin", …).
 - **UI**: UI Toolkit (UXML + USS) for all runtime UI. Do not build uGUI Canvas hierarchies, even though `com.unity.ugui` is installed.
 - **Data**: game content (goods, cities, ships, prices, ranks, etc.) is defined in ScriptableObject assets, not hard-coded. ScriptableObjects hold static definitions only; mutable simulation state lives in separate runtime objects, never written back into the assets.
 - **Testing**: keep simulation logic (economy, trade, progression) in plain C# classes with no `MonoBehaviour` or scene dependency, and cover it with EditMode tests. MonoBehaviours are thin adapters that drive the simulation and present its state.
