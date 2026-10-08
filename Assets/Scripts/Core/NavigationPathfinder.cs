@@ -22,6 +22,12 @@ namespace DarkFantasyMerchant.Core
         // because a diagonal move needs the cells beside it.
         private readonly int[] regions;
 
+        private readonly NavigationCellSearch search;
+
+        // Reused by every search.
+        private readonly List<int> cells = new List<int>();
+        private readonly List<Vector2> route = new List<Vector2>();
+
         public NavigationPathfinder(NavigationGrid grid)
         {
             this.grid = grid ?? throw new ArgumentNullException(nameof(grid));
@@ -29,6 +35,7 @@ namespace DarkFantasyMerchant.Core
             height = grid.Height;
             regions = new int[width * height];
             HasNavigableCells = LabelRegions() > 0;
+            search = new NavigationCellSearch(grid);
         }
 
         /// <summary>False for a grid that is all land: no ship can be placed or moved.</summary>
@@ -57,6 +64,105 @@ namespace DarkFantasyMerchant.Core
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Finds the route a ship sails from one point of the map to another. The route
+        /// ends on the destination when the ship can reach it, otherwise on the nearest
+        /// navigable cell it can reach. Points outside the map are clamped to it.
+        /// </summary>
+        /// <param name="waypoints">
+        /// Cleared, then filled with the points to sail through in order, not including
+        /// <paramref name="from"/>. Empty when the ship is already where the route ends.
+        /// </param>
+        /// <returns>
+        /// False, leaving <paramref name="waypoints"/> empty, for a NaN point and for a
+        /// grid with no navigable cell.
+        /// </returns>
+        public bool TryFindPath(Vector2 from, Vector2 to, List<Vector2> waypoints)
+        {
+            if (waypoints == null)
+            {
+                throw new ArgumentNullException(nameof(waypoints));
+            }
+
+            waypoints.Clear();
+
+            if (IsNaN(from) || IsNaN(to) || !HasNavigableCells)
+            {
+                return false;
+            }
+
+            from = ClampToMap(from);
+            to = ClampToMap(to);
+
+            int fromCell = CellAt(from);
+            int startCell = regions[fromCell] != NoRegion ? fromCell : NearestCell(from, AnyRegion);
+            int region = regions[startCell];
+
+            int toCell = CellAt(to);
+            int goalCell = regions[toCell] == region ? toCell : NearestCell(to, region);
+
+            // A destination on reachable water is reached exactly, not rounded to a cell.
+            Vector2 end = goalCell == toCell ? to : CellCenter(goalCell);
+
+            // Cannot fail: both cells are in the same region.
+            if (!search.TryFindPath(
+                startCell % width, startCell / width, goalCell % width, goalCell / width, cells))
+            {
+                return false;
+            }
+
+            route.Clear();
+            route.Add(from);
+
+            // A start that is not on water first sails to the nearest water.
+            if (startCell != fromCell)
+            {
+                route.Add(CellCenter(startCell));
+            }
+
+            for (int i = 1; i < cells.Count; i++)
+            {
+                route.Add(CellCenter(cells[i]));
+            }
+
+            route.Add(end);
+            Smooth(from, waypoints);
+            return true;
+        }
+
+        /// <summary>
+        /// Copies the route without the points a straight leg can skip. Two consecutive
+        /// points of the route are always an acceptable leg, so a point is only skipped
+        /// when the leg that replaces it is clear.
+        /// </summary>
+        private void Smooth(Vector2 from, List<Vector2> waypoints)
+        {
+            Vector2 anchor = from;
+
+            for (int i = 1; i < route.Count - 1; i++)
+            {
+                if (!NavigationLineOfSight.IsClear(grid, anchor, route[i + 1]))
+                {
+                    AddWaypoint(waypoints, from, route[i]);
+                    anchor = route[i];
+                }
+            }
+
+            AddWaypoint(waypoints, from, route[route.Count - 1]);
+        }
+
+        private static void AddWaypoint(List<Vector2> waypoints, Vector2 from, Vector2 point)
+        {
+            Vector2 previous = waypoints.Count > 0 ? waypoints[waypoints.Count - 1] : from;
+
+            // Compared per component: Vector2 equality is approximate and would drop a
+            // very short leg.
+            if (point.x != previous.x || point.y != previous.y)
+            {
+                waypoints.Add(point);
+            }
         }
 
         /// <returns>The number of regions.</returns>
