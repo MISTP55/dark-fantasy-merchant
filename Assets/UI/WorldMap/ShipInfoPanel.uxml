@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="InfoPanel.uss" />
+    <Style src="ShipInfoPanel.uss" />
+    <ui:VisualElement name="ship-panel" class="info-panel ship-panel">
+        <ui:VisualElement class="info-panel__header">
+            <ui:Label name="ship-name" class="info-panel__name" />
+            <ui:Button name="close-button" text="X" class="info-panel__close" />
+        </ui:VisualElement>
+        <ui:Label name="ship-crew" class="ship-panel__crew" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -13,9 +13,9 @@ namespace DarkFantasyMerchant.Editor
     /// <summary>
     /// Generates the world map scene, the city marker, ship and ship route prefabs and the
     /// sample content. Safe to run again: existing assets are left untouched, and an
-    /// existing scene only gains the ships, ship route, world clock, time HUD, player
-    /// treasury and treasury HUD objects when it has none, and the references to them that
-    /// are empty.
+    /// existing scene only gains the ships, ship route, ship panel, world clock, time HUD,
+    /// player treasury and treasury HUD objects when it has none, and the references to
+    /// them that are empty.
     /// </summary>
     public static class WorldMapSetup
     {
@@ -30,6 +30,7 @@ namespace DarkFantasyMerchant.Editor
         private const string DefinitionPath = MapDataFolder + "/WorldMap.asset";
         private const string PanelSettingsPath = UiFolder + "/WorldMapPanelSettings.asset";
         private const string PanelTemplatePath = UiFolder + "/CityInfoPanel.uxml";
+        private const string ShipPanelTemplatePath = UiFolder + "/ShipInfoPanel.uxml";
         private const string ThemePath = "Assets/UI/DefaultRuntimeTheme.tss";
         private const string ScenePath = "Assets/Scenes/WorldMap.unity";
 
@@ -137,6 +138,7 @@ namespace DarkFantasyMerchant.Editor
             AssetDatabase.SaveAssets();
             BuildScene();
             AddShipsToScene(mapSceneHadUnsavedChanges);
+            AddShipPanelToScene(mapSceneHadUnsavedChanges);
             AddTimeToScene(mapSceneHadUnsavedChanges);
             AddTreasuryToScene(mapSceneHadUnsavedChanges);
             AssetDatabase.SaveAssets();
@@ -755,6 +757,52 @@ namespace DarkFantasyMerchant.Editor
             }
         }
 
+        // Like the ships, the panel of the selected ship is added to a scene built before
+        // it existed.
+        private static void AddShipPanelToScene(bool sceneHadUnsavedChanges)
+        {
+            if (!TryOpenMapScene("The ship panel", out Scene scene))
+            {
+                return;
+            }
+
+            var shipsView = FindInScene<ShipsView>(scene);
+
+            if (shipsView == null)
+            {
+                Debug.LogWarning($"{ScenePath} has no ShipsView; ship panel not added.");
+                return;
+            }
+
+            var panel = FindInScene<ShipInfoPanelController>(scene);
+
+            if (panel == null)
+            {
+                var panelTemplate = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(ShipPanelTemplatePath);
+
+                if (panelTemplate == null)
+                {
+                    throw new FileNotFoundException("The ship panel UXML is missing.", ShipPanelTemplatePath);
+                }
+
+                var panelObject = new GameObject("Ship Panel");
+                SceneManager.MoveGameObjectToScene(panelObject, scene);
+
+                var document = panelObject.AddComponent<UIDocument>();
+                document.panelSettings = FindPanelSettings(scene);
+                document.visualTreeAsset = panelTemplate;
+
+                panel = panelObject.AddComponent<ShipInfoPanelController>();
+            }
+
+            // Also for a scene whose ships were deleted and made again.
+            if (IsReferenceEmpty(panel, "shipsView"))
+            {
+                SetReference(panel, "shipsView", shipsView);
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The ship panel");
+            }
+        }
+
         // Like the ships, the world clock and the time HUD are added to a scene built
         // before they existed.
         private static void AddTimeToScene(bool sceneHadUnsavedChanges)
@@ -892,7 +940,7 @@ namespace DarkFantasyMerchant.Editor
             }
         }
 
-        // The HUDs share the city panel's panel, so that the map sees the pointer over
+        // The HUDs and the ship panel share the city panel's panel, so that the map sees the pointer over
         // their buttons as it does over the panel.
         private static PanelSettings FindPanelSettings(Scene scene)
         {

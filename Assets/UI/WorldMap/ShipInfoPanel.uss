@@ -1,0 +1,11 @@
+/* In a corner, not centered like the city panel: the selected ship is ordered about on the map. */
+.ship-panel {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+}
+
+.ship-panel__crew {
+    color: rgb(222, 210, 188);
+    font-size: 15px;
+}

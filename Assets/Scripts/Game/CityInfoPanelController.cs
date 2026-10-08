@@ -71,6 +71,9 @@ namespace DarkFantasyMerchant.Game
             // Only the panel itself should block the pointer, not the full-screen root.
             root.pickingMode = PickingMode.Ignore;
 
+            // The button is clicked, not navigated: the keyboard pans the map.
+            closeButton.focusable = false;
+
             closeButton.clicked += OnCloseClicked;
             mapView.Selection.HoveredChanged += ShowHovered;
             mapView.Selection.SelectedChanged += ShowSelected;
