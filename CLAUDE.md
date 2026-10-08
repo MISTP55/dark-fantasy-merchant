@@ -11,7 +11,7 @@ Dark Fantasy Merchant is a maritime trade management and simulation game. The pl
 
 ## Project state
 
-Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The world map is the first subsystem, the player has one ship that sails on it over the navigable areas painted on the map and can lie in the port of a city; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
+Unity **6000.6.4f1** project, created from the URP 3D template and then converted in place to 2D. The world map is the first subsystem, the player has one ship that sails on it over the navigable areas painted on the map and can lie in the port of a city, and the world has a date that passes, with a fast forward; nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game. Update this file as the architecture grows.
 
 ## Architecture
 
@@ -35,7 +35,7 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 - `MapCameraModel` is where input has sent the camera (the target); `MapCameraSmoother` is what is displayed, eased towards the target. Position and size share one easing factor on purpose: that keeps the zoom anchor fixed during the transition, so do not split it into separate pan and zoom settings. Hover, picking and marker size follow the displayed view.
 - Camera clamping and zoom math are in `MapCameraModel`; picking is `CityPicker` (nearest city within a screen-pixel radius, no colliders).
 - Cities are placed by dragging their handles in the Scene view (`CityPlacementTool`). It and the navigation mask tool find the map to work on through `WorldMapEditorContext`.
-- `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates the scene, the marker, ship and ship route prefabs, the panel settings, the map definition or the ship definition when one is missing, and leaves existing ones untouched. The one exception is the `Ships` object and the `ShipRoute` object under it: they are also added to an existing scene that has none, as are the empty references to them of `WorldMapInteraction`, `CityInfoPanelController` and `ShipsView`, and that scene is saved unless it already had unsaved changes. The tool offers to save the open scene first, and adds `WorldMap.unity` to the build list without removing other scenes. Sample cities are only recreated together with a missing map definition.
+- `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates the scene, the marker, ship and ship route prefabs, the panel settings, the map definition, the ship definition or the calendar when one is missing, and leaves existing ones untouched. The exceptions are the `Ships` object with the `ShipRoute` object under it, the `World Clock` object and the `Time HUD` object: they are also added to an existing scene that has none, as are the empty references to them (`shipsView` of `WorldMapInteraction` and `CityInfoPanelController`, `routeView` of `ShipsView`, `worldClock` of `ShipsView`, `WorldMapInteraction` and `WorldMapCameraController`), and that scene is saved unless it already had unsaved changes. The tool offers to save the open scene first, and adds `WorldMap.unity` to the build list without removing other scenes. Sample cities are only recreated together with a missing map definition.
 
 ### Ships
 
@@ -43,7 +43,7 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 - A ship follows a route: a list of waypoints, exposed as `RemainingWaypoints`, with `Destination` the last one. `SetDestination` asks the ship's `NavigationPathfinder` for the route, so the ship sails over water only; without a pathfinder (a map with no mask) the route is one straight leg. What is left of a step after a waypoint is spent on the next leg, so the speed is constant through turns.
 - Steps are measured in world space through `MapProjection`, not in normalized space, so the speed is the same in every direction on a map that is not square.
 - A ship is created on the water nearest to the position it is given: cities are on land, so the player ship starts beside its start city, not on it.
-- `ShipsView` owns the ships, their `ShipView`s and a `MapSelectionState<Ship>`, and advances the ships with `Time.deltaTime`. It holds a list although there is a single player ship, which starts on `startCity` or the first city of the map.
+- `ShipsView` owns the ships, their `ShipView`s and a `MapSelectionState<Ship>`, and advances the ships with the world clock's `DeltaTime` (see Time), or with `Time.deltaTime` in a scene without a clock. It holds a list although there is a single player ship, which starts on `startCity` or the first city of the map.
 - `WorldMapInteraction` arbitrates between the two selection states: a ship is picked before the cities, and selecting one clears the other, so at most one thing is hovered and one selected (the one exception is a ship in port, see below). Pressing the right button sends the selected ship to the pointer, at once and without waiting for the release (an order given while the pointer moves must not be lost), or to the nearest water it can reach when that point is on land or in another sea. When the pointer is on a city, the ship is sent to that city's port instead.
 - Ships keep a constant on-screen size, like city markers, and are picked with `CityPicker` on their current world positions.
 - The route of the selected ship is drawn on the map while it is under way (`ShipRouteView`, driven by `ShipsView`): a dashed line over what it has sailed, a solid one over what is left, and a marker where the route ends, unless the route enters a city's port. `Ship.SailedWaypoints` is what the dashed line follows: where the ship was when it was ordered, then the waypoints it reached. Every order the ship takes starts it again and it is empty when idle, so an idle ship, or one in port, has no route to show.
@@ -73,6 +73,15 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 - An order ends on the clicked point itself when it is on water the ship can reach, otherwise on the center of the nearest cell of the ship's own region.
 - A search runs synchronously on the click. About 16 bytes per cell are held for the regions and the search, about 14 MB for a 1024-cell-wide grid.
 
+### Time
+
+- `GameClock` (Core) is the time of the simulated world: `Advance(real seconds)` gives `DeltaTime`, the simulated seconds of the frame, multiplied in fast forward, and raises `DayStarted` once per day that starts, even when one step crosses several. Everything simulated is advanced with that `DeltaTime`. `Time.timeScale` stays at 1, so the camera and the UI stay in real time; do not speed the game up through it.
+- `GameDate` (Core) is a day of the calendar, derived from the days elapsed. `CalendarDefinition` (Game, `Assets/Data/Calendar/Calendar.asset`) holds the start year (932), the month names (12 invented ones; their number is the number of months), the days per month (30), the real seconds per day (30) and the fast forward multiplier (60), and formats a date.
+- `WorldClock` owns the clock and advances it first in the frame (execution order -100). It is optional everywhere: `ShipsView`, `WorldMapInteraction` and `WorldMapCameraController` work as before without it.
+- Fast forward is a mode in which the map is only watched. `WorldMapInteraction` clears hover and selection when it starts, allows none while it lasts, and ends it on `WorldMapInput.AnyInput`: any keyboard key, or a mouse button or wheel step on the map. It then calls `ConsumeInput`, so that the same input does nothing else, not even through the release of the button. The HUD's button is over the UI: it does not raise `AnyInput` and toggles the mode itself.
+- `WorldMapCameraController` saves the view when fast forward starts, shows the whole map, ignores the input while it lasts and returns to the saved view afterwards, eased like any other move.
+- `TimeHudController` shows the date and the button (`Assets/UI/WorldMap/TimeHud.uxml`), in a second `UIDocument` that uses the same `PanelSettings` as the city panel: one panel, so `CityInfoPanelController.IsPointerOverUi` sees the button too. The date label is rewritten when a day starts, not every frame.
+- Keyboard keys are read from `Keyboard.current.allKeys`, not from an action: the "any key" control does not see a key pressed while another is held.
 
 ## Conventions
 
@@ -105,7 +114,7 @@ When the Editor is open, prefer the `unity-mcp` MCP tools (`Unity_RunCommand`, `
 
 - **Rendering**: URP 17.6 with the **2D Renderer**, linear color space. A single quality level, `PC`, uses `Assets/Settings/PC_RPAsset` → `Renderer2D`. Sprites are lit by 2D lights (`Light2D`); 3D lights and 3D-only URP features (SSAO, GPU Resident Drawer, shadow cascades) do not apply.
 - **2D**: the Editor's default behavior mode is 2D (textures import as sprites). The `com.unity.feature.2d` feature set is installed (tilemaps, sprite tooling, Aseprite/PSD importers, 2D animation). No Pixel Perfect Camera is set up yet.
-- **Input**: the new Input System is the only active handler — the legacy `UnityEngine.Input` API will throw. `Assets/InputSystem_Actions.inputactions` is registered as the project-wide actions asset. The game uses its `WorldMap` action map (Point, Click, PanDrag, PanMove, Zoom, Cancel, Command — the right mouse button, which gives orders and never pans); the `Player` map is the template's action-game default and is unused.
+- **Input**: the new Input System is the only active handler — the legacy `UnityEngine.Input` API will throw. `Assets/InputSystem_Actions.inputactions` is registered as the project-wide actions asset. The game uses its `WorldMap` action map (Point, Click, PanDrag, PanMove, Zoom, Cancel, Command — the right mouse button, which gives orders and never pans); the `Player` map is the template's action-game default and is unused. `WorldMapInput` also reads the keyboard's keys directly, only to tell that some key was pressed.
 
 - **Build scenes**: only `Assets/Scenes/WorldMap.unity`. Its sprites are lit by a global `Light2D`.
 

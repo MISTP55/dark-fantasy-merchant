@@ -13,8 +13,8 @@ namespace DarkFantasyMerchant.Editor
     /// <summary>
     /// Generates the world map scene, the city marker, ship and ship route prefabs and the
     /// sample content. Safe to run again: existing assets are left untouched, and an
-    /// existing scene only gains the ships and ship route objects when it has none, and
-    /// the references to them that are empty.
+    /// existing scene only gains the ships, ship route, world clock and time HUD objects
+    /// when it has none, and the references to them that are empty.
     /// </summary>
     public static class WorldMapSetup
     {
@@ -31,6 +31,10 @@ namespace DarkFantasyMerchant.Editor
         private const string PanelTemplatePath = UiFolder + "/CityInfoPanel.uxml";
         private const string ThemePath = "Assets/UI/DefaultRuntimeTheme.tss";
         private const string ScenePath = "Assets/Scenes/WorldMap.unity";
+
+        private const string CalendarFolder = "Assets/Data/Calendar";
+        private const string CalendarPath = CalendarFolder + "/Calendar.asset";
+        private const string TimeHudTemplatePath = UiFolder + "/TimeHud.uxml";
 
         private const string ShipTexturePath = "Assets/Art/Ships/MerchantShip.png";
         private const string ShipSpritePrefix = "MerchantShip_";
@@ -121,10 +125,12 @@ namespace DarkFantasyMerchant.Editor
             ShipDefinition shipDefinition = CreateShipDefinition();
             CreateShipPrefab(shipDefinition);
             CreateShipRoutePrefab();
+            CreateCalendar();
 
             AssetDatabase.SaveAssets();
             BuildScene();
             AddShipsToScene(mapSceneHadUnsavedChanges);
+            AddTimeToScene(mapSceneHadUnsavedChanges);
             AssetDatabase.SaveAssets();
 
             Debug.Log("World map setup finished.");
@@ -135,7 +141,7 @@ namespace DarkFantasyMerchant.Editor
             foreach (string folder in new[]
             {
                 ArtFolder, CitiesFolder, MapDataFolder, PrefabFolder, UiFolder,
-                ShipArtFolder, ShipDataFolder, ShipPrefabFolder, "Assets/Scenes",
+                ShipArtFolder, ShipDataFolder, ShipPrefabFolder, CalendarFolder, "Assets/Scenes",
             })
             {
                 Directory.CreateDirectory(folder);
@@ -311,6 +317,21 @@ namespace DarkFantasyMerchant.Editor
             panelSettings.referenceResolution = new Vector2Int(1920, 1080);
             AssetDatabase.CreateAsset(panelSettings, PanelSettingsPath);
             return panelSettings;
+        }
+
+        // A new calendar definition is the game's calendar: its defaults are the content.
+        private static CalendarDefinition CreateCalendar()
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<CalendarDefinition>(CalendarPath);
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var calendar = ScriptableObject.CreateInstance<CalendarDefinition>();
+            AssetDatabase.CreateAsset(calendar, CalendarPath);
+            return calendar;
         }
 
         private static ShipDefinition CreateShipDefinition()
@@ -612,23 +633,9 @@ namespace DarkFantasyMerchant.Editor
         // already exists, so a map built before ships existed gains them.
         private static void AddShipsToScene(bool sceneHadUnsavedChanges)
         {
-            // The scene is missing when its creation was cancelled.
-            if (!File.Exists(ScenePath))
+            if (!TryOpenMapScene("Ships", out Scene scene))
             {
                 return;
-            }
-
-            Scene scene = SceneManager.GetSceneByPath(ScenePath);
-
-            if (!scene.isLoaded)
-            {
-                if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-                {
-                    Debug.Log("Ships not added to the world map scene: the open scene has unsaved changes.");
-                    return;
-                }
-
-                scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             }
 
             var mapView = FindInScene<WorldMapView>(scene);
@@ -702,17 +709,136 @@ namespace DarkFantasyMerchant.Editor
                 changed = true;
             }
 
-            if (!changed)
+            if (changed)
+            {
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "Ships or their route");
+            }
+        }
+
+        // Like the ships, the world clock and the time HUD are added to a scene built
+        // before they existed.
+        private static void AddTimeToScene(bool sceneHadUnsavedChanges)
+        {
+            if (!TryOpenMapScene("The world clock", out Scene scene))
             {
                 return;
             }
 
+            bool changed = false;
+            var worldClock = FindInScene<WorldClock>(scene);
+
+            if (worldClock == null)
+            {
+                // Loaded only now: opening a scene unloads unreferenced assets.
+                var calendar = AssetDatabase.LoadAssetAtPath<CalendarDefinition>(CalendarPath);
+
+                if (calendar == null)
+                {
+                    throw new FileNotFoundException("The calendar could not be loaded.", CalendarPath);
+                }
+
+                var clockObject = new GameObject("World Clock");
+                SceneManager.MoveGameObjectToScene(clockObject, scene);
+
+                worldClock = clockObject.AddComponent<WorldClock>();
+                SetReference(worldClock, "calendar", calendar);
+                changed = true;
+            }
+
+            if (FindInScene<TimeHudController>(scene) == null)
+            {
+                var hudTemplate = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(TimeHudTemplatePath);
+
+                if (hudTemplate == null)
+                {
+                    throw new FileNotFoundException("The time HUD UXML is missing.", TimeHudTemplatePath);
+                }
+
+                // The same panel as the city panel, so that the map sees the pointer over
+                // the HUD's button as it does over the panel.
+                var cityPanel = FindInScene<CityInfoPanelController>(scene);
+                PanelSettings panelSettings = cityPanel != null
+                    ? cityPanel.GetComponent<UIDocument>().panelSettings
+                    : null;
+
+                if (panelSettings == null)
+                {
+                    panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(PanelSettingsPath);
+                }
+
+                if (panelSettings == null)
+                {
+                    throw new FileNotFoundException("The panel settings could not be loaded.", PanelSettingsPath);
+                }
+
+                var hudObject = new GameObject("Time HUD");
+                SceneManager.MoveGameObjectToScene(hudObject, scene);
+
+                var document = hudObject.AddComponent<UIDocument>();
+                document.panelSettings = panelSettings;
+                document.visualTreeAsset = hudTemplate;
+
+                SetReference(hudObject.AddComponent<TimeHudController>(), "worldClock", worldClock);
+                changed = true;
+            }
+
+            // Ships sail in the world's time; the map and its camera follow the fast forward.
+            foreach (Component follower in new Component[]
+            {
+                FindInScene<ShipsView>(scene),
+                FindInScene<WorldMapInteraction>(scene),
+                FindInScene<WorldMapCameraController>(scene),
+            })
+            {
+                if (follower != null && IsReferenceEmpty(follower, "worldClock"))
+                {
+                    SetReference(follower, "worldClock", worldClock);
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The world clock or the time HUD");
+            }
+        }
+
+        /// <returns>False when the scene does not exist or could not be opened.</returns>
+        private static bool TryOpenMapScene(string what, out Scene scene)
+        {
+            scene = default;
+
+            // The scene is missing when its creation was cancelled.
+            if (!File.Exists(ScenePath))
+            {
+                return false;
+            }
+
+            scene = SceneManager.GetSceneByPath(ScenePath);
+
+            if (scene.isLoaded)
+            {
+                return true;
+            }
+
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+            {
+                Debug.Log($"{what} not added to the world map scene: the open scene has unsaved changes.");
+                return false;
+            }
+
+            scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            return true;
+        }
+
+        private static void SaveSceneChanges(Scene scene, bool sceneHadUnsavedChanges, string what)
+        {
             EditorSceneManager.MarkSceneDirty(scene);
 
             // Saving would also write the user's own pending edits; leave that to them.
             if (sceneHadUnsavedChanges)
             {
-                Debug.Log($"Ships or their route added to {ScenePath}. The scene had unsaved changes: save it to keep them.");
+                Debug.Log($"{what} added to {ScenePath}. The scene had unsaved changes: save it to keep them.");
                 return;
             }
 
