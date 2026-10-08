@@ -9,7 +9,8 @@ namespace DarkFantasyMerchant.Game
     /// right clicks into move orders. At most one thing is hovered, and one selected,
     /// except that a ship in port is selected together with the city it lies in.
     /// During fast forward nothing is hovered, selected or ordered, and any input goes
-    /// back to normal speed.
+    /// back to normal speed, as does the arrival of the ship that was selected and under
+    /// way when it started.
     /// </summary>
     public sealed class WorldMapInteraction : MonoBehaviour
     {
@@ -31,6 +32,10 @@ namespace DarkFantasyMerchant.Game
 
         private bool isBound;
         private GameClock clock;
+
+        // The ship that was selected and under way when fast forward started: the player
+        // was waiting for it, so its arrival ends the fast forward.
+        private Ship awaitedShip;
 
         private bool IsFastForward => clock != null && clock.IsFastForward;
 
@@ -86,6 +91,12 @@ namespace DarkFantasyMerchant.Game
 
         private void Update()
         {
+            // A ship that enters a port has arrived too.
+            if (awaitedShip != null && !awaitedShip.IsMoving)
+            {
+                clock.SetFastForward(false);
+            }
+
             if (!CanPick())
             {
                 return;
@@ -227,8 +238,13 @@ namespace DarkFantasyMerchant.Game
         {
             if (!isFastForward)
             {
+                awaitedShip = null;
                 return;
             }
+
+            // Read before the selection is cleared.
+            Ship selectedShip = shipsView != null ? shipsView.Selection.Selected : null;
+            awaitedShip = selectedShip != null && selectedShip.IsMoving ? selectedShip : null;
 
             input.CancelGestures();
             mapView.Selection.SetHovered(null);
