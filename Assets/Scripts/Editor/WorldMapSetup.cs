@@ -434,8 +434,8 @@ namespace DarkFantasyMerchant.Editor
                 return existing;
             }
 
-            Material sailedMaterial = CreateRouteMaterial(RouteSailedMaterialPath, CreateRouteDashTexture());
-            Material remainingMaterial = CreateRouteMaterial(RouteRemainingMaterialPath, null);
+            Material sailedMaterial = CreateRouteMaterial(RouteSailedMaterialPath, null);
+            Material remainingMaterial = CreateRouteMaterial(RouteRemainingMaterialPath, CreateRouteDashTexture());
             Sprite markerSprite = CreateRouteMarkerSprite();
 
             var instance = new GameObject("ShipRoute", typeof(ShipRouteView));
@@ -443,7 +443,7 @@ namespace DarkFantasyMerchant.Editor
             LineRenderer remainingLine = CreateRouteLine("Remaining", instance.transform, remainingMaterial);
 
             // The dashes are the material's texture, repeated along the line.
-            sailedLine.textureMode = LineTextureMode.Tile;
+            remainingLine.textureMode = LineTextureMode.Tile;
 
             // ObjectFactory applies the render pipeline's default sprite material.
             GameObject markerObject = ObjectFactory.CreateGameObject("Destination", typeof(SpriteRenderer));

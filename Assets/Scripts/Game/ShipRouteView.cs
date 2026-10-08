@@ -5,8 +5,8 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The route of one ship on the world map: a dashed line over what it has sailed,
-    /// a solid one over what is left, and a marker where the route ends.
+    /// The route of one ship on the world map: a solid line over what it has sailed,
+    /// a dashed one over what is left, and a marker where the route ends.
     /// </summary>
     public sealed class ShipRouteView : MonoBehaviour
     {
@@ -44,10 +44,10 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            // The dashes are laid out from the start of the line: from the origin of the
-            // route, so that they stay where they are while the ship sails away.
-            SetPoints(sailedLine, projection, ship.SailedWaypoints, ship.Position, shipIsFirst: false);
-            SetPoints(remainingLine, projection, ship.RemainingWaypoints, ship.Position, shipIsFirst: true);
+            // The dashes are laid out from the start of the line: from the destination,
+            // so that they stay where they are while the ship sails towards it.
+            SetPoints(sailedLine, projection, ship.SailedWaypoints, ship.Position, reversed: false);
+            SetPoints(remainingLine, projection, ship.RemainingWaypoints, ship.Position, reversed: true);
 
             Vector2 destination = projection.NormalizedToWorld(ship.Destination.Value);
             Transform marker = destinationMarker.transform;
@@ -76,30 +76,30 @@ namespace DarkFantasyMerchant.Game
             remainingLine.widthMultiplier = width;
 
             // A tiled line repeats its texture once per world unit.
-            sailedLine.textureScale = new Vector2(1f / (dashPeriodPixels * worldUnitsPerPixel), 1f);
+            remainingLine.textureScale = new Vector2(1f / (dashPeriodPixels * worldUnitsPerPixel), 1f);
 
             float markerScale = markerScreenPixelsPerUnit * worldUnitsPerPixel;
             destinationMarker.transform.localScale = new Vector3(markerScale, markerScale, 1f);
         }
 
+        // Both lines end on the ship: the waypoints come first, in their order or reversed.
         private static void SetPoints(
             LineRenderer line,
             MapProjection projection,
             IReadOnlyList<Vector2> waypoints,
             Vector2 shipPosition,
-            bool shipIsFirst)
+            bool reversed)
         {
             line.enabled = true;
             line.positionCount = waypoints.Count + 1;
 
-            int offset = shipIsFirst ? 1 : 0;
-
             for (int i = 0; i < waypoints.Count; i++)
             {
-                line.SetPosition(i + offset, ToWorld(line, projection, waypoints[i]));
+                Vector2 waypoint = waypoints[reversed ? waypoints.Count - 1 - i : i];
+                line.SetPosition(i, ToWorld(line, projection, waypoint));
             }
 
-            line.SetPosition(shipIsFirst ? 0 : waypoints.Count, ToWorld(line, projection, shipPosition));
+            line.SetPosition(waypoints.Count, ToWorld(line, projection, shipPosition));
         }
 
         private static Vector3 ToWorld(LineRenderer line, MapProjection projection, Vector2 normalized)

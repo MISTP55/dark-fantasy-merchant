@@ -79,14 +79,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(1, dashedLines);
 
-            // Dashes on the remaining line would start at the ship and slide with it.
+            // What is left to sail is the dashed line, what has been sailed the solid one.
             var serialized = new SerializedObject(prefab);
             var sailedLine = serialized.FindProperty("sailedLine").objectReferenceValue as LineRenderer;
             var remainingLine = serialized.FindProperty("remainingLine").objectReferenceValue as LineRenderer;
             Assert.IsNotNull(sailedLine, "sailedLine");
             Assert.IsNotNull(remainingLine, "remainingLine");
-            Assert.AreEqual(LineTextureMode.Tile, sailedLine.textureMode);
-            Assert.AreNotEqual(LineTextureMode.Tile, remainingLine.textureMode);
+            Assert.AreEqual(LineTextureMode.Tile, remainingLine.textureMode);
+            Assert.AreNotEqual(LineTextureMode.Tile, sailedLine.textureMode);
 
             var marker = serialized.FindProperty("destinationMarker").objectReferenceValue as SpriteRenderer;
             Assert.IsNotNull(marker);
