@@ -122,6 +122,15 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
+        /// Goes to the closest view of a point: centered on it as far as the map allows.
+        /// An invalid position is ignored.
+        /// </summary>
+        public void ZoomInFullyOn(Vector2 position)
+        {
+            SetView(position, MinOrthographicSize);
+        }
+
+        /// <summary>
         /// World position of a viewport point, where (0,0) is the bottom-left corner
         /// of the view and (1,1) the top-right.
         /// </summary>

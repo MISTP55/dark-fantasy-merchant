@@ -320,5 +320,41 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(5f, model.OrthographicSize, 1e-4f);
             TestAssert.AreEqual(new Vector2(3f, 1f), model.Position);
         }
+
+        [Test]
+        public void ZoomInFullyOn_CentersTheClosestViewOnThePoint()
+        {
+            var model = new MapCameraModel(Map, 2f, 2f);
+
+            model.ZoomInFullyOn(new Vector2(3f, 1f));
+
+            Assert.AreEqual(2f, model.OrthographicSize, 1e-4f);
+            TestAssert.AreEqual(new Vector2(3f, 1f), model.Position);
+        }
+
+        [Test]
+        public void ZoomInFullyOn_ClampsThePositionToTheMap()
+        {
+            var model = new MapCameraModel(Map, 2f, 2f);
+
+            // Size 2: half extents are 4 x 2, so the center stays within (-16..16, -8..8).
+            model.ZoomInFullyOn(new Vector2(19f, -9.5f));
+
+            Assert.AreEqual(2f, model.OrthographicSize, 1e-4f);
+            TestAssert.AreEqual(new Vector2(16f, -8f), model.Position);
+        }
+
+        [Test]
+        public void ZoomInFullyOn_IgnoresAnInvalidPosition()
+        {
+            var model = new MapCameraModel(Map, 2f, 2f);
+            model.SetView(new Vector2(3f, 1f), 5f);
+
+            model.ZoomInFullyOn(new Vector2(float.NaN, 0f));
+            model.ZoomInFullyOn(new Vector2(0f, float.PositiveInfinity));
+
+            Assert.AreEqual(5f, model.OrthographicSize, 1e-4f);
+            TestAssert.AreEqual(new Vector2(3f, 1f), model.Position);
+        }
     }
 }

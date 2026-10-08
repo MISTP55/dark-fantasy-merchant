@@ -6,7 +6,8 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// Feeds input to a <see cref="MapCameraModel"/> and shows its state on the camera,
     /// eased by a <see cref="MapCameraSmoother"/>. Holds no clamping, zoom or easing math of its own.
-    /// During fast forward it shows the whole map and ignores the input.
+    /// During fast forward it shows the whole map and ignores the input. It can also cut
+    /// to a close-up of a point.
     /// </summary>
     [RequireComponent(typeof(Camera))]
     public sealed class WorldMapCameraController : MonoBehaviour
@@ -141,6 +142,21 @@ namespace DarkFantasyMerchant.Game
         {
             return mapCamera.ScreenToWorldPoint(
                 new Vector3(screenPosition.x, screenPosition.y, mapCamera.nearClipPlane));
+        }
+
+        /// <summary>
+        /// Cuts to the closest view of a world position. Ignored while the view is locked.
+        /// </summary>
+        public void ShowCloseUp(Vector2 worldPosition)
+        {
+            if (model == null || isLocked)
+            {
+                return;
+            }
+
+            model.ZoomInFullyOn(worldPosition);
+            smoother.SnapTo(model.Position, model.OrthographicSize);
+            Apply();
         }
 
         private void OnDragged(Vector2 screenDelta)

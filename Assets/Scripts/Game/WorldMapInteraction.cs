@@ -10,8 +10,8 @@ namespace DarkFantasyMerchant.Game
     /// except that a ship in port is selected together with the city it lies in.
     /// During fast forward nothing is hovered, selected or ordered, and any input goes
     /// back to normal speed, as does the arrival of the ship that was selected and under
-    /// way when it started. The ship that was selected is selected again afterwards, or
-    /// the city it has entered meanwhile.
+    /// way when it started, which the camera then shows in close-up. The ship that was
+    /// selected is selected again afterwards, or the city it has entered meanwhile.
     /// </summary>
     public sealed class WorldMapInteraction : MonoBehaviour
     {
@@ -98,7 +98,13 @@ namespace DarkFantasyMerchant.Game
             // A ship that enters a port has arrived too.
             if (awaitedShip != null && !awaitedShip.IsMoving)
             {
+                // Read before the end of the fast forward forgets the ship.
+                Ship arrivedShip = awaitedShip;
                 clock.SetFastForward(false);
+
+                // The camera has gone back to the view it had before the fast forward:
+                // the player was waiting for this ship, so it shows where it arrived instead.
+                cameraController.ShowCloseUp(arrivedShip.WorldPosition);
             }
 
             if (!CanPick())
