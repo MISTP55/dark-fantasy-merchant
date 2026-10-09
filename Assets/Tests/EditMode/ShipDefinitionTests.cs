@@ -106,5 +106,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
+
+        [Test]
+        public void ANewDefinition_HoldsTwoHundredBarrels()
+        {
+            var fresh = UnityEngine.ScriptableObject.CreateInstance<ShipDefinition>();
+
+            Assert.AreEqual(200, fresh.CargoCapacity);
+
+            UnityEngine.Object.DestroyImmediate(fresh);
+        }
     }
 }

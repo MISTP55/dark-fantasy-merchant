@@ -263,7 +263,9 @@ namespace DarkFantasyMerchant.Game
             }
 
             // With a pathfinder, a ship that starts on a city starts on the water beside it.
-            var ship = new Ship(mapView.Projection, position, definition.Speed, crew, navigation);
+            // The Min attribute only constrains the Inspector, not the asset file.
+            var cargo = new CargoHold(Mathf.Max(0, definition.CargoCapacity));
+            var ship = new Ship(mapView.Projection, position, definition.Speed, crew, navigation, cargo);
             ShipView view = Instantiate(shipPrefab, transform);
             view.Initialize(ship, definition);
             arrivals.Track(ship);

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DarkFantasyMerchant.Game
@@ -15,6 +16,15 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private CityAccess access;
         [SerializeField] private CitySize size;
 
+        [Tooltip("Inhabitants. Sets how much of every good the city consumes.")]
+        [SerializeField, Min(0)] private int population;
+
+        [Tooltip("Goods the city produces well above what it consumes.")]
+        [SerializeField] private List<GoodDefinition> efficientGoods = new List<GoodDefinition>();
+
+        [Tooltip("Goods the city produces barely above what it consumes.")]
+        [SerializeField] private List<GoodDefinition> inefficientGoods = new List<GoodDefinition>();
+
         public string DisplayName => displayName;
 
         public string Description => description;
@@ -24,5 +34,27 @@ namespace DarkFantasyMerchant.Game
         public CityAccess Access => access;
 
         public CitySize Size => size;
+
+        public int Population => population;
+
+        public IReadOnlyList<GoodDefinition> EfficientGoods => efficientGoods;
+
+        public IReadOnlyList<GoodDefinition> InefficientGoods => inefficientGoods;
+
+        /// <summary>How the city produces a good. A good in both lists is produced efficiently.</summary>
+        public GoodProduction ProductionOf(GoodDefinition good)
+        {
+            if (good == null)
+            {
+                return GoodProduction.None;
+            }
+
+            if (efficientGoods.Contains(good))
+            {
+                return GoodProduction.Efficient;
+            }
+
+            return inefficientGoods.Contains(good) ? GoodProduction.Inefficient : GoodProduction.None;
+        }
     }
 }
