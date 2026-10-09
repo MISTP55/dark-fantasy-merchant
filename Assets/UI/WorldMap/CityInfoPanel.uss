@@ -73,3 +73,92 @@
     background-color: rgb(255, 140, 51);
     border-color: rgb(240, 226, 196);
 }
+
+/* Wider than the ship panel: the market is a table. */
+.city-panel {
+    width: 480px;
+}
+
+.market__title {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.market__hold {
+    color: rgb(190, 164, 120);
+    font-size: 14px;
+    -unity-font-style: normal;
+}
+
+.market__row {
+    flex-direction: row;
+    align-items: center;
+    height: 26px;
+}
+
+.market__row--header {
+    color: rgb(190, 164, 120);
+}
+
+.market__cell {
+    margin: 0;
+    padding: 0;
+    color: rgb(222, 210, 188);
+    font-size: 14px;
+}
+
+.market__row--header .market__cell {
+    color: rgb(190, 164, 120);
+    font-size: 13px;
+}
+
+.market__cell--name {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.market__cell--number {
+    width: 62px;
+    -unity-text-align: middle-right;
+}
+
+/* The hold column and the buttons only exist while a ship in port trades. */
+.market__cell--trade {
+    display: none;
+}
+
+.market--trading .market__cell--trade {
+    display: flex;
+}
+
+.market__button {
+    width: 26px;
+    height: 22px;
+    margin: 0 0 0 6px;
+    padding: 0;
+    color: rgb(222, 210, 188);
+    background-color: rgba(60, 44, 30, 0.9);
+    border-width: 1px;
+    border-radius: 0;
+    border-color: rgb(110, 84, 52);
+    font-size: 15px;
+    -unity-font-style: bold;
+}
+
+.market__button:hover {
+    background-color: rgb(84, 62, 40);
+}
+
+.market__button:active {
+    background-color: rgb(110, 84, 52);
+}
+
+.market__button:disabled {
+    opacity: 0.35;
+}
+
+/* As wide as the two buttons of a row and their margins. */
+.market__buttons-space {
+    width: 64px;
+}

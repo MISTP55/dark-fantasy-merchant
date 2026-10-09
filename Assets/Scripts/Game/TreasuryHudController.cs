@@ -76,13 +76,19 @@ namespace DarkFantasyMerchant.Game
             isBound = false;
         }
 
+        /// <summary>A whole number as the interface writes it: "6 000", thousands separated by a no-break space.</summary>
+        public static string FormatNumber(long value)
+        {
+            return value.ToString("N0", GoldFormat);
+        }
+
         /// <summary>
         /// The gold as the HUD writes it: "10 000 or", or "-250 or" for a debt. Thousands
         /// are separated by a no-break space, as in French.
         /// </summary>
         public static string FormatGold(long gold)
         {
-            return gold.ToString("N0", GoldFormat) + " or";
+            return FormatNumber(gold) + " or";
         }
 
         private void ShowGold(long gold)

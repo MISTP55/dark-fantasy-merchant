@@ -7,8 +7,8 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// Presents the hovered city's name and the selected city's information panel, with
-    /// the ships in its port: clicking one selects it, so that it can be ordered out.
-    /// Reads the map's selection state; knows nothing about markers.
+    /// the ships in its port and its market: clicking a ship selects it, so that it can
+    /// trade or be ordered out. Reads the map's selection state; knows nothing about markers.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class CityInfoPanelController : MonoBehaviour
@@ -21,6 +21,12 @@ namespace DarkFantasyMerchant.Game
 
         [Tooltip("Optional. Without it, the panel lists no ship in port.")]
         [SerializeField] private ShipsView shipsView;
+
+        [Tooltip("Optional. Without it, the panel shows no market.")]
+        [SerializeField] private WorldEconomy worldEconomy;
+
+        [Tooltip("Optional. Without it, the market is only read: nothing is bought or sold.")]
+        [SerializeField] private PlayerTreasury playerTreasury;
 
         [Tooltip("Offset of the hover label from the city, in panel units.")]
         [SerializeField] private Vector2 hoverLabelOffset = new Vector2(14f, -30f);
@@ -35,6 +41,14 @@ namespace DarkFantasyMerchant.Game
         private Label noShipLabel;
         private VisualElement shipList;
         private Button closeButton;
+        private Label populationLabel;
+        private VisualElement marketElement;
+        private VisualElement marketRows;
+        private Label marketHoldLabel;
+
+        // Made on the first city shown: the world's economy starts after this panel is enabled.
+        private CityMarketSection marketSection;
+
         private bool isBound;
 
         // Ship of each row of the ship list, in the same order.
@@ -59,10 +73,18 @@ namespace DarkFantasyMerchant.Game
             noShipLabel = root.Q<Label>("no-ship-label");
             shipList = root.Q<VisualElement>("ship-list");
             closeButton = root.Q<Button>("close-button");
+            populationLabel = root.Q<Label>("city-population");
+            marketElement = root.Q<VisualElement>("market-section");
+            marketRows = root.Q<VisualElement>("market-rows");
+            marketHoldLabel = root.Q<Label>("market-hold");
+
+            // A document that is enabled again has a new tree: the section is rebuilt in it.
+            marketSection = null;
 
             if (cityPanel == null || hoverLabel == null || nameLabel == null || sizeLabel == null
                 || accessLabel == null || descriptionLabel == null || noShipLabel == null
-                || shipList == null || closeButton == null)
+                || shipList == null || closeButton == null || populationLabel == null
+                || marketElement == null || marketRows == null || marketHoldLabel == null)
             {
                 Debug.LogError("CityInfoPanel.uxml is missing an expected element.", this);
                 return;
@@ -84,6 +106,9 @@ namespace DarkFantasyMerchant.Game
                 shipsView.Docking.Undocked += OnDockingChanged;
                 shipsView.Selection.SelectedChanged += OnShipSelected;
             }
+
+            // Hidden until a market is shown, also in a scene without an economy.
+            marketElement.style.display = DisplayStyle.None;
 
             isBound = true;
 
@@ -108,6 +133,9 @@ namespace DarkFantasyMerchant.Game
                 shipsView.Docking.Undocked -= OnDockingChanged;
                 shipsView.Selection.SelectedChanged -= OnShipSelected;
             }
+
+            // Stops listening to the market, the hold and the treasury.
+            marketSection?.Hide();
 
             isBound = false;
         }
@@ -147,6 +175,12 @@ namespace DarkFantasyMerchant.Game
             return root.panel.Pick(panelPosition) != null;
         }
 
+        /// <summary>The population as the panel writes it: "Population : 6 000".</summary>
+        public static string FormatPopulation(int population)
+        {
+            return $"Population : {TreasuryHudController.FormatNumber(population)}";
+        }
+
         private void ShowHovered(CityDefinition city)
         {
             if (city == null)
@@ -164,14 +198,17 @@ namespace DarkFantasyMerchant.Game
             if (city == null)
             {
                 cityPanel.style.display = DisplayStyle.None;
+                marketSection?.Hide();
                 return;
             }
 
             nameLabel.text = city.DisplayName;
             sizeLabel.text = SizeText(city.Size);
             accessLabel.text = AccessText(city.Access);
+            populationLabel.text = FormatPopulation(city.Population);
             descriptionLabel.text = city.Description;
             ShowShipsIn(city);
+            ShowMarketOf(city);
             cityPanel.style.display = DisplayStyle.Flex;
         }
 
@@ -218,12 +255,65 @@ namespace DarkFantasyMerchant.Game
             if (ReferenceEquals(city, mapView.Selection.Selected))
             {
                 ShowShipsIn(city);
+                ShowMarketOf(city);
             }
         }
 
         private void OnShipSelected(Ship ship)
         {
             HighlightSelectedShip();
+
+            // The hold that trades is the selected ship's.
+            if (mapView.Selection.Selected != null)
+            {
+                ShowMarketOf(mapView.Selection.Selected);
+            }
+        }
+
+        // After ShowShipsIn: the ship that trades is one of the ships listed.
+        private void ShowMarketOf(CityDefinition city)
+        {
+            if (!TryGetMarketSection(out CityMarketSection section))
+            {
+                return;
+            }
+
+            CityMarket market = worldEconomy.MarketOf(city);
+
+            if (market == null)
+            {
+                section.Hide();
+                return;
+            }
+
+            section.Show(market, HoldOfSelectedShipInPort());
+        }
+
+        private bool TryGetMarketSection(out CityMarketSection section)
+        {
+            if (marketSection == null && worldEconomy != null && worldEconomy.IsReady)
+            {
+                var goodNames = new List<string>();
+
+                foreach (GoodDefinition good in worldEconomy.Economy.Goods)
+                {
+                    goodNames.Add(good.DisplayName);
+                }
+
+                Treasury treasury = playerTreasury != null && playerTreasury.IsReady ? playerTreasury.Treasury : null;
+                marketSection = new CityMarketSection(marketElement, marketRows, marketHoldLabel, goodNames, treasury);
+            }
+
+            section = marketSection;
+            return section != null;
+        }
+
+        /// <returns>The hold of the selected ship when it lies in the shown city's port, otherwise null.</returns>
+        private CargoHold HoldOfSelectedShipInPort()
+        {
+            Ship selected = shipsView != null ? shipsView.Selection.Selected : null;
+
+            return selected != null && listedShips.Contains(selected) ? selected.Cargo : null;
         }
 
         private void OnCloseClicked()

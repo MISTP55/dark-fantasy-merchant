@@ -17,5 +17,20 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             Assert.AreEqual("Équipage : 0 / 28", ShipInfoPanelController.FormatCrew(new ShipCrew(28, 0)));
         }
+
+        [Test]
+        public void FormatCargo_WritesTheBarrelsAboard_OutOfTheCapacity()
+        {
+            var hold = new CargoHold(200);
+            hold.TryAdd(3, 60);
+
+            Assert.AreEqual("Cale : 60 / 200 tonneaux", ShipInfoPanelController.FormatCargo(hold));
+        }
+
+        [Test]
+        public void FormatCargo_WritesThousandsSeparators()
+        {
+            Assert.AreEqual("Cale : 0 / 1 200 tonneaux", ShipInfoPanelController.FormatCargo(new CargoHold(1200)));
+        }
     }
 }

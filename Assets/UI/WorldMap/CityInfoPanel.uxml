@@ -3,17 +3,33 @@
     <Style src="CityInfoPanel.uss" />
     <ui:VisualElement name="map-ui-root" picking-mode="Ignore" class="map-ui-root">
         <ui:Label name="hover-label" picking-mode="Ignore" class="hover-label" />
-        <ui:VisualElement name="city-panel" class="info-panel">
+        <ui:VisualElement name="city-panel" class="info-panel city-panel">
             <ui:VisualElement class="info-panel__header">
                 <ui:Label name="city-name" class="info-panel__name" />
                 <ui:Button name="close-button" text="X" class="info-panel__close" />
             </ui:VisualElement>
             <ui:Label name="city-size" class="city-panel__tag" />
             <ui:Label name="city-access" class="city-panel__tag" />
+            <ui:Label name="city-population" class="city-panel__tag" />
             <ui:Label name="city-description" class="city-panel__description" />
             <ui:Label text="Navires au port" class="city-panel__section" />
             <ui:Label name="no-ship-label" text="Aucun navire au port" class="city-panel__empty" />
             <ui:VisualElement name="ship-list" />
+            <ui:VisualElement name="market-section" class="market">
+                <ui:VisualElement class="city-panel__section market__title">
+                    <ui:Label text="Marché" />
+                    <ui:Label name="market-hold" class="market__hold" />
+                </ui:VisualElement>
+                <ui:VisualElement class="market__row market__row--header">
+                    <ui:Label text="Marchandise" class="market__cell market__cell--name" />
+                    <ui:Label text="Stock" class="market__cell market__cell--number" />
+                    <ui:Label text="Achat" class="market__cell market__cell--number" />
+                    <ui:Label text="Vente" class="market__cell market__cell--number" />
+                    <ui:Label text="Cale" class="market__cell market__cell--number market__cell--trade" />
+                    <ui:VisualElement class="market__buttons-space market__cell--trade" />
+                </ui:VisualElement>
+                <ui:VisualElement name="market-rows" />
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

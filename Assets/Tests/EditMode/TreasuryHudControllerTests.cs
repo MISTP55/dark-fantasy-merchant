@@ -24,5 +24,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             Assert.AreEqual("-1\u00A0250 or", TreasuryHudController.FormatGold(-1250));
         }
+
+        [Test]
+        public void FormatNumber_WritesThousandsSeparators_WithoutAUnit()
+        {
+            Assert.AreEqual("6\u00A0000", TreasuryHudController.FormatNumber(6000));
+            Assert.AreEqual("340", TreasuryHudController.FormatNumber(340));
+            Assert.AreEqual("0", TreasuryHudController.FormatNumber(0));
+        }
     }
 }

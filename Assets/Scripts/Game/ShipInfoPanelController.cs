@@ -87,6 +87,13 @@ namespace DarkFantasyMerchant.Game
             return $"Équipage : {crew.Count} / {crew.Capacity}";
         }
 
+        /// <summary>The hold as the panels write it: "Cale : 60 / 200 tonneaux", the barrels aboard out of the capacity.</summary>
+        public static string FormatCargo(CargoHold hold)
+        {
+            return $"Cale : {TreasuryHudController.FormatNumber(hold.Used)} / "
+                + $"{TreasuryHudController.FormatNumber(hold.Capacity)} tonneaux";
+        }
+
         private void ShowSelected(Ship ship)
         {
             if (ship == null)
