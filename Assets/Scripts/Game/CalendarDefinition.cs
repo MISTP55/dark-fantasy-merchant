@@ -22,6 +22,9 @@ namespace DarkFantasyMerchant.Game
 
         [SerializeField, Min(1)] private int daysPerMonth = 30;
 
+        [Tooltip("Days between two payments of the recurring expenses. Weeks are counted from the first day of the game, not within a month.")]
+        [SerializeField, Min(1)] private int daysPerWeek = 7;
+
         [Tooltip("Real seconds a day lasts at normal speed.")]
         [SerializeField, Min(0.01f)] private float secondsPerDay = 30f;
 
@@ -33,6 +36,8 @@ namespace DarkFantasyMerchant.Game
         public int MonthsPerYear => monthNames != null ? monthNames.Length : 0;
 
         public int DaysPerMonth => daysPerMonth;
+
+        public int DaysPerWeek => daysPerWeek;
 
         public float SecondsPerDay => secondsPerDay;
 

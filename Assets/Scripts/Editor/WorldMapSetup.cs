@@ -14,8 +14,9 @@ namespace DarkFantasyMerchant.Editor
     /// Generates the world map scene, the city marker, ship and ship route prefabs and the
     /// sample content. Safe to run again: existing assets are left untouched, and an
     /// existing scene only gains the ships, ship route, ship panel, world clock, time HUD,
-    /// player treasury, treasury HUD, player notifications, notifications HUD and ship
-    /// arrival notifier objects when it has none, and the references to them that are empty.
+    /// player treasury, treasury HUD, player notifications, notifications HUD, ship
+    /// arrival notifier and player expenses objects when it has none, and the references
+    /// to them that are empty.
     /// </summary>
     public static class WorldMapSetup
     {
@@ -42,6 +43,9 @@ namespace DarkFantasyMerchant.Editor
         private const string PlayerStartPath = PlayerDataFolder + "/PlayerStart.asset";
         private const string TreasuryHudTemplatePath = UiFolder + "/TreasuryHud.uxml";
         private const string NotificationsHudTemplatePath = UiFolder + "/NotificationsHud.uxml";
+
+        private const string EconomyFolder = "Assets/Data/Economy";
+        private const string ExpensesPath = EconomyFolder + "/Expenses.asset";
 
         private const string ShipTexturePath = "Assets/Art/Ships/MerchantShip.png";
         private const string ShipSpritePrefix = "MerchantShip_";
@@ -135,6 +139,7 @@ namespace DarkFantasyMerchant.Editor
             CreateShipRoutePrefab();
             CreateCalendar();
             CreatePlayerStart();
+            CreateExpenses();
 
             AssetDatabase.SaveAssets();
             BuildScene();
@@ -143,6 +148,7 @@ namespace DarkFantasyMerchant.Editor
             AddTimeToScene(mapSceneHadUnsavedChanges);
             AddTreasuryToScene(mapSceneHadUnsavedChanges);
             AddNotificationsToScene(mapSceneHadUnsavedChanges);
+            AddExpensesToScene(mapSceneHadUnsavedChanges);
             AssetDatabase.SaveAssets();
 
             Debug.Log("World map setup finished.");
@@ -154,6 +160,7 @@ namespace DarkFantasyMerchant.Editor
             {
                 ArtFolder, CitiesFolder, MapDataFolder, PrefabFolder, UiFolder,
                 ShipArtFolder, ShipDataFolder, ShipPrefabFolder, CalendarFolder, PlayerDataFolder,
+                EconomyFolder,
                 "Assets/Scenes",
             })
             {
@@ -360,6 +367,21 @@ namespace DarkFantasyMerchant.Editor
             var playerStart = ScriptableObject.CreateInstance<PlayerStartDefinition>();
             AssetDatabase.CreateAsset(playerStart, PlayerStartPath);
             return playerStart;
+        }
+
+        // Like the calendar, new expenses are the game's: their defaults are the content.
+        private static ExpensesDefinition CreateExpenses()
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<ExpensesDefinition>(ExpensesPath);
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var expenses = ScriptableObject.CreateInstance<ExpensesDefinition>();
+            AssetDatabase.CreateAsset(expenses, ExpensesPath);
+            return expenses;
         }
 
         private static ShipDefinition CreateShipDefinition()
@@ -1024,6 +1046,60 @@ namespace DarkFantasyMerchant.Editor
             }
         }
 
+        // Like the notifications, what makes the player pay the weekly expenses is added to a
+        // scene built before it existed.
+        private static void AddExpensesToScene(bool sceneHadUnsavedChanges)
+        {
+            if (!TryOpenMapScene("The player's expenses", out Scene scene))
+            {
+                return;
+            }
+
+            var worldClock = FindInScene<WorldClock>(scene);
+            var playerTreasury = FindInScene<PlayerTreasury>(scene);
+            var shipsView = FindInScene<ShipsView>(scene);
+
+            // Weeks pass on the clock, the treasury pays and the ships carry the sailors.
+            if (worldClock == null || playerTreasury == null || shipsView == null)
+            {
+                Debug.LogWarning(
+                    $"{ScenePath} has no WorldClock, PlayerTreasury or ShipsView; player expenses not added.");
+                return;
+            }
+
+            // Loaded only now: opening a scene unloads unreferenced assets.
+            var expenses = AssetDatabase.LoadAssetAtPath<ExpensesDefinition>(ExpensesPath);
+
+            if (expenses == null)
+            {
+                throw new FileNotFoundException("The expenses could not be loaded.", ExpensesPath);
+            }
+
+            bool changed = false;
+            var playerExpenses = FindInScene<PlayerExpenses>(scene);
+
+            if (playerExpenses == null)
+            {
+                var expensesObject = new GameObject("Player Expenses");
+                SceneManager.MoveGameObjectToScene(expensesObject, scene);
+
+                playerExpenses = expensesObject.AddComponent<PlayerExpenses>();
+                changed = true;
+            }
+
+            // Also for a scene in which one of them was deleted and made again.
+            changed |= FillReference(playerExpenses, "expenses", expenses);
+            changed |= FillReference(playerExpenses, "worldClock", worldClock);
+            changed |= FillReference(playerExpenses, "playerTreasury", playerTreasury);
+            changed |= FillReference(playerExpenses, "shipsView", shipsView);
+            changed |= FillReference(playerExpenses, "playerNotifications", FindInScene<PlayerNotifications>(scene));
+
+            if (changed)
+            {
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The player's expenses");
+            }
+        }
+
         // The HUDs and the ship panel share the city panel's panel, so that the map sees the pointer over
         // their buttons as it does over the panel.
         private static PanelSettings FindPanelSettings(Scene scene)
@@ -1113,6 +1189,18 @@ namespace DarkFantasyMerchant.Editor
             }
 
             return property.objectReferenceValue == null;
+        }
+
+        /// <returns>True when the reference was empty and is now set.</returns>
+        private static bool FillReference(Object target, string propertyName, Object value)
+        {
+            if (value == null || !IsReferenceEmpty(target, propertyName))
+            {
+                return false;
+            }
+
+            SetReference(target, propertyName, value);
+            return true;
         }
 
         /// <summary>

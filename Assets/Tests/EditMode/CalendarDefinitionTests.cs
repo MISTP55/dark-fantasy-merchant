@@ -29,6 +29,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(932, calendar.StartYear);
             Assert.AreEqual(12, calendar.MonthsPerYear);
             Assert.AreEqual(30, calendar.DaysPerMonth);
+            Assert.AreEqual(7, calendar.DaysPerWeek);
             Assert.AreEqual(30f, calendar.SecondsPerDay);
             Assert.AreEqual(60f, calendar.FastForwardMultiplier);
         }
