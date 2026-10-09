@@ -67,6 +67,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void HoldsTheCargoHoldItIsGiven()
+        {
+            var cargo = new CargoHold(200);
+
+            Assert.AreSame(cargo, new Ship(projection, Center, Speed, TestCrew.Full, null, cargo).Cargo);
+        }
+
+        [Test]
+        public void WithoutACargoHold_HasOneWithoutRoom()
+        {
+            var ship = new Ship(projection, Center, Speed, TestCrew.Full);
+
+            Assert.IsNotNull(ship.Cargo);
+            Assert.AreEqual(0, ship.Cargo.Capacity);
+        }
+
+        [Test]
         public void Advance_IsSlowedByAShortCrew()
         {
             // 30 sailors of 100: three quarters of the speed.

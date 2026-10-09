@@ -5,8 +5,8 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// Runtime state of one ship: where it is, the route it follows and which way it
-    /// faces. Sails at constant speed, the share of its own that its crew allows: over
+    /// Runtime state of one ship: where it is, the route it follows, which way it
+    /// faces, its crew and its cargo. Sails at constant speed, the share of its own that its crew allows: over
     /// water only when it was given a pathfinder, otherwise in a straight line.
     /// </summary>
     public sealed class Ship
@@ -34,12 +34,14 @@ namespace DarkFantasyMerchant.Core
         /// Where the ship can sail. Null for a map without a navigation mask: the ship
         /// then sails in a straight line.
         /// </param>
+        /// <param name="cargo">The ship's hold. Null for a ship that carries nothing.</param>
         public Ship(
             MapProjection projection,
             Vector2 position,
             float speed,
             ShipCrew crew,
-            NavigationPathfinder navigation = null)
+            NavigationPathfinder navigation = null,
+            CargoHold cargo = null)
         {
             this.projection = projection ?? throw new ArgumentNullException(nameof(projection));
 
@@ -55,6 +57,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             Crew = crew ?? throw new ArgumentNullException(nameof(crew));
+            Cargo = cargo ?? new CargoHold(0);
 
             this.speed = speed;
             this.navigation = navigation;
@@ -70,6 +73,9 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>The sailors aboard, who set how much of its speed the ship sails at.</summary>
         public ShipCrew Crew { get; }
+
+        /// <summary>The goods aboard. A ship that was given no hold has one without room.</summary>
+        public CargoHold Cargo { get; }
 
         /// <summary>Normalized map position.</summary>
         public Vector2 Position { get; private set; }
