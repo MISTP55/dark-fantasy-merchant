@@ -121,6 +121,25 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void AvailableOf_CountsABarrelThatFloatingPointLeavesAHairShort()
+        {
+            // 72 in stock, 2.4 a day: 60 after five days, but 59.999999999999986 in floating point.
+            CityMarket market = MarketOf(new MarketGood(10, 2.4, 0, 0));
+
+            for (int day = 0; day < 5; day++)
+            {
+                market.StartDay();
+            }
+
+            Assert.AreEqual(60, market.AvailableOf(0));
+
+            market.Take(0, 60);
+
+            Assert.AreEqual(0, market.AvailableOf(0));
+            Assert.GreaterOrEqual(market.StockOf(0), 0d);
+        }
+
+        [Test]
         public void AStockUnderOneBarrel_HasNoneAvailable()
         {
             CityMarket market = MarketOf(new MarketGood(40, 0.3, 0, 0));

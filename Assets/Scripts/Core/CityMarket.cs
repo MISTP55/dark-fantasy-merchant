@@ -10,6 +10,8 @@ namespace DarkFantasyMerchant.Core
     /// </summary>
     public sealed class CityMarket
     {
+        private const double WholeBarrelMargin = 1e-9;
+
         private readonly MarketGood[] goods;
         private readonly double[] stocks;
         private readonly double targetDays;
@@ -59,7 +61,8 @@ namespace DarkFantasyMerchant.Core
         /// <summary>Whole barrels in stock: what is shown and what can be bought.</summary>
         public int AvailableOf(int good)
         {
-            return (int)Math.Min(int.MaxValue, Math.Floor(StockOf(good)));
+            // Days of fractional consumption leave a whole stock a hair short of itself.
+            return (int)Math.Min(int.MaxValue, Math.Floor(StockOf(good) + WholeBarrelMargin));
         }
 
         /// <summary>The stock at which the good is at its base price.</summary>
@@ -100,7 +103,8 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentOutOfRangeException(nameof(barrels));
             }
 
-            stocks[good] -= barrels;
+            // Not below nothing: the last barrel can be that hair short.
+            stocks[good] = Math.Max(0d, stocks[good] - barrels);
             Changed?.Invoke();
         }
 
