@@ -405,6 +405,8 @@ MonoBehaviour:
   mapView: {fileID: 935350158}
   mapCamera: {fileID: 1418061169}
   shipsView: {fileID: 948842205}
+  worldEconomy: {fileID: 1991110005}
+  playerTreasury: {fileID: 516856359}
   hoverLabelOffset: {x: 14, y: -30}
 --- !u!114 &950679377
 MonoBehaviour:
@@ -636,6 +638,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.ShipInfoPanelController
   shipsView: {fileID: 948842205}
+  economy: {fileID: 11400000, guid: 004dcabd3ae3f0646992f6e3f1fa345a, type: 2}
 --- !u!114 &1131824153
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1179,6 +1182,53 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4561419432845021503, guid: cb344ca2f135d3343bc3a095db9ed166, type: 3}
   m_PrefabInstance: {fileID: 1824036735}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1991110004
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1991110006}
+  - component: {fileID: 1991110005}
+  m_Layer: 0
+  m_Name: World Economy
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1991110005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1991110004}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce2a5d41926186a4a9d655a092ce9aa3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.WorldEconomy
+  economy: {fileID: 11400000, guid: 004dcabd3ae3f0646992f6e3f1fa345a, type: 2}
+  mapView: {fileID: 935350158}
+  worldClock: {fileID: 1809179065}
+--- !u!4 &1991110006
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1991110004}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2074069754
 GameObject:
   m_ObjectHideFlags: 0
@@ -1266,3 +1316,4 @@ SceneRoots:
   - {fileID: 1042412869}
   - {fileID: 1151278362}
   - {fileID: 1795652451}
+  - {fileID: 1991110006}

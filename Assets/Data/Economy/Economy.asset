@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54db3e9448dc23b4384ded7cd23deaa9, type: 3}
+  m_Name: Economy
+  m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.EconomyDefinition
+  goods:
+  - {fileID: 11400000, guid: 0cd17c53efaaec4468549fbdebf5e8e1, type: 2}
+  - {fileID: 11400000, guid: 610fada3e2af0f94a8f65494caaccba1, type: 2}
+  - {fileID: 11400000, guid: 24440f97135e4404c8800cebb29fc948, type: 2}
+  - {fileID: 11400000, guid: 84016ce7fc73afd45b298617f198071d, type: 2}
+  - {fileID: 11400000, guid: e1c83e46949927843b10562661023e38, type: 2}
+  - {fileID: 11400000, guid: 33941fd93c4e53f42abec0eecad7a460, type: 2}
+  - {fileID: 11400000, guid: b99a32a0135247641a49558702e3d284, type: 2}
+  - {fileID: 11400000, guid: 4aa4ecf3894e5d34b8ade5228cde2e48, type: 2}
+  - {fileID: 11400000, guid: 9232fada8f7ad2a46ac1a8732de36fb8, type: 2}
+  - {fileID: 11400000, guid: 535d82b2bed5e6442b3c2254e0f1aaa1, type: 2}
+  targetStockDays: 30
+  efficientProductionRate: 1.5
+  efficientCeilingDays: 60
+  inefficientProductionRate: 1.1
+  inefficientCeilingDays: 36
+  emptyStockPriceMultiplier: 2.5
+  surplusPriceMultiplier: 0.5
+  buyMargin: 0.05
+  sellMargin: 0.05

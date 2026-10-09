@@ -15,8 +15,9 @@ namespace DarkFantasyMerchant.Editor
     /// sample content. Safe to run again: existing assets are left untouched, and an
     /// existing scene only gains the ships, ship route, ship panel, world clock, time HUD,
     /// player treasury, treasury HUD, player notifications, notifications HUD, ship
-    /// arrival notifier and player expenses objects when it has none, and the references
-    /// to them that are empty.
+    /// arrival notifier, player expenses and world economy objects when it has none, and
+    /// the references to them that are empty. Cities of the map that have no inhabitant
+    /// are given the population and the productions of the sample content.
     /// </summary>
     public static class WorldMapSetup
     {
@@ -46,6 +47,8 @@ namespace DarkFantasyMerchant.Editor
 
         private const string EconomyFolder = "Assets/Data/Economy";
         private const string ExpensesPath = EconomyFolder + "/Expenses.asset";
+        private const string EconomyPath = EconomyFolder + "/Economy.asset";
+        private const string GoodsFolder = "Assets/Data/Goods";
 
         private const string ShipTexturePath = "Assets/Art/Ships/MerchantShip.png";
         private const string ShipSpritePrefix = "MerchantShip_";
@@ -64,6 +67,7 @@ namespace DarkFantasyMerchant.Editor
 
         private const float MerchantShipSpeed = 1.5f;
         private const int MerchantShipCrewCapacity = 28;
+        private const int MerchantShipCargoCapacity = 200;
         private const int ShipSortingOrder = 20;
 
         // Above the map, below the city markers.
@@ -71,14 +75,57 @@ namespace DarkFantasyMerchant.Editor
 
         private const float MarkerPixelsPerUnit = 16f;
 
+        private readonly struct SampleGood
+        {
+            public SampleGood(string assetName, string displayName, long basePrice, double consumptionPerThousand)
+            {
+                AssetName = assetName;
+                DisplayName = displayName;
+                BasePrice = basePrice;
+                ConsumptionPerThousand = consumptionPerThousand;
+            }
+
+            public string AssetName { get; }
+            public string DisplayName { get; }
+            public long BasePrice { get; }
+            public double ConsumptionPerThousand { get; }
+        }
+
+        // In the order of the catalogue, which is their order on screen: the cheapest first.
+        private static readonly SampleGood[] SampleGoods =
+        {
+            new SampleGood("Wheat", "Blé", 10, 2.0),
+            new SampleGood("Fish", "Poisson", 12, 1.5),
+            new SampleGood("Wood", "Bois", 14, 1.0),
+            new SampleGood("Beer", "Bière", 15, 1.5),
+            new SampleGood("Salt", "Sel", 18, 0.5),
+            new SampleGood("Wool", "Laine", 30, 0.5),
+            new SampleGood("Leather", "Cuir", 40, 0.3),
+            new SampleGood("Iron", "Fer", 50, 0.4),
+            new SampleGood("Wine", "Vin", 60, 0.6),
+            new SampleGood("Spices", "Épices", 150, 0.1),
+        };
+
         private readonly struct SampleCity
         {
-            public SampleCity(string name, float x, float y, CityAccess access, CitySize size, string description)
+            public SampleCity(
+                string name,
+                float x,
+                float y,
+                CityAccess access,
+                CitySize size,
+                int population,
+                string[] efficientGoods,
+                string[] inefficientGoods,
+                string description)
             {
                 Name = name;
                 Position = new Vector2(x, y);
                 Access = access;
                 Size = size;
+                Population = population;
+                EfficientGoods = efficientGoods;
+                InefficientGoods = inefficientGoods;
                 Description = description;
             }
 
@@ -86,26 +133,41 @@ namespace DarkFantasyMerchant.Editor
             public Vector2 Position { get; }
             public CityAccess Access { get; }
             public CitySize Size { get; }
+            public int Population { get; }
+
+            /// <summary>Asset names of the goods produced well above the consumption.</summary>
+            public string[] EfficientGoods { get; }
+
+            /// <summary>Asset names of the goods produced barely above the consumption.</summary>
+            public string[] InefficientGoods { get; }
+
             public string Description { get; }
         }
 
         // Positions are read off the placeholder image and are meant to be refined
-        // with the placement tool.
+        // with the placement tool. Every good is produced efficiently by at least one city.
         private static readonly SampleCity[] SampleCities =
         {
-            new SampleCity("Sparia", 0.115f, 0.645f, CityAccess.Coastal, CitySize.Town,
+            new SampleCity("Sparia", 0.115f, 0.645f, CityAccess.Coastal, CitySize.Town, 7000,
+                new[] { "Wool", "Wine" }, new[] { "Fish", "Beer" },
                 "Une ville portuaire battue par les vents sur le cap occidental, première terre en vue des navires qui traversent la mer d'Aedean occidentale."),
-            new SampleCity("Elforth", 0.196f, 0.609f, CityAccess.Coastal, CitySize.Village,
+            new SampleCity("Elforth", 0.196f, 0.609f, CityAccess.Coastal, CitySize.Village, 1500,
+                new[] { "Fish", "Salt" }, new[] { "Wood", "Wool" },
                 "Un village de pêcheurs abrité par les bois du sud, connu pour sa morue salée et ses contrebandiers discrets."),
-            new SampleCity("Bactfied", 0.374f, 0.554f, CityAccess.Coastal, CitySize.Town,
+            new SampleCity("Bactfied", 0.374f, 0.554f, CityAccess.Coastal, CitySize.Town, 6000,
+                new[] { "Wood", "Iron" }, new[] { "Wheat", "Salt", "Leather" },
                 "Un port marchand animé sur la mer d'Eamiq, où les barges fluviales rencontrent les navires de haute mer."),
-            new SampleCity("Hitrun", 0.470f, 0.598f, CityAccess.Coastal, CitySize.Village,
+            new SampleCity("Hitrun", 0.470f, 0.598f, CityAccess.Coastal, CitySize.Village, 1800,
+                new[] { "Wood", "Leather" }, new[] { "Fish", "Iron" },
                 "Un village perché au-dessus d'une crique étroite, qui vend laine et pierre aux caboteurs de passage."),
-            new SampleCity("Cerbias", 0.554f, 0.500f, CityAccess.Coastal, CitySize.Village,
+            new SampleCity("Cerbias", 0.554f, 0.500f, CityAccess.Coastal, CitySize.Village, 1200,
+                new[] { "Salt", "Spices" }, new[] { "Fish", "Wine" },
                 "Un mouillage isolé à la pointe de la langue de sable méridionale, dernier abri avant le large de la mer de Rakmitag."),
-            new SampleCity("Hazer Empire", 0.586f, 0.627f, CityAccess.Coastal, CitySize.Capital,
+            new SampleCity("Hazer Empire", 0.586f, 0.627f, CityAccess.Coastal, CitySize.Capital, 24000,
+                new[] { "Iron", "Wine", "Spices" }, new[] { "Wheat", "Fish", "Beer" },
                 "La capitale impériale qui garde le détroit, dont les douanes taxent chaque navire en route vers la côte du désert."),
-            new SampleCity("Liveria", 0.345f, 0.651f, CityAccess.River, CitySize.Capital,
+            new SampleCity("Liveria", 0.345f, 0.651f, CityAccess.River, CitySize.Capital, 18000,
+                new[] { "Wheat", "Beer", "Leather" }, new[] { "Wood", "Wool", "Wine" },
                 "Une capitale fluviale hérissée de clochers au cœur des Bois de la Couronne, que l'on ne rejoint qu'en barge."),
         };
 
@@ -140,6 +202,8 @@ namespace DarkFantasyMerchant.Editor
             CreateCalendar();
             CreatePlayerStart();
             CreateExpenses();
+            CreateEconomy();
+            FillCityEconomies();
 
             AssetDatabase.SaveAssets();
             BuildScene();
@@ -149,6 +213,7 @@ namespace DarkFantasyMerchant.Editor
             AddTreasuryToScene(mapSceneHadUnsavedChanges);
             AddNotificationsToScene(mapSceneHadUnsavedChanges);
             AddExpensesToScene(mapSceneHadUnsavedChanges);
+            AddEconomyToScene(mapSceneHadUnsavedChanges);
             AssetDatabase.SaveAssets();
 
             Debug.Log("World map setup finished.");
@@ -160,7 +225,7 @@ namespace DarkFantasyMerchant.Editor
             {
                 ArtFolder, CitiesFolder, MapDataFolder, PrefabFolder, UiFolder,
                 ShipArtFolder, ShipDataFolder, ShipPrefabFolder, CalendarFolder, PlayerDataFolder,
-                EconomyFolder,
+                EconomyFolder, GoodsFolder,
                 "Assets/Scenes",
             })
             {
@@ -384,6 +449,122 @@ namespace DarkFantasyMerchant.Editor
             return expenses;
         }
 
+        // The goods are created even when the economy exists, so that one deleted by mistake comes back.
+        private static EconomyDefinition CreateEconomy()
+        {
+            var goods = new GoodDefinition[SampleGoods.Length];
+
+            for (int i = 0; i < SampleGoods.Length; i++)
+            {
+                goods[i] = CreateGood(SampleGoods[i]);
+            }
+
+            var existing = AssetDatabase.LoadAssetAtPath<EconomyDefinition>(EconomyPath);
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            // Filled in before the asset is created, so the file is written complete. The
+            // settings keep their defaults: like the calendar's, they are the game's.
+            var economy = ScriptableObject.CreateInstance<EconomyDefinition>();
+            var serialized = new SerializedObject(economy);
+            SerializedProperty catalogue = serialized.FindProperty("goods");
+            catalogue.arraySize = goods.Length;
+
+            for (int i = 0; i < goods.Length; i++)
+            {
+                catalogue.GetArrayElementAtIndex(i).objectReferenceValue = goods[i];
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.CreateAsset(economy, EconomyPath);
+            return economy;
+        }
+
+        private static GoodDefinition CreateGood(SampleGood sample)
+        {
+            string path = GoodPath(sample.AssetName);
+            var existing = AssetDatabase.LoadAssetAtPath<GoodDefinition>(path);
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var good = ScriptableObject.CreateInstance<GoodDefinition>();
+            var serialized = new SerializedObject(good);
+            serialized.FindProperty("displayName").stringValue = sample.DisplayName;
+            serialized.FindProperty("basePrice").longValue = sample.BasePrice;
+            serialized.FindProperty("consumptionPerThousand").doubleValue = sample.ConsumptionPerThousand;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.CreateAsset(good, path);
+            return good;
+        }
+
+        private static string GoodPath(string assetName)
+        {
+            return $"{GoodsFolder}/{assetName}.asset";
+        }
+
+        // A city without inhabitants has no economy yet: one made before the economy existed, or
+        // just created. A city that has a population is the user's and is left untouched.
+        private static void FillCityEconomies()
+        {
+            var definition = AssetDatabase.LoadAssetAtPath<WorldMapDefinition>(DefinitionPath);
+
+            if (definition == null)
+            {
+                return;
+            }
+
+            foreach (CityDefinition city in definition.Cities)
+            {
+                if (city == null || city.Population != 0)
+                {
+                    continue;
+                }
+
+                foreach (SampleCity sample in SampleCities)
+                {
+                    if (sample.Name == city.DisplayName)
+                    {
+                        FillCityEconomy(city, sample);
+                        break;
+                    }
+                }
+            }
+        }
+
+        private static void FillCityEconomy(CityDefinition city, SampleCity sample)
+        {
+            var serialized = new SerializedObject(city);
+            serialized.FindProperty("population").intValue = sample.Population;
+            SetGoods(serialized.FindProperty("efficientGoods"), sample.EfficientGoods);
+            SetGoods(serialized.FindProperty("inefficientGoods"), sample.InefficientGoods);
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(city);
+        }
+
+        private static void SetGoods(SerializedProperty list, string[] assetNames)
+        {
+            list.arraySize = assetNames.Length;
+
+            for (int i = 0; i < assetNames.Length; i++)
+            {
+                string path = GoodPath(assetNames[i]);
+                var good = AssetDatabase.LoadAssetAtPath<GoodDefinition>(path);
+
+                if (good == null)
+                {
+                    throw new FileNotFoundException("A good could not be loaded.", path);
+                }
+
+                list.GetArrayElementAtIndex(i).objectReferenceValue = good;
+            }
+        }
+
         private static ShipDefinition CreateShipDefinition()
         {
             var existing = AssetDatabase.LoadAssetAtPath<ShipDefinition>(ShipDefinitionPath);
@@ -402,6 +583,7 @@ namespace DarkFantasyMerchant.Editor
             serialized.FindProperty("displayName").stringValue = "Navire marchand";
             serialized.FindProperty("speed").floatValue = MerchantShipSpeed;
             serialized.FindProperty("crewCapacity").intValue = MerchantShipCrewCapacity;
+            serialized.FindProperty("cargoCapacity").intValue = MerchantShipCargoCapacity;
 
             SerializedProperty sprites = serialized.FindProperty("directionSprites");
             sprites.arraySize = directionNames.Length;
@@ -1097,6 +1279,73 @@ namespace DarkFantasyMerchant.Editor
             if (changed)
             {
                 SaveSceneChanges(scene, sceneHadUnsavedChanges, "The player's expenses");
+            }
+        }
+
+        // Like the expenses, the world's economy is added to a scene built before it existed, and
+        // the panels that show it are told where it is.
+        private static void AddEconomyToScene(bool sceneHadUnsavedChanges)
+        {
+            if (!TryOpenMapScene("The world's economy", out Scene scene))
+            {
+                return;
+            }
+
+            var mapView = FindInScene<WorldMapView>(scene);
+            var worldClock = FindInScene<WorldClock>(scene);
+
+            // Cities are the map's, and they produce and consume as the days pass.
+            if (mapView == null || worldClock == null)
+            {
+                Debug.LogWarning($"{ScenePath} has no WorldMapView or WorldClock; world economy not added.");
+                return;
+            }
+
+            // Loaded only now: opening a scene unloads unreferenced assets.
+            var economy = AssetDatabase.LoadAssetAtPath<EconomyDefinition>(EconomyPath);
+
+            if (economy == null)
+            {
+                throw new FileNotFoundException("The economy could not be loaded.", EconomyPath);
+            }
+
+            bool changed = false;
+            var worldEconomy = FindInScene<WorldEconomy>(scene);
+
+            if (worldEconomy == null)
+            {
+                var economyObject = new GameObject("World Economy");
+                SceneManager.MoveGameObjectToScene(economyObject, scene);
+
+                worldEconomy = economyObject.AddComponent<WorldEconomy>();
+                changed = true;
+            }
+
+            // Also for a scene in which one of them was deleted and made again.
+            changed |= FillReference(worldEconomy, "economy", economy);
+            changed |= FillReference(worldEconomy, "mapView", mapView);
+            changed |= FillReference(worldEconomy, "worldClock", worldClock);
+
+            // The city panel shows the market and trades with the player's gold.
+            var cityPanel = FindInScene<CityInfoPanelController>(scene);
+
+            if (cityPanel != null)
+            {
+                changed |= FillReference(cityPanel, "worldEconomy", worldEconomy);
+                changed |= FillReference(cityPanel, "playerTreasury", FindInScene<PlayerTreasury>(scene));
+            }
+
+            // The ship panel names the goods of the hold.
+            var shipPanel = FindInScene<ShipInfoPanelController>(scene);
+
+            if (shipPanel != null)
+            {
+                changed |= FillReference(shipPanel, "economy", economy);
+            }
+
+            if (changed)
+            {
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The world's economy");
             }
         }
 
