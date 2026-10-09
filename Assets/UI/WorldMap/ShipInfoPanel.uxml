@@ -7,5 +7,7 @@
             <ui:Button name="close-button" text="X" class="info-panel__close" />
         </ui:VisualElement>
         <ui:Label name="ship-crew" class="ship-panel__crew" />
+        <ui:Label name="ship-cargo" class="ship-panel__crew" />
+        <ui:VisualElement name="ship-cargo-list" class="ship-panel__cargo-list" />
     </ui:VisualElement>
 </ui:UXML>

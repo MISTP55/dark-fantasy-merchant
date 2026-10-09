@@ -9,3 +9,13 @@
     color: rgb(222, 210, 188);
     font-size: 15px;
 }
+
+.ship-panel__cargo-list {
+    margin-top: 4px;
+    margin-left: 12px;
+}
+
+.ship-panel__cargo-line {
+    color: rgb(190, 164, 120);
+    font-size: 14px;
+}

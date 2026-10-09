@@ -5,17 +5,27 @@ using UnityEngine.UIElements;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// Presents the selected ship's panel, at the bottom left of the screen: its name
-    /// and its crew. Reads the ship selection state; knows nothing about ship views.
+    /// Presents the selected ship's panel, at the bottom left of the screen: its name,
+    /// its crew and its cargo. Reads the ship selection state; knows nothing about ship views.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class ShipInfoPanelController : MonoBehaviour
     {
+        private const string CargoLineClass = "ship-panel__cargo-line";
+
         [SerializeField] private ShipsView shipsView;
+
+        [Tooltip("Optional. Without it, the panel shows how full the hold is, not what it holds.")]
+        [SerializeField] private EconomyDefinition economy;
 
         private VisualElement shipPanel;
         private Label nameLabel;
         private Label crewLabel;
+        private Label cargoLabel;
+        private VisualElement cargoList;
+
+        // The hold the panel listens to: the shown ship's.
+        private CargoHold shownCargo;
         private Button closeButton;
         private bool isBound;
 
@@ -43,6 +53,8 @@ namespace DarkFantasyMerchant.Game
             shipPanel = root.Q<VisualElement>("ship-panel");
             nameLabel = root.Q<Label>("ship-name");
             crewLabel = root.Q<Label>("ship-crew");
+            cargoLabel = root.Q<Label>("ship-cargo");
+            cargoList = root.Q<VisualElement>("ship-cargo-list");
             closeButton = root.Q<Button>("close-button");
 
             if (shipsView == null)
@@ -52,7 +64,8 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            if (shipPanel == null || nameLabel == null || crewLabel == null || closeButton == null)
+            if (shipPanel == null || nameLabel == null || crewLabel == null || closeButton == null
+                || cargoLabel == null || cargoList == null)
             {
                 Debug.LogError("ShipInfoPanel.uxml is missing an expected element.", this);
                 root.style.display = DisplayStyle.None;
@@ -78,6 +91,7 @@ namespace DarkFantasyMerchant.Game
 
             closeButton.clicked -= OnCloseClicked;
             shipsView.Selection.SelectedChanged -= ShowSelected;
+            ListenTo(null);
             isBound = false;
         }
 
@@ -94,8 +108,16 @@ namespace DarkFantasyMerchant.Game
                 + $"{TreasuryHudController.FormatNumber(hold.Capacity)} tonneaux";
         }
 
+        /// <summary>One good of the hold as the panel writes it: "Vin : 20".</summary>
+        public static string FormatCargoLine(string goodName, int barrels)
+        {
+            return $"{goodName} : {TreasuryHudController.FormatNumber(barrels)}";
+        }
+
         private void ShowSelected(Ship ship)
         {
+            ListenTo(ship?.Cargo);
+
             if (ship == null)
             {
                 shipPanel.style.display = DisplayStyle.None;
@@ -105,7 +127,49 @@ namespace DarkFantasyMerchant.Game
             // Written on selection: nothing changes a crew yet.
             nameLabel.text = shipsView.DisplayNameOf(ship);
             crewLabel.text = FormatCrew(ship.Crew);
+            ShowCargo();
             shipPanel.style.display = DisplayStyle.Flex;
+        }
+
+        private void ListenTo(CargoHold cargo)
+        {
+            if (shownCargo != null)
+            {
+                shownCargo.Changed -= ShowCargo;
+            }
+
+            shownCargo = cargo;
+
+            if (shownCargo != null)
+            {
+                shownCargo.Changed += ShowCargo;
+            }
+        }
+
+        // Rebuilt on every change: a hold has a line per good aboard, ten at most.
+        private void ShowCargo()
+        {
+            cargoLabel.text = FormatCargo(shownCargo);
+            cargoList.Clear();
+
+            if (economy == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < economy.Goods.Count; i++)
+            {
+                int barrels = shownCargo.BarrelsOf(i);
+
+                if (barrels < 1 || economy.Goods[i] == null)
+                {
+                    continue;
+                }
+
+                var line = new Label(FormatCargoLine(economy.Goods[i].DisplayName, barrels));
+                line.AddToClassList(CargoLineClass);
+                cargoList.Add(line);
+            }
         }
 
         private void OnCloseClicked()

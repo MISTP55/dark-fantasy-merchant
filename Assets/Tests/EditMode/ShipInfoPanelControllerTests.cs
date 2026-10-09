@@ -32,5 +32,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             Assert.AreEqual("Cale : 0 / 1 200 tonneaux", ShipInfoPanelController.FormatCargo(new CargoHold(1200)));
         }
+
+        [Test]
+        public void FormatCargoLine_WritesAGoodAndItsBarrels()
+        {
+            Assert.AreEqual("Vin : 20", ShipInfoPanelController.FormatCargoLine("Vin", 20));
+            Assert.AreEqual("Blé : 1 200", ShipInfoPanelController.FormatCargoLine("Blé", 1200));
+        }
     }
 }
