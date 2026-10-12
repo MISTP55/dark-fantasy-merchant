@@ -9,20 +9,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const double Tolerance = 1e-9;
         private const double TargetDays = 30;
 
-        private static MarketPricing Pricing => new MarketPricing(2.5, 0.5, 0.05, 0.05);
+        // The tests start a good at its target stock unless they say otherwise.
+        private const double StartingDays = 30;
+
+        private static MarketPricing Pricing => new MarketPricing(0.05, 0.05);
 
         // Two barrels a day, base price 10.
-        private static MarketGood NotProduced => new MarketGood(10, 2, 0, 0);
-        private static MarketGood Efficient => new MarketGood(10, 2, 1.5, 60);
-        private static MarketGood Inefficient => new MarketGood(10, 2, 1.1, 36);
+        private static MarketGood NotProduced => new MarketGood(5, 10, 25, 2, 0, 0);
+        private static MarketGood Efficient => new MarketGood(5, 10, 25, 2, 1.5, 60);
+        private static MarketGood Inefficient => new MarketGood(5, 10, 25, 2, 1.1, 36);
 
         private static CityMarket MarketOf(params MarketGood[] goods)
         {
-            return new CityMarket(goods, TargetDays, Pricing);
+            return new CityMarket(goods, TargetDays, StartingDays, Pricing);
         }
 
         [Test]
-        public void AGoodThatIsNotProduced_StartsAtTheTargetStock()
+        public void AGood_StartsWithTheStartingDaysOfItsConsumption()
         {
             CityMarket market = MarketOf(NotProduced);
 
@@ -32,12 +35,32 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void AGoodThatIsProduced_StartsAtItsCeiling()
+        public void EveryGood_StartsWithTheSameDays_ProducedOrNot()
         {
-            CityMarket market = MarketOf(Efficient, Inefficient);
+            // A week of two barrels a day, whatever the city makes of the good.
+            var market = new CityMarket(new[] { NotProduced, Efficient, Inefficient }, TargetDays, 7, Pricing);
 
-            Assert.AreEqual(120, market.StockOf(0), Tolerance);
-            Assert.AreEqual(72, market.StockOf(1), Tolerance);
+            Assert.AreEqual(14, market.StockOf(0), Tolerance);
+            Assert.AreEqual(14, market.StockOf(1), Tolerance);
+            Assert.AreEqual(14, market.StockOf(2), Tolerance);
+            Assert.AreEqual(60, market.TargetOf(0), Tolerance);
+        }
+
+        [Test]
+        public void AMarketCanStartEmpty()
+        {
+            var market = new CityMarket(new[] { NotProduced }, TargetDays, 0, Pricing);
+
+            Assert.AreEqual(0, market.AvailableOf(0));
+        }
+
+        [TestCase(-1)]
+        [TestCase(double.NaN)]
+        [TestCase(double.PositiveInfinity)]
+        public void RejectsStartingDaysThatMakeNoSense(double startingDays)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new CityMarket(new[] { NotProduced }, TargetDays, startingDays, Pricing));
         }
 
         [Test]
@@ -60,6 +83,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void StartDay_KeepsAnEfficientGoodAtItsCeiling()
         {
             CityMarket market = MarketOf(Efficient);
+            market.Put(0, 60);
 
             for (int day = 0; day < 10; day++)
             {
@@ -74,7 +98,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void StartDay_RefillsAProducedGoodByItsSurplus()
         {
             CityMarket market = MarketOf(Efficient);
-            market.Take(0, 50);
+            market.Put(0, 10);
 
             market.StartDay();
 
@@ -86,7 +110,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void StartDay_LeavesAloneAStockAboveItsCeiling()
         {
             CityMarket market = MarketOf(Efficient);
-            market.Put(0, 100);
+            market.Put(0, 160);
 
             market.StartDay();
 
@@ -98,7 +122,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AnInefficientGood_SettlesJustUnderItsCeiling()
         {
             CityMarket market = MarketOf(Inefficient);
-            market.Take(0, 20);
+            market.Take(0, 8);
 
             for (int day = 0; day < 200; day++)
             {
@@ -112,7 +136,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AvailableOf_IsTheWholeBarrels()
         {
             // A village: 0.3 barrel a day, 9 in stock.
-            CityMarket market = MarketOf(new MarketGood(40, 0.3, 0, 0));
+            CityMarket market = MarketOf(new MarketGood(20, 40, 100, 0.3, 0, 0));
 
             market.StartDay();
 
@@ -124,7 +148,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AvailableOf_CountsABarrelThatFloatingPointLeavesAHairShort()
         {
             // 72 in stock, 2.4 a day: 60 after five days, but 59.999999999999986 in floating point.
-            CityMarket market = MarketOf(new MarketGood(10, 2.4, 0, 0));
+            CityMarket market = MarketOf(new MarketGood(5, 10, 25, 2.4, 0, 0));
 
             for (int day = 0; day < 5; day++)
             {
@@ -142,7 +166,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AStockUnderOneBarrel_HasNoneAvailable()
         {
-            CityMarket market = MarketOf(new MarketGood(40, 0.3, 0, 0));
+            CityMarket market = MarketOf(new MarketGood(20, 40, 100, 0.3, 0, 0));
 
             for (int day = 0; day < 28; day++)
             {
@@ -180,7 +204,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AGoodTheCityDoesNotConsume_IsAtItsBasePrice_AndOutOfStock()
         {
-            CityMarket market = MarketOf(new MarketGood(10, 0, 0, 0));
+            CityMarket market = MarketOf(new MarketGood(5, 10, 25, 0, 0, 0));
 
             Assert.AreEqual(0, market.AvailableOf(0));
             Assert.AreEqual(11, market.BuyPriceOf(0));
@@ -256,21 +280,42 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void Prices_StayBetweenTheMinimumAndTheMaximumOfTheGood()
+        {
+            // Minimum 8, base 10, maximum 12: a narrow good, whatever the stock.
+            CityMarket market = MarketOf(new MarketGood(8, 10, 12, 2, 0, 0));
+
+            // The last barrel: 12 plus the margin.
+            Assert.AreEqual(13, market.BuyPriceOf(0, 59));
+
+            // Far above twice the target: 8 minus the margin.
+            Assert.AreEqual(7, market.SellPriceOf(0, 1000));
+        }
+
+        [Test]
+        public void MarketGood_AcceptsBoundsEqualToItsBasePrice()
+        {
+            Assert.DoesNotThrow(() => new MarketGood(10, 10, 10, 2, 0, 0));
+        }
+
+        [Test]
         public void MarketGood_RejectsFiguresThatMakeNoSense()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(0, 2, 0, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(10, -1, 0, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(10, double.NaN, 0, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(10, 2, -0.5, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(10, 2, 1.5, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(0, 10, 25, 2, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(11, 10, 25, 2, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(5, 10, 9, 2, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(5, 10, 25, -1, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(5, 10, 25, double.NaN, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(5, 10, 25, 2, -0.5, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(5, 10, 25, 2, 1.5, -1));
         }
 
         [Test]
         public void RejectsANegativeTarget_AndMissingArguments()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new CityMarket(new[] { NotProduced }, -1, Pricing));
-            Assert.Throws<ArgumentNullException>(() => new CityMarket(null, TargetDays, Pricing));
-            Assert.Throws<ArgumentNullException>(() => new CityMarket(new[] { NotProduced }, TargetDays, null));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CityMarket(new[] { NotProduced }, -1, StartingDays, Pricing));
+            Assert.Throws<ArgumentNullException>(() => new CityMarket(null, TargetDays, StartingDays, Pricing));
+            Assert.Throws<ArgumentNullException>(() => new CityMarket(new[] { NotProduced }, TargetDays, StartingDays, null));
         }
     }
 }

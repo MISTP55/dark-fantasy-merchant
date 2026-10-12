@@ -26,24 +26,22 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return map;
         }
 
-        [TestCase(0, "Blé", 10, 2.0)]
-        [TestCase(1, "Poisson", 12, 1.5)]
-        [TestCase(2, "Bois", 14, 1.0)]
-        [TestCase(3, "Bière", 15, 1.5)]
-        [TestCase(4, "Sel", 18, 0.5)]
-        [TestCase(5, "Laine", 30, 0.5)]
-        [TestCase(6, "Cuir", 40, 0.3)]
-        [TestCase(7, "Fer", 50, 0.4)]
-        [TestCase(8, "Vin", 60, 0.6)]
-        [TestCase(9, "Épices", 150, 0.1)]
-        public void TheCatalogue_HasTheTenGoods_InOrder(int index, string name, long basePrice, double consumption)
+        // The prices and the consumption are balanced by hand in the assets: the test checks
+        // that they make sense, not what they are.
+        [TestCase(0, "Poisson")]
+        [TestCase(1, "Fer")]
+        public void TheCatalogue_HasItsGoods_InOrder_WithPricesThatMakeSense(int index, string name)
         {
             EconomyDefinition economy = LoadEconomy();
 
-            Assert.AreEqual(10, economy.Goods.Count);
-            Assert.AreEqual(name, economy.Goods[index].DisplayName);
-            Assert.AreEqual(basePrice, economy.Goods[index].BasePrice);
-            Assert.AreEqual(consumption, economy.Goods[index].ConsumptionPerThousand, 1e-9);
+            Assert.AreEqual(2, economy.Goods.Count);
+
+            GoodDefinition good = economy.Goods[index];
+            Assert.AreEqual(name, good.DisplayName);
+            Assert.GreaterOrEqual(good.MinPrice, 1);
+            Assert.LessOrEqual(good.MinPrice, good.BasePrice);
+            Assert.GreaterOrEqual(good.MaxPrice, good.BasePrice);
+            Assert.Greater(good.WeeklyConsumptionPerThousand, 0d);
         }
 
         [Test]
@@ -56,15 +54,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void EveryCity_HasInhabitants_AndTwoOrThreeGoodsOfEachProduction()
+        public void EveryCity_HasInhabitants_AndProducesOnlyGoodsOfTheCatalogue_Once()
         {
             EconomyDefinition economy = LoadEconomy();
 
             foreach (CityDefinition city in LoadMap().Cities)
             {
                 Assert.Greater(city.Population, 0, city.name);
-                Assert.That(city.EfficientGoods.Count, Is.InRange(2, 3), city.name);
-                Assert.That(city.InefficientGoods.Count, Is.InRange(2, 3), city.name);
 
                 var seen = new HashSet<GoodDefinition>();
 
@@ -80,7 +76,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                     Assert.IsTrue(seen.Add(good), $"{city.name}: {good.name} is listed twice");
                 }
 
-                Assert.DoesNotThrow(() => economy.CreateMarket(city, economy.CreatePricing()), city.name);
+                Assert.DoesNotThrow(() => economy.CreateMarket(city, economy.CreatePricing(), 7), city.name);
             }
         }
 
@@ -100,13 +96,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             }
         }
 
-        [TestCase("Sparia", 7000)]
-        [TestCase("Elforth", 1500)]
-        [TestCase("Bactfied", 6000)]
+        [TestCase("Sparia", 2100)]
+        [TestCase("Elforth", 1600)]
+        [TestCase("Bactfied", 2000)]
         [TestCase("Hitrun", 1800)]
-        [TestCase("Cerbias", 1200)]
-        [TestCase("Hazer Empire", 24000)]
-        [TestCase("Liveria", 18000)]
+        [TestCase("Cerbias", 1500)]
+        [TestCase("Hazer Empire", 2500)]
+        [TestCase("Liveria", 2400)]
         public void ACity_HasItsPopulation(string cityName, int population)
         {
             foreach (CityDefinition city in LoadMap().Cities)

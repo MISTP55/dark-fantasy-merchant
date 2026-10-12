@@ -10,6 +10,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
     public class EconomyDefinitionTests
     {
         private const double Tolerance = 1e-9;
+        private const int DaysPerWeek = 7;
 
         private readonly List<Object> created = new List<Object>();
 
@@ -21,9 +22,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [SetUp]
         public void SetUp()
         {
-            wheat = Track(TestEconomy.CreateGood("Blé", 10, 2.0));
-            fish = Track(TestEconomy.CreateGood("Poisson", 12, 1.5));
-            salt = Track(TestEconomy.CreateGood("Sel", 18, 0.5));
+            // Per week for 1 000 inhabitants: 2, 1.5 and 0.5 barrels a day.
+            wheat = Track(TestEconomy.CreateGood("Blé", 10, 14));
+            fish = Track(TestEconomy.CreateGood("Poisson", 12, 10.5));
+            salt = Track(TestEconomy.CreateGood("Sel", 18, 3.5));
             economy = Track(TestEconomy.CreateEconomy(wheat, fish, salt));
         }
 
@@ -55,12 +57,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             EconomyDefinition fresh = Track(ScriptableObject.CreateInstance<EconomyDefinition>());
 
             Assert.AreEqual(30, fresh.TargetStockDays);
+            Assert.AreEqual(7, fresh.StartingStockDays);
             Assert.AreEqual(1.5, fresh.EfficientProductionRate);
             Assert.AreEqual(60, fresh.EfficientCeilingDays);
             Assert.AreEqual(1.1, fresh.InefficientProductionRate);
             Assert.AreEqual(36, fresh.InefficientCeilingDays);
-            Assert.AreEqual(2.5, fresh.EmptyStockPriceMultiplier);
-            Assert.AreEqual(0.5, fresh.SurplusPriceMultiplier);
             Assert.AreEqual(0.05, fresh.BuyMargin);
             Assert.AreEqual(0.05, fresh.SellMargin);
             Assert.AreEqual(0, fresh.Goods.Count);
@@ -81,7 +82,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void IndexOf_IsThePlaceInTheCatalogue()
         {
-            GoodDefinition stranger = Track(TestEconomy.CreateGood("Vin", 60, 0.6));
+            GoodDefinition stranger = Track(TestEconomy.CreateGood("Vin", 60, 4.2));
 
             Assert.AreEqual(0, economy.IndexOf(wheat));
             Assert.AreEqual(2, economy.IndexOf(salt));
@@ -115,7 +116,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(GoodProduction.Efficient, city.ProductionOf(wheat));
             Assert.AreEqual(GoodProduction.None, city.ProductionOf(null));
-            Assert.DoesNotThrow(() => economy.CreateMarket(city, economy.CreatePricing()));
+            Assert.DoesNotThrow(() => economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek));
         }
 
         [Test]
@@ -123,34 +124,52 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityDefinition city = City(6000, new[] { wheat }, new[] { fish });
 
-            CityMarket market = economy.CreateMarket(city, economy.CreatePricing());
+            CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
 
             Assert.AreEqual(3, market.GoodCount);
 
-            // Wheat: 12 barrels a day, efficient, 60 days.
-            Assert.AreEqual(720, market.StockOf(0), Tolerance);
+            // A week of what the city consumes, whatever it produces: wheat 12 barrels a day,
+            // fish 9, salt 3.
+            Assert.AreEqual(84, market.StockOf(0), Tolerance);
+            Assert.AreEqual(63, market.StockOf(1), Tolerance);
+            Assert.AreEqual(21, market.StockOf(2), Tolerance);
 
-            // Fish: 9 barrels a day, inefficient, 36 days.
-            Assert.AreEqual(324, market.StockOf(1), Tolerance);
-
-            // Salt: 3 barrels a day, not produced, the target of 30 days.
-            Assert.AreEqual(90, market.StockOf(2), Tolerance);
+            // The target stays 30 days.
             Assert.AreEqual(90, market.TargetOf(2), Tolerance);
+        }
+
+        [Test]
+        public void CreateMarket_SpreadsTheWeeklyConsumptionOverTheDaysOfTheWeek()
+        {
+            CityDefinition city = City(6000, new GoodDefinition[0], new GoodDefinition[0]);
+
+            // Wheat: 84 barrels a week, over a week of 10 days.
+            CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), 10);
+
+            Assert.AreEqual(8.4 * 30, market.TargetOf(0), Tolerance);
+        }
+
+        [TestCase(0)]
+        [TestCase(-1)]
+        public void CreateMarket_RejectsAWeekWithoutDays(int daysPerWeek)
+        {
+            CityDefinition city = City(6000, new GoodDefinition[0], new GoodDefinition[0]);
+
+            Assert.Throws<System.ArgumentOutOfRangeException>(
+                () => economy.CreateMarket(city, economy.CreatePricing(), daysPerWeek));
         }
 
         [Test]
         public void CreateMarket_ProducesAtTheDefinitionsRates()
         {
             CityDefinition city = City(6000, new[] { wheat }, new[] { fish });
-            CityMarket market = economy.CreateMarket(city, economy.CreatePricing());
-            market.Take(0, 100);
-            market.Take(1, 100);
+            CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
 
             market.StartDay();
 
-            // Wheat: 620 + 18 - 12. Fish: 224 + 9.9 - 9.
-            Assert.AreEqual(626, market.StockOf(0), Tolerance);
-            Assert.AreEqual(224.9, market.StockOf(1), Tolerance);
+            // Wheat: 84 + 18 - 12. Fish: 63 + 9.9 - 9.
+            Assert.AreEqual(90, market.StockOf(0), Tolerance);
+            Assert.AreEqual(63.9, market.StockOf(1), Tolerance);
         }
 
         [Test]
@@ -158,21 +177,43 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityDefinition city = City(0, new[] { wheat }, new GoodDefinition[0]);
 
-            CityMarket market = economy.CreateMarket(city, economy.CreatePricing());
+            CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
 
             Assert.AreEqual(0, market.AvailableOf(0));
             Assert.AreEqual(0, market.AvailableOf(2));
         }
 
         [Test]
-        public void CreatePricing_UsesTheDefinitionsMultipliersAndMargins()
+        public void CreatePricing_UsesTheDefinitionsMargins()
         {
             MarketPricing pricing = economy.CreatePricing();
 
-            Assert.AreEqual(2.5, pricing.Multiplier(0, 100), Tolerance);
-            Assert.AreEqual(0.5, pricing.Multiplier(200, 100), Tolerance);
-            Assert.AreEqual(21, pricing.BuyPrice(20, 101, 100));
-            Assert.AreEqual(19, pricing.SellPrice(20, 100, 100));
+            Assert.AreEqual(21, pricing.BuyPrice(10, 20, 50, 101, 100));
+            Assert.AreEqual(19, pricing.SellPrice(10, 20, 50, 100, 100));
+        }
+
+        [Test]
+        public void CreateMarket_PricesAGoodBetweenItsOwnMinimumAndMaximum()
+        {
+            // Salt: minimum 9, base 18, maximum 45; 3 barrels a day, 21 in stock, a target of 90.
+            CityDefinition city = City(6000, new GoodDefinition[0], new GoodDefinition[0]);
+            CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
+
+            // The last barrel is bought at the maximum plus 5 %: 47.25.
+            Assert.AreEqual(48, market.BuyPriceOf(2, 20));
+
+            // A barrel sold into twice the target is paid the minimum minus 5 %: 8.55.
+            Assert.AreEqual(8, market.SellPriceOf(2, 159));
+        }
+
+        [Test]
+        public void ANewGood_HasBoundsAroundItsBasePrice()
+        {
+            GoodDefinition good = Track(ScriptableObject.CreateInstance<GoodDefinition>());
+
+            Assert.GreaterOrEqual(good.MinPrice, 1);
+            Assert.LessOrEqual(good.MinPrice, good.BasePrice);
+            Assert.GreaterOrEqual(good.MaxPrice, good.BasePrice);
         }
 
         [Test]

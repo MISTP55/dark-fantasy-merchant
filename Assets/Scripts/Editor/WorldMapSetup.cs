@@ -77,33 +77,36 @@ namespace DarkFantasyMerchant.Editor
 
         private readonly struct SampleGood
         {
-            public SampleGood(string assetName, string displayName, long basePrice, double consumptionPerThousand)
+            public SampleGood(
+                string assetName,
+                string displayName,
+                long minPrice,
+                long basePrice,
+                long maxPrice,
+                double weeklyConsumptionPerThousand)
             {
                 AssetName = assetName;
                 DisplayName = displayName;
+                MinPrice = minPrice;
                 BasePrice = basePrice;
-                ConsumptionPerThousand = consumptionPerThousand;
+                MaxPrice = maxPrice;
+                WeeklyConsumptionPerThousand = weeklyConsumptionPerThousand;
             }
 
             public string AssetName { get; }
             public string DisplayName { get; }
+            public long MinPrice { get; }
             public long BasePrice { get; }
-            public double ConsumptionPerThousand { get; }
+            public long MaxPrice { get; }
+            public double WeeklyConsumptionPerThousand { get; }
         }
 
         // In the order of the catalogue, which is their order on screen: the cheapest first.
+        // Minimum, base and maximum price: half the base price and two and a half times it.
         private static readonly SampleGood[] SampleGoods =
         {
-            new SampleGood("Wheat", "Blé", 10, 2.0),
-            new SampleGood("Fish", "Poisson", 12, 1.5),
-            new SampleGood("Wood", "Bois", 14, 1.0),
-            new SampleGood("Beer", "Bière", 15, 1.5),
-            new SampleGood("Salt", "Sel", 18, 0.5),
-            new SampleGood("Wool", "Laine", 30, 0.5),
-            new SampleGood("Leather", "Cuir", 40, 0.3),
-            new SampleGood("Iron", "Fer", 50, 0.4),
-            new SampleGood("Wine", "Vin", 60, 0.6),
-            new SampleGood("Spices", "Épices", 150, 0.1),
+            new SampleGood("Fish", "Poisson", 6, 12, 30, 10.5),
+            new SampleGood("Iron", "Fer", 25, 50, 125, 2.8),
         };
 
         private readonly struct SampleCity
@@ -148,26 +151,26 @@ namespace DarkFantasyMerchant.Editor
         // with the placement tool. Every good is produced efficiently by at least one city.
         private static readonly SampleCity[] SampleCities =
         {
-            new SampleCity("Sparia", 0.115f, 0.645f, CityAccess.Coastal, CitySize.Town, 7000,
-                new[] { "Wool", "Wine" }, new[] { "Fish", "Beer" },
+            new SampleCity("Sparia", 0.115f, 0.645f, CityAccess.Coastal, CitySize.Town, 2100,
+                new string[0], new[] { "Fish" },
                 "Une ville portuaire battue par les vents sur le cap occidental, première terre en vue des navires qui traversent la mer d'Aedean occidentale."),
-            new SampleCity("Elforth", 0.196f, 0.609f, CityAccess.Coastal, CitySize.Village, 1500,
-                new[] { "Fish", "Salt" }, new[] { "Wood", "Wool" },
+            new SampleCity("Elforth", 0.196f, 0.609f, CityAccess.Coastal, CitySize.Village, 1600,
+                new[] { "Fish" }, new string[0],
                 "Un village de pêcheurs abrité par les bois du sud, connu pour sa morue salée et ses contrebandiers discrets."),
-            new SampleCity("Bactfied", 0.374f, 0.554f, CityAccess.Coastal, CitySize.Town, 6000,
-                new[] { "Wood", "Iron" }, new[] { "Wheat", "Salt", "Leather" },
+            new SampleCity("Bactfied", 0.374f, 0.554f, CityAccess.Coastal, CitySize.Town, 2000,
+                new[] { "Iron" }, new string[0],
                 "Un port marchand animé sur la mer d'Eamiq, où les barges fluviales rencontrent les navires de haute mer."),
             new SampleCity("Hitrun", 0.470f, 0.598f, CityAccess.Coastal, CitySize.Village, 1800,
-                new[] { "Wood", "Leather" }, new[] { "Fish", "Iron" },
+                new string[0], new[] { "Fish", "Iron" },
                 "Un village perché au-dessus d'une crique étroite, qui vend laine et pierre aux caboteurs de passage."),
-            new SampleCity("Cerbias", 0.554f, 0.500f, CityAccess.Coastal, CitySize.Village, 1200,
-                new[] { "Salt", "Spices" }, new[] { "Fish", "Wine" },
+            new SampleCity("Cerbias", 0.554f, 0.500f, CityAccess.Coastal, CitySize.Village, 1500,
+                new string[0], new[] { "Fish" },
                 "Un mouillage isolé à la pointe de la langue de sable méridionale, dernier abri avant le large de la mer de Rakmitag."),
-            new SampleCity("Hazer Empire", 0.586f, 0.627f, CityAccess.Coastal, CitySize.Capital, 24000,
-                new[] { "Iron", "Wine", "Spices" }, new[] { "Wheat", "Fish", "Beer" },
+            new SampleCity("Hazer Empire", 0.586f, 0.627f, CityAccess.Coastal, CitySize.Capital, 2500,
+                new[] { "Iron" }, new[] { "Fish" },
                 "La capitale impériale qui garde le détroit, dont les douanes taxent chaque navire en route vers la côte du désert."),
-            new SampleCity("Liveria", 0.345f, 0.651f, CityAccess.River, CitySize.Capital, 18000,
-                new[] { "Wheat", "Beer", "Leather" }, new[] { "Wood", "Wool", "Wine" },
+            new SampleCity("Liveria", 0.345f, 0.651f, CityAccess.River, CitySize.Capital, 2400,
+                new string[0], new string[0],
                 "Une capitale fluviale hérissée de clochers au cœur des Bois de la Couronne, que l'on ne rejoint qu'en barge."),
         };
 
@@ -496,8 +499,10 @@ namespace DarkFantasyMerchant.Editor
             var good = ScriptableObject.CreateInstance<GoodDefinition>();
             var serialized = new SerializedObject(good);
             serialized.FindProperty("displayName").stringValue = sample.DisplayName;
+            serialized.FindProperty("minPrice").longValue = sample.MinPrice;
             serialized.FindProperty("basePrice").longValue = sample.BasePrice;
-            serialized.FindProperty("consumptionPerThousand").doubleValue = sample.ConsumptionPerThousand;
+            serialized.FindProperty("maxPrice").longValue = sample.MaxPrice;
+            serialized.FindProperty("weeklyConsumptionPerThousand").doubleValue = sample.WeeklyConsumptionPerThousand;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             AssetDatabase.CreateAsset(good, path);
             return good;

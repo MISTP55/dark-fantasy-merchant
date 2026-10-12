@@ -13,5 +13,7 @@ MonoBehaviour:
   m_Name: Iron
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Fer
-  basePrice: 50
-  consumptionPerThousand: 0.4
+  minPrice: 192
+  basePrice: 300
+  maxPrice: 490
+  weeklyConsumptionPerThousand: 25

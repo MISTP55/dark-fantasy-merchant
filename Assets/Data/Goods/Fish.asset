@@ -13,5 +13,7 @@ MonoBehaviour:
   m_Name: Fish
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Poisson
-  basePrice: 12
-  consumptionPerThousand: 1.5
+  minPrice: 420
+  basePrice: 500
+  maxPrice: 987
+  weeklyConsumptionPerThousand: 10

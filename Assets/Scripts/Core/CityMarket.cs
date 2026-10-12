@@ -18,17 +18,24 @@ namespace DarkFantasyMerchant.Core
         private readonly MarketPricing pricing;
 
         /// <param name="targetDays">Days of consumption a city holds when a good is at its base price.</param>
-        public CityMarket(IReadOnlyList<MarketGood> goods, double targetDays, MarketPricing pricing)
+        /// <param name="startingDays">Days of consumption the city holds of every good when the game starts.</param>
+        public CityMarket(
+            IReadOnlyList<MarketGood> goods, double targetDays, double startingDays, MarketPricing pricing)
         {
             if (goods == null)
             {
                 throw new ArgumentNullException(nameof(goods));
             }
 
-            // The negated comparison also rejects NaN.
+            // The negated comparisons also reject NaN.
             if (!(targetDays >= 0d) || double.IsInfinity(targetDays))
             {
                 throw new ArgumentOutOfRangeException(nameof(targetDays));
+            }
+
+            if (!(startingDays >= 0d) || double.IsInfinity(startingDays))
+            {
+                throw new ArgumentOutOfRangeException(nameof(startingDays));
             }
 
             this.pricing = pricing ?? throw new ArgumentNullException(nameof(pricing));
@@ -40,8 +47,8 @@ namespace DarkFantasyMerchant.Core
             {
                 this.goods[i] = goods[i];
 
-                // The game opens balanced: producers are full, the others at their target.
-                stocks[i] = goods[i].IsProduced ? goods[i].Ceiling : TargetOf(i);
+                // The same for every good, produced or not: producers fill up as the days pass.
+                stocks[i] = startingDays * goods[i].DailyConsumption;
             }
         }
 
@@ -80,7 +87,10 @@ namespace DarkFantasyMerchant.Core
             RequireGood(good);
             RequireNotNegative(barrelsAlreadyBought, nameof(barrelsAlreadyBought));
 
-            return pricing.BuyPrice(goods[good].BasePrice, StockOf(good) - barrelsAlreadyBought, TargetOf(good));
+            MarketGood figures = goods[good];
+
+            return pricing.BuyPrice(
+                figures.MinPrice, figures.BasePrice, figures.MaxPrice, StockOf(good) - barrelsAlreadyBought, TargetOf(good));
         }
 
         /// <summary>What the player is paid for the next barrel, or for a later one of the same sale.</summary>
@@ -90,7 +100,10 @@ namespace DarkFantasyMerchant.Core
             RequireGood(good);
             RequireNotNegative(barrelsAlreadySold, nameof(barrelsAlreadySold));
 
-            return pricing.SellPrice(goods[good].BasePrice, StockOf(good) + barrelsAlreadySold, TargetOf(good));
+            MarketGood figures = goods[good];
+
+            return pricing.SellPrice(
+                figures.MinPrice, figures.BasePrice, figures.MaxPrice, StockOf(good) + barrelsAlreadySold, TargetOf(good));
         }
 
         /// <summary>Takes whole barrels out of the stock. Throws when fewer are available.</summary>

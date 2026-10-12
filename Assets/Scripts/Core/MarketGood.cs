@@ -5,28 +5,54 @@ namespace DarkFantasyMerchant.Core
     /// <summary>The figures of one good in one city: what it costs, and what the city consumes and produces of it.</summary>
     public readonly struct MarketGood
     {
-        /// <param name="basePrice">Gold per barrel at the target stock, at least 1.</param>
+        /// <param name="minPrice">Gold per barrel at twice the target stock and above, from 1 to the base price.</param>
+        /// <param name="basePrice">Gold per barrel at the target stock.</param>
+        /// <param name="maxPrice">Gold per barrel at an empty stock, the base price or more.</param>
         /// <param name="dailyConsumption">Barrels the city consumes in a day; it can be a fraction.</param>
         /// <param name="productionRate">Production as a share of the consumption; 0 for a good the city does not produce.</param>
         /// <param name="ceilingDays">Days of consumption above which the city's production stops raising the stock.</param>
-        public MarketGood(long basePrice, double dailyConsumption, double productionRate, double ceilingDays)
+        public MarketGood(
+            long minPrice,
+            long basePrice,
+            long maxPrice,
+            double dailyConsumption,
+            double productionRate,
+            double ceilingDays)
         {
-            if (basePrice < 1)
+            if (minPrice < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(minPrice));
+            }
+
+            if (basePrice < minPrice)
             {
                 throw new ArgumentOutOfRangeException(nameof(basePrice));
+            }
+
+            if (maxPrice < basePrice)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxPrice));
             }
 
             RequireNotNegative(dailyConsumption, nameof(dailyConsumption));
             RequireNotNegative(productionRate, nameof(productionRate));
             RequireNotNegative(ceilingDays, nameof(ceilingDays));
 
+            MinPrice = minPrice;
             BasePrice = basePrice;
+            MaxPrice = maxPrice;
             DailyConsumption = dailyConsumption;
             ProductionRate = productionRate;
             CeilingDays = ceilingDays;
         }
 
+        /// <summary>The floor of the price, however much the city holds.</summary>
+        public long MinPrice { get; }
+
         public long BasePrice { get; }
+
+        /// <summary>The ceiling of the price, however little the city holds.</summary>
+        public long MaxPrice { get; }
 
         public double DailyConsumption { get; }
 

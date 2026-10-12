@@ -75,17 +75,18 @@ namespace DarkFantasyMerchant.Game
             try
             {
                 MarketPricing pricing = economy.CreatePricing();
+                int daysPerWeek = worldClock.Calendar.DaysPerWeek;
 
                 foreach (CityDefinition city in mapView.Cities)
                 {
                     WarnAbout(city);
-                    markets[city] = economy.CreateMarket(city, pricing);
+                    markets[city] = economy.CreateMarket(city, pricing, daysPerWeek);
                 }
             }
             catch (ArgumentOutOfRangeException exception)
             {
                 Debug.LogError(
-                    $"EconomyDefinition '{economy.name}' or one of its goods has an invalid value "
+                    $"EconomyDefinition '{economy.name}', one of its goods or the calendar's week has an invalid value "
                     + $"({exception.ParamName}); cities have no market.",
                     economy);
                 return false;

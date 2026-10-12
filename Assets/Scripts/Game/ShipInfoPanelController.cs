@@ -146,7 +146,7 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        // Rebuilt on every change: a hold has a line per good aboard, ten at most.
+        // Rebuilt on every change: a hold has a line per good aboard, a handful at most.
         private void ShowCargo()
         {
             cargoLabel.text = FormatCargo(shownCargo);

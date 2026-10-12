@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace DarkFantasyMerchant.Game
 {
@@ -8,16 +9,27 @@ namespace DarkFantasyMerchant.Game
     {
         [SerializeField] private string displayName;
 
+        [Tooltip("Floor of the price: gold coins a barrel costs in a city that holds twice its target stock or more. From 1 to the base price.")]
+        [SerializeField, Min(1)] private long minPrice = 5;
+
         [Tooltip("Gold coins a barrel costs in a city that holds its target stock.")]
         [SerializeField, Min(1)] private long basePrice = 10;
 
-        [Tooltip("Barrels that 1 000 inhabitants consume in a day.")]
-        [SerializeField, Min(0f)] private double consumptionPerThousand = 1d;
+        [Tooltip("Ceiling of the price: gold coins a barrel costs in a city that has none left. The base price or more.")]
+        [SerializeField, Min(1)] private long maxPrice = 25;
+
+        [Tooltip("Barrels that 1 000 inhabitants consume in a week.")]
+        [FormerlySerializedAs("consumptionPerThousand")]
+        [SerializeField, Min(0f)] private double weeklyConsumptionPerThousand = 7d;
 
         public string DisplayName => displayName;
 
+        public long MinPrice => minPrice;
+
         public long BasePrice => basePrice;
 
-        public double ConsumptionPerThousand => consumptionPerThousand;
+        public long MaxPrice => maxPrice;
+
+        public double WeeklyConsumptionPerThousand => weeklyConsumptionPerThousand;
     }
 }

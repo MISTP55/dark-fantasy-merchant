@@ -19,6 +19,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Days of its consumption a city holds when a good is at its base price.")]
         [SerializeField, Min(0f)] private double targetStockDays = 30d;
 
+        [Tooltip("Days of its consumption a city holds of every good when the game starts, whether it produces it or not.")]
+        [SerializeField, Min(0f)] private double startingStockDays = 7d;
+
         [Header("Production, as a share of the city's own consumption")]
         [SerializeField, Min(0f)] private double efficientProductionRate = 1.5d;
 
@@ -30,13 +33,7 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Days of consumption above which an inefficient production stops raising the stock.")]
         [SerializeField, Min(0f)] private double inefficientCeilingDays = 36d;
 
-        [Header("Prices, as a share of the base price")]
-        [Tooltip("At an empty stock.")]
-        [SerializeField, Min(1f)] private double emptyStockPriceMultiplier = 2.5d;
-
-        [Tooltip("At twice the target stock and above.")]
-        [SerializeField, Range(0.01f, 1f)] private double surplusPriceMultiplier = 0.5d;
-
+        [Header("Margins, as a share of the price (its bounds are each good's own)")]
         [Tooltip("What a city adds to the price when it sells to the player.")]
         [SerializeField, Range(0f, 0.99f)] private double buyMargin = 0.05d;
 
@@ -47,6 +44,8 @@ namespace DarkFantasyMerchant.Game
 
         public double TargetStockDays => targetStockDays;
 
+        public double StartingStockDays => startingStockDays;
+
         public double EfficientProductionRate => efficientProductionRate;
 
         public double EfficientCeilingDays => efficientCeilingDays;
@@ -54,10 +53,6 @@ namespace DarkFantasyMerchant.Game
         public double InefficientProductionRate => inefficientProductionRate;
 
         public double InefficientCeilingDays => inefficientCeilingDays;
-
-        public double EmptyStockPriceMultiplier => emptyStockPriceMultiplier;
-
-        public double SurplusPriceMultiplier => surplusPriceMultiplier;
 
         public double BuyMargin => buyMargin;
 
@@ -105,7 +100,7 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         public MarketPricing CreatePricing()
         {
-            return new MarketPricing(emptyStockPriceMultiplier, surplusPriceMultiplier, buyMargin, sellMargin);
+            return new MarketPricing(buyMargin, sellMargin);
         }
 
         /// <summary>
@@ -113,11 +108,17 @@ namespace DarkFantasyMerchant.Game
         /// catalogue. Call <see cref="TryValidate"/> first. Throws when a setting or a
         /// good's figure is unusable.
         /// </summary>
-        public CityMarket CreateMarket(CityDefinition city, MarketPricing pricing)
+        /// <param name="daysPerWeek">Days of the calendar's week: goods give their consumption per week.</param>
+        public CityMarket CreateMarket(CityDefinition city, MarketPricing pricing, int daysPerWeek)
         {
             if (city == null)
             {
                 throw new ArgumentNullException(nameof(city));
+            }
+
+            if (daysPerWeek < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(daysPerWeek));
             }
 
             double thousands = Math.Max(0, city.Population) / 1000d;
@@ -142,10 +143,15 @@ namespace DarkFantasyMerchant.Game
                 }
 
                 marketGoods[i] = new MarketGood(
-                    good.BasePrice, thousands * good.ConsumptionPerThousand, rate, ceilingDays);
+                    good.MinPrice,
+                    good.BasePrice,
+                    good.MaxPrice,
+                    thousands * good.WeeklyConsumptionPerThousand / daysPerWeek,
+                    rate,
+                    ceilingDays);
             }
 
-            return new CityMarket(marketGoods, targetStockDays, pricing);
+            return new CityMarket(marketGoods, targetStockDays, startingStockDays, pricing);
         }
     }
 }
