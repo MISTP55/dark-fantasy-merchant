@@ -17,7 +17,7 @@ MonoBehaviour:
   mapPosition: {x: 0.17747942, y: 0.6037801}
   access: 0
   size: 0
-  population: 1600
+  population: 1500
   efficientGoods:
   - {fileID: 11400000, guid: 610fada3e2af0f94a8f65494caaccba1, type: 2}
   inefficientGoods: []

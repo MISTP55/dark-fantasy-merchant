@@ -15,11 +15,11 @@ MonoBehaviour:
   goods:
   - {fileID: 11400000, guid: 610fada3e2af0f94a8f65494caaccba1, type: 2}
   - {fileID: 11400000, guid: 4aa4ecf3894e5d34b8ade5228cde2e48, type: 2}
-  targetStockDays: 30
+  targetStockDays: 10
   startingStockDays: 7
-  efficientProductionRate: 1.5
+  efficientProductionRate: 2
   efficientCeilingDays: 60
-  inefficientProductionRate: 1.1
+  inefficientProductionRate: 1.5
   inefficientCeilingDays: 36
   buyMargin: 0.05
   sellMargin: 0.05

@@ -22,7 +22,7 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Goods the city produces well above what it consumes.")]
         [SerializeField] private List<GoodDefinition> efficientGoods = new List<GoodDefinition>();
 
-        [Tooltip("Goods the city produces barely above what it consumes.")]
+        [Tooltip("Goods the city produces above what it consumes, less than the efficient ones.")]
         [SerializeField] private List<GoodDefinition> inefficientGoods = new List<GoodDefinition>();
 
         public string DisplayName => displayName;

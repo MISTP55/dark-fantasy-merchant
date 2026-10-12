@@ -56,11 +56,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             EconomyDefinition fresh = Track(ScriptableObject.CreateInstance<EconomyDefinition>());
 
-            Assert.AreEqual(30, fresh.TargetStockDays);
+            Assert.AreEqual(10, fresh.TargetStockDays);
             Assert.AreEqual(7, fresh.StartingStockDays);
-            Assert.AreEqual(1.5, fresh.EfficientProductionRate);
+            Assert.AreEqual(2, fresh.EfficientProductionRate);
             Assert.AreEqual(60, fresh.EfficientCeilingDays);
-            Assert.AreEqual(1.1, fresh.InefficientProductionRate);
+            Assert.AreEqual(1.5, fresh.InefficientProductionRate);
             Assert.AreEqual(36, fresh.InefficientCeilingDays);
             Assert.AreEqual(0.05, fresh.BuyMargin);
             Assert.AreEqual(0.05, fresh.SellMargin);
@@ -134,8 +134,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(63, market.StockOf(1), Tolerance);
             Assert.AreEqual(21, market.StockOf(2), Tolerance);
 
-            // The target stays 30 days.
-            Assert.AreEqual(90, market.TargetOf(2), Tolerance);
+            // The target is 10 days.
+            Assert.AreEqual(30, market.TargetOf(2), Tolerance);
         }
 
         [Test]
@@ -146,7 +146,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // Wheat: 84 barrels a week, over a week of 10 days.
             CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), 10);
 
-            Assert.AreEqual(8.4 * 30, market.TargetOf(0), Tolerance);
+            Assert.AreEqual(8.4 * 10, market.TargetOf(0), Tolerance);
         }
 
         [TestCase(0)]
@@ -167,9 +167,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             market.StartDay();
 
-            // Wheat: 84 + 18 - 12. Fish: 63 + 9.9 - 9.
-            Assert.AreEqual(90, market.StockOf(0), Tolerance);
-            Assert.AreEqual(63.9, market.StockOf(1), Tolerance);
+            // Wheat: 84 + 24 - 12. Fish: 63 + 13.5 - 9.
+            Assert.AreEqual(96, market.StockOf(0), Tolerance);
+            Assert.AreEqual(67.5, market.StockOf(1), Tolerance);
         }
 
         [Test]
@@ -195,14 +195,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void CreateMarket_PricesAGoodBetweenItsOwnMinimumAndMaximum()
         {
-            // Salt: minimum 9, base 18, maximum 45; 3 barrels a day, 21 in stock, a target of 90.
+            // Salt: minimum 9, base 18, maximum 45; 3 barrels a day, 21 in stock, a target of 30.
             CityDefinition city = City(6000, new GoodDefinition[0], new GoodDefinition[0]);
             CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
 
             // The last barrel is bought at the maximum plus 5 %: 47.25.
             Assert.AreEqual(48, market.BuyPriceOf(2, 20));
 
-            // A barrel sold into twice the target is paid the minimum minus 5 %: 8.55.
+            // A barrel sold into twice the target or more is paid the minimum minus 5 %: 8.55.
             Assert.AreEqual(8, market.SellPriceOf(2, 159));
         }
 

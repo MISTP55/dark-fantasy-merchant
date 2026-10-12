@@ -17,18 +17,18 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private List<GoodDefinition> goods = new List<GoodDefinition>();
 
         [Tooltip("Days of its consumption a city holds when a good is at its base price.")]
-        [SerializeField, Min(0f)] private double targetStockDays = 30d;
+        [SerializeField, Min(0f)] private double targetStockDays = 10d;
 
         [Tooltip("Days of its consumption a city holds of every good when the game starts, whether it produces it or not.")]
         [SerializeField, Min(0f)] private double startingStockDays = 7d;
 
         [Header("Production, as a share of the city's own consumption")]
-        [SerializeField, Min(0f)] private double efficientProductionRate = 1.5d;
+        [SerializeField, Min(0f)] private double efficientProductionRate = 2d;
 
         [Tooltip("Days of consumption above which an efficient production stops raising the stock.")]
         [SerializeField, Min(0f)] private double efficientCeilingDays = 60d;
 
-        [SerializeField, Min(0f)] private double inefficientProductionRate = 1.1d;
+        [SerializeField, Min(0f)] private double inefficientProductionRate = 1.5d;
 
         [Tooltip("Days of consumption above which an inefficient production stops raising the stock.")]
         [SerializeField, Min(0f)] private double inefficientCeilingDays = 36d;

@@ -97,12 +97,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [TestCase("Sparia", 2100)]
-        [TestCase("Elforth", 1600)]
+        [TestCase("Elforth", 1500)]
         [TestCase("Bactfied", 2000)]
         [TestCase("Hitrun", 1800)]
         [TestCase("Cerbias", 1500)]
         [TestCase("Hazer Empire", 2500)]
-        [TestCase("Liveria", 2400)]
+        [TestCase("Liveria", 2100)]
         public void ACity_HasItsPopulation(string cityName, int population)
         {
             foreach (CityDefinition city in LoadMap().Cities)

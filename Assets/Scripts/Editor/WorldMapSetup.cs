@@ -141,7 +141,7 @@ namespace DarkFantasyMerchant.Editor
             /// <summary>Asset names of the goods produced well above the consumption.</summary>
             public string[] EfficientGoods { get; }
 
-            /// <summary>Asset names of the goods produced barely above the consumption.</summary>
+            /// <summary>Asset names of the goods produced above the consumption, less than the efficient ones.</summary>
             public string[] InefficientGoods { get; }
 
             public string Description { get; }
@@ -154,7 +154,7 @@ namespace DarkFantasyMerchant.Editor
             new SampleCity("Sparia", 0.115f, 0.645f, CityAccess.Coastal, CitySize.Town, 2100,
                 new string[0], new[] { "Fish" },
                 "Une ville portuaire battue par les vents sur le cap occidental, première terre en vue des navires qui traversent la mer d'Aedean occidentale."),
-            new SampleCity("Elforth", 0.196f, 0.609f, CityAccess.Coastal, CitySize.Village, 1600,
+            new SampleCity("Elforth", 0.196f, 0.609f, CityAccess.Coastal, CitySize.Village, 1500,
                 new[] { "Fish" }, new string[0],
                 "Un village de pêcheurs abrité par les bois du sud, connu pour sa morue salée et ses contrebandiers discrets."),
             new SampleCity("Bactfied", 0.374f, 0.554f, CityAccess.Coastal, CitySize.Town, 2000,
@@ -169,8 +169,8 @@ namespace DarkFantasyMerchant.Editor
             new SampleCity("Hazer Empire", 0.586f, 0.627f, CityAccess.Coastal, CitySize.Capital, 2500,
                 new[] { "Iron" }, new[] { "Fish" },
                 "La capitale impériale qui garde le détroit, dont les douanes taxent chaque navire en route vers la côte du désert."),
-            new SampleCity("Liveria", 0.345f, 0.651f, CityAccess.River, CitySize.Capital, 2400,
-                new string[0], new string[0],
+            new SampleCity("Liveria", 0.345f, 0.651f, CityAccess.River, CitySize.Capital, 2100,
+                new string[0], new[] { "Iron" },
                 "Une capitale fluviale hérissée de clochers au cœur des Bois de la Couronne, que l'on ne rejoint qu'en barge."),
         };
 
