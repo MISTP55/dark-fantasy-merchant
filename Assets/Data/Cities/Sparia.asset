@@ -21,3 +21,4 @@ MonoBehaviour:
   efficientGoods: []
   inefficientGoods:
   - {fileID: 11400000, guid: 610fada3e2af0f94a8f65494caaccba1, type: 2}
+  - {fileID: 11400000, guid: e16d4cf6557c96944bd222d7b8d70c9d, type: 2}
