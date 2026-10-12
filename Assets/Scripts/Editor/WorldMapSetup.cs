@@ -109,12 +109,14 @@ namespace DarkFantasyMerchant.Editor
             public double WeeklyConsumptionPerThousand { get; }
         }
 
-        // In the order of the catalogue, which is their order on screen: the cheapest first.
-        // Minimum, base and maximum price: half the base price and two and a half times it.
+        // In the order of the catalogue, which is their order on screen. Minimum, base and
+        // maximum price, then what 1 000 inhabitants consume in a week: the values a good that
+        // is missing is created with, which are then balanced by hand in the asset.
         private static readonly SampleGood[] SampleGoods =
         {
             new SampleGood("Fish", "Poisson", 6, 12, 30, 10.5),
             new SampleGood("Iron", "Fer", 25, 50, 125, 2.8),
+            new SampleGood("Beer", "Bière", 31, 50, 82, 50),
         };
 
         private readonly struct SampleCity
@@ -160,19 +162,19 @@ namespace DarkFantasyMerchant.Editor
         private static readonly SampleCity[] SampleCities =
         {
             new SampleCity("Sparia", 0.115f, 0.645f, CityAccess.Coastal, CitySize.Town, 2100,
-                new string[0], new[] { "Fish" },
+                new string[0], new[] { "Fish", "Beer" },
                 "Une ville portuaire battue par les vents sur le cap occidental, première terre en vue des navires qui traversent la mer d'Aedean occidentale."),
             new SampleCity("Elforth", 0.196f, 0.609f, CityAccess.Coastal, CitySize.Village, 1500,
                 new[] { "Fish" }, new string[0],
                 "Un village de pêcheurs abrité par les bois du sud, connu pour sa morue salée et ses contrebandiers discrets."),
             new SampleCity("Bactfied", 0.374f, 0.554f, CityAccess.Coastal, CitySize.Town, 2000,
-                new[] { "Iron" }, new string[0],
+                new[] { "Iron", "Beer" }, new string[0],
                 "Un port marchand animé sur la mer d'Eamiq, où les barges fluviales rencontrent les navires de haute mer."),
             new SampleCity("Hitrun", 0.470f, 0.598f, CityAccess.Coastal, CitySize.Village, 1800,
                 new string[0], new[] { "Fish", "Iron" },
                 "Un village perché au-dessus d'une crique étroite, qui vend laine et pierre aux caboteurs de passage."),
             new SampleCity("Cerbias", 0.554f, 0.500f, CityAccess.Coastal, CitySize.Village, 1500,
-                new string[0], new[] { "Fish" },
+                new[] { "Beer" }, new[] { "Fish" },
                 "Un mouillage isolé à la pointe de la langue de sable méridionale, dernier abri avant le large de la mer de Rakmitag."),
             new SampleCity("Hazer Empire", 0.586f, 0.627f, CityAccess.Coastal, CitySize.Capital, 2500,
                 new[] { "Iron" }, new[] { "Fish" },
