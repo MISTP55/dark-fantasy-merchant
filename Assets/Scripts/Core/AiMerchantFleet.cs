@@ -41,6 +41,9 @@ namespace DarkFantasyMerchant.Core
         // Barrels under way to each port, by port then good. Rebuilt for every decision.
         private readonly int[,] incoming;
 
+        // Ports another ship of the fleet is sailing to empty, to trade from. Rebuilt with incoming.
+        private readonly bool[] claimed;
+
         /// <param name="docking">The docking of the map: the ships are ordered through it.</param>
         /// <param name="ports">The ports the ships trade between, in the planner's order.</param>
         /// <param name="portPositions">Normalized map position of each port, as an order to it takes.</param>
@@ -74,6 +77,7 @@ namespace DarkFantasyMerchant.Core
 
             this.stopoverSeconds = stopoverSeconds;
             incoming = new int[planner.PortCount, planner.GoodCount];
+            claimed = new bool[planner.PortCount];
 
             for (int i = 0; i < ports.Count; i++)
             {
@@ -205,7 +209,7 @@ namespace DarkFantasyMerchant.Core
 
                 SendTo(merchant, plan.Destination);
             }
-            else if (planner.TryPlanRelocation(from, capacity, incoming, out int destination))
+            else if (planner.TryPlanRelocation(from, capacity, incoming, claimed, out int destination))
             {
                 SendTo(merchant, destination);
             }
@@ -215,10 +219,14 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
-        /// <summary>What the other ships of the fleet are carrying to each port.</summary>
+        /// <summary>
+        /// What the other ships of the fleet are carrying to each port, and the ports they
+        /// are sailing to empty: those are going there to buy.
+        /// </summary>
         private void CountIncoming(Merchant deciding)
         {
             Array.Clear(incoming, 0, incoming.Length);
+            Array.Clear(claimed, 0, claimed.Length);
 
             foreach (Merchant other in merchants)
             {
@@ -231,6 +239,12 @@ namespace DarkFantasyMerchant.Core
 
                 if (destination == null || !portIndices.TryGetValue(destination, out int port))
                 {
+                    continue;
+                }
+
+                if (other.Ship.Cargo.Used == 0)
+                {
+                    claimed[port] = true;
                     continue;
                 }
 

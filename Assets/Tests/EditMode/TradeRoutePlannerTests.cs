@@ -211,7 +211,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.IsFalse(planner.TryPlanTrade(0, 200, null, out TradePlan plan));
             Assert.AreEqual(0, plan.TotalBarrels);
-            Assert.IsFalse(planner.TryPlanRelocation(0, 200, null, out _));
+            Assert.IsFalse(planner.TryPlanRelocation(0, 200, null, null, out _));
         }
 
         [Test]
@@ -220,7 +220,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var planner = new TradeRoutePlanner(new[] { Market(Surplus, Surplus) }, Days(1, 0d), 1d);
 
             Assert.IsFalse(planner.TryPlanTrade(0, 200, null, out _));
-            Assert.IsFalse(planner.TryPlanRelocation(0, 200, null, out _));
+            Assert.IsFalse(planner.TryPlanRelocation(0, 200, null, null, out _));
         }
 
         [Test]
@@ -272,7 +272,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 new[] { Market(Empty, AtTarget), Market(Surplus, AtTarget), Market(Empty, AtTarget) }, Days(3, 1d), 1d);
 
             Assert.IsFalse(planner.TryPlanTrade(0, 200, null, out _));
-            Assert.IsTrue(planner.TryPlanRelocation(0, 200, null, out int destination));
+            Assert.IsTrue(planner.TryPlanRelocation(0, 200, null, null, out int destination));
             Assert.AreEqual(1, destination);
         }
 
@@ -284,7 +284,29 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var planner = new TradeRoutePlanner(
                 new[] { Market(Empty, AtTarget), Market(Surplus, AtTarget), Market(Empty, AtTarget) }, days, 1d);
 
-            Assert.IsFalse(planner.TryPlanRelocation(0, 200, null, out _));
+            Assert.IsFalse(planner.TryPlanRelocation(0, 200, null, null, out _));
+        }
+
+        [Test]
+        public void Relocation_LeavesAClaimedSourceToTheShipThatSailsThere()
+        {
+            // Port 1 is the best place to trade from; port 3, with less to sell, is the next.
+            var planner = new TradeRoutePlanner(
+                new[]
+                {
+                    Market(Empty, AtTarget), Market(Surplus, AtTarget), Market(Empty, AtTarget), Market(AtTarget, AtTarget),
+                },
+                Days(4, 1d),
+                1d);
+
+            Assert.IsTrue(planner.TryPlanRelocation(0, 200, null, null, out int free));
+            Assert.AreEqual(1, free);
+
+            Assert.IsTrue(planner.TryPlanRelocation(0, 200, null, new[] { false, true, false, false }, out int other));
+            Assert.AreEqual(3, other);
+
+            Assert.IsFalse(planner.TryPlanRelocation(0, 200, null, new[] { false, true, false, true }, out _));
+            Assert.Throws<ArgumentException>(() => planner.TryPlanRelocation(0, 200, null, new bool[2], out _));
         }
 
         [Test]

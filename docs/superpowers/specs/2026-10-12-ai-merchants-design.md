@@ -135,7 +135,7 @@ looks for the reachable port from which the best trade starts: for every
 other port `s`, the best plan from `s` with an empty hold, scored as its
 profit over `travelDays[from, s] + stopoverDays` plus the days of that plan.
 The ship sails there empty. It returns false when no port has a profitable
-trade.
+trade. Ports another AI ship is already sailing to empty are left out (added after the code review), so that idle ships do not all go to the same one.
 
 ### Travel times
 

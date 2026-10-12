@@ -157,10 +157,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CreateFleet(60, 0, 30);
             Ship ship = AddShip(A);
+            int purchases = 0;
+            markets[A].Changed += () => purchases++;
 
             fleet.Advance(Stopover * 10d);
             fleet.Advance(Stopover * 10d);
 
+            // One good, so one purchase changes the market once.
+            Assert.AreEqual(1, purchases);
             Assert.AreSame(ports[B], docking.DestinationPortOf(ship));
             Assert.AreEqual(120 - ship.Cargo.Used, markets[A].AvailableOf(Fish));
         }
@@ -209,6 +213,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreSame(ports[B], docking.DestinationPortOf(first));
             Assert.AreSame(ports[C], docking.DestinationPortOf(second));
+        }
+
+        [Test]
+        public void TwoEmptyShips_DoNotSailToTheSameSource()
+        {
+            // Nothing to buy in B: A is the best port to trade from, C the next.
+            CreateFleet(60, 0, 30);
+            Ship first = AddShip(B);
+            Ship second = AddShip(B);
+
+            fleet.Advance(Stopover);
+
+            Assert.AreSame(ports[A], docking.DestinationPortOf(first));
+            Assert.AreSame(ports[C], docking.DestinationPortOf(second));
+            Assert.AreEqual(0, second.Cargo.Used);
         }
 
         [Test]

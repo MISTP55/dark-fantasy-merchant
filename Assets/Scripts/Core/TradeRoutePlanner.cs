@@ -127,17 +127,26 @@ namespace DarkFantasyMerchant.Core
         /// Where to sail empty when there is nothing to trade from a port: the port from
         /// which the best trade starts, counting the days to get there.
         /// </summary>
+        /// <param name="claimed">
+        /// Ports other empty ships are already sailing to, by port: they are left to them,
+        /// so that the ships with nothing to trade do not all go to the same one. Null for none.
+        /// </param>
         /// <returns>False when no port the ship can reach has a trade that pays.</returns>
-        public bool TryPlanRelocation(int from, int capacity, int[,] incoming, out int destination)
+        public bool TryPlanRelocation(int from, int capacity, int[,] incoming, bool[] claimed, out int destination)
         {
             Require(from, capacity, incoming);
+
+            if (claimed != null && claimed.Length < PortCount)
+            {
+                throw new ArgumentException("The claimed ports must have an entry per port.", nameof(claimed));
+            }
 
             destination = -1;
             double bestScore = 0d;
 
             for (int source = 0; source < PortCount; source++)
             {
-                if (source == from || !IsReachable(from, source))
+                if (source == from || !IsReachable(from, source) || (claimed != null && claimed[source]))
                 {
                     continue;
                 }
