@@ -119,7 +119,7 @@ namespace DarkFantasyMerchant.Core
                 return false;
             }
 
-            plan = new TradePlan(bestDestination, bestBarrels, bestProfit);
+            plan = new TradePlan(bestDestination, bestBarrels, bestProfit, bestScore);
             return true;
         }
 
@@ -133,6 +133,16 @@ namespace DarkFantasyMerchant.Core
         /// </param>
         /// <returns>False when no port the ship can reach has a trade that pays.</returns>
         public bool TryPlanRelocation(int from, int capacity, int[,] incoming, bool[] claimed, out int destination)
+        {
+            return TryPlanRelocation(from, capacity, incoming, claimed, out destination, out _);
+        }
+
+        /// <param name="profitPerDay">
+        /// What the trade from that port earns per day, counting the days to sail there
+        /// empty: to compare with the <see cref="TradePlan.ProfitPerDay"/> of a trade from here.
+        /// </param>
+        public bool TryPlanRelocation(
+            int from, int capacity, int[,] incoming, bool[] claimed, out int destination, out double profitPerDay)
         {
             Require(from, capacity, incoming);
 
@@ -165,6 +175,7 @@ namespace DarkFantasyMerchant.Core
                 }
             }
 
+            profitPerDay = bestScore;
             return destination >= 0;
         }
 

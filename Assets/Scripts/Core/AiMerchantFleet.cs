@@ -7,8 +7,8 @@ namespace DarkFantasyMerchant.Core
     /// <summary>
     /// The merchant ships that trade on their own. A ship sells its whole hold when it
     /// enters a port, stays there for a stopover, then buys the cargo that earns the most
-    /// and sails to where it sells; with nothing to trade it sails empty to a better
-    /// port, or waits. Their gold is not limited: only their profit is counted.
+    /// and sails to where it sells; when a trade from another port earns more per day,
+    /// or with nothing to trade, it sails there empty, or waits. Their gold is not limited: only their profit is counted.
     /// </summary>
     public sealed class AiMerchantFleet<TPort> where TPort : class
     {
@@ -195,7 +195,13 @@ namespace DarkFantasyMerchant.Core
 
             int capacity = ship.Cargo.Free;
 
-            if (planner.TryPlanTrade(from, capacity, incoming, out TradePlan plan))
+            bool hasTrade = planner.TryPlanTrade(from, capacity, incoming, out TradePlan plan);
+            bool hasRelocation = planner.TryPlanRelocation(
+                from, capacity, incoming, claimed, out int betterPort, out double relocationProfitPerDay);
+
+            // Sailing empty to a port with more to sell can earn more per day than the best
+            // trade from here: without it, ships go round the ports that always have a little.
+            if (hasTrade && !(hasRelocation && relocationProfitPerDay > plan.ProfitPerDay))
             {
                 for (int good = 0; good < planner.GoodCount; good++)
                 {
@@ -209,9 +215,9 @@ namespace DarkFantasyMerchant.Core
 
                 SendTo(merchant, plan.Destination);
             }
-            else if (planner.TryPlanRelocation(from, capacity, incoming, claimed, out int destination))
+            else if (hasRelocation)
             {
-                SendTo(merchant, destination);
+                SendTo(merchant, betterPort);
             }
             else
             {

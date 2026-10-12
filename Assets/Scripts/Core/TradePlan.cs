@@ -6,11 +6,13 @@ namespace DarkFantasyMerchant.Core
         private readonly int[] barrels;
 
         /// <param name="barrels">Barrels to buy of each good, by index. Kept, not copied.</param>
-        public TradePlan(int destination, int[] barrels, long profit)
+        /// <param name="profitPerDay">The profit over the days of the trip and of the stopover.</param>
+        public TradePlan(int destination, int[] barrels, long profit, double profitPerDay)
         {
             Destination = destination;
             this.barrels = barrels;
             Profit = profit;
+            ProfitPerDay = profitPerDay;
         }
 
         /// <summary>Index of the port where the cargo is sold.</summary>
@@ -18,6 +20,9 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>What the cargo is sold for minus what it costs, if no price changes meanwhile.</summary>
         public long Profit { get; }
+
+        /// <summary>What the trade earns per day it takes: what plans are compared by.</summary>
+        public double ProfitPerDay { get; }
 
         public int TotalBarrels
         {

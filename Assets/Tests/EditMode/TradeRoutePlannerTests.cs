@@ -310,6 +310,22 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void Plans_GiveTheirProfitPerDay()
+        {
+            // Two days to the shortage and one of stopover.
+            var planner = new TradeRoutePlanner(
+                new[] { Market(Empty, AtTarget), Market(Surplus, AtTarget), Market(Empty, AtTarget) }, Days(3, 2d), 1d);
+
+            Assert.IsTrue(planner.TryPlanTrade(1, 200, null, out TradePlan trade));
+            Assert.AreEqual(trade.Profit / 3d, trade.ProfitPerDay, 1e-9);
+
+            // From port 0: three days to get to port 1, then the three of its trade.
+            Assert.IsTrue(planner.TryPlanRelocation(0, 200, null, null, out int source, out double profitPerDay));
+            Assert.AreEqual(1, source);
+            Assert.AreEqual(trade.Profit / 6d, profitPerDay, 1e-9);
+        }
+
+        [Test]
         public void RejectsBadArguments()
         {
             CityMarket[] markets = { Market(Surplus, AtTarget), Market(Empty, AtTarget) };

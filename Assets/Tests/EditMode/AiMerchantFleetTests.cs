@@ -216,6 +216,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void ItSailsEmptyToAFarBetterSource_RatherThanMakeASmallTrade()
+        {
+            // B has a little more than it needs, which C lacks: a small trade. A has far
+            // more to sell to C, and is a day away.
+            CreateFleet(300, 35, 0);
+            Ship ship = AddShip(B);
+
+            fleet.Advance(Stopover);
+
+            Assert.AreSame(ports[A], docking.DestinationPortOf(ship));
+            Assert.AreEqual(0, ship.Cargo.Used);
+            Assert.AreEqual(70, markets[B].AvailableOf(Fish));
+        }
+
+        [Test]
         public void TwoEmptyShips_DoNotSailToTheSameSource()
         {
             // Nothing to buy in B: A is the best port to trade from, C the next.
