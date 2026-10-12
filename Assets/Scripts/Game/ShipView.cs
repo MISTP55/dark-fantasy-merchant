@@ -18,11 +18,18 @@ namespace DarkFantasyMerchant.Game
         private bool isSelected;
         private float baseScale = 1f;
 
-        public void Initialize(Ship ship, ShipDefinition definition)
+        /// <param name="tint">Replaces the ship's normal color; null keeps the prefab's.</param>
+        public void Initialize(Ship ship, ShipDefinition definition, string displayName, Color? tint = null)
         {
             this.ship = ship;
             this.definition = definition;
-            name = $"Ship ({definition.DisplayName})";
+
+            if (tint.HasValue)
+            {
+                normalColor = tint.Value;
+            }
+
+            name = $"Ship ({displayName})";
             Refresh();
         }
 

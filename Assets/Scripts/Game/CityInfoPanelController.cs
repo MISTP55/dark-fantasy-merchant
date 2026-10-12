@@ -308,12 +308,15 @@ namespace DarkFantasyMerchant.Game
             return section != null;
         }
 
-        /// <returns>The hold of the selected ship when it lies in the shown city's port, otherwise null.</returns>
+        /// <returns>The hold of the selected ship when it is the player's and lies in the shown city's port, otherwise null.</returns>
         private CargoHold HoldOfSelectedShipInPort()
         {
             Ship selected = shipsView != null ? shipsView.Selection.Selected : null;
 
-            return selected != null && listedShips.Contains(selected) ? selected.Cargo : null;
+            // Only the player's ships trade here: another merchant's is only looked at.
+            return selected != null && shipsView.IsPlayerShip(selected) && listedShips.Contains(selected)
+                ? selected.Cargo
+                : null;
         }
 
         private void OnCloseClicked()

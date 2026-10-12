@@ -92,7 +92,7 @@ namespace DarkFantasyMerchant.Game
         {
             int sailors = 0;
 
-            foreach (Ship ship in shipsView.Ships)
+            foreach (Ship ship in shipsView.PlayerShips)
             {
                 sailors += ship.Crew.Count;
             }

@@ -6,9 +6,9 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// Owns the ships of the map, their views, the ship selection state and which ships
-    /// lie in which city's port, sails the ships every frame and shows the route of the
-    /// selected one.
+    /// Owns the ships of the map, the player's and the others, their views, the ship
+    /// selection state and which ships lie in which city's port, sails the ships every
+    /// frame and shows the route of the selected one.
     /// </summary>
     public sealed class ShipsView : MonoBehaviour
     {
@@ -39,7 +39,10 @@ namespace DarkFantasyMerchant.Game
         private readonly List<Ship> ships = new List<Ship>();
         private readonly List<Vector2> shipWorldPositions = new List<Vector2>();
         private readonly List<ShipView> views = new List<ShipView>();
-        private readonly List<ShipDefinition> definitions = new List<ShipDefinition>();
+        // Name of each entry of ships, in the same order: several ships can share a definition.
+        private readonly List<string> displayNames = new List<string>();
+
+        private readonly List<Ship> playerShips = new List<Ship>();
 
         private ShipArrivals<CityDefinition> arrivals;
 
@@ -64,6 +67,12 @@ namespace DarkFantasyMerchant.Game
         public event Action<Ship, CityDefinition> ShipArrived;
 
         public IReadOnlyList<Ship> Ships => ships;
+
+        /// <summary>The ships of <see cref="Ships"/> that the player owns and orders about.</summary>
+        public IReadOnlyList<Ship> PlayerShips => playerShips;
+
+        /// <summary>Where ships can sail. Null before Start, and on a map without a navigation mask.</summary>
+        public NavigationPathfinder Navigation => navigation;
 
         /// <summary>
         /// World position of each entry of <see cref="Ships"/>, in the same order. NaN for
@@ -90,25 +99,8 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            // The Min attribute only constrains the Inspector, not the asset file.
-            float speed = playerShipDefinition.Speed;
-
-            if (!(speed > 0f) || float.IsInfinity(speed))
+            if (!IsUsable(playerShipDefinition))
             {
-                Debug.LogError(
-                    $"ShipDefinition '{playerShipDefinition.name}' has an invalid speed ({speed}).",
-                    playerShipDefinition);
-                enabled = false;
-                return;
-            }
-
-            int crewCapacity = playerShipDefinition.CrewCapacity;
-
-            if (crewCapacity < 1)
-            {
-                Debug.LogError(
-                    $"ShipDefinition '{playerShipDefinition.name}' has an invalid crew capacity ({crewCapacity}).",
-                    playerShipDefinition);
                 enabled = false;
                 return;
             }
@@ -116,7 +108,12 @@ namespace DarkFantasyMerchant.Game
             navigation = CreateNavigation();
             arrivals = new ShipArrivals<CityDefinition>(Docking);
             arrivals.Arrived += OnShipArrived;
-            Spawn(playerShipDefinition, StartPosition(), CreatePlayerCrew(crewCapacity));
+            playerShips.Add(Spawn(
+                playerShipDefinition,
+                StartPosition(),
+                CreatePlayerCrew(playerShipDefinition.CrewCapacity),
+                playerShipDefinition.DisplayName,
+                null));
             Selection.HoveredChanged += OnHoveredChanged;
             Selection.SelectedChanged += OnSelectedChanged;
             Docking.Docked += OnDocked;
@@ -167,12 +164,41 @@ namespace DarkFantasyMerchant.Game
             routeView.Show(ship, mapView.Projection, Docking.DestinationPortOf(ship) == null);
         }
 
-        /// <returns>The name of the ship's definition, or null for a ship that is not on this map.</returns>
+        /// <returns>The name of the ship, or null for a ship that is not on this map.</returns>
         public string DisplayNameOf(Ship ship)
         {
             int index = ship != null ? ships.IndexOf(ship) : -1;
 
-            return index >= 0 ? definitions[index].DisplayName : null;
+            return index >= 0 ? displayNames[index] : null;
+        }
+
+        public bool IsPlayerShip(Ship ship)
+        {
+            return ship != null && playerShips.Contains(ship);
+        }
+
+        /// <summary>
+        /// Adds a ship that the player does not own: it is shown, hovered and selected
+        /// like the player's, and takes its orders from whoever spawned it.
+        /// </summary>
+        /// <param name="position">Normalized map position; the ship starts on the water nearest to it.</param>
+        /// <param name="tint">The color of its sprite, which tells it from the player's.</param>
+        /// <returns>The ship, or null when this view is not ready or the definition is unusable.</returns>
+        public Ship SpawnAiShip(ShipDefinition definition, Vector2 position, ShipCrew crew, string displayName, Color tint)
+        {
+            if (!IsReady)
+            {
+                Debug.LogError("ShipsView cannot spawn a ship before it has started.", this);
+                return null;
+            }
+
+            if (definition == null || crew == null)
+            {
+                Debug.LogError("ShipsView needs a ship definition and a crew to spawn a ship.", this);
+                return null;
+            }
+
+            return IsUsable(definition) ? Spawn(definition, position, crew, displayName, tint) : null;
         }
 
         public void SetShipScale(float worldUnitsPerPixel)
@@ -254,7 +280,29 @@ namespace DarkFantasyMerchant.Game
             return playerStart.CreateShipCrew(capacity);
         }
 
-        private void Spawn(ShipDefinition definition, Vector2 position, ShipCrew crew)
+        // The Min attributes only constrain the Inspector, not the asset file.
+        private static bool IsUsable(ShipDefinition definition)
+        {
+            float speed = definition.Speed;
+
+            if (!(speed > 0f) || float.IsInfinity(speed))
+            {
+                Debug.LogError($"ShipDefinition '{definition.name}' has an invalid speed ({speed}).", definition);
+                return false;
+            }
+
+            if (definition.CrewCapacity < 1)
+            {
+                Debug.LogError(
+                    $"ShipDefinition '{definition.name}' has an invalid crew capacity ({definition.CrewCapacity}).",
+                    definition);
+                return false;
+            }
+
+            return true;
+        }
+
+        private Ship Spawn(ShipDefinition definition, Vector2 position, ShipCrew crew, string displayName, Color? tint)
         {
             // A NaN city position would be rejected by the ship.
             if (float.IsNaN(position.x) || float.IsNaN(position.y))
@@ -267,13 +315,14 @@ namespace DarkFantasyMerchant.Game
             var cargo = new CargoHold(Mathf.Max(0, definition.CargoCapacity));
             var ship = new Ship(mapView.Projection, position, definition.Speed, crew, navigation, cargo);
             ShipView view = Instantiate(shipPrefab, transform);
-            view.Initialize(ship, definition);
+            view.Initialize(ship, definition, displayName, tint);
             arrivals.Track(ship);
 
             ships.Add(ship);
             shipWorldPositions.Add(ship.WorldPosition);
             views.Add(view);
-            definitions.Add(definition);
+            displayNames.Add(displayName);
+            return ship;
         }
 
         // A ship in port is not on the map: it is neither shown, hovered nor selected

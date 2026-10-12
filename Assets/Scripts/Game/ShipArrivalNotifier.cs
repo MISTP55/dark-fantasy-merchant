@@ -4,7 +4,7 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// Tells the player when a ship reaches the end of its route, in a port or at sea.
+    /// Tells the player when one of their ships reaches the end of its route, in a port or at sea.
     /// </summary>
     public sealed class ShipArrivalNotifier : MonoBehaviour
     {
@@ -57,6 +57,12 @@ namespace DarkFantasyMerchant.Game
 
         private void OnShipArrived(Ship ship, CityDefinition city)
         {
+            // The other merchants' ships come and go without a word.
+            if (!shipsView.IsPlayerShip(ship))
+            {
+                return;
+            }
+
             string shipName = shipsView.DisplayNameOf(ship);
 
             if (string.IsNullOrEmpty(shipName))
