@@ -30,11 +30,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         // that they make sense, not what they are.
         [TestCase(0, "Poisson")]
         [TestCase(1, "Fer")]
+        [TestCase(2, "Bière")]
         public void TheCatalogue_HasItsGoods_InOrder_WithPricesThatMakeSense(int index, string name)
         {
             EconomyDefinition economy = LoadEconomy();
 
-            Assert.AreEqual(2, economy.Goods.Count);
+            Assert.AreEqual(3, economy.Goods.Count);
 
             GoodDefinition good = economy.Goods[index];
             Assert.AreEqual(name, good.DisplayName);
