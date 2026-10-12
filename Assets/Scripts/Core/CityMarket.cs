@@ -7,6 +7,7 @@ namespace DarkFantasyMerchant.Core
     /// The stocks of goods of one city. Every day the city produces some goods and
     /// consumes all of them; the price of a good follows its stock against a target.
     /// There is no limit to what a city can store. Goods are indices into the catalogue.
+    /// It also remembers what the days of the last week actually produced and consumed.
     /// </summary>
     public sealed class CityMarket
     {
@@ -16,11 +17,18 @@ namespace DarkFantasyMerchant.Core
         private readonly double[] stocks;
         private readonly double targetDays;
         private readonly MarketPricing pricing;
+        private readonly int daysPerWeek;
+        private readonly MarketWeekLog weekLog;
 
         /// <param name="targetDays">Days of consumption a city holds when a good is at its base price.</param>
         /// <param name="startingDays">Days of consumption the city holds of every good when the game starts.</param>
+        /// <param name="daysPerWeek">Days of the calendar's week, over which the weekly figures are given.</param>
         public CityMarket(
-            IReadOnlyList<MarketGood> goods, double targetDays, double startingDays, MarketPricing pricing)
+            IReadOnlyList<MarketGood> goods,
+            double targetDays,
+            double startingDays,
+            MarketPricing pricing,
+            int daysPerWeek)
         {
             if (goods == null)
             {
@@ -38,8 +46,15 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentOutOfRangeException(nameof(startingDays));
             }
 
+            if (daysPerWeek < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(daysPerWeek));
+            }
+
             this.pricing = pricing ?? throw new ArgumentNullException(nameof(pricing));
             this.targetDays = targetDays;
+            this.daysPerWeek = daysPerWeek;
+            weekLog = new MarketWeekLog(goods.Count, daysPerWeek);
             this.goods = new MarketGood[goods.Count];
             stocks = new double[goods.Count];
 
@@ -78,6 +93,40 @@ namespace DarkFantasyMerchant.Core
             RequireGood(good);
 
             return targetDays * goods[good].DailyConsumption;
+        }
+
+        /// <summary>Barrels the city produces in a week while its stock is under the ceiling.</summary>
+        public double NominalWeeklyProductionOf(int good)
+        {
+            RequireGood(good);
+
+            return goods[good].DailyProduction * daysPerWeek;
+        }
+
+        /// <summary>Barrels the city consumes in a week while it has them.</summary>
+        public double NominalWeeklyConsumptionOf(int good)
+        {
+            RequireGood(good);
+
+            return goods[good].DailyConsumption * daysPerWeek;
+        }
+
+        /// <summary>
+        /// Barrels the city actually produced over the last days, a week of them at most:
+        /// less than the nominal figure when the ceiling stopped the production.
+        /// </summary>
+        public double RecentProductionOf(int good)
+        {
+            return weekLog.ProducedOf(good);
+        }
+
+        /// <summary>
+        /// Barrels the city actually consumed over the last days, a week of them at most:
+        /// less than the nominal figure when the stock ran out. What the player buys is not counted.
+        /// </summary>
+        public double RecentConsumptionOf(int good)
+        {
+            return weekLog.ConsumedOf(good);
         }
 
         /// <summary>What the player pays for the next barrel, or for a later one of the same purchase.</summary>
@@ -138,10 +187,13 @@ namespace DarkFantasyMerchant.Core
         /// </summary>
         public void StartDay()
         {
+            weekLog.StartDay();
+
             for (int i = 0; i < goods.Length; i++)
             {
                 MarketGood good = goods[i];
-                double stock = stocks[i];
+                double stockBefore = stocks[i];
+                double stock = stockBefore;
 
                 if (stock < good.Ceiling)
                 {
@@ -149,6 +201,7 @@ namespace DarkFantasyMerchant.Core
                 }
 
                 stocks[i] = Math.Max(0d, stock - good.DailyConsumption);
+                weekLog.Record(i, stock - stockBefore, stock - stocks[i]);
             }
 
             Changed?.Invoke();

@@ -1,0 +1,91 @@
+/* The panel's frame, title and close button are in InfoPanel.uss. */
+
+/* Centers the panel under the date and its button. */
+.debug-cities-root {
+    flex-grow: 1;
+    align-items: center;
+    padding-top: 110px;
+}
+
+/* A table as wide as its goods, scrolled when it does not fit. */
+.debug-cities {
+    width: auto;
+    max-width: 96%;
+    max-height: 70%;
+}
+
+.debug-cities__legend {
+    margin-bottom: 8px;
+    color: rgb(190, 164, 120);
+    font-size: 13px;
+}
+
+.debug-cities__scroll {
+    flex-shrink: 1;
+}
+
+.debug-cities__row {
+    flex-direction: row;
+    flex-shrink: 0;
+    align-items: center;
+    height: 24px;
+}
+
+.debug-cities__cell {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0 8px;
+    color: rgb(222, 210, 188);
+    font-size: 14px;
+    -unity-text-align: middle-right;
+}
+
+.debug-cities__row--header .debug-cities__cell {
+    color: rgb(190, 164, 120);
+    font-size: 13px;
+}
+
+.debug-cities__row--total {
+    margin-top: 4px;
+    border-top-width: 1px;
+    border-top-color: rgb(110, 84, 52);
+}
+
+.debug-cities__row--total .debug-cities__cell {
+    color: rgb(240, 226, 196);
+    -unity-font-style: bold;
+}
+
+.debug-cities__cell--name {
+    width: 150px;
+    -unity-text-align: middle-left;
+}
+
+.debug-cities__cell--population {
+    width: 100px;
+}
+
+.debug-cities__cell--stock {
+    width: 80px;
+    border-left-width: 1px;
+    border-left-color: rgb(110, 84, 52);
+}
+
+.debug-cities__cell--figure {
+    width: 140px;
+}
+
+/* As wide as the name and the population. */
+.debug-cities__cell--city-group {
+    width: 250px;
+}
+
+/* As wide as the stock and the three figures of a good. */
+.debug-cities__row--header .debug-cities__cell--good-group {
+    width: 500px;
+    border-left-width: 1px;
+    border-left-color: rgb(110, 84, 52);
+    color: rgb(240, 226, 196);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}

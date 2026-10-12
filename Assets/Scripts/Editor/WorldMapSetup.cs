@@ -15,9 +15,10 @@ namespace DarkFantasyMerchant.Editor
     /// sample content. Safe to run again: existing assets are left untouched, and an
     /// existing scene only gains the ships, ship route, ship panel, world clock, time HUD,
     /// player treasury, treasury HUD, player notifications, notifications HUD, ship
-    /// arrival notifier, player expenses and world economy objects when it has none, and
-    /// the references to them that are empty. Cities of the map that have no inhabitant
-    /// are given the population and the productions of the sample content.
+    /// arrival notifier, player expenses, world economy and debug cities panel objects when
+    /// it has none, and the references to them that are empty. Cities of the map that
+    /// have no inhabitant are given the population and the productions of the sample
+    /// content.
     /// </summary>
     public static class WorldMapSetup
     {
@@ -49,6 +50,10 @@ namespace DarkFantasyMerchant.Editor
         private const string ExpensesPath = EconomyFolder + "/Expenses.asset";
         private const string EconomyPath = EconomyFolder + "/Economy.asset";
         private const string GoodsFolder = "Assets/Data/Goods";
+
+        private const string DebugUiFolder = "Assets/UI/Debug";
+        private const string DebugCitiesPanelTemplatePath = DebugUiFolder + "/DebugCitiesPanel.uxml";
+        private const float DebugSortingOrder = 100f;
 
         private const string ShipTexturePath = "Assets/Art/Ships/MerchantShip.png";
         private const string ShipSpritePrefix = "MerchantShip_";
@@ -217,6 +222,7 @@ namespace DarkFantasyMerchant.Editor
             AddNotificationsToScene(mapSceneHadUnsavedChanges);
             AddExpensesToScene(mapSceneHadUnsavedChanges);
             AddEconomyToScene(mapSceneHadUnsavedChanges);
+            AddDebugToolsToScene(mapSceneHadUnsavedChanges);
             AssetDatabase.SaveAssets();
 
             Debug.Log("World map setup finished.");
@@ -1351,6 +1357,64 @@ namespace DarkFantasyMerchant.Editor
             if (changed)
             {
                 SaveSceneChanges(scene, sceneHadUnsavedChanges, "The world's economy");
+            }
+        }
+
+        // Like the economy it shows, the debug panel of the cities is added to a scene built
+        // before it existed.
+        private static void AddDebugToolsToScene(bool sceneHadUnsavedChanges)
+        {
+            if (!TryOpenMapScene("The debug cities panel", out Scene scene))
+            {
+                return;
+            }
+
+            var worldEconomy = FindInScene<WorldEconomy>(scene);
+            var mapView = FindInScene<WorldMapView>(scene);
+            var input = FindInScene<WorldMapInput>(scene);
+
+            // The panel lists the cities of the map with their markets, and the input opens it.
+            if (worldEconomy == null || mapView == null || input == null)
+            {
+                Debug.LogWarning(
+                    $"{ScenePath} has no WorldEconomy, WorldMapView or WorldMapInput; debug cities panel not added.");
+                return;
+            }
+
+            bool changed = false;
+            var panel = FindInScene<DebugCitiesPanelController>(scene);
+
+            if (panel == null)
+            {
+                var panelTemplate = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(DebugCitiesPanelTemplatePath);
+
+                if (panelTemplate == null)
+                {
+                    throw new FileNotFoundException("The debug cities panel UXML is missing.", DebugCitiesPanelTemplatePath);
+                }
+
+                var panelObject = new GameObject("Debug Cities Panel");
+                SceneManager.MoveGameObjectToScene(panelObject, scene);
+
+                var document = panelObject.AddComponent<UIDocument>();
+                document.panelSettings = FindPanelSettings(scene);
+                document.visualTreeAsset = panelTemplate;
+
+                // Over the panels of the game, the city's in particular, which it overlaps.
+                document.sortingOrder = DebugSortingOrder;
+
+                panel = panelObject.AddComponent<DebugCitiesPanelController>();
+                changed = true;
+            }
+
+            // Also for a scene in which one of them was deleted and made again.
+            changed |= FillReference(panel, "worldEconomy", worldEconomy);
+            changed |= FillReference(panel, "mapView", mapView);
+            changed |= FillReference(panel, "input", input);
+
+            if (changed)
+            {
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The debug cities panel");
             }
         }
 

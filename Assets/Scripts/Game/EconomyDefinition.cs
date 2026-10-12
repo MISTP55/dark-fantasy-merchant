@@ -151,7 +151,7 @@ namespace DarkFantasyMerchant.Game
                     ceilingDays);
             }
 
-            return new CityMarket(marketGoods, targetStockDays, startingStockDays, pricing);
+            return new CityMarket(marketGoods, targetStockDays, startingStockDays, pricing, daysPerWeek);
         }
     }
 }

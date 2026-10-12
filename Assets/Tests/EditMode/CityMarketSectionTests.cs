@@ -39,7 +39,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 new[] { new MarketGood(5, 10, 25, 2, 0, 0), new MarketGood(30, 60, 150, 0, 0, 0) },
                 30,
                 30,
-                new MarketPricing(0.05, 0.05));
+                new MarketPricing(0.05, 0.05),
+                7);
             hold = new CargoHold(200);
             treasury = new Treasury(10000);
             section = new CityMarketSection(sectionElement, rows, holdLabel, new[] { "Blé", "Vin" }, treasury);
@@ -230,7 +231,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AMarketWithFewerGoodsThanRows_LeavesTheExtraRowsEmpty()
         {
             var small = new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 2, 0, 0) }, 30, 30, new MarketPricing(0.05, 0.05));
+                new[] { new MarketGood(5, 10, 25, 2, 0, 0) }, 30, 30, new MarketPricing(0.05, 0.05),
+                7);
 
             Assert.DoesNotThrow(() => section.Show(small, hold));
             Assert.AreEqual(CityMarketSection.NoPrice, Text(Wine, BuyCell));

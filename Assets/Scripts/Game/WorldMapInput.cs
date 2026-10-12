@@ -8,11 +8,14 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// Single reader of the "WorldMap" action map. Turns raw input into map gestures
-    /// and drops pointer input that starts over the UI.
+    /// and drops pointer input that starts over the UI. Also reads the key of the debug tools.
     /// </summary>
     public sealed class WorldMapInput : MonoBehaviour
     {
         private const string ActionMapName = "WorldMap";
+
+        // Opens and closes the debug tools. Not an action of the map: it is not a part of the game.
+        private const Key DebugKey = Key.F1;
 
         [SerializeField] private CityInfoPanelController ui;
 
@@ -54,8 +57,12 @@ namespace DarkFantasyMerchant.Game
         /// Raised when the player does anything but move the pointer: a keyboard key is
         /// pressed, or a mouse button is pressed or the wheel turned on the map. Raised
         /// before the other events of the frame, so that a listener can consume the input.
+        /// The debug key is not such an input: the debug tools are also watched in fast forward.
         /// </summary>
         public event Action AnyInput;
+
+        /// <summary>Raised when the key that opens and closes the debug tools is pressed.</summary>
+        public event Action DebugToggled;
 
         public Vector2 PointerPosition { get; private set; }
 
@@ -128,6 +135,11 @@ namespace DarkFantasyMerchant.Game
                 AnyInput?.Invoke();
             }
 
+            if (WasDebugKeyPressedThisFrame())
+            {
+                DebugToggled?.Invoke();
+            }
+
             // A consumed press is not a click, but the button it holds can still drag the map.
             UpdateGesture(clickAction, clickGesture, Clicked, !inputConsumed);
             UpdateGesture(panDragAction, panGesture, null, !inputConsumed);
@@ -175,7 +187,7 @@ namespace DarkFantasyMerchant.Game
         }
 
         // Not the keyboard's "any key" control: it stays pressed while one key is held,
-        // and would miss a second key pressed meanwhile.
+        // and would miss a second key pressed meanwhile. The debug key does not count.
         private static bool WasAnyKeyPressedThisFrame()
         {
             Keyboard keyboard = Keyboard.current;
@@ -187,13 +199,20 @@ namespace DarkFantasyMerchant.Game
 
             foreach (KeyControl key in keyboard.allKeys)
             {
-                if (key != null && key.wasPressedThisFrame)
+                if (key != null && key.keyCode != DebugKey && key.wasPressedThisFrame)
                 {
                     return true;
                 }
             }
 
             return false;
+        }
+
+        private static bool WasDebugKeyPressedThisFrame()
+        {
+            Keyboard keyboard = Keyboard.current;
+
+            return keyboard != null && keyboard[DebugKey].wasPressedThisFrame;
         }
 
         private void UpdateGesture(InputAction button, PointerGesture gesture, Action<Vector2> clicked, bool canClick)
