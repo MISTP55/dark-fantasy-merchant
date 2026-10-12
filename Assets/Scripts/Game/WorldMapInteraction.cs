@@ -299,7 +299,8 @@ namespace DarkFantasyMerchant.Game
         // its city is selected in its place.
         private void SelectAgain(Ship ship)
         {
-            if (ship == null || shipsView == null)
+            // A ship can have been removed from the map meanwhile.
+            if (ship == null || shipsView == null || !shipsView.Contains(ship))
             {
                 return;
             }

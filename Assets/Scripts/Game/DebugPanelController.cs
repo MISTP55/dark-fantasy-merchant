@@ -10,7 +10,8 @@ namespace DarkFantasyMerchant.Game
     /// and the weekly production, consumption and net gain of every good, and the ships,
     /// the player's and the others, with what they are doing and carrying. Opened and
     /// closed with the debug key of the map's input; exists only in the Editor and in
-    /// development builds. Reads the simulation and changes nothing.
+    /// development builds. Reads the simulation and changes nothing, but for the buttons
+    /// of the ships tab, which add and remove the ships of the AI merchants.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class DebugPanelController : MonoBehaviour
@@ -24,7 +25,7 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Optional. Without it, the panel has no ships tab.")]
         [SerializeField] private ShipsView shipsView;
 
-        [Tooltip("Optional. Without it, the ships tab shows no profit.")]
+        [Tooltip("Optional. Without it, the ships tab shows no profit and has no button to add or remove a ship.")]
         [SerializeField] private AiMerchants aiMerchants;
 
         private VisualElement panel;
@@ -38,6 +39,7 @@ namespace DarkFantasyMerchant.Game
         private Button citiesTab;
         private Button shipsTab;
         private Button closeButton;
+        private Button addShipButton;
 
         // Made the first time the panel is opened: the world's economy starts after this panel is enabled.
         private DebugCitiesTable citiesTable;
@@ -98,10 +100,11 @@ namespace DarkFantasyMerchant.Game
             citiesTab = root.Q<Button>("cities-tab");
             shipsTab = root.Q<Button>("ships-tab");
             closeButton = root.Q<Button>("close-button");
+            addShipButton = root.Q<Button>("add-ship-button");
 
             if (panel == null || citiesPage == null || shipsPage == null || citiesHeader == null || citiesRows == null
                 || citiesTotals == null || shipsHeader == null || shipsRows == null || citiesTab == null
-                || shipsTab == null || closeButton == null)
+                || shipsTab == null || closeButton == null || addShipButton == null)
             {
                 Debug.LogError("DebugPanel.uxml is missing an expected element.", this);
                 root.style.display = DisplayStyle.None;
@@ -121,7 +124,14 @@ namespace DarkFantasyMerchant.Game
                 shipsTab.style.display = DisplayStyle.None;
             }
 
+            // Only the AI merchants add ships.
+            if (aiMerchants == null)
+            {
+                addShipButton.style.display = DisplayStyle.None;
+            }
+
             // The buttons are clicked, not navigated: the keyboard pans the map.
+            addShipButton.focusable = false;
             closeButton.focusable = false;
             citiesTab.focusable = false;
             shipsTab.focusable = false;
@@ -129,6 +139,7 @@ namespace DarkFantasyMerchant.Game
             closeButton.clicked += Close;
             citiesTab.clicked += ShowCities;
             shipsTab.clicked += ShowShips;
+            addShipButton.clicked += AddShip;
             input.DebugToggled += Toggle;
             isBound = true;
         }
@@ -143,6 +154,7 @@ namespace DarkFantasyMerchant.Game
             closeButton.clicked -= Close;
             citiesTab.clicked -= ShowCities;
             shipsTab.clicked -= ShowShips;
+            addShipButton.clicked -= AddShip;
             input.DebugToggled -= Toggle;
 
             // Stops listening to the markets.
@@ -221,6 +233,19 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
+        // In the port of a city drawn at random. Nothing happens before the merchants have started.
+        private void AddShip()
+        {
+            aiMerchants.AddShip();
+            RefreshShips();
+        }
+
+        private void RemoveShip(Ship ship)
+        {
+            aiMerchants.RemoveShip(ship);
+            RefreshShips();
+        }
+
         private void RefreshShips()
         {
             shipInfos.Clear();
@@ -242,6 +267,12 @@ namespace DarkFantasyMerchant.Game
             }
 
             shipsTable.Refresh(shipInfos);
+
+            // Greyed until the merchants have started, and on a map with no city to start in.
+            if (aiMerchants != null)
+            {
+                addShipButton.SetEnabled(aiMerchants.CanAddShip);
+            }
         }
 
         private bool TryBuildTables()
@@ -271,7 +302,10 @@ namespace DarkFantasyMerchant.Game
                 }
             }
 
-            shipsTable = new DebugShipsTable(shipsHeader, shipsRows, goodNames);
+            // Without the AI merchants, no ship can be removed: the rows have no button.
+            shipsTable = aiMerchants != null
+                ? new DebugShipsTable(shipsHeader, shipsRows, goodNames, RemoveShip)
+                : new DebugShipsTable(shipsHeader, shipsRows, goodNames);
             return true;
         }
     }

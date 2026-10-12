@@ -124,6 +124,23 @@ namespace DarkFantasyMerchant.Core
             SendTo(merchant, startPort);
         }
 
+        /// <summary>
+        /// Lets a ship go: it no longer trades, and its profit is forgotten. The ship itself
+        /// is left as it is, where it is, with what it carries.
+        /// </summary>
+        /// <returns>False for a ship that is not of the fleet.</returns>
+        public bool Remove(Ship ship)
+        {
+            if (ship == null || !merchantsByShip.TryGetValue(ship, out Merchant merchant))
+            {
+                return false;
+            }
+
+            merchantsByShip.Remove(ship);
+            merchants.Remove(merchant);
+            return true;
+        }
+
         /// <summary>Counts the stopovers down and sends off the ships whose stopover is over.</summary>
         /// <param name="seconds">Seconds of the world since the last call.</param>
         public void Advance(double seconds)

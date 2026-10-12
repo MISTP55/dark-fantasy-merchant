@@ -39,6 +39,22 @@ namespace DarkFantasyMerchant.Core
             ship.Arrived += Add;
         }
 
+        /// <summary>
+        /// Stops reporting the arrivals of a ship, the one it has not reported yet included.
+        /// A ship that the docking still knows is reported again if it enters a port:
+        /// remove it from the docking first.
+        /// </summary>
+        public void Forget(Ship ship)
+        {
+            if (ship == null)
+            {
+                throw new ArgumentNullException(nameof(ship));
+            }
+
+            ship.Arrived -= Add;
+            arrivedShips.Remove(ship);
+        }
+
         /// <summary>Reports the arrivals since the last call. Call after the docking's update.</summary>
         public void Report()
         {

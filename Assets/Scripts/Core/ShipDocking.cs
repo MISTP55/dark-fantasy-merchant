@@ -136,6 +136,21 @@ namespace DarkFantasyMerchant.Core
             return true;
         }
 
+        /// <summary>
+        /// Forgets a ship that leaves the map: it is no longer in a port, which it leaves
+        /// like on an order, nor on its way to one.
+        /// </summary>
+        public void Remove(Ship ship)
+        {
+            if (ship == null)
+            {
+                throw new ArgumentNullException(nameof(ship));
+            }
+
+            destinationPorts.Remove(ship);
+            Undock(ship);
+        }
+
         /// <summary>Docks the ships that have arrived at their port. Call after the ships have advanced.</summary>
         public void Update()
         {

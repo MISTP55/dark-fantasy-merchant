@@ -177,6 +177,50 @@ namespace DarkFantasyMerchant.Game
             return ship != null && playerShips.Contains(ship);
         }
 
+        /// <returns>Whether the ship is one of this map's: false once it was removed.</returns>
+        public bool Contains(Ship ship)
+        {
+            return ship != null && ships.Contains(ship);
+        }
+
+        /// <summary>
+        /// Takes a ship off the map for good, with what it carries: it leaves its port, is
+        /// neither hovered nor selected any more, and its view is destroyed. Any ship is
+        /// taken, the player's too: whoever calls decides which ships can go.
+        /// </summary>
+        /// <returns>False for a ship that is not on this map.</returns>
+        public bool RemoveShip(Ship ship)
+        {
+            int index = ship != null ? ships.IndexOf(ship) : -1;
+
+            if (index < 0)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(Selection.Hovered, ship))
+            {
+                Selection.SetHovered(null);
+            }
+
+            if (ReferenceEquals(Selection.Selected, ship))
+            {
+                Selection.ClearSelection();
+            }
+
+            // While the ship is still listed: leaving its port tells the panels that show it there.
+            Docking.Remove(ship);
+            arrivals.Forget(ship);
+
+            Destroy(views[index].gameObject);
+            ships.RemoveAt(index);
+            shipWorldPositions.RemoveAt(index);
+            views.RemoveAt(index);
+            displayNames.RemoveAt(index);
+            playerShips.Remove(ship);
+            return true;
+        }
+
         /// <summary>
         /// Adds a ship that the player does not own: it is shown, hovered and selected
         /// like the player's, and takes its orders from whoever spawned it.

@@ -159,6 +159,63 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(DebugShipsTable.NoValue, DebugShipsTable.FormatProfit(null));
         }
 
+        [Test]
+        public void WithoutAWayToRemoveShips_TheRowsHaveNoButton()
+        {
+            ships.Add(new DebugShipInfo("A", false, CreateShip(), null, null, 0));
+            table.Refresh(ships);
+
+            Assert.AreEqual(ProfitCell + 1, rows[0].childCount);
+            Assert.DoesNotThrow(() => table.RequestRemoval(0));
+        }
+
+        [Test]
+        public void TheButtonOfARow_RemovesItsShip_ButNotThePlayers()
+        {
+            var removed = new List<Ship>();
+            table = new DebugShipsTable(header, rows, new[] { "Poisson", "Fer" }, removed.Add);
+            Ship players = CreateShip();
+            Ship merchants = CreateShip();
+            ships.Add(new DebugShipInfo("Navire marchand", true, players, null, null, null));
+            ships.Add(new DebugShipInfo("Marchand indépendant 1", false, merchants, null, null, 0));
+            table.Refresh(ships);
+
+            // A last cell: empty in the header, with the button in the rows.
+            Assert.AreEqual(ProfitCell + 2, header[0].childCount);
+            Assert.AreEqual(0, header[0][ProfitCell + 1].childCount);
+            var playersButton = (Button)rows[0][ProfitCell + 1][0];
+            var merchantsButton = (Button)rows[1][ProfitCell + 1][0];
+            Assert.AreEqual("Retirer", merchantsButton.text);
+            Assert.AreEqual(DisplayStyle.None, playersButton.style.display.value);
+            Assert.AreEqual(DisplayStyle.Flex, merchantsButton.style.display.value);
+
+            table.RequestRemoval(0);
+            Assert.AreEqual(0, removed.Count);
+
+            table.RequestRemoval(1);
+            CollectionAssert.AreEqual(new[] { merchants }, removed);
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => table.RequestRemoval(2));
+        }
+
+        [Test]
+        public void ARowsButton_FollowsTheShipTheRowIsWrittenFor()
+        {
+            var removed = new List<Ship>();
+            table = new DebugShipsTable(header, rows, new[] { "Poisson", "Fer" }, removed.Add);
+            Ship first = CreateShip();
+            Ship second = CreateShip();
+            ships.Add(new DebugShipInfo("A", false, first, null, null, 0));
+            ships.Add(new DebugShipInfo("B", false, second, null, null, 0));
+            table.Refresh(ships);
+
+            // The first ship is gone: its row now shows the second.
+            ships.RemoveAt(0);
+            table.Refresh(ships);
+            table.RequestRemoval(0);
+
+            CollectionAssert.AreEqual(new[] { second }, removed);
+        }
+
         private static CargoHold HoldWith(int capacity, int barrels)
         {
             var hold = new CargoHold(capacity);

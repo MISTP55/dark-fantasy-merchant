@@ -20,7 +20,10 @@
                 </ui:ScrollView>
             </ui:VisualElement>
             <ui:VisualElement name="ships-page" class="debug-panel__page">
-                <ui:Label text="Tous les navires de la carte. Le profit est celui des marchands IA depuis le début de la partie." class="debug-cities__legend" />
+                <ui:VisualElement class="debug-panel__toolbar">
+                    <ui:Label text="Tous les navires de la carte. Le profit est celui des marchands IA depuis le début de la partie." class="debug-cities__legend" />
+                    <ui:Button name="add-ship-button" text="Ajouter un navire IA" class="debug-panel__button" />
+                </ui:VisualElement>
                 <ui:ScrollView mode="VerticalAndHorizontal" class="debug-cities__scroll">
                     <ui:VisualElement name="debug-ships-header" />
                     <ui:VisualElement name="debug-ships-rows" />

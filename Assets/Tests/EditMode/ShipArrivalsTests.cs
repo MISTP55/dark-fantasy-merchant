@@ -158,5 +158,29 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(Port, reported[0].Port);
             Assert.IsNull(reported[1].Port);
         }
+
+        [Test]
+        public void AForgottenShip_IsNoLongerReported()
+        {
+            docking.OrderToPoint(ship, PortPosition);
+            arrivals.Forget(ship);
+
+            Step(5f);
+
+            Assert.AreEqual(0, reported.Count);
+        }
+
+        [Test]
+        public void Forget_DropsAnArrivalThatWasNotReportedYet()
+        {
+            docking.OrderToPoint(ship, PortPosition);
+            ship.Advance(5f);
+
+            arrivals.Forget(ship);
+            arrivals.Report();
+
+            Assert.AreEqual(0, reported.Count);
+            Assert.Throws<ArgumentNullException>(() => arrivals.Forget(null));
+        }
     }
 }

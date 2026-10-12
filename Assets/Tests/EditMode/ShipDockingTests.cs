@@ -353,5 +353,43 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreSame(port, docking.PortOf(ship));
         }
+
+        [Test]
+        public void Remove_TakesADockedShipOutOfItsPort()
+        {
+            Ship ship = CreateDockedShip();
+            var inPort = new List<Ship>();
+
+            docking.Remove(ship);
+            docking.GetShipsIn(port, inPort);
+
+            Assert.IsFalse(docking.IsDocked(ship));
+            Assert.IsNull(docking.PortOf(ship));
+            Assert.AreEqual(0, inPort.Count);
+            CollectionAssert.AreEqual(new[] { "undocked" }, events);
+        }
+
+        [Test]
+        public void Remove_KeepsAShipUnderWayOutOfThePortItWasSailingTo()
+        {
+            Ship ship = CreateShip();
+            docking.OrderToPort(ship, port, Cell(5, 0));
+
+            docking.Remove(ship);
+            ship.Advance(100f);
+            docking.Update();
+
+            Assert.IsNull(docking.DestinationPortOf(ship));
+            Assert.IsFalse(docking.IsDocked(ship));
+            Assert.AreEqual(0, events.Count);
+        }
+
+        [Test]
+        public void Remove_OfAShipItDoesNotKnow_ChangesNothing()
+        {
+            Assert.DoesNotThrow(() => docking.Remove(CreateShip()));
+            Assert.AreEqual(0, events.Count);
+            Assert.Throws<System.ArgumentNullException>(() => docking.Remove(null));
+        }
     }
 }

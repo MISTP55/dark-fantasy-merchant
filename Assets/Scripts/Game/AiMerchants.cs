@@ -36,6 +36,35 @@ namespace DarkFantasyMerchant.Game
         // Made once the travel table is complete.
         private AiMerchantFleet<CityDefinition> fleet;
 
+        // The ports a ship can start in: those that reach at least one other.
+        private readonly List<int> candidates = new List<int>();
+
+        // Ships spawned since the game started: a number is not given twice, even after a ship was removed.
+        private int spawnedShips;
+
+        /// <summary>False until the merchants have started, and on a map with no city to trade between.</summary>
+        public bool CanAddShip => fleet != null && candidates.Count > 0;
+
+        /// <summary>Adds a ship in the port of a city drawn at random. For the debug tools.</summary>
+        /// <returns>The ship, or null when none can be added.</returns>
+        public Ship AddShip()
+        {
+            return CanAddShip ? SpawnShip(candidates[UnityEngine.Random.Range(0, candidates.Count)]) : null;
+        }
+
+        /// <summary>Takes one of these merchants' ships off the map, with what it carries. For the debug tools.</summary>
+        /// <returns>False for a ship that is not one of these merchants'.</returns>
+        public bool RemoveShip(Ship ship)
+        {
+            if (fleet == null || !fleet.Remove(ship))
+            {
+                return false;
+            }
+
+            shipsView.RemoveShip(ship);
+            return true;
+        }
+
         /// <returns>False for a ship that is not one of these merchants'.</returns>
         public bool TryGetProfit(Ship ship, out long profit)
         {
@@ -177,7 +206,7 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            var candidates = new List<int>();
+            candidates.Clear();
 
             for (int i = 0; i < ports.Count; i++)
             {
@@ -204,24 +233,32 @@ namespace DarkFantasyMerchant.Game
             // Not seeded: another draw at every launch.
             StartPortDraw.Draw(definition.ShipCount, candidates, bound => UnityEngine.Random.Range(0, bound), startPorts);
 
-            for (int i = 0; i < startPorts.Count; i++)
+            foreach (int port in startPorts)
             {
-                int port = startPorts[i];
-                Ship ship = shipsView.SpawnAiShip(
-                    definition.ShipDefinition,
-                    portPositions[port],
-                    definition.CreateCrew(),
-                    definition.ShipNameFor(i + 1),
-                    definition.Tint);
-
                 // ShipsView already logged why.
-                if (ship == null)
+                if (SpawnShip(port) == null)
                 {
                     return;
                 }
+            }
+        }
 
+        private Ship SpawnShip(int port)
+        {
+            Ship ship = shipsView.SpawnAiShip(
+                definition.ShipDefinition,
+                portPositions[port],
+                definition.CreateCrew(),
+                definition.ShipNameFor(spawnedShips + 1),
+                definition.Tint);
+
+            if (ship != null)
+            {
+                spawnedShips++;
                 fleet.Add(ship, port);
             }
+
+            return ship;
         }
     }
 }

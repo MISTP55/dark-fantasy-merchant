@@ -144,3 +144,45 @@
 .debug-ships__cell--number {
     width: 100px;
 }
+
+/* The legend of a tab and, at its right, the tab's buttons. */
+.debug-panel__toolbar {
+    flex-direction: row;
+    flex-shrink: 0;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Prefixed by the panel, like the tabs: the theme's grey hides the text. */
+.debug-panel .debug-panel__button {
+    flex-shrink: 0;
+    height: 22px;
+    margin: 0;
+    padding: 0 10px;
+    color: rgb(222, 210, 188);
+    font-size: 13px;
+    background-color: rgb(44, 32, 22);
+    border-width: 1px;
+    border-color: rgb(110, 84, 52);
+    border-radius: 0;
+}
+
+.debug-panel .debug-panel__button:hover:enabled {
+    color: rgb(240, 226, 196);
+    background-color: rgb(62, 46, 30);
+}
+
+.debug-panel .debug-panel__button:active:enabled {
+    background-color: rgb(96, 72, 44);
+}
+
+.debug-panel__toolbar .debug-panel__button {
+    margin-left: 16px;
+    margin-bottom: 8px;
+}
+
+.debug-ships__cell--action {
+    flex-shrink: 0;
+    width: 90px;
+    padding-left: 8px;
+}

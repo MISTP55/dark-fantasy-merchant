@@ -279,5 +279,64 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreSame(ports[A], docking.DestinationPortOf(ship));
         }
+
+        [Test]
+        public void ARemovedShip_NoLongerTrades()
+        {
+            CreateFleet(60, 0, 30);
+            Ship ship = AddShip(A);
+
+            Assert.IsTrue(fleet.Remove(ship));
+            fleet.Advance(Stopover * 3d);
+
+            Assert.IsFalse(fleet.Contains(ship));
+            Assert.AreEqual(0, fleet.Count);
+            Assert.IsTrue(docking.IsDocked(ship));
+            Assert.AreEqual(0, ship.Cargo.Used);
+            Assert.AreEqual(120, markets[A].AvailableOf(Fish));
+        }
+
+        [Test]
+        public void ARemovedShip_NoLongerSellsWhenItDocks()
+        {
+            CreateFleet(60, 0, 30);
+            Ship ship = AddShip(A);
+            ship.Cargo.TryAdd(Fish, 5);
+
+            fleet.Remove(ship);
+            docking.OrderToPort(ship, ports[B], positions[B]);
+            Arrive(ship);
+
+            Assert.AreSame(ports[B], docking.PortOf(ship));
+            Assert.AreEqual(5, ship.Cargo.Used);
+            Assert.AreEqual(0, markets[B].AvailableOf(Fish));
+            Assert.AreEqual(0, fleet.ProfitOf(ship));
+        }
+
+        [Test]
+        public void ARemovedShip_NoLongerKeepsTheOthersFromAPort()
+        {
+            // As in TwoEmptyShips_DoNotSailToTheSameSource, where the second ship is left C.
+            CreateFleet(60, 0, 30);
+            Ship first = AddShip(B);
+            Ship second = AddShip(B);
+
+            // The first sails empty to A, but not for the fleet any more.
+            fleet.Remove(first);
+            docking.OrderToPort(first, ports[A], positions[A]);
+            fleet.Advance(Stopover);
+
+            Assert.AreSame(ports[A], docking.DestinationPortOf(second));
+        }
+
+        [Test]
+        public void Remove_OfAShipThatIsNotOfTheFleet_IsRefused()
+        {
+            CreateFleet(60, 0, 30);
+            var stranger = new Ship(projection, positions[A], Speed, TestCrew.Full, navigation, new CargoHold(200));
+
+            Assert.IsFalse(fleet.Remove(stranger));
+            Assert.IsFalse(fleet.Remove(null));
+        }
     }
 }

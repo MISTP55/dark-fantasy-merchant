@@ -40,6 +40,8 @@ namespace DarkFantasyMerchant.Game
     /// The table of the ships debug tab: one row per ship, the player's and the others,
     /// with its owner, what it is doing, where it is and goes, its crew, its hold and,
     /// for a merchant that trades on its own, its profit. Rewritten by every refresh.
+    /// When it is given a way to remove a ship, the rows of the ships that are not the
+    /// player's end with a button that does.
     /// </summary>
     public sealed class DebugShipsTable
     {
@@ -53,6 +55,8 @@ namespace DarkFantasyMerchant.Game
         private const string NameCellClass = "debug-ships__cell--name";
         private const string TextCellClass = "debug-ships__cell--text";
         private const string NumberCellClass = "debug-ships__cell--number";
+        private const string ActionCellClass = "debug-ships__cell--action";
+        private const string ButtonClass = "debug-panel__button";
 
         // Not the French culture: its separators depend on the platform.
         private static readonly NumberFormatInfo PositionFormat = new NumberFormatInfo { NumberDecimalSeparator = "," };
@@ -70,16 +74,30 @@ namespace DarkFantasyMerchant.Game
             public Label Hold;
             public Label[] Goods;
             public Label Profit;
+
+            // Null in a table that removes no ship, and in the header.
+            public Button Remove;
+
+            // The ship the row was last written for: the one its button removes.
+            public Ship Ship;
         }
 
         private readonly VisualElement rowContainer;
         private readonly int goodCount;
         private readonly List<Row> rows = new List<Row>();
+        private readonly Action<Ship> removeShip;
 
         /// <param name="header">Where the header row is built.</param>
         /// <param name="rowContainer">Where the rows are built, one per ship.</param>
         /// <param name="goodNames">The names of the goods, in the catalogue's order.</param>
-        public DebugShipsTable(VisualElement header, VisualElement rowContainer, IReadOnlyList<string> goodNames)
+        /// <param name="removeShip">
+        /// Removes a ship from the world, for the button of its row. Null for a table without buttons.
+        /// </param>
+        public DebugShipsTable(
+            VisualElement header,
+            VisualElement rowContainer,
+            IReadOnlyList<string> goodNames,
+            Action<Ship> removeShip = null)
         {
             if (header == null)
             {
@@ -92,12 +110,13 @@ namespace DarkFantasyMerchant.Game
             }
 
             this.rowContainer = rowContainer ?? throw new ArgumentNullException(nameof(rowContainer));
+            this.removeShip = removeShip;
             goodCount = goodNames.Count;
 
             header.Clear();
             rowContainer.Clear();
 
-            Row titles = BuildRow();
+            Row titles = BuildRow(true);
             titles.Element.AddToClassList(HeaderRowClass);
             titles.Name.text = "Navire";
             titles.Owner.text = "Propriétaire";
@@ -173,7 +192,7 @@ namespace DarkFantasyMerchant.Game
 
             while (rows.Count < ships.Count)
             {
-                Row row = BuildRow();
+                Row row = BuildRow(false);
                 rows.Add(row);
                 rowContainer.Add(row.Element);
             }
@@ -191,10 +210,39 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
+        /// <summary>
+        /// Removes the ship of a row, as its button does. Nothing happens for a row that
+        /// has no button to show: the player's ships stay.
+        /// </summary>
+        public void RequestRemoval(int row)
+        {
+            if (row < 0 || row >= rows.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(row));
+            }
+
+            if (CanRemove(rows[row]))
+            {
+                removeShip(rows[row].Ship);
+            }
+        }
+
+        private static bool CanRemove(Row row)
+        {
+            return row.Remove != null && row.Remove.style.display == DisplayStyle.Flex;
+        }
+
         private void Write(Row row, DebugShipInfo info)
         {
             Ship ship = info.Ship;
             bool isDocked = info.PortName != null;
+
+            row.Ship = ship;
+
+            if (row.Remove != null)
+            {
+                row.Remove.style.display = info.IsPlayer ? DisplayStyle.None : DisplayStyle.Flex;
+            }
 
             row.Name.text = info.Name;
             row.Owner.text = FormatOwner(info.IsPlayer);
@@ -224,7 +272,8 @@ namespace DarkFantasyMerchant.Game
             return destination.HasValue ? FormatPosition(destination.Value) : NoValue;
         }
 
-        private Row BuildRow()
+        /// <param name="isHeader">The header has no button, only the room of one.</param>
+        private Row BuildRow(bool isHeader)
         {
             var element = new VisualElement();
             element.AddToClassList(RowClass);
@@ -249,6 +298,25 @@ namespace DarkFantasyMerchant.Game
             }
 
             row.Profit = AddLabel(element, NumberCellClass);
+
+            if (removeShip != null)
+            {
+                var actions = new VisualElement();
+                actions.AddToClassList(ActionCellClass);
+                element.Add(actions);
+
+                if (!isHeader)
+                {
+                    var button = new Button(() => RequestRemoval(rows.IndexOf(row))) { text = "Retirer" };
+
+                    // Clicked, not navigated: the keyboard pans the map.
+                    button.focusable = false;
+                    button.AddToClassList(ButtonClass);
+                    actions.Add(button);
+                    row.Remove = button;
+                }
+            }
+
             return row;
         }
 
