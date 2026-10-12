@@ -1027,7 +1027,7 @@ GameObject:
   - component: {fileID: 1723824572}
   - component: {fileID: 1723824571}
   m_Layer: 0
-  m_Name: Debug Cities Panel
+  m_Name: Debug Panel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1048,6 +1048,8 @@ MonoBehaviour:
   worldEconomy: {fileID: 1991110005}
   mapView: {fileID: 935350158}
   input: {fileID: 935350161}
+  shipsView: {fileID: 948842205}
+  aiMerchants: {fileID: 1729984784}
 --- !u!114 &1723824572
 MonoBehaviour:
   m_ObjectHideFlags: 0

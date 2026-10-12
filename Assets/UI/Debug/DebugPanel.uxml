@@ -1,0 +1,31 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="project://database/Assets/UI/WorldMap/InfoPanel.uss" />
+    <Style src="DebugPanel.uss" />
+    <ui:VisualElement class="debug-panel-root" picking-mode="Ignore">
+        <ui:VisualElement name="debug-panel" class="info-panel debug-panel">
+            <ui:VisualElement class="info-panel__header">
+                <ui:Label text="Débogage" class="info-panel__name" />
+                <ui:VisualElement class="debug-panel__tabs">
+                    <ui:Button name="cities-tab" text="Villes" class="debug-panel__tab" />
+                    <ui:Button name="ships-tab" text="Navires" class="debug-panel__tab" />
+                </ui:VisualElement>
+                <ui:Button name="close-button" text="X" class="info-panel__close" />
+            </ui:VisualElement>
+            <ui:VisualElement name="cities-page" class="debug-panel__page">
+                <ui:Label text="Tonneaux par semaine : valeur théorique, puis valeur réelle de la dernière semaine entre parenthèses." class="debug-cities__legend" />
+                <ui:ScrollView mode="VerticalAndHorizontal" class="debug-cities__scroll">
+                    <ui:VisualElement name="debug-cities-header" />
+                    <ui:VisualElement name="debug-cities-rows" />
+                    <ui:VisualElement name="debug-cities-totals" />
+                </ui:ScrollView>
+            </ui:VisualElement>
+            <ui:VisualElement name="ships-page" class="debug-panel__page">
+                <ui:Label text="Tous les navires de la carte. Le profit est celui des marchands IA depuis le début de la partie." class="debug-cities__legend" />
+                <ui:ScrollView mode="VerticalAndHorizontal" class="debug-cities__scroll">
+                    <ui:VisualElement name="debug-ships-header" />
+                    <ui:VisualElement name="debug-ships-rows" />
+                </ui:ScrollView>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

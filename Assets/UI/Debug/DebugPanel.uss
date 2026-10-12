@@ -1,14 +1,14 @@
 /* The panel's frame, title and close button are in InfoPanel.uss. */
 
 /* Centers the panel under the date and its button. */
-.debug-cities-root {
+.debug-panel-root {
     flex-grow: 1;
     align-items: center;
     padding-top: 110px;
 }
 
-/* A table as wide as its goods, scrolled when it does not fit. */
-.debug-cities {
+/* A panel as wide as its table, scrolled when it does not fit. */
+.debug-panel {
     width: auto;
     max-width: 96%;
     max-height: 70%;
@@ -88,4 +88,43 @@
     color: rgb(240, 226, 196);
     -unity-font-style: bold;
     -unity-text-align: middle-center;
+}
+
+/* Between the title and the close button. */
+.debug-panel__tabs {
+    flex-direction: row;
+    flex-grow: 1;
+    margin-left: 24px;
+}
+
+.debug-panel__tab {
+    height: 28px;
+    margin: 0 4px 0 0;
+    padding: 0 12px;
+    color: rgb(190, 164, 120);
+}
+
+.debug-panel__tab--selected {
+    color: rgb(240, 226, 196);
+    border-color: rgb(190, 164, 120);
+    -unity-font-style: bold;
+}
+
+/* Shrinks with the panel, so that its table scrolls. */
+.debug-panel__page {
+    flex-shrink: 1;
+}
+
+.debug-ships__cell--name {
+    width: 210px;
+    -unity-text-align: middle-left;
+}
+
+.debug-ships__cell--text {
+    width: 130px;
+    -unity-text-align: middle-left;
+}
+
+.debug-ships__cell--number {
+    width: 100px;
 }

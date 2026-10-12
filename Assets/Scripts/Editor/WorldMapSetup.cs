@@ -15,7 +15,7 @@ namespace DarkFantasyMerchant.Editor
     /// sample content. Safe to run again: existing assets are left untouched, and an
     /// existing scene only gains the ships, ship route, ship panel, world clock, time HUD,
     /// player treasury, treasury HUD, player notifications, notifications HUD, ship
-    /// arrival notifier, player expenses, world economy, AI merchants and debug cities panel objects when
+    /// arrival notifier, player expenses, world economy, AI merchants and debug panel objects when
     /// it has none, and the references to them that are empty. Cities of the map that
     /// have no inhabitant are given the population and the productions of the sample
     /// content.
@@ -55,7 +55,7 @@ namespace DarkFantasyMerchant.Editor
         private const string AiMerchantsPath = AiFolder + "/AiMerchants.asset";
 
         private const string DebugUiFolder = "Assets/UI/Debug";
-        private const string DebugCitiesPanelTemplatePath = DebugUiFolder + "/DebugCitiesPanel.uxml";
+        private const string DebugPanelTemplatePath = DebugUiFolder + "/DebugPanel.uxml";
         private const float DebugSortingOrder = 100f;
 
         private const string ShipTexturePath = "Assets/Art/Ships/MerchantShip.png";
@@ -1439,11 +1439,11 @@ namespace DarkFantasyMerchant.Editor
             }
         }
 
-        // Like the economy it shows, the debug panel of the cities is added to a scene built
+        // Like the economy and the ships it shows, the debug panel is added to a scene built
         // before it existed.
         private static void AddDebugToolsToScene(bool sceneHadUnsavedChanges)
         {
-            if (!TryOpenMapScene("The debug cities panel", out Scene scene))
+            if (!TryOpenMapScene("The debug panel", out Scene scene))
             {
                 return;
             }
@@ -1453,26 +1453,27 @@ namespace DarkFantasyMerchant.Editor
             var input = FindInScene<WorldMapInput>(scene);
 
             // The panel lists the cities of the map with their markets, and the input opens it.
+            // Its ships tab is optional.
             if (worldEconomy == null || mapView == null || input == null)
             {
                 Debug.LogWarning(
-                    $"{ScenePath} has no WorldEconomy, WorldMapView or WorldMapInput; debug cities panel not added.");
+                    $"{ScenePath} has no WorldEconomy, WorldMapView or WorldMapInput; debug panel not added.");
                 return;
             }
 
             bool changed = false;
-            var panel = FindInScene<DebugCitiesPanelController>(scene);
+            var panel = FindInScene<DebugPanelController>(scene);
 
             if (panel == null)
             {
-                var panelTemplate = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(DebugCitiesPanelTemplatePath);
+                var panelTemplate = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(DebugPanelTemplatePath);
 
                 if (panelTemplate == null)
                 {
-                    throw new FileNotFoundException("The debug cities panel UXML is missing.", DebugCitiesPanelTemplatePath);
+                    throw new FileNotFoundException("The debug panel UXML is missing.", DebugPanelTemplatePath);
                 }
 
-                var panelObject = new GameObject("Debug Cities Panel");
+                var panelObject = new GameObject("Debug Panel");
                 SceneManager.MoveGameObjectToScene(panelObject, scene);
 
                 var document = panelObject.AddComponent<UIDocument>();
@@ -1482,7 +1483,7 @@ namespace DarkFantasyMerchant.Editor
                 // Over the panels of the game, the city's in particular, which it overlaps.
                 document.sortingOrder = DebugSortingOrder;
 
-                panel = panelObject.AddComponent<DebugCitiesPanelController>();
+                panel = panelObject.AddComponent<DebugPanelController>();
                 changed = true;
             }
 
@@ -1491,9 +1492,13 @@ namespace DarkFantasyMerchant.Editor
             changed |= FillReference(panel, "mapView", mapView);
             changed |= FillReference(panel, "input", input);
 
+            // The ships tab lists the ships, with the profit of the merchants that trade on their own.
+            changed |= FillReference(panel, "shipsView", FindInScene<ShipsView>(scene));
+            changed |= FillReference(panel, "aiMerchants", FindInScene<AiMerchants>(scene));
+
             if (changed)
             {
-                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The debug cities panel");
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The debug panel");
             }
         }
 
