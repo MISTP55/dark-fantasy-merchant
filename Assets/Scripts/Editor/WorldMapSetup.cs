@@ -15,7 +15,7 @@ namespace DarkFantasyMerchant.Editor
     /// sample content. Safe to run again: existing assets are left untouched, and an
     /// existing scene only gains the ships, ship route, ship panel, world clock, time HUD,
     /// player treasury, treasury HUD, player notifications, notifications HUD, ship
-    /// arrival notifier, player expenses, world economy and debug cities panel objects when
+    /// arrival notifier, player expenses, world economy, AI merchants and debug cities panel objects when
     /// it has none, and the references to them that are empty. Cities of the map that
     /// have no inhabitant are given the population and the productions of the sample
     /// content.
@@ -50,6 +50,9 @@ namespace DarkFantasyMerchant.Editor
         private const string ExpensesPath = EconomyFolder + "/Expenses.asset";
         private const string EconomyPath = EconomyFolder + "/Economy.asset";
         private const string GoodsFolder = "Assets/Data/Goods";
+
+        private const string AiFolder = "Assets/Data/AI";
+        private const string AiMerchantsPath = AiFolder + "/AiMerchants.asset";
 
         private const string DebugUiFolder = "Assets/UI/Debug";
         private const string DebugCitiesPanelTemplatePath = DebugUiFolder + "/DebugCitiesPanel.uxml";
@@ -212,6 +215,7 @@ namespace DarkFantasyMerchant.Editor
             CreateExpenses();
             CreateEconomy();
             FillCityEconomies();
+            CreateAiMerchants(shipDefinition);
 
             AssetDatabase.SaveAssets();
             BuildScene();
@@ -222,6 +226,7 @@ namespace DarkFantasyMerchant.Editor
             AddNotificationsToScene(mapSceneHadUnsavedChanges);
             AddExpensesToScene(mapSceneHadUnsavedChanges);
             AddEconomyToScene(mapSceneHadUnsavedChanges);
+            AddAiMerchantsToScene(mapSceneHadUnsavedChanges);
             AddDebugToolsToScene(mapSceneHadUnsavedChanges);
             AssetDatabase.SaveAssets();
 
@@ -234,7 +239,7 @@ namespace DarkFantasyMerchant.Editor
             {
                 ArtFolder, CitiesFolder, MapDataFolder, PrefabFolder, UiFolder,
                 ShipArtFolder, ShipDataFolder, ShipPrefabFolder, CalendarFolder, PlayerDataFolder,
-                EconomyFolder, GoodsFolder,
+                EconomyFolder, GoodsFolder, AiFolder,
                 "Assets/Scenes",
             })
             {
@@ -456,6 +461,25 @@ namespace DarkFantasyMerchant.Editor
             var expenses = ScriptableObject.CreateInstance<ExpensesDefinition>();
             AssetDatabase.CreateAsset(expenses, ExpensesPath);
             return expenses;
+        }
+
+        // Like the expenses, new AI merchants are the game's: their defaults are the content.
+        private static AiMerchantsDefinition CreateAiMerchants(ShipDefinition shipDefinition)
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<AiMerchantsDefinition>(AiMerchantsPath);
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            // Filled in before the asset is created, so the file is written complete.
+            var merchants = ScriptableObject.CreateInstance<AiMerchantsDefinition>();
+            var serialized = new SerializedObject(merchants);
+            serialized.FindProperty("shipDefinition").objectReferenceValue = shipDefinition;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.CreateAsset(merchants, AiMerchantsPath);
+            return merchants;
         }
 
         // The goods are created even when the economy exists, so that one deleted by mistake comes back.
@@ -1357,6 +1381,61 @@ namespace DarkFantasyMerchant.Editor
             if (changed)
             {
                 SaveSceneChanges(scene, sceneHadUnsavedChanges, "The world's economy");
+            }
+        }
+
+        // Like the economy they trade in, the AI merchants are added to a scene built before
+        // they existed.
+        private static void AddAiMerchantsToScene(bool sceneHadUnsavedChanges)
+        {
+            if (!TryOpenMapScene("The AI merchants", out Scene scene))
+            {
+                return;
+            }
+
+            var shipsView = FindInScene<ShipsView>(scene);
+            var worldEconomy = FindInScene<WorldEconomy>(scene);
+            var mapView = FindInScene<WorldMapView>(scene);
+            var worldClock = FindInScene<WorldClock>(scene);
+
+            // Their ships are the map's, they trade in its markets and stay in port as the days pass.
+            if (shipsView == null || worldEconomy == null || mapView == null || worldClock == null)
+            {
+                Debug.LogWarning(
+                    $"{ScenePath} has no ShipsView, WorldEconomy, WorldMapView or WorldClock; AI merchants not added.");
+                return;
+            }
+
+            // Loaded only now: opening a scene unloads unreferenced assets.
+            var definition = AssetDatabase.LoadAssetAtPath<AiMerchantsDefinition>(AiMerchantsPath);
+
+            if (definition == null)
+            {
+                throw new FileNotFoundException("The AI merchants could not be loaded.", AiMerchantsPath);
+            }
+
+            bool changed = false;
+            var aiMerchants = FindInScene<AiMerchants>(scene);
+
+            if (aiMerchants == null)
+            {
+                var merchantsObject = new GameObject("AI Merchants");
+                SceneManager.MoveGameObjectToScene(merchantsObject, scene);
+
+                aiMerchants = merchantsObject.AddComponent<AiMerchants>();
+                changed = true;
+            }
+
+            // Also for a scene in which one of them was deleted and made again.
+            changed |= FillReference(aiMerchants, "definition", definition);
+            changed |= FillReference(aiMerchants, "shipsView", shipsView);
+            changed |= FillReference(aiMerchants, "worldEconomy", worldEconomy);
+            changed |= FillReference(aiMerchants, "mapView", mapView);
+            changed |= FillReference(aiMerchants, "worldClock", worldClock);
+
+            if (changed)
+            {
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The AI merchants");
             }
         }
 
