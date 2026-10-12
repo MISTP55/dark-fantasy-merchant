@@ -97,15 +97,31 @@
     margin-left: 24px;
 }
 
-.debug-panel__tab {
+.debug-panel .debug-panel__tab {
     height: 28px;
     margin: 0 4px 0 0;
     padding: 0 12px;
     color: rgb(190, 164, 120);
+    background-color: rgb(44, 32, 22);
+    border-width: 1px;
+    border-color: rgb(110, 84, 52);
+    border-radius: 0;
 }
 
-.debug-panel__tab--selected {
+/* Prefixed by the panel: the theme's own hover and active rules must not win, their grey hides the text. */
+.debug-panel .debug-panel__tab:hover:enabled {
     color: rgb(240, 226, 196);
+    background-color: rgb(62, 46, 30);
+}
+
+.debug-panel .debug-panel__tab:active:enabled {
+    background-color: rgb(80, 60, 38);
+}
+
+.debug-panel .debug-panel__tab--selected,
+.debug-panel .debug-panel__tab--selected:hover:enabled {
+    color: rgb(240, 226, 196);
+    background-color: rgb(96, 72, 44);
     border-color: rgb(190, 164, 120);
     -unity-font-style: bold;
 }
