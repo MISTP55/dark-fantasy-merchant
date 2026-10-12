@@ -197,6 +197,82 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(0, changes);
         }
 
+        [Test]
+        public void BuyWithoutATreasury_MovesTheBarrelsAndGivesTheirPrice()
+        {
+            long expected = 0;
+
+            for (int i = 0; i < 30; i++)
+            {
+                expected += market.BuyPriceOf(Good, i);
+            }
+
+            TradeResult result = Trade.Buy(market, hold, Good, 30);
+
+            Assert.AreEqual(30, result.Barrels);
+            Assert.AreEqual(expected, result.Gold);
+            Assert.AreEqual(30, market.AvailableOf(Good));
+            Assert.AreEqual(30, hold.BarrelsOf(Good));
+        }
+
+        [Test]
+        public void BuyWithoutATreasury_StopsAtTheStockAndAtTheHold()
+        {
+            Assert.AreEqual(60, Trade.Buy(market, hold, Good, 100).Barrels);
+
+            market.Put(Good, 60);
+            hold = new CargoHold(5);
+
+            Assert.AreEqual(5, Trade.Buy(market, hold, Good, 100).Barrels);
+        }
+
+        [Test]
+        public void SellWithoutATreasury_MovesTheBarrelsAndGivesTheirPrice()
+        {
+            hold.TryAdd(Good, 5);
+            long expected = market.SellPriceOf(Good, 0) + market.SellPriceOf(Good, 1) + market.SellPriceOf(Good, 2);
+
+            TradeResult result = Trade.Sell(market, hold, Good, 3);
+
+            Assert.AreEqual(3, result.Barrels);
+            Assert.AreEqual(expected, result.Gold);
+            Assert.AreEqual(2, hold.BarrelsOf(Good));
+            Assert.AreEqual(63, market.AvailableOf(Good));
+        }
+
+        [Test]
+        public void SellWithoutATreasury_StopsAtTheBarrelsAboard()
+        {
+            hold.TryAdd(Good, 2);
+
+            Assert.AreEqual(2, Trade.Sell(market, hold, Good, 100).Barrels);
+            Assert.AreEqual(0, Trade.Sell(market, hold, Good, 100).Barrels);
+        }
+
+        [Test]
+        public void ATradeWithoutATreasury_ChangesTheMarketAndTheHoldOnce()
+        {
+            int marketChanges = 0;
+            int holdChanges = 0;
+            market.Changed += () => marketChanges++;
+            hold.Changed += () => holdChanges++;
+
+            Trade.Buy(market, hold, Good, 10);
+            Trade.Sell(market, hold, Good, 10);
+
+            Assert.AreEqual(2, marketChanges);
+            Assert.AreEqual(2, holdChanges);
+        }
+
+        [Test]
+        public void WithoutATreasury_RejectsMissingArgumentsAndQuantities()
+        {
+            Assert.Throws<ArgumentNullException>(() => Trade.Buy(null, hold, Good, 1));
+            Assert.Throws<ArgumentNullException>(() => Trade.Sell(market, null, Good, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Trade.Buy(market, hold, Good, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Trade.Sell(market, hold, Good, 0));
+        }
+
         [TestCase(0)]
         [TestCase(-1)]
         public void RejectsAQuantityThatIsNotPositive(int barrels)
