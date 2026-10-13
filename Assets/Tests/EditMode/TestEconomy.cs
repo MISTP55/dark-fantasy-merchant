@@ -8,13 +8,18 @@ namespace DarkFantasyMerchant.Tests.EditMode
     public static class TestEconomy
     {
         /// <summary>A good whose price goes from half its base price to two and a half times it.</summary>
-        public static GoodDefinition CreateGood(string displayName, long basePrice, double weeklyConsumptionPerThousand)
+        public static GoodDefinition CreateGood(
+            string displayName,
+            long basePrice,
+            double weeklyConsumptionPerThousand,
+            GoodCategory category = GoodCategory.Food)
         {
             var good = ScriptableObject.CreateInstance<GoodDefinition>();
             good.name = displayName;
 
             var serialized = new SerializedObject(good);
             serialized.FindProperty("displayName").stringValue = displayName;
+            serialized.FindProperty("category").enumValueIndex = (int)category;
             serialized.FindProperty("minPrice").longValue = basePrice / 2;
             serialized.FindProperty("basePrice").longValue = basePrice;
             serialized.FindProperty("maxPrice").longValue = basePrice * 5 / 2;

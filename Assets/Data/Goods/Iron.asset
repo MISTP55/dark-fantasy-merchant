@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Iron
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Fer
+  category: 0
   minPrice: 192
   basePrice: 300
   maxPrice: 490

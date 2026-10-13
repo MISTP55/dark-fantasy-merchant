@@ -40,6 +40,19 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("What a city takes off the price when it buys from the player.")]
         [SerializeField, Range(0f, 0.99f)] private double sellMargin = 0.05d;
 
+        [Header("Population, by the days of its consumption a city holds of food (the average of its foods)")]
+        [Tooltip("Days of food at which the population does not change. Under them it declines.")]
+        [SerializeField, Min(0f)] private double stableFoodDays = 7d;
+
+        [Tooltip("Days of food at which the population grows the fastest. A food is not counted for more.")]
+        [SerializeField, Min(0f)] private double abundantFoodDays = 14d;
+
+        [Tooltip("Growth of the population over a month at the abundant days, as a share: 0.05 is +5 %.")]
+        [SerializeField, Min(0f)] private double maxMonthlyGrowth = 0.05d;
+
+        [Tooltip("Decline of the population over a month with no food at all, as a share: 0.1 is -10 %.")]
+        [SerializeField, Range(0f, 1f)] private double maxMonthlyDecline = 0.1d;
+
         public IReadOnlyList<GoodDefinition> Goods => goods;
 
         public double TargetStockDays => targetStockDays;
@@ -57,6 +70,14 @@ namespace DarkFantasyMerchant.Game
         public double BuyMargin => buyMargin;
 
         public double SellMargin => sellMargin;
+
+        public double StableFoodDays => stableFoodDays;
+
+        public double AbundantFoodDays => abundantFoodDays;
+
+        public double MaxMonthlyGrowth => maxMonthlyGrowth;
+
+        public double MaxMonthlyDecline => maxMonthlyDecline;
 
         /// <returns>The index of a good in the catalogue, which is what Core knows it by, or -1.</returns>
         public int IndexOf(GoodDefinition good)
@@ -104,12 +125,27 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// The market of a city at the start of the game, with one stock per good of the
-        /// catalogue. Call <see cref="TryValidate"/> first. Throws when a setting or a
-        /// good's figure is unusable.
+        /// How food changes the population of a city, from these settings. Throws when one
+        /// of them is unusable.
+        /// </summary>
+        /// <param name="daysPerMonth">Days of the calendar's month: the rates are given per month.</param>
+        public FoodGrowth CreateFoodGrowth(int daysPerMonth)
+        {
+            return new FoodGrowth(stableFoodDays, abundantFoodDays, maxMonthlyGrowth, maxMonthlyDecline, daysPerMonth);
+        }
+
+        /// <summary>
+        /// The market of a city at the start of the game, with the population of its
+        /// definition and one stock per good of the catalogue. Call
+        /// <see cref="TryValidate"/> first. Throws when a setting or a good's figure is unusable.
         /// </summary>
         /// <param name="daysPerWeek">Days of the calendar's week: goods give their consumption per week.</param>
-        public CityMarket CreateMarket(CityDefinition city, MarketPricing pricing, int daysPerWeek)
+        /// <param name="foodGrowth">How food changes the population. Without it, the population stays what it is.</param>
+        public CityMarket CreateMarket(
+            CityDefinition city,
+            MarketPricing pricing,
+            int daysPerWeek,
+            FoodGrowth foodGrowth = null)
         {
             if (city == null)
             {
@@ -121,7 +157,6 @@ namespace DarkFantasyMerchant.Game
                 throw new ArgumentOutOfRangeException(nameof(daysPerWeek));
             }
 
-            double thousands = Math.Max(0, city.Population) / 1000d;
             var marketGoods = new MarketGood[goods.Count];
 
             for (int i = 0; i < goods.Count; i++)
@@ -146,12 +181,20 @@ namespace DarkFantasyMerchant.Game
                     good.MinPrice,
                     good.BasePrice,
                     good.MaxPrice,
-                    thousands * good.WeeklyConsumptionPerThousand / daysPerWeek,
+                    good.WeeklyConsumptionPerThousand / daysPerWeek,
                     rate,
-                    ceilingDays);
+                    ceilingDays,
+                    good.Category == GoodCategory.Food);
             }
 
-            return new CityMarket(marketGoods, targetStockDays, startingStockDays, pricing, daysPerWeek);
+            return new CityMarket(
+                marketGoods,
+                targetStockDays,
+                startingStockDays,
+                pricing,
+                daysPerWeek,
+                new CityPopulation(Math.Max(0, city.Population)),
+                foodGrowth);
         }
     }
 }

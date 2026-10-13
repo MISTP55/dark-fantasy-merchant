@@ -9,6 +9,9 @@ namespace DarkFantasyMerchant.Game
     {
         [SerializeField] private string displayName;
 
+        [Tooltip("What the good is for. Only the stock of food makes the population of a city grow or decline.")]
+        [SerializeField] private GoodCategory category;
+
         [Tooltip("Floor of the price: gold coins a barrel costs in a city that holds twice its target stock or more. From 1 to the base price.")]
         [SerializeField, Min(1)] private long minPrice = 5;
 
@@ -23,6 +26,8 @@ namespace DarkFantasyMerchant.Game
         [SerializeField, Min(0f)] private double weeklyConsumptionPerThousand = 7d;
 
         public string DisplayName => displayName;
+
+        public GoodCategory Category => category;
 
         public long MinPrice => minPrice;
 

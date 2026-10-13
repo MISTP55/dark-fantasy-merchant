@@ -18,7 +18,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // One good at base price 10, two barrels a day: 60 in stock, the target.
             market = new CityMarket(
                 new[] { new MarketGood(5, 10, 25, 2, 0, 0) }, 30, 30, new MarketPricing(0.05, 0.05),
-                7);
+                7,
+                new CityPopulation(1000));
             hold = new CargoHold(200);
             treasury = new Treasury(10000);
         }

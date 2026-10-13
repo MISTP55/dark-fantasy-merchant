@@ -8,6 +8,8 @@ namespace DarkFantasyMerchant.Core
     /// consumes all of them; the price of a good follows its stock against a target.
     /// There is no limit to what a city can store. Goods are indices into the catalogue.
     /// It also remembers what the days of the last week actually produced and consumed.
+    /// What it consumes and produces follows its population, which the food it holds
+    /// makes grow or decline every day.
     /// </summary>
     public sealed class CityMarket
     {
@@ -19,16 +21,21 @@ namespace DarkFantasyMerchant.Core
         private readonly MarketPricing pricing;
         private readonly int daysPerWeek;
         private readonly MarketWeekLog weekLog;
+        private readonly FoodGrowth foodGrowth;
 
         /// <param name="targetDays">Days of consumption a city holds when a good is at its base price.</param>
         /// <param name="startingDays">Days of consumption the city holds of every good when the game starts.</param>
         /// <param name="daysPerWeek">Days of the calendar's week, over which the weekly figures are given.</param>
+        /// <param name="population">The inhabitants of the city, who set what it consumes.</param>
+        /// <param name="foodGrowth">How food changes the population. Without it, the population stays what it is.</param>
         public CityMarket(
             IReadOnlyList<MarketGood> goods,
             double targetDays,
             double startingDays,
             MarketPricing pricing,
-            int daysPerWeek)
+            int daysPerWeek,
+            CityPopulation population,
+            FoodGrowth foodGrowth = null)
         {
             if (goods == null)
             {
@@ -52,6 +59,8 @@ namespace DarkFantasyMerchant.Core
             }
 
             this.pricing = pricing ?? throw new ArgumentNullException(nameof(pricing));
+            Population = population ?? throw new ArgumentNullException(nameof(population));
+            this.foodGrowth = foodGrowth;
             this.targetDays = targetDays;
             this.daysPerWeek = daysPerWeek;
             weekLog = new MarketWeekLog(goods.Count, daysPerWeek);
@@ -63,14 +72,63 @@ namespace DarkFantasyMerchant.Core
                 this.goods[i] = goods[i];
 
                 // The same for every good, produced or not: producers fill up as the days pass.
-                stocks[i] = startingDays * goods[i].DailyConsumption;
+                stocks[i] = startingDays * DailyConsumptionOf(i);
             }
         }
 
         public int GoodCount => goods.Length;
 
-        /// <summary>Raised once by a day that starts, and once when barrels were taken or put.</summary>
+        public CityPopulation Population { get; }
+
+        /// <summary>
+        /// The change of the population over a month, as a share of it, that the food in
+        /// stock gives at this moment; 0 for a city that eats nothing.
+        /// </summary>
+        public double MonthlyGrowthRate =>
+            foodGrowth != null && TryGetFoodDays(foodGrowth.AbundantDays, out double foodDays)
+                ? foodGrowth.MonthlyRateAt(foodDays)
+                : 0d;
+
+        /// <summary>
+        /// Raised once by a day that starts, after the population has changed, and once
+        /// when barrels were taken or put.
+        /// </summary>
         public event Action Changed;
+
+        /// <summary>Barrels the inhabitants consume in a day while the city has them.</summary>
+        public double DailyConsumptionOf(int good)
+        {
+            RequireGood(good);
+
+            return goods[good].DailyConsumptionPerThousand * Population.Count / 1000d;
+        }
+
+        /// <summary>
+        /// The days of its consumption the city holds of food: the average of its foods,
+        /// each counted up to a number of days, so that plenty of one does not make up
+        /// for the lack of another.
+        /// </summary>
+        /// <param name="daysCountedPerFood">The most days one food is counted for.</param>
+        /// <returns>False for a city that consumes no food.</returns>
+        public bool TryGetFoodDays(double daysCountedPerFood, out double foodDays)
+        {
+            double sum = 0d;
+            int foods = 0;
+
+            for (int i = 0; i < goods.Length; i++)
+            {
+                double consumption = DailyConsumptionOf(i);
+
+                if (goods[i].IsFood && consumption > 0d)
+                {
+                    sum += Math.Min(daysCountedPerFood, stocks[i] / consumption);
+                    foods++;
+                }
+            }
+
+            foodDays = foods > 0 ? sum / foods : 0d;
+            return foods > 0;
+        }
 
         /// <summary>Barrels in stock; a city consumes fractions of a barrel, so it is not whole.</summary>
         public double StockOf(int good)
@@ -92,23 +150,19 @@ namespace DarkFantasyMerchant.Core
         {
             RequireGood(good);
 
-            return targetDays * goods[good].DailyConsumption;
+            return targetDays * DailyConsumptionOf(good);
         }
 
         /// <summary>Barrels the city produces in a week while its stock is under the ceiling.</summary>
         public double NominalWeeklyProductionOf(int good)
         {
-            RequireGood(good);
-
-            return goods[good].DailyProduction * daysPerWeek;
+            return DailyConsumptionOf(good) * goods[good].ProductionRate * daysPerWeek;
         }
 
         /// <summary>Barrels the city consumes in a week while it has them.</summary>
         public double NominalWeeklyConsumptionOf(int good)
         {
-            RequireGood(good);
-
-            return goods[good].DailyConsumption * daysPerWeek;
+            return DailyConsumptionOf(good) * daysPerWeek;
         }
 
         /// <summary>
@@ -183,7 +237,7 @@ namespace DarkFantasyMerchant.Core
         /// <summary>
         /// One day of the city: it produces, up to each good's ceiling and never above,
         /// then consumes, down to nothing. A stock that deliveries raised above its
-        /// ceiling is only consumed.
+        /// ceiling is only consumed. The food that is left then changes the population.
         /// </summary>
         public void StartDay()
         {
@@ -192,16 +246,23 @@ namespace DarkFantasyMerchant.Core
             for (int i = 0; i < goods.Length; i++)
             {
                 MarketGood good = goods[i];
+                double consumption = DailyConsumptionOf(i);
+                double ceiling = consumption * good.CeilingDays;
                 double stockBefore = stocks[i];
                 double stock = stockBefore;
 
-                if (stock < good.Ceiling)
+                if (stock < ceiling)
                 {
-                    stock = Math.Min(good.Ceiling, stock + good.DailyProduction);
+                    stock = Math.Min(ceiling, stock + consumption * good.ProductionRate);
                 }
 
-                stocks[i] = Math.Max(0d, stock - good.DailyConsumption);
+                stocks[i] = Math.Max(0d, stock - consumption);
                 weekLog.Record(i, stock - stockBefore, stock - stocks[i]);
+            }
+
+            if (foodGrowth != null)
+            {
+                Population.GrowForADay(MonthlyGrowthRate, foodGrowth.DaysPerMonth);
             }
 
             Changed?.Invoke();

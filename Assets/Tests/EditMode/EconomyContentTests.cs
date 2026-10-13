@@ -28,10 +28,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
         // The prices and the consumption are balanced by hand in the assets: the test checks
         // that they make sense, not what they are.
-        [TestCase(0, "Poisson")]
-        [TestCase(1, "Fer")]
-        [TestCase(2, "Bière")]
-        public void TheCatalogue_HasItsGoods_InOrder_WithPricesThatMakeSense(int index, string name)
+        [TestCase(0, "Poisson", GoodCategory.Food)]
+        [TestCase(1, "Fer", GoodCategory.RawMaterial)]
+        [TestCase(2, "Bière", GoodCategory.Food)]
+        public void TheCatalogue_HasItsGoods_InOrder_WithPricesThatMakeSense(int index, string name, GoodCategory category)
         {
             EconomyDefinition economy = LoadEconomy();
 
@@ -39,6 +39,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             GoodDefinition good = economy.Goods[index];
             Assert.AreEqual(name, good.DisplayName);
+            Assert.AreEqual(category, good.Category);
             Assert.GreaterOrEqual(good.MinPrice, 1);
             Assert.LessOrEqual(good.MinPrice, good.BasePrice);
             Assert.GreaterOrEqual(good.MaxPrice, good.BasePrice);
@@ -52,6 +53,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.IsTrue(economy.TryValidate(out string problem), problem);
             Assert.DoesNotThrow(() => economy.CreatePricing());
+            Assert.DoesNotThrow(() => economy.CreateFoodGrowth(30));
         }
 
         [Test]

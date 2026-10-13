@@ -24,3 +24,7 @@ MonoBehaviour:
   inefficientCeilingDays: 36
   buyMargin: 0.05
   sellMargin: 0.05
+  stableFoodDays: 7
+  abundantFoodDays: 14
+  maxMonthlyGrowth: 0.05
+  maxMonthlyDecline: 0.1

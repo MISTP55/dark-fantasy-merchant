@@ -65,6 +65,10 @@
     width: 100px;
 }
 
+.debug-cities__cell--growth {
+    width: 110px;
+}
+
 .debug-cities__cell--stock {
     width: 80px;
     border-left-width: 1px;
@@ -75,9 +79,9 @@
     width: 140px;
 }
 
-/* As wide as the name and the population. */
+/* As wide as the name, the population and its growth. */
 .debug-cities__cell--city-group {
-    width: 250px;
+    width: 360px;
 }
 
 /* As wide as the stock and the three figures of a good. */

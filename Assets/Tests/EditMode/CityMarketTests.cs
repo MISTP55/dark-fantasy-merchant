@@ -21,9 +21,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static MarketGood Efficient => new MarketGood(5, 10, 25, 2, 1.5, 60);
         private static MarketGood Inefficient => new MarketGood(5, 10, 25, 2, 1.1, 36);
 
+        // Food, two barrels a day for a thousand inhabitants.
+        private static MarketGood Food => new MarketGood(5, 10, 25, 2, 0, 0, isFood: true);
+
+        // A week of food keeps the population, two make it grow by 5 % a month, none loses 10 %.
+        private static FoodGrowth Growth => new FoodGrowth(7, 14, 0.05, 0.1, 30);
+
+        private static CityMarket FedMarket(double startingDays, params MarketGood[] goods)
+        {
+            return new CityMarket(
+                goods, TargetDays, startingDays, Pricing, DaysPerWeek, new CityPopulation(1000), Growth);
+        }
+
         private static CityMarket MarketOf(params MarketGood[] goods)
         {
-            return new CityMarket(goods, TargetDays, StartingDays, Pricing, DaysPerWeek);
+            return new CityMarket(goods, TargetDays, StartingDays, Pricing, DaysPerWeek, new CityPopulation(1000));
         }
 
         [Test]
@@ -40,7 +52,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void EveryGood_StartsWithTheSameDays_ProducedOrNot()
         {
             // A week of two barrels a day, whatever the city makes of the good.
-            var market = new CityMarket(new[] { NotProduced, Efficient, Inefficient }, TargetDays, 7, Pricing, DaysPerWeek);
+            var market = new CityMarket(new[] { NotProduced, Efficient, Inefficient }, TargetDays, 7, Pricing, DaysPerWeek, new CityPopulation(1000));
 
             Assert.AreEqual(14, market.StockOf(0), Tolerance);
             Assert.AreEqual(14, market.StockOf(1), Tolerance);
@@ -51,7 +63,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AMarketCanStartEmpty()
         {
-            var market = new CityMarket(new[] { NotProduced }, TargetDays, 0, Pricing, DaysPerWeek);
+            var market = new CityMarket(new[] { NotProduced }, TargetDays, 0, Pricing, DaysPerWeek, new CityPopulation(1000));
 
             Assert.AreEqual(0, market.AvailableOf(0));
         }
@@ -62,7 +74,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void RejectsStartingDaysThatMakeNoSense(double startingDays)
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new CityMarket(new[] { NotProduced }, TargetDays, startingDays, Pricing, DaysPerWeek));
+                () => new CityMarket(new[] { NotProduced }, TargetDays, startingDays, Pricing, DaysPerWeek, new CityPopulation(1000)));
         }
 
         [Test]
@@ -327,7 +339,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void NominalWeeklyFigures_FollowTheDaysOfTheWeek()
         {
-            var market = new CityMarket(new[] { Efficient }, TargetDays, StartingDays, Pricing, 10);
+            var market = new CityMarket(new[] { Efficient }, TargetDays, StartingDays, Pricing, 10, new CityPopulation(1000));
 
             Assert.AreEqual(20, market.NominalWeeklyConsumptionOf(0), Tolerance);
             Assert.AreEqual(30, market.NominalWeeklyProductionOf(0), Tolerance);
@@ -404,7 +416,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void RecentConsumption_StopsAtAnEmptyStock()
         {
             // Three barrels in stock for two a day.
-            var market = new CityMarket(new[] { NotProduced }, TargetDays, 1.5, Pricing, DaysPerWeek);
+            var market = new CityMarket(new[] { NotProduced }, TargetDays, 1.5, Pricing, DaysPerWeek, new CityPopulation(1000));
 
             for (int day = 0; day < 4; day++)
             {
@@ -444,10 +456,173 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void RejectsANegativeTarget_AndMissingArguments()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new CityMarket(new[] { NotProduced }, -1, StartingDays, Pricing, DaysPerWeek));
-            Assert.Throws<ArgumentNullException>(() => new CityMarket(null, TargetDays, StartingDays, Pricing, DaysPerWeek));
-            Assert.Throws<ArgumentNullException>(() => new CityMarket(new[] { NotProduced }, TargetDays, StartingDays, null, DaysPerWeek));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new CityMarket(new[] { NotProduced }, TargetDays, StartingDays, Pricing, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CityMarket(new[] { NotProduced }, -1, StartingDays, Pricing, DaysPerWeek, new CityPopulation(1000)));
+            Assert.Throws<ArgumentNullException>(() => new CityMarket(null, TargetDays, StartingDays, Pricing, DaysPerWeek, new CityPopulation(1000)));
+            Assert.Throws<ArgumentNullException>(() => new CityMarket(new[] { NotProduced }, TargetDays, StartingDays, null, DaysPerWeek, new CityPopulation(1000)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CityMarket(new[] { NotProduced }, TargetDays, StartingDays, Pricing, 0, new CityPopulation(1000)));
+            Assert.Throws<ArgumentNullException>(() => new CityMarket(new[] { NotProduced }, TargetDays, StartingDays, Pricing, DaysPerWeek, null));
+        }
+
+        [Test]
+        public void WhatACityConsumes_FollowsItsInhabitants()
+        {
+            var market = new CityMarket(
+                new[] { Efficient }, TargetDays, StartingDays, Pricing, DaysPerWeek, new CityPopulation(2500));
+
+            // Two barrels a day per thousand: five for 2 500, and seven and a half produced.
+            Assert.AreEqual(5, market.DailyConsumptionOf(0), Tolerance);
+            Assert.AreEqual(150, market.StockOf(0), Tolerance);
+            Assert.AreEqual(150, market.TargetOf(0), Tolerance);
+            Assert.AreEqual(35, market.NominalWeeklyConsumptionOf(0), Tolerance);
+            Assert.AreEqual(52.5, market.NominalWeeklyProductionOf(0), Tolerance);
+
+            market.StartDay();
+
+            Assert.AreEqual(152.5, market.StockOf(0), Tolerance);
+        }
+
+        [Test]
+        public void WithoutAFoodGrowth_ThePopulationStaysWhatItIs()
+        {
+            var market = new CityMarket(new[] { Food }, TargetDays, 0, Pricing, DaysPerWeek, new CityPopulation(1000));
+
+            market.StartDay();
+
+            Assert.AreEqual(0, market.MonthlyGrowthRate, Tolerance);
+            Assert.AreEqual(1000, market.Population.Count, Tolerance);
+        }
+
+        [Test]
+        public void FoodDays_AreTheDaysOfConsumptionInStock()
+        {
+            CityMarket market = FedMarket(10, Food);
+
+            Assert.IsTrue(market.TryGetFoodDays(14, out double days));
+            Assert.AreEqual(10, days, Tolerance);
+        }
+
+        [Test]
+        public void FoodDays_AreTheAverageOfTheFoods_EachCountedUpToTheGivenDays()
+        {
+            // Two foods at 2 and 4 barrels a day, with 10 days of each to start with.
+            CityMarket market = FedMarket(10, Food, new MarketGood(5, 10, 25, 4, 0, 0, isFood: true));
+
+            // 84 and 0 barrels: 42 days, counted for 14, and none.
+            market.Put(0, 64);
+            market.Take(1, 40);
+
+            Assert.IsTrue(market.TryGetFoodDays(14, out double days));
+            Assert.AreEqual(7, days, Tolerance);
+
+            // 28 and 28 barrels: 14 and 7 days.
+            market.Take(0, 56);
+            market.Put(1, 28);
+
+            Assert.IsTrue(market.TryGetFoodDays(14, out days));
+            Assert.AreEqual(10.5, days, Tolerance);
+        }
+
+        [Test]
+        public void FoodDays_LeaveOutWhatIsNotFood()
+        {
+            // No fish but plenty of a good nobody eats.
+            CityMarket market = FedMarket(0, Food, NotProduced);
+            market.Put(1, 500);
+
+            Assert.IsTrue(market.TryGetFoodDays(14, out double days));
+            Assert.AreEqual(0, days, Tolerance);
+        }
+
+        [Test]
+        public void ACityThatEatsNothing_HasNoFoodDays_AndKeepsItsPopulation()
+        {
+            // No food in the catalogue, then a food nobody consumes.
+            CityMarket withoutFood = FedMarket(0, NotProduced);
+            CityMarket notEaten = FedMarket(0, new MarketGood(5, 10, 25, 0, 0, 0, isFood: true));
+
+            Assert.IsFalse(withoutFood.TryGetFoodDays(14, out _));
+            Assert.IsFalse(notEaten.TryGetFoodDays(14, out _));
+
+            withoutFood.StartDay();
+
+            Assert.AreEqual(0, withoutFood.MonthlyGrowthRate, Tolerance);
+            Assert.AreEqual(1000, withoutFood.Population.Count, Tolerance);
+        }
+
+        [Test]
+        public void MonthlyGrowthRate_FollowsTheFoodInStock_AtOnce()
+        {
+            CityMarket market = FedMarket(7, Food);
+            Assert.AreEqual(0, market.MonthlyGrowthRate, Tolerance);
+
+            // 28 barrels: two weeks.
+            market.Put(0, 14);
+            Assert.AreEqual(0.05, market.MonthlyGrowthRate, Tolerance);
+
+            market.Take(0, 28);
+            Assert.AreEqual(-0.1, market.MonthlyGrowthRate, Tolerance);
+        }
+
+        [Test]
+        public void AMonthWithoutFood_LosesATenthOfThePopulation()
+        {
+            CityMarket market = FedMarket(0, Food);
+
+            for (int day = 0; day < 30; day++)
+            {
+                market.StartDay();
+            }
+
+            Assert.AreEqual(900, market.Population.Count, 1e-6);
+            Assert.AreEqual(900, market.Population.Inhabitants);
+
+            // And it eats less: 1.8 barrels a day.
+            Assert.AreEqual(1.8, market.DailyConsumptionOf(0), 1e-6);
+        }
+
+        [Test]
+        public void AMonthOfPlenty_GrowsThePopulationByItsFastestRate()
+        {
+            // Far more than two weeks of food, for the whole month.
+            CityMarket market = FedMarket(0, Food);
+            market.Put(0, 1000);
+
+            for (int day = 0; day < 30; day++)
+            {
+                market.StartDay();
+            }
+
+            Assert.AreEqual(1050, market.Population.Count, 1e-6);
+        }
+
+        [Test]
+        public void StartDay_ChangesThePopulation_ByTheFoodLeftAfterTheDay()
+        {
+            // 14 barrels: a week before the day, 6 days after it, so the population declines.
+            CityMarket market = FedMarket(7, Food);
+
+            market.StartDay();
+
+            Assert.AreEqual(12, market.StockOf(0), Tolerance);
+            Assert.Less(market.Population.Count, 1000d);
+        }
+
+        [Test]
+        public void Changed_IsRaisedAfterThePopulationHasChanged()
+        {
+            CityMarket market = FedMarket(0, Food);
+            double seen = 0d;
+            int changes = 0;
+            market.Changed += () =>
+            {
+                seen = market.Population.Count;
+                changes++;
+            };
+
+            market.StartDay();
+
+            Assert.AreEqual(1, changes);
+            Assert.Less(seen, 1000d);
         }
     }
 }

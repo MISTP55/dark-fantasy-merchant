@@ -50,7 +50,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static CityMarket Market(double days)
         {
             return new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 2, 0, 0) }, 30, days, new MarketPricing(0.05, 0.05), 7);
+                new[] { new MarketGood(5, 10, 25, 2, 0, 0) }, 30, days, new MarketPricing(0.05, 0.05), 7, new CityPopulation(1000));
         }
 
         private void CreateFleet(double daysInA, double daysInB, double daysInC)

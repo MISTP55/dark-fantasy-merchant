@@ -22,7 +22,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 30,
                 0,
                 new MarketPricing(0.05, 0.05),
-                7);
+                7,
+                new CityPopulation(1000));
 
             Put(market, Fish, (int)(fishDays * 2));
             Put(market, Iron, (int)(ironDays * 2));
@@ -136,7 +137,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 30,
                 0,
                 new MarketPricing(0.05, 0.05),
-                7);
+                7,
+                new CityPopulation(1000));
             source.Put(Fish, 10);
             var planner = new TradeRoutePlanner(new[] { source, Market(Empty, AtTarget) }, Days(2, 1d), 1d);
 
@@ -256,7 +258,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void MarketsOfDifferentCatalogues_TradeTheGoodsTheyShare()
         {
             var small = new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 2, 0, 0) }, 30, 0, new MarketPricing(0.05, 0.05), 7);
+                new[] { new MarketGood(5, 10, 25, 2, 0, 0) }, 30, 0, new MarketPricing(0.05, 0.05), 7, new CityPopulation(1000));
             var planner = new TradeRoutePlanner(new[] { Market(Surplus, Surplus), small }, Days(2, 1d), 1d);
 
             Assert.AreEqual(1, planner.GoodCount);

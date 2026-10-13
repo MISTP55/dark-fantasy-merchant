@@ -298,7 +298,7 @@ namespace DarkFantasyMerchant.Game
 
                 if (market != null)
                 {
-                    citiesTable.AddCity(city.DisplayName, city.Population, market);
+                    citiesTable.AddCity(city.DisplayName, market);
                 }
             }
 

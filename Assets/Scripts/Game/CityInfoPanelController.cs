@@ -49,6 +49,9 @@ namespace DarkFantasyMerchant.Game
         // Made on the first city shown: the world's economy starts after this panel is enabled.
         private CityMarketSection marketSection;
 
+        // The market whose population the panel shows and follows, or null.
+        private CityMarket populationMarket;
+
         private bool isBound;
 
         // Ship of each row of the ship list, in the same order.
@@ -136,6 +139,7 @@ namespace DarkFantasyMerchant.Game
 
             // Stops listening to the market, the hold and the treasury.
             marketSection?.Hide();
+            FollowPopulationOf(null);
 
             isBound = false;
         }
@@ -199,17 +203,65 @@ namespace DarkFantasyMerchant.Game
             {
                 cityPanel.style.display = DisplayStyle.None;
                 marketSection?.Hide();
+                FollowPopulationOf(null);
                 return;
             }
 
             nameLabel.text = city.DisplayName;
             sizeLabel.text = SizeText(city.Size);
             accessLabel.text = AccessText(city.Access);
-            populationLabel.text = FormatPopulation(city.Population);
+            ShowPopulationOf(city);
             descriptionLabel.text = city.Description;
             ShowShipsIn(city);
             ShowMarketOf(city);
             cityPanel.style.display = DisplayStyle.Flex;
+        }
+
+        // The inhabitants of the game are in the market; a city without one shows those it starts with.
+        private void ShowPopulationOf(CityDefinition city)
+        {
+            FollowPopulationOf(worldEconomy != null ? worldEconomy.MarketOf(city) : null);
+
+            if (populationMarket != null)
+            {
+                WritePopulation();
+            }
+            else
+            {
+                populationLabel.text = FormatPopulation(city.Population);
+            }
+        }
+
+        private void FollowPopulationOf(CityMarket market)
+        {
+            if (ReferenceEquals(market, populationMarket))
+            {
+                return;
+            }
+
+            if (populationMarket != null)
+            {
+                populationMarket.Changed -= WritePopulation;
+            }
+
+            populationMarket = market;
+
+            if (populationMarket != null)
+            {
+                populationMarket.Changed += WritePopulation;
+            }
+        }
+
+        // Also on a trade, which changes no inhabitant: a market has one event.
+        private void WritePopulation()
+        {
+            // Another listener of the same change may have closed the panel.
+            if (populationMarket == null)
+            {
+                return;
+            }
+
+            populationLabel.text = FormatPopulation(populationMarket.Population.Inhabitants);
         }
 
         private void ShowShipsIn(CityDefinition city)

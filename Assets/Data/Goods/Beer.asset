@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Beer
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: "Bi\xE8re"
+  category: 1
   minPrice: 31
   basePrice: 50
   maxPrice: 82

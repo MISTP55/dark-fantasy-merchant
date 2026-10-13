@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Fish
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Poisson
+  category: 1
   minPrice: 420
   basePrice: 500
   maxPrice: 987

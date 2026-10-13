@@ -6,8 +6,8 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// Owns the market of every city of the map and makes the cities produce and consume
-    /// every day of the world clock.
+    /// Owns the market of every city of the map and makes the cities produce and consume,
+    /// and their populations grow or decline, every day of the world clock.
     /// </summary>
     public sealed class WorldEconomy : MonoBehaviour
     {
@@ -76,17 +76,18 @@ namespace DarkFantasyMerchant.Game
             {
                 MarketPricing pricing = economy.CreatePricing();
                 int daysPerWeek = worldClock.Calendar.DaysPerWeek;
+                FoodGrowth foodGrowth = economy.CreateFoodGrowth(worldClock.Calendar.DaysPerMonth);
 
                 foreach (CityDefinition city in mapView.Cities)
                 {
                     WarnAbout(city);
-                    markets[city] = economy.CreateMarket(city, pricing, daysPerWeek);
+                    markets[city] = economy.CreateMarket(city, pricing, daysPerWeek, foodGrowth);
                 }
             }
             catch (ArgumentOutOfRangeException exception)
             {
                 Debug.LogError(
-                    $"EconomyDefinition '{economy.name}', one of its goods or the calendar's week has an invalid value "
+                    $"EconomyDefinition '{economy.name}', one of its goods or the calendar's week or month has an invalid value "
                     + $"({exception.ParamName}); cities have no market.",
                     economy);
                 return false;

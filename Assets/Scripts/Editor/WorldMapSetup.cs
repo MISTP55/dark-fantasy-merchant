@@ -88,6 +88,7 @@ namespace DarkFantasyMerchant.Editor
             public SampleGood(
                 string assetName,
                 string displayName,
+                GoodCategory category,
                 long minPrice,
                 long basePrice,
                 long maxPrice,
@@ -95,6 +96,7 @@ namespace DarkFantasyMerchant.Editor
             {
                 AssetName = assetName;
                 DisplayName = displayName;
+                Category = category;
                 MinPrice = minPrice;
                 BasePrice = basePrice;
                 MaxPrice = maxPrice;
@@ -103,20 +105,21 @@ namespace DarkFantasyMerchant.Editor
 
             public string AssetName { get; }
             public string DisplayName { get; }
+            public GoodCategory Category { get; }
             public long MinPrice { get; }
             public long BasePrice { get; }
             public long MaxPrice { get; }
             public double WeeklyConsumptionPerThousand { get; }
         }
 
-        // In the order of the catalogue, which is their order on screen. Minimum, base and
-        // maximum price, then what 1 000 inhabitants consume in a week: the values a good that
+        // In the order of the catalogue, which is their order on screen. Category, minimum, base
+        // and maximum price, then what 1 000 inhabitants consume in a week: the values a good that
         // is missing is created with, which are then balanced by hand in the asset.
         private static readonly SampleGood[] SampleGoods =
         {
-            new SampleGood("Fish", "Poisson", 6, 12, 30, 10.5),
-            new SampleGood("Iron", "Fer", 25, 50, 125, 2.8),
-            new SampleGood("Beer", "Bière", 31, 50, 82, 50),
+            new SampleGood("Fish", "Poisson", GoodCategory.Food, 6, 12, 30, 10.5),
+            new SampleGood("Iron", "Fer", GoodCategory.RawMaterial, 25, 50, 125, 2.8),
+            new SampleGood("Beer", "Bière", GoodCategory.Food, 31, 50, 82, 50),
         };
 
         private readonly struct SampleCity
@@ -531,6 +534,7 @@ namespace DarkFantasyMerchant.Editor
             var good = ScriptableObject.CreateInstance<GoodDefinition>();
             var serialized = new SerializedObject(good);
             serialized.FindProperty("displayName").stringValue = sample.DisplayName;
+            serialized.FindProperty("category").enumValueIndex = (int)sample.Category;
             serialized.FindProperty("minPrice").longValue = sample.MinPrice;
             serialized.FindProperty("basePrice").longValue = sample.BasePrice;
             serialized.FindProperty("maxPrice").longValue = sample.MaxPrice;

@@ -7,10 +7,11 @@ using UnityEngine.UIElements;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The table of the cities debug panel: one row per city with its population and, for
-    /// every good, its stock and what it produces, consumes and gains in a week, the
-    /// nominal figure first and the one of the last days in brackets, and a last row with
-    /// the total of every column. Follows the markets while it is shown.
+    /// The table of the cities debug panel: one row per city with its population, the rate
+    /// at which it grows or declines in a month and, for every good, its stock and what it
+    /// produces, consumes and gains in a week, the nominal figure first and the one of the
+    /// last days in brackets, and a last row with the total of every column. Follows the
+    /// markets while it is shown.
     /// </summary>
     public sealed class DebugCitiesTable
     {
@@ -29,6 +30,7 @@ namespace DarkFantasyMerchant.Game
         private const string CellClass = "debug-cities__cell";
         private const string NameCellClass = "debug-cities__cell--name";
         private const string PopulationCellClass = "debug-cities__cell--population";
+        private const string GrowthCellClass = "debug-cities__cell--growth";
         private const string StockCellClass = "debug-cities__cell--stock";
         private const string FigureCellClass = "debug-cities__cell--figure";
         private const string CityGroupClass = "debug-cities__cell--city-group";
@@ -51,7 +53,8 @@ namespace DarkFantasyMerchant.Game
 
         private sealed class Row
         {
-            public int Population;
+            public Label Population;
+            public Label Growth;
             public CityMarket Market;
             public GoodCells[] Goods;
             public Action Refresh;
@@ -61,6 +64,7 @@ namespace DarkFantasyMerchant.Game
         private readonly int goodCount;
         private readonly List<Row> rows = new List<Row>();
         private readonly Label totalPopulation;
+        private readonly Label totalGrowth;
         private readonly GoodCells[] totalGoods;
 
         private bool isShown;
@@ -103,6 +107,7 @@ namespace DarkFantasyMerchant.Game
             totalRow.AddToClassList(TotalRowClass);
             AddLabel(totalRow, NameCellClass).text = "Total";
             totalPopulation = AddLabel(totalRow, PopulationCellClass);
+            totalGrowth = AddLabel(totalRow, GrowthCellClass);
             totalGoods = AddGoodCells(totalRow, goodCount);
             totalContainer.Add(totalRow);
             WriteTotals();
@@ -128,8 +133,23 @@ namespace DarkFantasyMerchant.Game
             return rounded < 0d ? $"<color={NegativeColor}>{text}</color>" : text;
         }
 
+        /// <summary>A monthly rate as the table writes it: "+2,5 %" or "-10,0 %", coloured, or a plain "0,0 %".</summary>
+        /// <param name="rate">A share: 0.05 is +5 %.</param>
+        public static string FormatRate(double rate)
+        {
+            double rounded = Rounded(rate * 100d);
+            string text = $"{rounded.ToString("N1", BarrelFormat)}\u00A0%";
+
+            if (rounded > 0d)
+            {
+                return $"<color={PositiveColor}>+{text}</color>";
+            }
+
+            return rounded < 0d ? $"<color={NegativeColor}>{text}</color>" : text;
+        }
+
         /// <summary>Adds the row of a city. It is written at once, and then follows the market while the table is shown.</summary>
-        public void AddCity(string cityName, int population, CityMarket market)
+        public void AddCity(string cityName, CityMarket market)
         {
             if (market == null)
             {
@@ -140,11 +160,11 @@ namespace DarkFantasyMerchant.Game
             element.AddToClassList(RowClass);
 
             AddLabel(element, NameCellClass).text = cityName;
-            AddLabel(element, PopulationCellClass).text = TreasuryHudController.FormatNumber(population);
 
             var row = new Row
             {
-                Population = population,
+                Population = AddLabel(element, PopulationCellClass),
+                Growth = AddLabel(element, GrowthCellClass),
                 Market = market,
                 Goods = AddGoodCells(element, goodCount),
             };
@@ -216,6 +236,9 @@ namespace DarkFantasyMerchant.Game
         {
             CityMarket market = row.Market;
 
+            row.Population.text = TreasuryHudController.FormatNumber(market.Population.Inhabitants);
+            row.Growth.text = FormatRate(market.MonthlyGrowthRate);
+
             for (int i = 0; i < row.Goods.Length; i++)
             {
                 GoodCells cells = row.Goods[i];
@@ -243,14 +266,22 @@ namespace DarkFantasyMerchant.Game
         // Summed again on every change: a handful of cities, once a day each.
         private void WriteTotals()
         {
-            long population = 0;
+            long inhabitants = 0;
+            double population = 0d;
+            double monthlyChange = 0d;
 
             foreach (Row row in rows)
             {
-                population += row.Population;
+                // The whole inhabitants, as the rows write them.
+                inhabitants += row.Market.Population.Inhabitants;
+                population += row.Market.Population.Count;
+                monthlyChange += row.Market.Population.Count * row.Market.MonthlyGrowthRate;
             }
 
-            totalPopulation.text = TreasuryHudController.FormatNumber(population);
+            totalPopulation.text = TreasuryHudController.FormatNumber(inhabitants);
+
+            // The rate of the world: what its cities gain and lose together, against what they are.
+            totalGrowth.text = FormatRate(population > 0d ? monthlyChange / population : 0d);
 
             for (int i = 0; i < totalGoods.Length; i++)
             {
@@ -328,6 +359,7 @@ namespace DarkFantasyMerchant.Game
             columns.AddToClassList(HeaderRowClass);
             AddLabel(columns, NameCellClass).text = "Ville";
             AddLabel(columns, PopulationCellClass).text = "Population";
+            AddLabel(columns, GrowthCellClass).text = "Croiss. / mois";
 
             foreach (string goodName in goodNames)
             {
