@@ -120,6 +120,9 @@ namespace DarkFantasyMerchant.Editor
             new SampleGood("Fish", "Poisson", GoodCategory.Food, 6, 12, 30, 10.5),
             new SampleGood("Iron", "Fer", GoodCategory.RawMaterial, 25, 50, 125, 2.8),
             new SampleGood("Beer", "Bière", GoodCategory.Food, 31, 50, 82, 50),
+            new SampleGood("Grain", "Grain", GoodCategory.Food, 50, 80, 132, 40),
+            new SampleGood("Meat", "Viande", GoodCategory.Food, 380, 600, 990, 8),
+            new SampleGood("Vegetables", "Légumes", GoodCategory.Food, 63, 100, 165, 30),
         };
 
         private readonly struct SampleCity
@@ -165,25 +168,25 @@ namespace DarkFantasyMerchant.Editor
         private static readonly SampleCity[] SampleCities =
         {
             new SampleCity("Sparia", 0.115f, 0.645f, CityAccess.Coastal, CitySize.Town, 2100,
-                new string[0], new[] { "Fish", "Beer" },
+                new[] { "Grain" }, new[] { "Fish", "Beer" },
                 "Une ville portuaire battue par les vents sur le cap occidental, première terre en vue des navires qui traversent la mer d'Aedean occidentale."),
             new SampleCity("Elforth", 0.196f, 0.609f, CityAccess.Coastal, CitySize.Village, 1500,
-                new[] { "Fish" }, new string[0],
+                new[] { "Fish", "Vegetables" }, new[] { "Meat" },
                 "Un village de pêcheurs abrité par les bois du sud, connu pour sa morue salée et ses contrebandiers discrets."),
             new SampleCity("Bactfied", 0.374f, 0.554f, CityAccess.Coastal, CitySize.Town, 2000,
-                new[] { "Iron", "Beer" }, new string[0],
+                new[] { "Iron", "Beer" }, new[] { "Meat", "Vegetables" },
                 "Un port marchand animé sur la mer d'Eamiq, où les barges fluviales rencontrent les navires de haute mer."),
             new SampleCity("Hitrun", 0.470f, 0.598f, CityAccess.Coastal, CitySize.Village, 1800,
-                new string[0], new[] { "Fish", "Iron" },
+                new[] { "Meat" }, new[] { "Fish", "Iron", "Grain", "Vegetables" },
                 "Un village perché au-dessus d'une crique étroite, qui vend laine et pierre aux caboteurs de passage."),
             new SampleCity("Cerbias", 0.554f, 0.500f, CityAccess.Coastal, CitySize.Village, 1500,
-                new[] { "Beer" }, new[] { "Fish" },
+                new[] { "Beer", "Vegetables" }, new[] { "Fish", "Meat" },
                 "Un mouillage isolé à la pointe de la langue de sable méridionale, dernier abri avant le large de la mer de Rakmitag."),
             new SampleCity("Hazer Empire", 0.586f, 0.627f, CityAccess.Coastal, CitySize.Capital, 2500,
-                new[] { "Iron" }, new[] { "Fish" },
+                new[] { "Iron" }, new[] { "Fish", "Beer", "Grain", "Meat" },
                 "La capitale impériale qui garde le détroit, dont les douanes taxent chaque navire en route vers la côte du désert."),
             new SampleCity("Liveria", 0.345f, 0.651f, CityAccess.River, CitySize.Capital, 2100,
-                new string[0], new[] { "Iron" },
+                new[] { "Grain" }, new[] { "Iron", "Vegetables" },
                 "Une capitale fluviale hérissée de clochers au cœur des Bois de la Couronne, que l'on ne rejoint qu'en barge."),
         };
 

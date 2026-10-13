@@ -31,11 +31,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase(0, "Poisson", GoodCategory.Food)]
         [TestCase(1, "Fer", GoodCategory.RawMaterial)]
         [TestCase(2, "Bière", GoodCategory.Food)]
+        [TestCase(3, "Grain", GoodCategory.Food)]
+        [TestCase(4, "Viande", GoodCategory.Food)]
+        [TestCase(5, "Légumes", GoodCategory.Food)]
         public void TheCatalogue_HasItsGoods_InOrder_WithPricesThatMakeSense(int index, string name, GoodCategory category)
         {
             EconomyDefinition economy = LoadEconomy();
 
-            Assert.AreEqual(3, economy.Goods.Count);
+            Assert.AreEqual(6, economy.Goods.Count);
 
             GoodDefinition good = economy.Goods[index];
             Assert.AreEqual(name, good.DisplayName);

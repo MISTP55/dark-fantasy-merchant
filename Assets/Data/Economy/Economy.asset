@@ -16,6 +16,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 610fada3e2af0f94a8f65494caaccba1, type: 2}
   - {fileID: 11400000, guid: 4aa4ecf3894e5d34b8ade5228cde2e48, type: 2}
   - {fileID: 11400000, guid: e16d4cf6557c96944bd222d7b8d70c9d, type: 2}
+  - {fileID: 11400000, guid: d9bb6e94b66a421687ef25e233f60109, type: 2}
+  - {fileID: 11400000, guid: c9607b4c46834ebbacb371dea4d9b561, type: 2}
+  - {fileID: 11400000, guid: b9131add122b4aeebf9bddd520381956, type: 2}
   targetStockDays: 10
   startingStockDays: 7
   efficientProductionRate: 2
