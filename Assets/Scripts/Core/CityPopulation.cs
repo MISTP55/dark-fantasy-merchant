@@ -17,9 +17,19 @@ namespace DarkFantasyMerchant.Core
             }
 
             Count = count;
+            StartingCount = count;
         }
 
         public double Count { get; private set; }
+
+        /// <summary>The inhabitants the city had when the game started.</summary>
+        public double StartingCount { get; }
+
+        /// <summary>
+        /// The change since the game started, as a share of the inhabitants it started
+        /// with: 0.25 is +25 %. 0 for a city that started empty.
+        /// </summary>
+        public double GrowthSinceStart => StartingCount > 0d ? Count / StartingCount - 1d : 0d;
 
         /// <summary>The inhabitants as they are shown.</summary>
         public int Inhabitants => (int)Math.Min(int.MaxValue, Math.Round(Count, MidpointRounding.AwayFromZero));

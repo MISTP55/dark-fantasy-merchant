@@ -53,6 +53,22 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void GrowthSinceStart_ComparesTheInhabitantsWithThoseOfTheStart()
+        {
+            var population = new CityPopulation(2000);
+            Assert.AreEqual(0, population.GrowthSinceStart, Tolerance);
+
+            for (int day = 0; day < 60; day++)
+            {
+                population.GrowForADay(0.05, 30);
+            }
+
+            Assert.AreEqual(2000, population.StartingCount);
+            Assert.AreEqual(0.1025, population.GrowthSinceStart, Tolerance);
+            Assert.AreEqual(0, new CityPopulation(0).GrowthSinceStart);
+        }
+
+        [Test]
         public void AnEmptyCity_StaysEmpty()
         {
             var population = new CityPopulation(0);
