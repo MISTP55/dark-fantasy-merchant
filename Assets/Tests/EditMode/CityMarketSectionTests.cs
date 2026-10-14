@@ -10,14 +10,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Wheat = 0;
         private const int Wine = 1;
 
-        // Children of a row, in order.
+        // Children of a row, in order. The two prices are the buttons that trade.
         private const int NameCell = 0;
         private const int StockCell = 1;
         private const int BuyCell = 2;
         private const int SellCell = 3;
         private const int HoldCell = 4;
-        private const int SellButton = 5;
-        private const int BuyButton = 6;
 
         private VisualElement sectionElement;
         private VisualElement rows;
@@ -49,12 +47,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
         private string Text(int good, int cell)
         {
-            return ((Label)rows[good][cell]).text;
+            return ((TextElement)rows[good][cell]).text;
         }
 
-        private bool IsEnabled(int good, int button)
+        private bool IsEnabled(int good, int cell)
         {
-            return rows[good][button].enabledSelf;
+            return rows[good][cell].enabledSelf;
         }
 
         [Test]
@@ -95,7 +93,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("0", Text(Wine, StockCell));
             Assert.AreEqual(CityMarketSection.NoPrice, Text(Wine, BuyCell));
             Assert.AreEqual(market.SellPriceOf(Wine).ToString(), Text(Wine, SellCell));
-            Assert.IsFalse(IsEnabled(Wine, BuyButton));
+            Assert.IsFalse(IsEnabled(Wine, BuyCell));
         }
 
         [Test]
@@ -105,6 +103,16 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.IsFalse(sectionElement.ClassListContains(CityMarketSection.TradingClass));
             Assert.AreEqual(string.Empty, holdLabel.text);
+            Assert.IsFalse(IsEnabled(Wheat, BuyCell));
+            Assert.IsFalse(IsEnabled(Wheat, SellCell));
+        }
+
+        [Test]
+        public void ThePrices_AreTheButtonsThatTrade()
+        {
+            Assert.AreEqual(5, rows[Wheat].childCount);
+            Assert.IsInstanceOf<Button>(rows[Wheat][BuyCell]);
+            Assert.IsInstanceOf<Button>(rows[Wheat][SellCell]);
         }
 
         [Test]
@@ -118,9 +126,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("Cale : 20 / 200 tonneaux", holdLabel.text);
             Assert.AreEqual("0", Text(Wheat, HoldCell));
             Assert.AreEqual("20", Text(Wine, HoldCell));
-            Assert.IsTrue(IsEnabled(Wheat, BuyButton));
-            Assert.IsFalse(IsEnabled(Wheat, SellButton));
-            Assert.IsTrue(IsEnabled(Wine, SellButton));
+            Assert.IsTrue(IsEnabled(Wheat, BuyCell));
+            Assert.IsFalse(IsEnabled(Wheat, SellCell));
+            Assert.IsTrue(IsEnabled(Wine, SellCell));
         }
 
         [Test]
@@ -135,7 +143,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("10", Text(Wheat, HoldCell));
             Assert.AreEqual(market.BuyPriceOf(Wheat).ToString(), Text(Wheat, BuyCell));
             Assert.AreEqual("Cale : 10 / 200 tonneaux", holdLabel.text);
-            Assert.IsTrue(IsEnabled(Wheat, SellButton));
+            Assert.IsTrue(IsEnabled(Wheat, SellCell));
             Assert.Less(treasury.Gold, 10000);
         }
 
@@ -149,7 +157,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(0, hold.BarrelsOf(Wine));
             Assert.AreEqual("20", Text(Wine, StockCell));
-            Assert.IsFalse(IsEnabled(Wine, SellButton));
+            Assert.IsFalse(IsEnabled(Wine, SellCell));
             Assert.Greater(treasury.Gold, 10000);
         }
 
@@ -161,8 +169,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             section.Buy(Wheat, 5);
 
-            Assert.IsFalse(IsEnabled(Wheat, BuyButton));
-            Assert.IsTrue(IsEnabled(Wheat, SellButton));
+            Assert.IsFalse(IsEnabled(Wheat, BuyCell));
+            Assert.IsTrue(IsEnabled(Wheat, SellCell));
         }
 
         [Test]
@@ -170,13 +178,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             hold.TryAdd(Wheat, 5);
             section.Show(market, hold);
-            Assert.IsTrue(IsEnabled(Wheat, BuyButton));
+            Assert.IsTrue(IsEnabled(Wheat, BuyCell));
 
             // The weekly wages, for instance: the section follows the treasury.
             treasury.Withdraw(20000);
 
-            Assert.IsFalse(IsEnabled(Wheat, BuyButton));
-            Assert.IsTrue(IsEnabled(Wheat, SellButton));
+            Assert.IsFalse(IsEnabled(Wheat, BuyCell));
+            Assert.IsTrue(IsEnabled(Wheat, SellCell));
         }
 
         [Test]
@@ -204,6 +212,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual("60", Text(Wheat, StockCell));
             Assert.AreEqual(string.Empty, holdLabel.text);
+            Assert.IsFalse(IsEnabled(Wheat, BuyCell));
+            Assert.IsFalse(IsEnabled(Wheat, SellCell));
         }
 
         [Test]
@@ -238,8 +248,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.DoesNotThrow(() => section.Show(small, hold));
             Assert.AreEqual(CityMarketSection.NoPrice, Text(Wine, BuyCell));
-            Assert.IsFalse(IsEnabled(Wine, BuyButton));
-            Assert.IsFalse(IsEnabled(Wine, SellButton));
+            Assert.IsFalse(IsEnabled(Wine, BuyCell));
+            Assert.IsFalse(IsEnabled(Wine, SellCell));
         }
 
         [TestCase(false, false, 1)]

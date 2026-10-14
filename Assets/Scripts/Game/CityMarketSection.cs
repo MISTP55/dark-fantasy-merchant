@@ -7,12 +7,13 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// The market rows of the city panel: one row per good with the city's stock and its
-    /// prices, and, when it is given the hold of a ship in port, the barrels aboard and
-    /// the buttons that buy and sell. Follows the market, the hold and the treasury.
+    /// prices, and, when it is given the hold of a ship in port, the barrels aboard. The
+    /// prices are the buttons that trade: a click on the buy price buys, one on the sell
+    /// price sells. Follows the market, the hold and the treasury.
     /// </summary>
     public sealed class CityMarketSection
     {
-        /// <summary>On the section while a hold is shown: reveals the hold column and the buttons.</summary>
+        /// <summary>On the section while a hold is shown: reveals the hold column.</summary>
         public const string TradingClass = "market--trading";
 
         /// <summary>Written instead of a buy price when the city has no barrel to sell.</summary>
@@ -23,16 +24,15 @@ namespace DarkFantasyMerchant.Game
         private const string NameCellClass = "market__cell--name";
         private const string NumberCellClass = "market__cell--number";
         private const string TradeCellClass = "market__cell--trade";
-        private const string ButtonClass = "market__button";
+        private const string PriceCellClass = "market__cell--price";
+        private const string PriceClass = "market__price";
 
         private sealed class Row
         {
             public Label Stock;
-            public Label BuyPrice;
-            public Label SellPrice;
+            public Button BuyPrice;
+            public Button SellPrice;
             public Label Held;
-            public Button Sell;
-            public Button Buy;
         }
 
         private readonly VisualElement section;
@@ -149,13 +149,11 @@ namespace DarkFantasyMerchant.Game
             var row = new Row
             {
                 Stock = AddLabel(element, NumberCellClass),
-                BuyPrice = AddLabel(element, NumberCellClass),
-                SellPrice = AddLabel(element, NumberCellClass),
+                BuyPrice = AddPrice(element, evt => Buy(good, BarrelsFor(evt.shiftKey, evt.ctrlKey))),
+                SellPrice = AddPrice(element, evt => Sell(good, BarrelsFor(evt.shiftKey, evt.ctrlKey))),
                 Held = AddLabel(element, NumberCellClass, TradeCellClass),
             };
 
-            row.Sell = AddButton(element, "−", evt => Sell(good, BarrelsFor(evt.shiftKey, evt.ctrlKey)));
-            row.Buy = AddButton(element, "+", evt => Buy(good, BarrelsFor(evt.shiftKey, evt.ctrlKey)));
             rows.Add(row);
             return element;
         }
@@ -174,15 +172,18 @@ namespace DarkFantasyMerchant.Game
             return label;
         }
 
-        // A click event, not Button.clicked: the modifier keys set the quantity.
-        private static Button AddButton(VisualElement parent, string text, EventCallback<ClickEvent> onClick)
+        // A price that trades when clicked. A click event, not Button.clicked: the modifier
+        // keys set the quantity. It is disabled, and then looks like plain text, whenever
+        // that trade is not possible.
+        private static Button AddPrice(VisualElement parent, EventCallback<ClickEvent> onClick)
         {
-            var button = new Button { text = text };
+            var button = new Button();
 
             // Buttons are clicked, not navigated: the keyboard pans the map.
             button.focusable = false;
-            button.AddToClassList(ButtonClass);
-            button.AddToClassList(TradeCellClass);
+            button.AddToClassList(CellClass);
+            button.AddToClassList(PriceCellClass);
+            button.AddToClassList(PriceClass);
             button.RegisterCallback(onClick);
             parent.Add(button);
             return button;
@@ -228,8 +229,9 @@ namespace DarkFantasyMerchant.Game
                 row.SellPrice.text = isInMarket ? TreasuryHudController.FormatNumber(market.SellPriceOf(i)) : NoPrice;
                 row.Held.text = TreasuryHudController.FormatNumber(held);
 
-                row.Sell.SetEnabled(isInMarket && held > 0);
-                row.Buy.SetEnabled(
+                // Without a hold nothing is held and nothing is bought: both prices are only read.
+                row.SellPrice.SetEnabled(isInMarket && held > 0);
+                row.BuyPrice.SetEnabled(
                     hold != null && available > 0 && hold.Free > 0 && treasury.CanAfford(buyPrice));
             }
 

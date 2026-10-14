@@ -23,10 +23,9 @@
                 <ui:VisualElement class="market__row market__row--header">
                     <ui:Label text="Marchandise" class="market__cell market__cell--name" />
                     <ui:Label text="Stock" class="market__cell market__cell--number" />
-                    <ui:Label text="Achat" class="market__cell market__cell--number" />
-                    <ui:Label text="Vente" class="market__cell market__cell--number" />
+                    <ui:Label text="Achat" class="market__cell market__cell--price" />
+                    <ui:Label text="Vente" class="market__cell market__cell--price" />
                     <ui:Label text="Cale" class="market__cell market__cell--number market__cell--trade" />
-                    <ui:VisualElement class="market__buttons-space market__cell--trade" />
                 </ui:VisualElement>
                 <ui:VisualElement name="market-rows" />
             </ui:VisualElement>

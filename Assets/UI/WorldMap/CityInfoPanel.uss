@@ -123,42 +123,53 @@
     -unity-text-align: middle-right;
 }
 
-/* The hold column and the buttons only exist while a ship in port trades. */
+/* The two price columns: a header and, under it, the prices, which are buttons. The
+   header's padding is the button's padding and border, so the texts line up. */
+.market__cell--price {
+    width: 68px;
+    margin: 0 0 0 6px;
+    padding: 0 6px;
+    -unity-text-align: middle-right;
+}
+
+/* A price is the button that trades at it. One that cannot trade is disabled and reads
+   as plain text: a market that is only read, a good the ship does not hold, an empty
+   stock, a full hold or a lack of gold. Its price stays as readable as the others. */
+.market__price {
+    height: 22px;
+    padding: 0 5px;
+    border-width: 1px;
+    border-radius: 0;
+}
+
+/* Under the pointer too: a disabled button is still hovered. */
+.market__price:disabled,
+.market__price:disabled:hover {
+    background-color: rgba(0, 0, 0, 0);
+    border-color: rgba(0, 0, 0, 0);
+    opacity: 1;
+}
+
+.market__price:enabled {
+    background-color: rgba(60, 44, 30, 0.9);
+    border-color: rgb(110, 84, 52);
+}
+
+.market__price:enabled:hover {
+    background-color: rgb(84, 62, 40);
+    border-color: rgb(110, 84, 52);
+}
+
+.market__price:enabled:active {
+    background-color: rgb(110, 84, 52);
+    border-color: rgb(110, 84, 52);
+}
+
+/* The hold column only exists while a ship in port trades. */
 .market__cell--trade {
     display: none;
 }
 
 .market--trading .market__cell--trade {
     display: flex;
-}
-
-.market__button {
-    width: 26px;
-    height: 22px;
-    margin: 0 0 0 6px;
-    padding: 0;
-    color: rgb(222, 210, 188);
-    background-color: rgba(60, 44, 30, 0.9);
-    border-width: 1px;
-    border-radius: 0;
-    border-color: rgb(110, 84, 52);
-    font-size: 15px;
-    -unity-font-style: bold;
-}
-
-.market__button:hover {
-    background-color: rgb(84, 62, 40);
-}
-
-.market__button:active {
-    background-color: rgb(110, 84, 52);
-}
-
-.market__button:disabled {
-    opacity: 0.35;
-}
-
-/* As wide as the two buttons of a row and their margins. */
-.market__buttons-space {
-    width: 64px;
 }
