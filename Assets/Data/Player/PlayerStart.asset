@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 532bb3cacb91324489614809608f5aca, type: 3}
   m_Name: PlayerStart
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.PlayerStartDefinition
-  startingGold: 10000
+  startingGold: 1000000
   startingCrew: 12
