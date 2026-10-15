@@ -26,27 +26,48 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return map;
         }
 
-        // The prices and the consumption are balanced by hand in the assets: the test checks
-        // that they make sense, not what they are.
-        [TestCase(0, "Poisson", GoodCategory.Food)]
-        [TestCase(1, "Fer", GoodCategory.RawMaterial)]
-        [TestCase(2, "Bière", GoodCategory.Food)]
-        [TestCase(3, "Grain", GoodCategory.Food)]
-        [TestCase(4, "Viande", GoodCategory.Food)]
-        [TestCase(5, "Légumes", GoodCategory.Food)]
-        public void TheCatalogue_HasItsGoods_InOrder_WithPricesThatMakeSense(int index, string name, GoodCategory category)
+        // Patrician III's twenty goods, in its order, with its units and base prices.
+        [TestCase(0, "Céréales", GoodCategory.Food, GoodUnit.Bushel, 110)]
+        [TestCase(1, "Viande", GoodCategory.Food, GoodUnit.Bushel, 957)]
+        [TestCase(2, "Poisson", GoodCategory.Food, GoodUnit.Bushel, 440)]
+        [TestCase(3, "Bière", GoodCategory.Food, GoodUnit.Barrel, 34.8)]
+        [TestCase(4, "Sel", GoodCategory.RawMaterial, GoodUnit.Barrel, 28.5)]
+        [TestCase(5, "Miel", GoodCategory.RawMaterial, GoodUnit.Barrel, 110)]
+        [TestCase(6, "Épices", GoodCategory.RawMaterial, GoodUnit.Barrel, 280)]
+        [TestCase(7, "Vin", GoodCategory.RawMaterial, GoodUnit.Barrel, 220)]
+        [TestCase(8, "Étoffe", GoodCategory.RawMaterial, GoodUnit.Barrel, 206.8)]
+        [TestCase(9, "Peaux", GoodCategory.RawMaterial, GoodUnit.Barrel, 676.5)]
+        [TestCase(10, "Huile", GoodCategory.RawMaterial, GoodUnit.Barrel, 82.5)]
+        [TestCase(11, "Bois", GoodCategory.RawMaterial, GoodUnit.Bushel, 55)]
+        [TestCase(12, "Métal", GoodCategory.RawMaterial, GoodUnit.Barrel, 255.6)]
+        [TestCase(13, "Cuir", GoodCategory.RawMaterial, GoodUnit.Barrel, 224)]
+        [TestCase(14, "Laine", GoodCategory.RawMaterial, GoodUnit.Bushel, 880)]
+        [TestCase(15, "Brai", GoodCategory.RawMaterial, GoodUnit.Barrel, 55.6)]
+        [TestCase(16, "Fonte brute", GoodCategory.RawMaterial, GoodUnit.Bushel, 880)]
+        [TestCase(17, "Chanvre", GoodCategory.RawMaterial, GoodUnit.Bushel, 440)]
+        [TestCase(18, "Poterie", GoodCategory.RawMaterial, GoodUnit.Barrel, 171)]
+        [TestCase(19, "Tuiles", GoodCategory.RawMaterial, GoodUnit.Bushel, 79.8)]
+        public void TheCatalogue_HasPatricianIIIsGoods_InOrder(
+            int index, string name, GoodCategory category, GoodUnit unit, double basePrice)
         {
             EconomyDefinition economy = LoadEconomy();
 
-            Assert.AreEqual(6, economy.Goods.Count);
+            Assert.AreEqual(20, economy.Goods.Count);
 
             GoodDefinition good = economy.Goods[index];
             Assert.AreEqual(name, good.DisplayName);
             Assert.AreEqual(category, good.Category);
-            Assert.GreaterOrEqual(good.BasePrice, 1);
+            Assert.AreEqual(unit, good.Unit);
+            Assert.AreEqual(basePrice, good.BasePrice, 1e-9);
+            Assert.GreaterOrEqual(good.WeeklyConsumptionPerThousand, 0d);
             Assert.Greater(good.MaxWorkers, 0);
             Assert.Greater(good.DailyOutputPerWorker, 0d);
-            Assert.Greater(good.WeeklyConsumptionPerThousand, 0d);
+        }
+
+        [Test]
+        public void ABushel_TakesTenBarrels()
+        {
+            Assert.AreEqual(10, LoadEconomy().BarrelsPerBushel);
         }
 
         [Test]

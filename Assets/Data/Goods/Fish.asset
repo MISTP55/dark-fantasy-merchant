@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Poisson
   category: 1
-  basePrice: 500
-  weeklyConsumptionPerThousand: 10
+  unit: 1
+  basePrice: 440
+  weeklyConsumptionPerThousand: 3.08
   maxWorkers: 65
-  dailyOutputPerWorker: 0.0611
+  dailyOutputPerWorker: 0.02316

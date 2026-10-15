@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Viande
   category: 1
-  basePrice: 600
-  weeklyConsumptionPerThousand: 8
+  unit: 1
+  basePrice: 957
+  weeklyConsumptionPerThousand: 1.552
   maxWorkers: 60
-  dailyOutputPerWorker: 0.0529
+  dailyOutputPerWorker: 0.01643

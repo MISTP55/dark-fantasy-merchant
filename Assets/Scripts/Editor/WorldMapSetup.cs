@@ -88,6 +88,7 @@ namespace DarkFantasyMerchant.Editor
                 string assetName,
                 string displayName,
                 GoodCategory category,
+                GoodUnit unit,
                 double basePrice,
                 double weeklyConsumptionPerThousand,
                 int maxWorkers,
@@ -96,6 +97,7 @@ namespace DarkFantasyMerchant.Editor
                 AssetName = assetName;
                 DisplayName = displayName;
                 Category = category;
+                Unit = unit;
                 BasePrice = basePrice;
                 WeeklyConsumptionPerThousand = weeklyConsumptionPerThousand;
                 MaxWorkers = maxWorkers;
@@ -105,24 +107,39 @@ namespace DarkFantasyMerchant.Editor
             public string AssetName { get; }
             public string DisplayName { get; }
             public GoodCategory Category { get; }
+            public GoodUnit Unit { get; }
             public double BasePrice { get; }
             public double WeeklyConsumptionPerThousand { get; }
             public int MaxWorkers { get; }
             public double DailyOutputPerWorker { get; }
         }
 
-        // In the order of the catalogue, which is their order on screen. Category, base price,
-        // what 1 000 inhabitants consume in a week, then the workshop's maximum of workers and
-        // a worker's daily output: the values a good that is missing is created with, which are
-        // then balanced by hand in the asset.
+        // Patrician III's goods, in the order of the catalogue, which is their order on screen.
+        // Category, unit, base price, what 1 000 inhabitants consume in a week, then the
+        // workshop's maximum of workers and a worker's daily output: the values a good that is
+        // missing is created with, which are then balanced by hand in the asset.
         private static readonly SampleGood[] SampleGoods =
         {
-            new SampleGood("Fish", "Poisson", GoodCategory.Food, 12, 10.5, 65, 0.0611),
-            new SampleGood("Iron", "Fer", GoodCategory.RawMaterial, 50, 2.8, 78, 0.1455),
-            new SampleGood("Beer", "Bière", GoodCategory.Food, 50, 50, 68, 0.3337),
-            new SampleGood("Grain", "Grain", GoodCategory.Food, 80, 40, 68, 0.2669),
-            new SampleGood("Meat", "Viande", GoodCategory.Food, 600, 8, 60, 0.0529),
-            new SampleGood("Vegetables", "Légumes", GoodCategory.Food, 100, 30, 60, 0.1869),
+            new SampleGood("Grain", "Céréales", GoodCategory.Food, GoodUnit.Bushel, 110, 4.725, 68, 0.03396),
+            new SampleGood("Meat", "Viande", GoodCategory.Food, GoodUnit.Bushel, 957, 1.552, 60, 0.01643),
+            new SampleGood("Fish", "Poisson", GoodCategory.Food, GoodUnit.Bushel, 440, 3.08, 65, 0.02316),
+            new SampleGood("Beer", "Bière", GoodCategory.Food, GoodUnit.Barrel, 34.8, 29.575, 68, 0.21254),
+            new SampleGood("Salt", "Sel", GoodCategory.RawMaterial, GoodUnit.Barrel, 28.5, 0.35, 54, 0.01029),
+            new SampleGood("Honey", "Miel", GoodCategory.RawMaterial, GoodUnit.Barrel, 110, 5.425, 60, 0.08206),
+            new SampleGood("Spices", "Épices", GoodCategory.RawMaterial, GoodUnit.Barrel, 280, 0.77, 60, 0.02038),
+            new SampleGood("Wine", "Vin", GoodCategory.RawMaterial, GoodUnit.Barrel, 220, 9.24, 93, 0.15780),
+            new SampleGood("Cloth", "Étoffe", GoodCategory.RawMaterial, GoodUnit.Barrel, 206.8, 8.575, 60, 0.22699),
+            new SampleGood("Skins", "Peaux", GoodCategory.RawMaterial, GoodUnit.Barrel, 676.5, 5.25, 72, 0.11581),
+            new SampleGood("Oil", "Huile", GoodCategory.RawMaterial, GoodUnit.Barrel, 82.5, 7.525, 60, 0.19919),
+            new SampleGood("Timber", "Bois", GoodCategory.RawMaterial, GoodUnit.Bushel, 55, 1.96, 48, 0.02594),
+            new SampleGood("Metal", "Métal", GoodCategory.RawMaterial, GoodUnit.Barrel, 255.6, 16.625, 78, 0.19344),
+            new SampleGood("Leather", "Cuir", GoodCategory.RawMaterial, GoodUnit.Barrel, 224, 6.265, 60, 0.09476),
+            new SampleGood("Wool", "Laine", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, 0.875, 50, 0.02779),
+            new SampleGood("Pitch", "Brai", GoodCategory.RawMaterial, GoodUnit.Barrel, 55.6, 0, 26, 0.03846),
+            new SampleGood("PigIron", "Fonte brute", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, 0, 70, 0.01429),
+            new SampleGood("Hemp", "Chanvre", GoodCategory.RawMaterial, GoodUnit.Bushel, 440, 0.089, 62, 0.00228),
+            new SampleGood("Pottery", "Poterie", GoodCategory.RawMaterial, GoodUnit.Barrel, 171, 5.46, 58, 0.14951),
+            new SampleGood("Tiles", "Tuiles", GoodCategory.RawMaterial, GoodUnit.Bushel, 79.8, 0.016, 27, 0.00094),
         };
 
         private readonly struct SampleCity
@@ -165,25 +182,25 @@ namespace DarkFantasyMerchant.Editor
         private static readonly SampleCity[] SampleCities =
         {
             new SampleCity("Sparia", 0.115f, 0.645f, CityAccess.Coastal, CitySize.Town,
-                new[] { "Grain" }, new[] { "Fish", "Beer" },
+                new[] { "Fish", "Salt", "Pitch" }, new[] { "Grain", "Beer" },
                 "Une ville portuaire battue par les vents sur le cap occidental, première terre en vue des navires qui traversent la mer d'Aedean occidentale."),
             new SampleCity("Elforth", 0.196f, 0.609f, CityAccess.Coastal, CitySize.Village,
-                new[] { "Fish", "Vegetables" }, new[] { "Meat" },
+                new[] { "Honey", "Timber", "Spices" }, new[] { "Fish", "Meat" },
                 "Un village de pêcheurs abrité par les bois du sud, connu pour sa morue salée et ses contrebandiers discrets."),
             new SampleCity("Bactfied", 0.374f, 0.554f, CityAccess.Coastal, CitySize.Town,
-                new[] { "Iron", "Beer" }, new[] { "Meat", "Vegetables" },
+                new[] { "Beer", "Metal", "Pottery" }, new[] { "Grain", "Timber" },
                 "Un port marchand animé sur la mer d'Eamiq, où les barges fluviales rencontrent les navires de haute mer."),
             new SampleCity("Hitrun", 0.470f, 0.598f, CityAccess.Coastal, CitySize.Village,
-                new[] { "Meat" }, new[] { "Fish", "Iron", "Grain", "Vegetables" },
+                new[] { "Wool", "Meat", "Tiles" }, new[] { "Grain", "Leather" },
                 "Un village perché au-dessus d'une crique étroite, qui vend laine et pierre aux caboteurs de passage."),
             new SampleCity("Cerbias", 0.554f, 0.500f, CityAccess.Coastal, CitySize.Village,
-                new[] { "Beer", "Vegetables" }, new[] { "Fish", "Meat" },
+                new[] { "Wine", "Oil", "Hemp" }, new[] { "Fish", "Honey" },
                 "Un mouillage isolé à la pointe de la langue de sable méridionale, dernier abri avant le large de la mer de Rakmitag."),
             new SampleCity("Hazer Empire", 0.586f, 0.627f, CityAccess.Coastal, CitySize.Capital,
-                new[] { "Iron" }, new[] { "Fish", "Beer", "Grain", "Meat" },
+                new[] { "Cloth", "PigIron", "Leather" }, new[] { "Beer", "Meat", "Metal" },
                 "La capitale impériale qui garde le détroit, dont les douanes taxent chaque navire en route vers la côte du désert."),
             new SampleCity("Liveria", 0.345f, 0.651f, CityAccess.River, CitySize.Capital,
-                new[] { "Grain" }, new[] { "Iron", "Vegetables" },
+                new[] { "Grain", "Skins" }, new[] { "Timber", "Beer", "Fish" },
                 "Une capitale fluviale hérissée de clochers au cœur des Bois de la Couronne, que l'on ne rejoint qu'en barge."),
         };
 
@@ -535,6 +552,7 @@ namespace DarkFantasyMerchant.Editor
             var serialized = new SerializedObject(good);
             serialized.FindProperty("displayName").stringValue = sample.DisplayName;
             serialized.FindProperty("category").enumValueIndex = (int)sample.Category;
+            serialized.FindProperty("unit").enumValueIndex = (int)sample.Unit;
             serialized.FindProperty("basePrice").doubleValue = sample.BasePrice;
             serialized.FindProperty("weeklyConsumptionPerThousand").doubleValue = sample.WeeklyConsumptionPerThousand;
             serialized.FindProperty("maxWorkers").intValue = sample.MaxWorkers;

@@ -18,8 +18,9 @@ MonoBehaviour:
   access: 0
   size: 0
   efficientGoods:
-  - {fileID: 11400000, guid: e16d4cf6557c96944bd222d7b8d70c9d, type: 2}
-  - {fileID: 11400000, guid: b9131add122b4aeebf9bddd520381956, type: 2}
+  - {fileID: 11400000, guid: a553f4c2b71594a4993bd42d249791f5, type: 2}
+  - {fileID: 11400000, guid: 9a6198f3bd4d114488507974129e40ba, type: 2}
+  - {fileID: 11400000, guid: 00e756b06ca491c4ab15fc26b44160a0, type: 2}
   inefficientGoods:
   - {fileID: 11400000, guid: 610fada3e2af0f94a8f65494caaccba1, type: 2}
-  - {fileID: 11400000, guid: c9607b4c46834ebbacb371dea4d9b561, type: 2}
+  - {fileID: 11400000, guid: bce1ec221f911fe4fbb8d73be43de51b, type: 2}

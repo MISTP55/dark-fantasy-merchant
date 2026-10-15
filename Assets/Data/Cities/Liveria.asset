@@ -19,6 +19,8 @@ MonoBehaviour:
   size: 2
   efficientGoods:
   - {fileID: 11400000, guid: d9bb6e94b66a421687ef25e233f60109, type: 2}
+  - {fileID: 11400000, guid: 3a65d2812ceb57d40b5f455f5cad9518, type: 2}
   inefficientGoods:
-  - {fileID: 11400000, guid: 4aa4ecf3894e5d34b8ade5228cde2e48, type: 2}
-  - {fileID: 11400000, guid: b9131add122b4aeebf9bddd520381956, type: 2}
+  - {fileID: 11400000, guid: c1aee0a6d45237f4f98a31437e2602e4, type: 2}
+  - {fileID: 11400000, guid: e16d4cf6557c96944bd222d7b8d70c9d, type: 2}
+  - {fileID: 11400000, guid: 610fada3e2af0f94a8f65494caaccba1, type: 2}

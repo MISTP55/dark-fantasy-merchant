@@ -18,7 +18,9 @@ MonoBehaviour:
   access: 0
   size: 1
   efficientGoods:
-  - {fileID: 11400000, guid: d9bb6e94b66a421687ef25e233f60109, type: 2}
-  inefficientGoods:
   - {fileID: 11400000, guid: 610fada3e2af0f94a8f65494caaccba1, type: 2}
+  - {fileID: 11400000, guid: 6e7e1dd68eea0924888bedf71fa7be72, type: 2}
+  - {fileID: 11400000, guid: a6f289409860c3845a74f080d558fd10, type: 2}
+  inefficientGoods:
+  - {fileID: 11400000, guid: d9bb6e94b66a421687ef25e233f60109, type: 2}
   - {fileID: 11400000, guid: e16d4cf6557c96944bd222d7b8d70c9d, type: 2}

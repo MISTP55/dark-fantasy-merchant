@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b981e6ce2179f346a4079f5367a73a2, type: 3}
   m_Name: Grain
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
-  displayName: Grain
+  displayName: "C\xE9r\xE9ales"
   category: 1
-  basePrice: 80
-  weeklyConsumptionPerThousand: 40
+  unit: 1
+  basePrice: 110
+  weeklyConsumptionPerThousand: 4.725
   maxWorkers: 68
-  dailyOutputPerWorker: 0.2669
+  dailyOutputPerWorker: 0.03396
