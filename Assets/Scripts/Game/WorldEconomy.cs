@@ -75,6 +75,10 @@ namespace DarkFantasyMerchant.Game
             try
             {
                 MarketPricing pricing = economy.CreatePricing();
+
+                // Not used here, but holds and the AI merchants' planner need the units: an
+                // unusable setting leaves the cities without a market, as the others do.
+                economy.CreateGoodUnits();
                 int daysPerWeek = worldClock.Calendar.DaysPerWeek;
                 FoodGrowth foodGrowth = economy.CreateFoodGrowth(worldClock.Calendar.DaysPerMonth);
 

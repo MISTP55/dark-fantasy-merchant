@@ -388,15 +388,18 @@ namespace DarkFantasyMerchant.Game
             {
                 Debug.LogWarning("ShipsView has no economy: every good takes one barrel of room in a hold.", this);
             }
-            else if (!economy.TryValidateSettings(out string problem))
-            {
-                Debug.LogWarning(
-                    $"ShipsView: the economy cannot give the units of its goods ({problem}); every good takes one barrel of room.",
-                    this);
-            }
             else
             {
-                goodUnits = economy.CreateGoodUnits();
+                try
+                {
+                    goodUnits = economy.CreateGoodUnits();
+                }
+                catch (ArgumentOutOfRangeException exception)
+                {
+                    Debug.LogWarning(
+                        $"ShipsView: the economy cannot give the units of its goods ({exception.Message}); every good takes one barrel of room.",
+                        this);
+                }
             }
 
             return goodUnits;
