@@ -88,7 +88,7 @@ namespace DarkFantasyMerchant.Editor
                 string assetName,
                 string displayName,
                 GoodCategory category,
-                long basePrice,
+                double basePrice,
                 double weeklyConsumptionPerThousand,
                 int maxWorkers,
                 double dailyOutputPerWorker)
@@ -105,7 +105,7 @@ namespace DarkFantasyMerchant.Editor
             public string AssetName { get; }
             public string DisplayName { get; }
             public GoodCategory Category { get; }
-            public long BasePrice { get; }
+            public double BasePrice { get; }
             public double WeeklyConsumptionPerThousand { get; }
             public int MaxWorkers { get; }
             public double DailyOutputPerWorker { get; }
@@ -535,7 +535,7 @@ namespace DarkFantasyMerchant.Editor
             var serialized = new SerializedObject(good);
             serialized.FindProperty("displayName").stringValue = sample.DisplayName;
             serialized.FindProperty("category").enumValueIndex = (int)sample.Category;
-            serialized.FindProperty("basePrice").longValue = sample.BasePrice;
+            serialized.FindProperty("basePrice").doubleValue = sample.BasePrice;
             serialized.FindProperty("weeklyConsumptionPerThousand").doubleValue = sample.WeeklyConsumptionPerThousand;
             serialized.FindProperty("maxWorkers").intValue = sample.MaxWorkers;
             serialized.FindProperty("dailyOutputPerWorker").doubleValue = sample.DailyOutputPerWorker;

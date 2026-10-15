@@ -38,7 +38,7 @@ namespace DarkFantasyMerchant.Core
         /// <paramref name="stock"/>: the base price times the average buy factor from the
         /// stock once the barrel is gone to the stock before, rounded up, at least one coin.
         /// </summary>
-        public long BuyPrice(long basePrice, double stock, StockThresholds thresholds)
+        public long BuyPrice(double basePrice, double stock, StockThresholds thresholds)
         {
             double price = basePrice * BuyCurve.AverageFactor(stock - 1d, stock, thresholds);
 
@@ -51,7 +51,7 @@ namespace DarkFantasyMerchant.Core
         /// stock before to the stock once the barrel is in, rounded down. Buying a barrel and
         /// selling it back never gains gold.
         /// </summary>
-        public long SellPrice(long basePrice, double stock, StockThresholds thresholds)
+        public long SellPrice(double basePrice, double stock, StockThresholds thresholds)
         {
             double price = basePrice * SellCurve.AverageFactor(stock, stock + 1d, thresholds);
 

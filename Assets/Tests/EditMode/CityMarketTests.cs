@@ -389,6 +389,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void MarketGood_RejectsFiguresThatMakeNoSense()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(0, 2, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(-1.5, 2, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(double.NaN, 2, 0, 0));
+            Assert.DoesNotThrow(() => new MarketGood(0.5, 2, 0, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(10, -1, 0, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(10, double.NaN, 0, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(10, 2, -1, 0.1));

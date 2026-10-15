@@ -12,8 +12,8 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("What the good is for. Only the stock of food makes the population of a city grow or decline.")]
         [SerializeField] private GoodCategory category;
 
-        [Tooltip("Gold coins a barrel costs, before the factor of the city's stock (see the economy's price factors).")]
-        [SerializeField, Min(1)] private long basePrice = 10;
+        [Tooltip("Gold coins a unit costs, before the factor of the city's stock (see the economy's price factors). It can be a fraction: prices are rounded to whole coins.")]
+        [SerializeField, Min(0.01f)] private double basePrice = 10d;
 
         [Tooltip("Barrels that 1 000 inhabitants consume in a week.")]
         [FormerlySerializedAs("consumptionPerThousand")]
@@ -29,7 +29,7 @@ namespace DarkFantasyMerchant.Game
 
         public GoodCategory Category => category;
 
-        public long BasePrice => basePrice;
+        public double BasePrice => basePrice;
 
         public double WeeklyConsumptionPerThousand => weeklyConsumptionPerThousand;
 

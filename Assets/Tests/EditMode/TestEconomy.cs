@@ -10,7 +10,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         /// <summary>A good priced from its base price by the economy's curves.</summary>
         public static GoodDefinition CreateGood(
             string displayName,
-            long basePrice,
+            double basePrice,
             double weeklyConsumptionPerThousand,
             GoodCategory category = GoodCategory.Food,
             int maxWorkers = 60,
@@ -22,7 +22,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var serialized = new SerializedObject(good);
             serialized.FindProperty("displayName").stringValue = displayName;
             serialized.FindProperty("category").enumValueIndex = (int)category;
-            serialized.FindProperty("basePrice").longValue = basePrice;
+            serialized.FindProperty("basePrice").doubleValue = basePrice;
             serialized.FindProperty("weeklyConsumptionPerThousand").doubleValue = weeklyConsumptionPerThousand;
             serialized.FindProperty("maxWorkers").intValue = maxWorkers;
             serialized.FindProperty("dailyOutputPerWorker").doubleValue = dailyOutputPerWorker;

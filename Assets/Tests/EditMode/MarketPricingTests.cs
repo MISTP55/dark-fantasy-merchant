@@ -144,6 +144,18 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void ADecimalBasePrice_GivesWholeCoins()
+        {
+            // Beer at 34.8: 34.8 x 1.0125 = 35.235, rounded up; 34.8 x 0.9925 = 34.539, down.
+            Assert.AreEqual(36, Pricing.BuyPrice(34.8, 40, Thresholds));
+            Assert.AreEqual(34, Pricing.SellPrice(34.8, 40, Thresholds));
+
+            // Above T3: 34.8 x 0.6 = 20.88 and 34.8 x 0.5 = 17.4.
+            Assert.AreEqual(21, Pricing.BuyPrice(34.8, 500, Thresholds));
+            Assert.AreEqual(17, Pricing.SellPrice(34.8, 500, Thresholds));
+        }
+
+        [Test]
         public void RejectsMissingCurves()
         {
             Assert.Throws<ArgumentNullException>(() => new MarketPricing(null, TestMarkets.SellCurve));

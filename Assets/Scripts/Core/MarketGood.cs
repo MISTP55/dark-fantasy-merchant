@@ -8,19 +8,20 @@ namespace DarkFantasyMerchant.Core
     /// </summary>
     public readonly struct MarketGood
     {
-        /// <param name="basePrice">Gold per barrel that the factors of the price curves multiply, at least 1.</param>
+        /// <param name="basePrice">Gold per unit that the factors of the price curves multiply, above 0; it can be a fraction.</param>
         /// <param name="dailyConsumptionPerThousand">Barrels 1 000 inhabitants consume in a day; it can be a fraction.</param>
         /// <param name="maxWorkers">Most workers of the city's workshop for the good; 0 for a good the city does not produce.</param>
         /// <param name="dailyOutputPerWorker">Barrels a worker of that workshop makes in a day, its efficiency included.</param>
         /// <param name="isFood">Whether the stock of the good feeds the city: only food makes its population change.</param>
         public MarketGood(
-            long basePrice,
+            double basePrice,
             double dailyConsumptionPerThousand,
             int maxWorkers,
             double dailyOutputPerWorker,
             bool isFood = false)
         {
-            if (basePrice < 1)
+            // The negated comparison also rejects NaN.
+            if (!(basePrice > 0d) || double.IsInfinity(basePrice))
             {
                 throw new ArgumentOutOfRangeException(nameof(basePrice));
             }
@@ -40,7 +41,7 @@ namespace DarkFantasyMerchant.Core
             IsFood = isFood;
         }
 
-        public long BasePrice { get; }
+        public double BasePrice { get; }
 
         public double DailyConsumptionPerThousand { get; }
 
