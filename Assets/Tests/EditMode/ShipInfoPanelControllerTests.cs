@@ -34,10 +34,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void FormatCargoLine_WritesAGoodAndItsBarrels()
+        public void FormatCargoLine_WritesAGoodAndItsQuantity_InItsUnit()
         {
-            Assert.AreEqual("Vin : 20", ShipInfoPanelController.FormatCargoLine("Vin", 20));
-            Assert.AreEqual("Blé : 1 200", ShipInfoPanelController.FormatCargoLine("Blé", 1200));
+            Assert.AreEqual("Vin : 20 tonneaux", ShipInfoPanelController.FormatCargoLine("Vin", 20, GoodUnit.Barrel));
+            Assert.AreEqual("Sel : 1 tonneau", ShipInfoPanelController.FormatCargoLine("Sel", 1, GoodUnit.Barrel));
+            Assert.AreEqual("Céréales : 1 200 boisseaux", ShipInfoPanelController.FormatCargoLine("Céréales", 1200, GoodUnit.Bushel));
         }
     }
 }

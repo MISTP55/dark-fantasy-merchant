@@ -352,7 +352,7 @@ namespace DarkFantasyMerchant.Game
 
                 foreach (GoodDefinition good in worldEconomy.Economy.Goods)
                 {
-                    goodNames.Add(good.DisplayName);
+                    goodNames.Add(GoodUnitText.NameWithUnit(good.DisplayName, good.Unit));
                 }
 
                 Treasury treasury = playerTreasury != null && playerTreasury.IsReady ? playerTreasury.Treasury : null;

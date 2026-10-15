@@ -27,7 +27,9 @@
                     <ui:Label text="Vente" class="market__cell market__cell--price" />
                     <ui:Label text="Cale" class="market__cell market__cell--number market__cell--trade" />
                 </ui:VisualElement>
-                <ui:VisualElement name="market-rows" />
+                <ui:ScrollView class="market__scroll">
+                    <ui:VisualElement name="market-rows" />
+                </ui:ScrollView>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

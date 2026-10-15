@@ -287,7 +287,7 @@ namespace DarkFantasyMerchant.Game
 
             foreach (GoodDefinition good in worldEconomy.Economy.Goods)
             {
-                goodNames.Add(good.DisplayName);
+                goodNames.Add(GoodUnitText.NameWithUnit(good.DisplayName, good.Unit));
             }
 
             citiesTable = new DebugCitiesTable(citiesHeader, citiesRows, citiesTotals, goodNames);

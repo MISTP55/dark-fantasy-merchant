@@ -190,7 +190,7 @@ namespace DarkFantasyMerchant.Game
 
             try
             {
-                var planner = new TradeRoutePlanner(markets, travelTable.Days, stopoverDays);
+                var planner = new TradeRoutePlanner(markets, travelTable.Days, stopoverDays, worldEconomy.Economy.CreateGoodUnits());
                 fleet = new AiMerchantFleet<CityDefinition>(
                     shipsView.Docking,
                     ports,

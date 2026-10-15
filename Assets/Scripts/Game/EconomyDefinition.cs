@@ -19,6 +19,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Days of its consumption a city holds of every good when the game starts, whether it produces it or not.")]
         [SerializeField, Min(0f)] private double startingStockDays = 7d;
 
+        [Tooltip("Barrels of room a bushel takes in a hold: 10 is Patrician III's load.")]
+        [SerializeField, Min(1)] private int barrelsPerBushel = 10;
+
         [Header("Workshops (a good's maximum of workers and output per worker are the good's own)")]
         [Tooltip("Share of a good's output per worker in a city that produces it inefficiently: 0.75 is Patrician III's 768 / 1024.")]
         [SerializeField, Range(0f, 1f)] private double inefficientEfficiency = 0.75d;
@@ -90,6 +93,8 @@ namespace DarkFantasyMerchant.Game
         public IReadOnlyList<GoodDefinition> Goods => goods;
 
         public double StartingStockDays => startingStockDays;
+
+        public int BarrelsPerBushel => barrelsPerBushel;
 
         public double InefficientEfficiency => inefficientEfficiency;
 
@@ -179,7 +184,8 @@ namespace DarkFantasyMerchant.Game
         /// <param name="problem">Which setting is wrong and why, for the console; null when none is.</param>
         public bool TryValidateSettings(out string problem)
         {
-            problem = ProblemOf(() => buyFactors.ToCurve(), "the buy factors")
+            problem = ProblemOf(() => CreateGoodUnits(), "the barrels per bushel")
+                ?? ProblemOf(() => buyFactors.ToCurve(), "the buy factors")
                 ?? ProblemOf(() => sellFactors.ToCurve(), "the sell factors")
                 ?? ProblemOf(() => CreatePricing(), "the sell factors against the buy factors")
                 ?? ProblemOf(() => CreateThresholdRule(), "the stock thresholds")
@@ -233,6 +239,31 @@ namespace DarkFantasyMerchant.Game
         public WorkforceRule CreateWorkforceRule()
         {
             return new WorkforceRule(hiredUpToT0, hiredUpToT1, hiredUpToT2, hiredUpToT3, workersAboveT3, startingWorkforce);
+        }
+
+        /// <summary>Barrels of room a unit of a good takes in a hold: one, or the barrels per bushel.</summary>
+        public int RoomOf(GoodDefinition good)
+        {
+            return good != null && good.Unit == GoodUnit.Bushel ? barrelsPerBushel : 1;
+        }
+
+        /// <summary>The room a unit of each good of the catalogue takes, by index. Throws when the barrels per bushel are under 1.</summary>
+        public GoodUnits CreateGoodUnits()
+        {
+            // Checked even for a catalogue without bushels: the setting is wrong all the same.
+            if (barrelsPerBushel < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(barrelsPerBushel), "A bushel takes at least one barrel of room.");
+            }
+
+            var rooms = new int[goods.Count];
+
+            for (int i = 0; i < goods.Count; i++)
+            {
+                rooms[i] = RoomOf(goods[i]);
+            }
+
+            return new GoodUnits(rooms);
         }
 
         /// <summary>

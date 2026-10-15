@@ -101,6 +101,11 @@
     color: rgb(190, 164, 120);
 }
 
+/* Twenty goods do not fit on a screen: the rows scroll under their header. */
+.market__scroll {
+    max-height: 340px;
+}
+
 .market__cell {
     margin: 0;
     padding: 0;

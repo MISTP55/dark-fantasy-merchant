@@ -263,6 +263,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void ABuyPrice_IsDisabled_WithoutRoomForOneUnit()
+        {
+            // Wheat in bushels of ten barrels: nine barrels of room are not enough for one.
+            var bushelHold = new CargoHold(9, new GoodUnits(new[] { 10, 1 }));
+
+            section.Show(market, bushelHold);
+
+            Assert.IsFalse(IsEnabled(Wheat, BuyCell));
+        }
+
+        [Test]
         public void FormatPopulation_WritesThousandsSeparators()
         {
             Assert.AreEqual("Population : 6\u00A0000", CityInfoPanelController.FormatPopulation(6000));

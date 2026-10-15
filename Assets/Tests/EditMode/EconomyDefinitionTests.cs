@@ -65,6 +65,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(1, fresh.HiredUpToT3);
             Assert.AreEqual(1, fresh.WorkersAboveT3);
             Assert.AreEqual(250, fresh.StartingWorkforce);
+            Assert.AreEqual(10, fresh.BarrelsPerBushel);
             Assert.AreEqual(72d / 17d, fresh.InhabitantsPerWorker, Tolerance);
             Assert.AreEqual(7, fresh.T0Days);
             Assert.AreEqual(14, fresh.T1AddedDays);
@@ -98,6 +99,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.GreaterOrEqual(good.BasePrice, 1);
             Assert.Greater(good.MaxWorkers, 0);
+            Assert.AreEqual(GoodUnit.Barrel, good.Unit);
             Assert.Greater(good.DailyOutputPerWorker, 0d);
             Assert.AreEqual(GoodCategory.RawMaterial, good.Category);
             Assert.AreEqual(0, city.EfficientGoods.Count);
@@ -361,6 +363,32 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsFalse(economy.TryValidateSettings(out string problem));
             StringAssert.Contains("the workforce", problem);
             StringAssert.Contains("workersAboveT3", problem);
+        }
+
+        [Test]
+        public void CreateGoodUnits_GivesABushelTheBarrelsPerBushel()
+        {
+            GoodDefinition grain = Track(TestEconomy.CreateGood("Céréales", 110, 4.725, unit: GoodUnit.Bushel));
+            EconomyDefinition mixed = Track(TestEconomy.CreateEconomy(grain, salt));
+
+            GoodUnits units = mixed.CreateGoodUnits();
+
+            Assert.AreEqual(2, units.Count);
+            Assert.AreEqual(10, units.RoomOf(0));
+            Assert.AreEqual(1, units.RoomOf(1));
+            Assert.AreEqual(10, mixed.RoomOf(grain));
+            Assert.AreEqual(1, mixed.RoomOf(salt));
+        }
+
+        [Test]
+        public void TryValidateSettings_SaysWhenABushelHasNoRoom()
+        {
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty("barrelsPerBushel").intValue = 0;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.IsFalse(economy.TryValidateSettings(out string problem));
+            StringAssert.Contains("barrels per bushel", problem);
         }
 
         [Test]

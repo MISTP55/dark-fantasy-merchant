@@ -101,17 +101,17 @@ namespace DarkFantasyMerchant.Game
             return $"Équipage : {crew.Count} / {crew.Capacity}";
         }
 
-        /// <summary>The hold as the panels write it: "Cale : 60 / 200 tonneaux", the barrels aboard out of the capacity.</summary>
+        /// <summary>The hold as the panels write it: "Cale : 60 / 200 tonneaux", the barrels of room taken out of the capacity.</summary>
         public static string FormatCargo(CargoHold hold)
         {
             return $"Cale : {TreasuryHudController.FormatNumber(hold.Used)} / "
                 + $"{TreasuryHudController.FormatNumber(hold.Capacity)} tonneaux";
         }
 
-        /// <summary>One good of the hold as the panel writes it: "Vin : 20".</summary>
-        public static string FormatCargoLine(string goodName, int barrels)
+        /// <summary>One good of the hold as the panel writes it: "Vin : 20 tonneaux", "Céréales : 3 boisseaux".</summary>
+        public static string FormatCargoLine(string goodName, int quantity, GoodUnit unit)
         {
-            return $"{goodName} : {TreasuryHudController.FormatNumber(barrels)}";
+            return $"{goodName} : {GoodUnitText.FormatQuantity(quantity, unit)}";
         }
 
         private void ShowSelected(Ship ship)
@@ -159,14 +159,14 @@ namespace DarkFantasyMerchant.Game
 
             for (int i = 0; i < economy.Goods.Count; i++)
             {
-                int barrels = shownCargo.UnitsOf(i);
+                int quantity = shownCargo.UnitsOf(i);
 
-                if (barrels < 1 || economy.Goods[i] == null)
+                if (quantity < 1 || economy.Goods[i] == null)
                 {
                     continue;
                 }
 
-                var line = new Label(FormatCargoLine(economy.Goods[i].DisplayName, barrels));
+                var line = new Label(FormatCargoLine(economy.Goods[i].DisplayName, quantity, economy.Goods[i].Unit));
                 line.AddToClassList(CargoLineClass);
                 cargoList.Add(line);
             }

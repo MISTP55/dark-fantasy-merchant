@@ -7,7 +7,7 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// The market rows of the city panel: one row per good with the city's stock and its
-    /// prices, and, when it is given the hold of a ship in port, the barrels aboard. The
+    /// prices, and, when it is given the hold of a ship in port, the units aboard. The
     /// prices are the buttons that trade: a click on the buy price buys, one on the sell
     /// price sells. Follows the market, the hold and the treasury.
     /// </summary>
@@ -232,7 +232,7 @@ namespace DarkFantasyMerchant.Game
                 // Without a hold nothing is held and nothing is bought: both prices are only read.
                 row.SellPrice.SetEnabled(isInMarket && held > 0);
                 row.BuyPrice.SetEnabled(
-                    hold != null && available > 0 && hold.Free > 0 && treasury.CanAfford(buyPrice));
+                    hold != null && available > 0 && hold.RoomFor(i) > 0 && treasury.CanAfford(buyPrice));
             }
 
             holdLabel.text = hold != null ? ShipInfoPanelController.FormatCargo(hold) : string.Empty;

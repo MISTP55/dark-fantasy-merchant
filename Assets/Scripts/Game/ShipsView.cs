@@ -36,6 +36,11 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Optional. Without it, ships sail in real time.")]
         [SerializeField] private WorldClock worldClock;
 
+        [Tooltip("The economy whose goods ships carry: it sets the room a unit of each good takes in a hold. Without it, every unit takes one barrel.")]
+        [SerializeField] private EconomyDefinition economy;
+
+        private GoodUnits goodUnits;
+
         private readonly List<Ship> ships = new List<Ship>();
         private readonly List<Vector2> shipWorldPositions = new List<Vector2>();
         private readonly List<ShipView> views = new List<ShipView>();
@@ -356,7 +361,7 @@ namespace DarkFantasyMerchant.Game
 
             // With a pathfinder, a ship that starts on a city starts on the water beside it.
             // The Min attribute only constrains the Inspector, not the asset file.
-            var cargo = new CargoHold(Mathf.Max(0, definition.CargoCapacity));
+            var cargo = new CargoHold(Mathf.Max(0, definition.CargoCapacity), GoodUnitsOfTheEconomy());
             var ship = new Ship(mapView.Projection, position, definition.Speed, crew, navigation, cargo);
             ShipView view = Instantiate(shipPrefab, transform);
             view.Initialize(ship, definition, displayName, tint);
@@ -367,6 +372,34 @@ namespace DarkFantasyMerchant.Game
             views.Add(view);
             displayNames.Add(displayName);
             return ship;
+        }
+
+        // Made once, on the first ship: the economy is an asset and does not change in a game.
+        private GoodUnits GoodUnitsOfTheEconomy()
+        {
+            if (goodUnits != null)
+            {
+                return goodUnits;
+            }
+
+            goodUnits = GoodUnits.AllBarrels;
+
+            if (economy == null)
+            {
+                Debug.LogWarning("ShipsView has no economy: every good takes one barrel of room in a hold.", this);
+            }
+            else if (!economy.TryValidateSettings(out string problem))
+            {
+                Debug.LogWarning(
+                    $"ShipsView: the economy cannot give the units of its goods ({problem}); every good takes one barrel of room.",
+                    this);
+            }
+            else
+            {
+                goodUnits = economy.CreateGoodUnits();
+            }
+
+            return goodUnits;
         }
 
         // A ship in port is not on the map: it is neither shown, hovered nor selected
