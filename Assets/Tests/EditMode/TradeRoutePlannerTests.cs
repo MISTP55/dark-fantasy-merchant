@@ -11,7 +11,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
         // Days of consumption a market starts with. T1 is 30 days.
         private const double Empty = 0d;
-        private const double AtTarget = 30d;
+        private const double AtT1 = 30d;
         private const double Surplus = 60d;
 
         // Two goods, 2 barrels a day each: 60 barrels at T1, 120 in surplus, above T3.
@@ -85,9 +85,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void ItCarriesTheSurplusToTheShortage()
         {
-            CityMarket source = Market(Surplus, AtTarget);
-            CityMarket shortage = Market(Empty, AtTarget);
-            CityMarket neutral = Market(AtTarget, AtTarget);
+            CityMarket source = Market(Surplus, AtT1);
+            CityMarket shortage = Market(Empty, AtT1);
+            CityMarket neutral = Market(AtT1, AtT1);
             var planner = new TradeRoutePlanner(new[] { source, neutral, shortage }, Days(3, 1d), 1d);
 
             Assert.IsTrue(planner.TryPlanTrade(0, 200, null, out TradePlan plan));
@@ -103,8 +103,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void LoadingStopsWhenTheNextBarrelNoLongerPays()
         {
-            CityMarket source = Market(Surplus, AtTarget);
-            CityMarket shortage = Market(Empty, AtTarget);
+            CityMarket source = Market(Surplus, AtT1);
+            CityMarket shortage = Market(Empty, AtT1);
             var planner = new TradeRoutePlanner(new[] { source, shortage }, Days(2, 1d), 1d);
 
             planner.TryPlanTrade(0, 200, null, out TradePlan plan);
@@ -120,7 +120,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void LoadingStopsAtTheCapacity()
         {
             var planner = new TradeRoutePlanner(
-                new[] { Market(Surplus, AtTarget), Market(Empty, AtTarget) }, Days(2, 1d), 1d);
+                new[] { Market(Surplus, AtT1), Market(Empty, AtT1) }, Days(2, 1d), 1d);
 
             planner.TryPlanTrade(0, 7, null, out TradePlan plan);
 
@@ -179,7 +179,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             double[,] days = Days(3, 1d);
             SetDays(days, 0, 1, 3d);
             var planner = new TradeRoutePlanner(
-                new[] { Market(Surplus, AtTarget), Market(Empty, AtTarget), Market(Empty, AtTarget) }, days, 1d);
+                new[] { Market(Surplus, AtT1), Market(Empty, AtT1), Market(Empty, AtT1) }, days, 1d);
 
             planner.TryPlanTrade(0, 200, null, out TradePlan plan);
 
@@ -195,7 +195,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             double[,] days = Days(3, 1d);
             SetDays(days, 0, 2, double.PositiveInfinity);
             var planner = new TradeRoutePlanner(
-                new[] { Market(Surplus, AtTarget), Market(10d, AtTarget), Market(Empty, AtTarget) }, days, 1d);
+                new[] { Market(Surplus, AtT1), Market(10d, AtT1), Market(Empty, AtT1) }, days, 1d);
 
             Assert.IsTrue(planner.TryPlanTrade(0, 200, null, out TradePlan plan));
             Assert.AreEqual(1, plan.Destination);
@@ -207,7 +207,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             double[,] days = Days(3, 1d);
             SetDays(days, 0, 2, 3d);
             var planner = new TradeRoutePlanner(
-                new[] { Market(Surplus, AtTarget), Market(Empty, AtTarget), Market(Empty, AtTarget) }, days, 1d);
+                new[] { Market(Surplus, AtT1), Market(Empty, AtT1), Market(Empty, AtT1) }, days, 1d);
             var incoming = new int[3, 2];
             incoming[1, Fish] = 200;
 
@@ -220,7 +220,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void WhenNothingPays_ThereIsNoTrade()
         {
             var planner = new TradeRoutePlanner(
-                new[] { Market(AtTarget, AtTarget), Market(AtTarget, AtTarget) }, Days(2, 1d), 1d);
+                new[] { Market(AtT1, AtT1), Market(AtT1, AtT1) }, Days(2, 1d), 1d);
 
             Assert.IsFalse(planner.TryPlanTrade(0, 200, null, out TradePlan plan));
             Assert.AreEqual(0, plan.TotalBarrels);
@@ -249,7 +249,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void WithoutRoom_ThereIsNoTrade()
         {
             var planner = new TradeRoutePlanner(
-                new[] { Market(Surplus, AtTarget), Market(Empty, AtTarget) }, Days(2, 1d), 1d);
+                new[] { Market(Surplus, AtT1), Market(Empty, AtT1) }, Days(2, 1d), 1d);
 
             Assert.IsFalse(planner.TryPlanTrade(0, 0, null, out _));
         }
@@ -258,7 +258,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void ATripOfNoTime_IsStillCompared()
         {
             var planner = new TradeRoutePlanner(
-                new[] { Market(Surplus, AtTarget), Market(Empty, AtTarget) }, Days(2, 0d), 0d);
+                new[] { Market(Surplus, AtT1), Market(Empty, AtT1) }, Days(2, 0d), 0d);
 
             Assert.IsTrue(planner.TryPlanTrade(0, 200, null, out TradePlan plan));
             Assert.AreEqual(1, plan.Destination);
@@ -282,7 +282,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // Nothing to buy here; port 1 has a surplus that port 2 lacks.
             var planner = new TradeRoutePlanner(
-                new[] { Market(Empty, AtTarget), Market(Surplus, AtTarget), Market(Empty, AtTarget) }, Days(3, 1d), 1d);
+                new[] { Market(Empty, AtT1), Market(Surplus, AtT1), Market(Empty, AtT1) }, Days(3, 1d), 1d);
 
             Assert.IsFalse(planner.TryPlanTrade(0, 200, null, out _));
             Assert.IsTrue(planner.TryPlanRelocation(0, 200, null, null, out int destination));
@@ -295,7 +295,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             double[,] days = Days(3, 1d);
             SetDays(days, 0, 1, double.PositiveInfinity);
             var planner = new TradeRoutePlanner(
-                new[] { Market(Empty, AtTarget), Market(Surplus, AtTarget), Market(Empty, AtTarget) }, days, 1d);
+                new[] { Market(Empty, AtT1), Market(Surplus, AtT1), Market(Empty, AtT1) }, days, 1d);
 
             Assert.IsFalse(planner.TryPlanRelocation(0, 200, null, null, out _));
         }
@@ -307,7 +307,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var planner = new TradeRoutePlanner(
                 new[]
                 {
-                    Market(Empty, AtTarget), Market(Surplus, AtTarget), Market(Empty, AtTarget), Market(AtTarget, AtTarget),
+                    Market(Empty, AtT1), Market(Surplus, AtT1), Market(Empty, AtT1), Market(AtT1, AtT1),
                 },
                 Days(4, 1d),
                 1d);
@@ -327,7 +327,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // Two days to the shortage and one of stopover.
             var planner = new TradeRoutePlanner(
-                new[] { Market(Empty, AtTarget), Market(Surplus, AtTarget), Market(Empty, AtTarget) }, Days(3, 2d), 1d);
+                new[] { Market(Empty, AtT1), Market(Surplus, AtT1), Market(Empty, AtT1) }, Days(3, 2d), 1d);
 
             Assert.IsTrue(planner.TryPlanTrade(1, 200, null, out TradePlan trade));
             Assert.AreEqual(trade.Profit / 3d, trade.ProfitPerDay, 1e-9);
@@ -341,7 +341,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void RejectsBadArguments()
         {
-            CityMarket[] markets = { Market(Surplus, AtTarget), Market(Empty, AtTarget) };
+            CityMarket[] markets = { Market(Surplus, AtT1), Market(Empty, AtT1) };
             var planner = new TradeRoutePlanner(markets, Days(2, 1d), 1d);
 
             Assert.Throws<ArgumentNullException>(() => new TradeRoutePlanner(null, Days(2, 1d), 1d));

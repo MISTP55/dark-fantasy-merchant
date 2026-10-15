@@ -23,14 +23,14 @@ namespace DarkFantasyMerchant.Core
         private readonly MarketWeekLog weekLog;
         private readonly FoodGrowth foodGrowth;
 
-        /// <param name="thresholds">How the stock thresholds of a good, at which its prices are given, follow what the city consumes and produces of it.</param>
+        /// <param name="thresholdRule">How the stock thresholds of a good, at which its prices are given, follow what the city consumes and produces of it.</param>
         /// <param name="startingDays">Days of consumption the city holds of every good when the game starts.</param>
         /// <param name="daysPerWeek">Days of the calendar's week, over which the weekly figures are given.</param>
         /// <param name="population">The inhabitants of the city, who set what it consumes.</param>
         /// <param name="foodGrowth">How food changes the population. Without it, the population stays what it is.</param>
         public CityMarket(
             IReadOnlyList<MarketGood> goods,
-            ThresholdRule thresholds,
+            ThresholdRule thresholdRule,
             double startingDays,
             MarketPricing pricing,
             int daysPerWeek,
@@ -42,7 +42,7 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentNullException(nameof(goods));
             }
 
-            thresholdRule = thresholds ?? throw new ArgumentNullException(nameof(thresholds));
+            this.thresholdRule = thresholdRule ?? throw new ArgumentNullException(nameof(thresholdRule));
 
             // The negated comparisons also reject NaN.
             if (!(startingDays >= 0d) || double.IsInfinity(startingDays))
