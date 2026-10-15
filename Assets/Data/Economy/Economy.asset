@@ -20,10 +20,14 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c9607b4c46834ebbacb371dea4d9b561, type: 2}
   - {fileID: 11400000, guid: b9131add122b4aeebf9bddd520381956, type: 2}
   startingStockDays: 7
-  efficientProductionRate: 2
-  efficientCeilingDays: 60
-  inefficientProductionRate: 1.5
-  inefficientCeilingDays: 36
+  inefficientEfficiency: 0.75
+  hiredUpToT0: 16
+  hiredUpToT1: 8
+  hiredUpToT2: 4
+  hiredUpToT3: 1
+  workersAboveT3: 1
+  startingWorkforce: 250
+  inhabitantsPerWorker: 4.235294117647059
   t0Days: 7
   t1AddedDays: 14
   t2ProductionDays: 10

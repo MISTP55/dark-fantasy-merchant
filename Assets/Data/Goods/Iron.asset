@@ -16,3 +16,5 @@ MonoBehaviour:
   category: 0
   basePrice: 300
   weeklyConsumptionPerThousand: 25
+  maxWorkers: 78
+  dailyOutputPerWorker: 0.1455
