@@ -11,17 +11,18 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Iron = 1;
 
         // Children of a row, in order: the city, its population, its growth in a month and
-        // since the start, then four cells per good.
+        // since the start, then five cells per good.
         private const int NameCell = 0;
         private const int PopulationCell = 1;
         private const int GrowthCell = 2;
         private const int GrowthSinceStartCell = 3;
         private const int FirstGoodCell = 4;
-        private const int CellsPerGood = 4;
+        private const int CellsPerGood = 5;
         private const int Stock = 0;
         private const int Production = 1;
         private const int Consumption = 2;
         private const int Net = 3;
+        private const int Workers = 4;
 
         private VisualElement header;
         private VisualElement rows;
@@ -109,6 +110,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("Prod.", ((Label)header[1][FirstGoodCell + Production]).text);
             Assert.AreEqual("Conso.", ((Label)header[1][FirstGoodCell + Consumption]).text);
             Assert.AreEqual("Net", ((Label)header[1][FirstGoodCell + CellsPerGood + Net]).text);
+            Assert.AreEqual("Ouv.", ((Label)header[1][FirstGoodCell + Workers]).text);
         }
 
         [Test]
@@ -327,6 +329,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("60", Text(0, Fish, Stock));
             Assert.AreEqual(DebugCitiesTable.NoFigure, Text(0, Iron, Stock));
             Assert.AreEqual(DebugCitiesTable.NoFigure, Text(0, Iron, Net));
+            Assert.AreEqual(DebugCitiesTable.NoFigure, Text(0, Iron, Workers));
         }
 
         [Test]
@@ -340,6 +343,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("0", Total(Fish, Stock));
             Assert.AreEqual("0,0 (0,0)", Total(Fish, Production));
             Assert.AreEqual("0,0 (0,0)", Total(Iron, Net));
+            Assert.AreEqual(DebugCitiesTable.NoFigure, Total(Fish, Workers));
         }
 
         [Test]
@@ -404,6 +408,48 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("120", Total(Fish, Stock));
             Assert.AreEqual("60", Total(Iron, Stock));
             Assert.AreEqual("14,0 (0,0)", Total(Iron, Consumption));
+        }
+
+        [Test]
+        public void ARow_WritesTheWorkersOfEveryWorkshop()
+        {
+            table.AddCity("Sparia", market);
+
+            // Fish is not produced; iron has a full workshop of 30.
+            Assert.AreEqual(DebugCitiesTable.NoFigure, Text(0, Fish, Workers));
+            Assert.AreEqual("30/30", Text(0, Iron, Workers));
+        }
+
+        [Test]
+        public void WhileShown_TheWorkersFollowTheMarket()
+        {
+            table.AddCity("Sparia", market);
+            table.Show();
+            market.Put(Iron, 100);
+
+            market.StartDay();
+
+            // 158 iron once consumed, above T3: the workshop keeps one worker.
+            Assert.AreEqual("1/30", Text(0, Iron, Workers));
+        }
+
+        [Test]
+        public void TheTotals_SumTheWorkersAndTheirMaxima()
+        {
+            var other = new CityMarket(
+                new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 40, 0.1) },
+                TestMarkets.Thresholds,
+                new WorkforceRule(16, 8, 4, 1, 1, 10),
+                30,
+                TestMarkets.Pricing,
+                7,
+                new CityPopulation(1000));
+
+            table.AddCity("Sparia", market);
+            table.AddCity("Elforth", other);
+
+            Assert.AreEqual("40/70", Total(Iron, Workers));
+            Assert.AreEqual(DebugCitiesTable.NoFigure, Total(Fish, Workers));
         }
 
         [Test]

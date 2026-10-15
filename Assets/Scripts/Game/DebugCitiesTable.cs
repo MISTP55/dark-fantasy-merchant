@@ -11,6 +11,7 @@ namespace DarkFantasyMerchant.Game
     /// at which it grows or declines in a month, how much it has grown or declined since
     /// the game started and, for every good, its stock and what it produces, consumes and
     /// gains in a week, the nominal figure first and the one of the last days in brackets,
+    /// the workers of its workshop over their maximum,
     /// and a last row with the total of every column. Follows the markets while it is shown.
     /// </summary>
     public sealed class DebugCitiesTable
@@ -34,6 +35,7 @@ namespace DarkFantasyMerchant.Game
         private const string GrowthSinceStartCellClass = "debug-cities__cell--growth-since-start";
         private const string StockCellClass = "debug-cities__cell--stock";
         private const string FigureCellClass = "debug-cities__cell--figure";
+        private const string WorkersCellClass = "debug-cities__cell--workers";
         private const string CityGroupClass = "debug-cities__cell--city-group";
         private const string GoodGroupClass = "debug-cities__cell--good-group";
 
@@ -50,6 +52,7 @@ namespace DarkFantasyMerchant.Game
             public Label Production;
             public Label Consumption;
             public Label Net;
+            public Label Workers;
         }
 
         private sealed class Row
@@ -135,6 +138,12 @@ namespace DarkFantasyMerchant.Game
             }
 
             return rounded < 0d ? $"<color={NegativeColor}>{text}</color>" : text;
+        }
+
+        /// <summary>Workers as the table writes them: "45/60", or a dash where no workshop can have any.</summary>
+        public static string FormatWorkers(long workers, long maxWorkers)
+        {
+            return maxWorkers > 0 ? $"{workers}/{maxWorkers}" : NoFigure;
         }
 
         /// <summary>A rate as the table writes it: "+2,5 %" or "-10,0 %", coloured, or a plain "0,0 %".</summary>
@@ -256,6 +265,7 @@ namespace DarkFantasyMerchant.Game
                     cells.Production.text = NoFigure;
                     cells.Consumption.text = NoFigure;
                     cells.Net.text = NoFigure;
+                    cells.Workers.text = NoFigure;
                     continue;
                 }
 
@@ -265,7 +275,9 @@ namespace DarkFantasyMerchant.Game
                     market.NominalWeeklyProductionOf(i),
                     market.NominalWeeklyConsumptionOf(i),
                     market.RecentProductionOf(i),
-                    market.RecentConsumptionOf(i));
+                    market.RecentConsumptionOf(i),
+                    market.WorkersOf(i),
+                    market.MaxWorkersOf(i));
             }
         }
 
@@ -300,6 +312,8 @@ namespace DarkFantasyMerchant.Game
                 double nominalConsumption = 0d;
                 double recentProduction = 0d;
                 double recentConsumption = 0d;
+                long workers = 0;
+                long maxWorkers = 0;
 
                 foreach (Row row in rows)
                 {
@@ -317,9 +331,19 @@ namespace DarkFantasyMerchant.Game
                     nominalConsumption += market.NominalWeeklyConsumptionOf(i);
                     recentProduction += market.RecentProductionOf(i);
                     recentConsumption += market.RecentConsumptionOf(i);
+                    workers += market.WorkersOf(i);
+                    maxWorkers += market.MaxWorkersOf(i);
                 }
 
-                Write(totalGoods[i], stock, nominalProduction, nominalConsumption, recentProduction, recentConsumption);
+                Write(
+                    totalGoods[i],
+                    stock,
+                    nominalProduction,
+                    nominalConsumption,
+                    recentProduction,
+                    recentConsumption,
+                    workers,
+                    maxWorkers);
             }
         }
 
@@ -329,13 +353,16 @@ namespace DarkFantasyMerchant.Game
             double nominalProduction,
             double nominalConsumption,
             double recentProduction,
-            double recentConsumption)
+            double recentConsumption,
+            long workers,
+            long maxWorkers)
         {
             cells.Stock.text = TreasuryHudController.FormatNumber(stock);
             cells.Production.text = FormatFigure(nominalProduction, recentProduction);
             cells.Consumption.text = FormatFigure(nominalConsumption, recentConsumption);
             cells.Net.text = $"{FormatNet(nominalProduction - nominalConsumption)} "
                 + $"({FormatNet(recentProduction - recentConsumption)})";
+            cells.Workers.text = FormatWorkers(workers, maxWorkers);
         }
 
         private static GoodCells[] AddGoodCells(VisualElement row, int goodCount)
@@ -350,6 +377,7 @@ namespace DarkFantasyMerchant.Game
                     Production = AddLabel(row, FigureCellClass),
                     Consumption = AddLabel(row, FigureCellClass),
                     Net = AddLabel(row, FigureCellClass),
+                    Workers = AddLabel(row, WorkersCellClass),
                 };
             }
 
@@ -379,6 +407,7 @@ namespace DarkFantasyMerchant.Game
                 AddLabel(columns, FigureCellClass).text = "Prod.";
                 AddLabel(columns, FigureCellClass).text = "Conso.";
                 AddLabel(columns, FigureCellClass).text = "Net";
+                AddLabel(columns, WorkersCellClass).text = "Ouv.";
             }
 
             header.Add(groups);

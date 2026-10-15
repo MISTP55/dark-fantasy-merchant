@@ -83,14 +83,18 @@
     width: 140px;
 }
 
+.debug-cities__cell--workers {
+    width: 70px;
+}
+
 /* As wide as the name, the population and its two growths. */
 .debug-cities__cell--city-group {
     width: 470px;
 }
 
-/* As wide as the stock and the three figures of a good. */
+/* As wide as the stock, the three figures and the workers of a good. */
 .debug-cities__row--header .debug-cities__cell--good-group {
-    width: 500px;
+    width: 570px;
     border-left-width: 1px;
     border-left-color: rgb(110, 84, 52);
     color: rgb(240, 226, 196);
