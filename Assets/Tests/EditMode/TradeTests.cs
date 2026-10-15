@@ -31,7 +31,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             TradeResult result = Trade.Buy(market, hold, treasury, Good, 1);
 
-            Assert.AreEqual(1, result.Barrels);
+            Assert.AreEqual(1, result.Units);
             Assert.AreEqual(price, result.Gold);
             Assert.AreEqual(59, market.AvailableOf(Good));
             Assert.AreEqual(1, hold.UnitsOf(Good));
@@ -51,7 +51,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             TradeResult result = Trade.Buy(market, hold, treasury, Good, 30);
 
-            Assert.AreEqual(30, result.Barrels);
+            Assert.AreEqual(30, result.Units);
             Assert.AreEqual(expected, result.Gold);
             Assert.Greater(result.Gold, 30 * first);
             Assert.AreEqual(10000 - expected, treasury.Gold);
@@ -62,7 +62,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             TradeResult result = Trade.Buy(market, hold, treasury, Good, 100);
 
-            Assert.AreEqual(60, result.Barrels);
+            Assert.AreEqual(60, result.Units);
             Assert.AreEqual(0, market.AvailableOf(Good));
             Assert.AreEqual(60, hold.UnitsOf(Good));
         }
@@ -74,7 +74,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             TradeResult result = Trade.Buy(market, hold, treasury, Good, 100);
 
-            Assert.AreEqual(5, result.Barrels);
+            Assert.AreEqual(5, result.Units);
             Assert.AreEqual(0, hold.Free);
             Assert.AreEqual(55, market.AvailableOf(Good));
         }
@@ -88,7 +88,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             TradeResult result = Trade.Buy(market, hold, treasury, Good, 100);
 
-            Assert.AreEqual(2, result.Barrels);
+            Assert.AreEqual(2, result.Units);
             Assert.AreEqual(two, result.Gold);
             Assert.AreEqual(three - 1 - two, treasury.Gold);
             Assert.IsFalse(treasury.IsInDebt);
@@ -101,7 +101,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             TradeResult result = Trade.Buy(market, hold, treasury, Good, 10);
 
-            Assert.AreEqual(0, result.Barrels);
+            Assert.AreEqual(0, result.Units);
             Assert.AreEqual(0, result.Gold);
             Assert.AreEqual(-50, treasury.Gold);
             Assert.AreEqual(60, market.AvailableOf(Good));
@@ -115,7 +115,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             TradeResult result = Trade.Sell(market, hold, treasury, Good, 3);
 
-            Assert.AreEqual(3, result.Barrels);
+            Assert.AreEqual(3, result.Units);
             Assert.AreEqual(expected, result.Gold);
             Assert.AreEqual(2, hold.UnitsOf(Good));
             Assert.AreEqual(63, market.AvailableOf(Good));
@@ -129,7 +129,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             TradeResult result = Trade.Sell(market, hold, treasury, Good, 100);
 
-            Assert.AreEqual(2, result.Barrels);
+            Assert.AreEqual(2, result.Units);
             Assert.AreEqual(0, hold.UnitsOf(Good));
         }
 
@@ -141,7 +141,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             TradeResult result = Trade.Sell(market, hold, treasury, Good, 10);
 
-            Assert.AreEqual(10, result.Barrels);
+            Assert.AreEqual(10, result.Units);
             Assert.AreEqual(-50 + result.Gold, treasury.Gold);
             Assert.Greater(result.Gold, 0);
         }
@@ -194,7 +194,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             TradeResult result = Trade.Sell(market, hold, treasury, Good, 5);
 
-            Assert.AreEqual(0, result.Barrels);
+            Assert.AreEqual(0, result.Units);
             Assert.AreEqual(0, changes);
         }
 
@@ -210,7 +210,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             TradeResult result = Trade.Buy(market, hold, Good, 30);
 
-            Assert.AreEqual(30, result.Barrels);
+            Assert.AreEqual(30, result.Units);
             Assert.AreEqual(expected, result.Gold);
             Assert.AreEqual(30, market.AvailableOf(Good));
             Assert.AreEqual(30, hold.UnitsOf(Good));
@@ -219,12 +219,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void BuyWithoutATreasury_StopsAtTheStockAndAtTheHold()
         {
-            Assert.AreEqual(60, Trade.Buy(market, hold, Good, 100).Barrels);
+            Assert.AreEqual(60, Trade.Buy(market, hold, Good, 100).Units);
 
             market.Put(Good, 60);
             hold = new CargoHold(5);
 
-            Assert.AreEqual(5, Trade.Buy(market, hold, Good, 100).Barrels);
+            Assert.AreEqual(5, Trade.Buy(market, hold, Good, 100).Units);
         }
 
         [Test]
@@ -235,7 +235,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             TradeResult result = Trade.Sell(market, hold, Good, 3);
 
-            Assert.AreEqual(3, result.Barrels);
+            Assert.AreEqual(3, result.Units);
             Assert.AreEqual(expected, result.Gold);
             Assert.AreEqual(2, hold.UnitsOf(Good));
             Assert.AreEqual(63, market.AvailableOf(Good));
@@ -246,8 +246,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             hold.TryAdd(Good, 2);
 
-            Assert.AreEqual(2, Trade.Sell(market, hold, Good, 100).Barrels);
-            Assert.AreEqual(0, Trade.Sell(market, hold, Good, 100).Barrels);
+            Assert.AreEqual(2, Trade.Sell(market, hold, Good, 100).Units);
+            Assert.AreEqual(0, Trade.Sell(market, hold, Good, 100).Units);
         }
 
         [Test]
@@ -280,6 +280,33 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => Trade.Buy(market, hold, treasury, Good, barrels));
             Assert.Throws<ArgumentOutOfRangeException>(() => Trade.Sell(market, hold, treasury, Good, barrels));
+        }
+
+        [Test]
+        public void Buy_StopsWhenNotOneBushelFits()
+        {
+            // The good counted in bushels of ten barrels; nine barrels of room left.
+            hold = new CargoHold(29, new GoodUnits(new[] { 10 }));
+
+            TradeResult result = Trade.Buy(market, hold, treasury, Good, 10);
+
+            Assert.AreEqual(2, result.Units);
+            Assert.AreEqual(9, hold.Free);
+            Assert.AreEqual(0, Trade.Buy(market, hold, treasury, Good, 1).Units);
+            Assert.AreEqual(0, Trade.Buy(market, hold, Good, 1).Units);
+        }
+
+        [Test]
+        public void SellingBushels_FreesTheirRoom()
+        {
+            hold = new CargoHold(200, new GoodUnits(new[] { 10 }));
+            Trade.Buy(market, hold, treasury, Good, 5);
+
+            TradeResult result = Trade.Sell(market, hold, treasury, Good, 3);
+
+            Assert.AreEqual(3, result.Units);
+            Assert.AreEqual(2, hold.UnitsOf(Good));
+            Assert.AreEqual(180, hold.Free);
         }
 
         [Test]

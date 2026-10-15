@@ -3,14 +3,14 @@ namespace DarkFantasyMerchant.Core
     /// <summary>What a purchase or a sale came to: it can be less than what was asked for.</summary>
     public readonly struct TradeResult
     {
-        public TradeResult(int barrels, long gold)
+        public TradeResult(int units, long gold)
         {
-            Barrels = barrels;
+            Units = units;
             Gold = gold;
         }
 
-        /// <summary>Barrels that changed hands; zero when nothing could be traded.</summary>
-        public int Barrels { get; }
+        /// <summary>Units of the good that changed hands, barrels or bushels; zero when nothing could be traded.</summary>
+        public int Units { get; }
 
         /// <summary>Gold paid for a purchase, or received for a sale.</summary>
         public long Gold { get; }
