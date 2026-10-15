@@ -30,12 +30,15 @@ namespace DarkFantasyMerchant.Core
             RequireNotNegative(t1AddedDays, nameof(t1AddedDays));
             RequireNotNegative(t2ProductionDays, nameof(t2ProductionDays));
 
-            // The negated comparisons also reject NaN.
-            if (!(t0Floor > 0d) || !(t1Floor >= t0Floor) || !(t2Floor >= t1Floor) || !(t3Floor >= t2Floor)
-                || double.IsInfinity(t3Floor))
+            // The negated comparison also rejects NaN.
+            if (!(t0Floor > 0d) || double.IsInfinity(t0Floor))
             {
-                throw new ArgumentOutOfRangeException(nameof(t0Floor), "Floors are above 0, finite and in order.");
+                throw new ArgumentOutOfRangeException(nameof(t0Floor), "The floor of T0 is above 0 and finite.");
             }
+
+            RequireFloor(t1Floor, nameof(t1Floor), "T1", t0Floor, "T0");
+            RequireFloor(t2Floor, nameof(t2Floor), "T2", t1Floor, "T1");
+            RequireFloor(t3Floor, nameof(t3Floor), "T3", t2Floor, "T2");
 
             T0Days = t0Days;
             T1AddedDays = t1AddedDays;
@@ -72,6 +75,16 @@ namespace DarkFantasyMerchant.Core
             double t3 = Math.Max(t2 + t0, T3Floor);
 
             return new StockThresholds(t0, t1, t2, t3);
+        }
+
+        private static void RequireFloor(double floor, string name, string threshold, double previous, string previousThreshold)
+        {
+            // The negated comparison also rejects NaN.
+            if (!(floor >= previous) || double.IsInfinity(floor))
+            {
+                throw new ArgumentOutOfRangeException(
+                    name, $"The floor of {threshold} is finite and at least the floor of {previousThreshold}.");
+            }
         }
 
         private static void RequireNotNegative(double value, string name)

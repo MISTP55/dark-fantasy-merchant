@@ -91,6 +91,20 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 () => new ThresholdRule(t0Days, t1AddedDays, t2ProductionDays, t0Floor, t1Floor, t2Floor, t3Floor));
         }
 
+        [TestCase(0, 10, 15, 20, "t0Floor")]
+        [TestCase(5, 4, 15, 20, "t1Floor")]
+        [TestCase(5, 10, 8, 20, "t2Floor")]
+        [TestCase(5, 10, 15, 12, "t3Floor")]
+        [TestCase(5, 10, 15, double.PositiveInfinity, "t3Floor")]
+        public void ARejectedFloor_IsNamed_AndExplained(double t0Floor, double t1Floor, double t2Floor, double t3Floor, string floor)
+        {
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(
+                () => new ThresholdRule(7, 14, 10, t0Floor, t1Floor, t2Floor, t3Floor));
+
+            Assert.AreEqual(floor, exception.ParamName);
+            StringAssert.Contains("floor", exception.Message);
+        }
+
         [TestCase(-1, 0)]
         [TestCase(2, -1)]
         [TestCase(double.NaN, 0)]

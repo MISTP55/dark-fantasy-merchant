@@ -86,10 +86,11 @@ namespace DarkFantasyMerchant.Game
             }
             catch (ArgumentOutOfRangeException exception)
             {
-                Debug.LogError(
-                    $"EconomyDefinition '{economy.name}', one of its goods or the calendar's week or month has an invalid value "
-                    + $"({exception.ParamName}); cities have no market.",
-                    economy);
+                string problem = economy.TryValidatePrices(out string pricesProblem)
+                    ? $"one of its goods or the calendar's week or month has an invalid value ({exception.ParamName})"
+                    : pricesProblem;
+
+                Debug.LogError($"EconomyDefinition '{economy.name}', {problem}\nCities have no market.", economy);
                 return false;
             }
 

@@ -22,14 +22,11 @@ namespace DarkFantasyMerchant.Core
 
             // Both curves are straight lines between the same thresholds: checking the five
             // points checks every stock.
-            if (sellCurve.Empty > buyCurve.Empty
-                || sellCurve.AtT0 > buyCurve.AtT0
-                || sellCurve.AtT1 > buyCurve.AtT1
-                || sellCurve.AtT2 > buyCurve.AtT2
-                || sellCurve.AtT3 > buyCurve.AtT3)
-            {
-                throw new ArgumentOutOfRangeException(nameof(sellCurve), "A barrel never sells for more than it costs.");
-            }
+            RequireSellNotAboveBuy(sellCurve.Empty, buyCurve.Empty, "an empty stock");
+            RequireSellNotAboveBuy(sellCurve.AtT0, buyCurve.AtT0, "T0");
+            RequireSellNotAboveBuy(sellCurve.AtT1, buyCurve.AtT1, "T1");
+            RequireSellNotAboveBuy(sellCurve.AtT2, buyCurve.AtT2, "T2");
+            RequireSellNotAboveBuy(sellCurve.AtT3, buyCurve.AtT3, "T3");
         }
 
         public PriceCurve BuyCurve { get; }
@@ -59,6 +56,16 @@ namespace DarkFantasyMerchant.Core
             double price = basePrice * SellCurve.AverageFactor(stock, stock + 1d, thresholds);
 
             return Math.Max(0L, (long)Math.Floor(price + RoundingMargin));
+        }
+
+        private static void RequireSellNotAboveBuy(double sellFactor, double buyFactor, string point)
+        {
+            if (sellFactor > buyFactor)
+            {
+                throw new ArgumentOutOfRangeException(
+                    "sellCurve",
+                    $"At {point}, the sell factor is above the buy factor: a barrel would sell for more than it costs.");
+            }
         }
     }
 }

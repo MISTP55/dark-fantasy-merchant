@@ -16,11 +16,10 @@ namespace DarkFantasyMerchant.Core
             RequireFactor(atT1, nameof(atT1));
             RequireFactor(atT2, nameof(atT2));
             RequireFactor(atT3, nameof(atT3));
-
-            if (atT0 > empty || atT1 > atT0 || atT2 > atT1 || atT3 > atT2)
-            {
-                throw new ArgumentOutOfRangeException(nameof(atT0), "A price curve never rises with the stock.");
-            }
+            RequireNotRising(atT0, nameof(atT0), "T0", empty, "an empty stock");
+            RequireNotRising(atT1, nameof(atT1), "T1", atT0, "T0");
+            RequireNotRising(atT2, nameof(atT2), "T2", atT1, "T1");
+            RequireNotRising(atT3, nameof(atT3), "T3", atT2, "T2");
 
             Empty = empty;
             AtT0 = atT0;
@@ -132,7 +131,17 @@ namespace DarkFantasyMerchant.Core
             // The negated comparison also rejects NaN.
             if (!(value > 0d) || double.IsInfinity(value))
             {
-                throw new ArgumentOutOfRangeException(name);
+                throw new ArgumentOutOfRangeException(name, "A price factor is above 0 and finite.");
+            }
+        }
+
+        private static void RequireNotRising(double factor, string name, string point, double previous, string previousPoint)
+        {
+            if (factor > previous)
+            {
+                throw new ArgumentOutOfRangeException(
+                    name,
+                    $"A price curve never rises with the stock, but the factor at {point} is above the one at {previousPoint}.");
             }
         }
     }

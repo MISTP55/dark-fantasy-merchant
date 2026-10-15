@@ -266,6 +266,28 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void TryValidatePrices_AcceptsTheGamesSettings()
+        {
+            Assert.IsTrue(economy.TryValidatePrices(out string problem), problem);
+            Assert.IsNull(problem);
+        }
+
+        [TestCase("buyFactors.atT3", 0.9, "buy factors", "the factor at T3")]
+        [TestCase("sellFactors.empty", 0, "sell factors", "above 0")]
+        [TestCase("sellFactors.atT1", 1.2, "sell factors", "At T1")]
+        [TestCase("t2Floor", 8, "stock thresholds", "t2Floor")]
+        public void TryValidatePrices_SaysWhichSettingIsWrong_AndWhy(string property, double value, string setting, string detail)
+        {
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty(property).doubleValue = value;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.IsFalse(economy.TryValidatePrices(out string problem));
+            StringAssert.Contains(setting, problem);
+            StringAssert.Contains(detail, problem);
+        }
+
+        [Test]
         public void CreateThresholdRule_UsesTheDefinitionsDaysAndFloors()
         {
             // Two barrels a day consumed and four produced.

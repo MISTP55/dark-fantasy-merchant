@@ -127,6 +127,19 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.Throws<ArgumentOutOfRangeException>(() => new PriceCurve(empty, atT0, atT1, atT2, atT3));
         }
 
+        [TestCase(1, 1.5, 1, 0.8, 0.6, "atT0", "the factor at T0 is above the one at an empty stock")]
+        [TestCase(4, 1.5, 1.6, 0.8, 0.6, "atT1", "the factor at T1 is above the one at T0")]
+        [TestCase(4, 1.5, 1, 0.8, 0.9, "atT3", "the factor at T3 is above the one at T2")]
+        [TestCase(4, 1.5, 1, 0, 0.6, "atT2", "above 0")]
+        public void ARejectedCurve_NamesTheFactorAtFault(
+            double empty, double atT0, double atT1, double atT2, double atT3, string factor, string explanation)
+        {
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => new PriceCurve(empty, atT0, atT1, atT2, atT3));
+
+            Assert.AreEqual(factor, exception.ParamName);
+            StringAssert.Contains(explanation, exception.Message);
+        }
+
         [Test]
         public void Thresholds_CanBeEqual()
         {

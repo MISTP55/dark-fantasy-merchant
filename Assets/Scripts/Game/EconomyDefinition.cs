@@ -147,6 +147,43 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
+        /// Whether the price factors and the stock thresholds can be used: the Inspector lets
+        /// through values that <see cref="CreatePricing"/> and <see cref="CreateThresholdRule"/> refuse.
+        /// </summary>
+        /// <param name="problem">Which setting is wrong and why, for the console; null when none is.</param>
+        public bool TryValidatePrices(out string problem)
+        {
+            problem = ProblemOf(() => buyFactors.ToCurve(), "the buy factors")
+                ?? ProblemOf(() => sellFactors.ToCurve(), "the sell factors")
+                ?? ProblemOf(() => CreatePricing(), "the sell factors against the buy factors")
+                ?? ProblemOf(() => CreateThresholdRule(), "the stock thresholds");
+
+            return problem == null;
+        }
+
+        private static string ProblemOf(Action create, string settings)
+        {
+            try
+            {
+                create();
+                return null;
+            }
+            catch (ArgumentOutOfRangeException exception)
+            {
+                return $"{settings}: {exception.Message}";
+            }
+        }
+
+        // Says at once, in the Editor, what would leave every city without a market in Play mode.
+        private void OnValidate()
+        {
+            if (!TryValidatePrices(out string problem))
+            {
+                Debug.LogWarning($"EconomyDefinition '{name}', {problem}\nCities will have no market in Play mode.", this);
+            }
+        }
+
+        /// <summary>
         /// The pricing of these settings. Throws when one of them is unusable: the
         /// attributes only constrain the Inspector, not the file.
         /// </summary>

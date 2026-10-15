@@ -133,6 +133,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void ARejectedSellCurve_SaysWhereItIsAboveTheBuyCurve()
+        {
+            var above = new PriceCurve(2, 1.4, 1, 0.9, 0.5);
+
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => new MarketPricing(TestMarkets.BuyCurve, above));
+
+            Assert.AreEqual("sellCurve", exception.ParamName);
+            StringAssert.Contains("At T2", exception.Message);
+        }
+
+        [Test]
         public void RejectsMissingCurves()
         {
             Assert.Throws<ArgumentNullException>(() => new MarketPricing(null, TestMarkets.SellCurve));
