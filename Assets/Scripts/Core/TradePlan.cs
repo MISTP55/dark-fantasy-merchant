@@ -3,14 +3,14 @@ namespace DarkFantasyMerchant.Core
     /// <summary>A trade a ship can make from the port it is in: what to buy and where to sell it.</summary>
     public readonly struct TradePlan
     {
-        private readonly int[] barrels;
+        private readonly int[] units;
 
-        /// <param name="barrels">Barrels to buy of each good, by index. Kept, not copied.</param>
+        /// <param name="units">Units to buy of each good, by index. Kept, not copied.</param>
         /// <param name="profitPerDay">The profit over the days of the trip and of the stopover.</param>
-        public TradePlan(int destination, int[] barrels, long profit, double profitPerDay)
+        public TradePlan(int destination, int[] units, long profit, double profitPerDay)
         {
             Destination = destination;
-            this.barrels = barrels;
+            this.units = units;
             Profit = profit;
             ProfitPerDay = profitPerDay;
         }
@@ -24,15 +24,16 @@ namespace DarkFantasyMerchant.Core
         /// <summary>What the trade earns per day it takes: what plans are compared by.</summary>
         public double ProfitPerDay { get; }
 
-        public int TotalBarrels
+        /// <summary>Units to buy, all goods together, barrels and bushels alike.</summary>
+        public int TotalUnits
         {
             get
             {
                 int total = 0;
 
-                if (barrels != null)
+                if (units != null)
                 {
-                    foreach (int count in barrels)
+                    foreach (int count in units)
                     {
                         total += count;
                     }
@@ -42,10 +43,10 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
-        /// <returns>Barrels to buy of a good; none for a good the plan does not know.</returns>
-        public int BarrelsOf(int good)
+        /// <returns>Units to buy of a good, barrels or bushels; none for a good the plan does not know.</returns>
+        public int UnitsOf(int good)
         {
-            return barrels != null && good >= 0 && good < barrels.Length ? barrels[good] : 0;
+            return units != null && good >= 0 && good < units.Length ? units[good] : 0;
         }
     }
 }

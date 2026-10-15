@@ -95,10 +95,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             long expected = ProfitOfOneGood(source, shortage, Fish, 200, out int barrels);
             Assert.AreEqual(2, plan.Destination);
-            Assert.AreEqual(barrels, plan.BarrelsOf(Fish));
-            Assert.AreEqual(0, plan.BarrelsOf(Iron));
+            Assert.AreEqual(barrels, plan.UnitsOf(Fish));
+            Assert.AreEqual(0, plan.UnitsOf(Iron));
             Assert.AreEqual(expected, plan.Profit);
-            Assert.AreEqual(barrels, plan.TotalBarrels);
+            Assert.AreEqual(barrels, plan.TotalUnits);
         }
 
         [Test]
@@ -110,7 +110,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             planner.TryPlanTrade(0, 200, null, out TradePlan plan);
 
-            int loaded = plan.BarrelsOf(Fish);
+            int loaded = plan.UnitsOf(Fish);
             Assert.Greater(loaded, 0);
             Assert.Less(loaded, 120);
             Assert.Greater(shortage.SellPriceOf(Fish, loaded - 1), source.BuyPriceOf(Fish, loaded - 1));
@@ -125,7 +125,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             planner.TryPlanTrade(0, 7, null, out TradePlan plan);
 
-            Assert.AreEqual(7, plan.TotalBarrels);
+            Assert.AreEqual(7, plan.TotalUnits);
         }
 
         [Test]
@@ -154,8 +154,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var planner = new TradeRoutePlanner(new[] { source, destination }, Days(2, 1d), 1d);
 
             Assert.IsTrue(planner.TryPlanTrade(0, 200, null, out TradePlan plan));
-            Assert.AreEqual(10, plan.BarrelsOf(Fish));
-            Assert.AreEqual(0, plan.BarrelsOf(Iron));
+            Assert.AreEqual(10, plan.UnitsOf(Fish));
+            Assert.AreEqual(0, plan.UnitsOf(Iron));
         }
 
         [Test]
@@ -169,9 +169,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             long fishAlone = ProfitOfOneGood(source, shortage, Fish, 60, out _);
             long ironAlone = ProfitOfOneGood(source, shortage, Iron, 60, out _);
-            Assert.AreEqual(60, plan.TotalBarrels);
-            Assert.Greater(plan.BarrelsOf(Fish), 0);
-            Assert.Greater(plan.BarrelsOf(Iron), 0);
+            Assert.AreEqual(60, plan.TotalUnits);
+            Assert.Greater(plan.UnitsOf(Fish), 0);
+            Assert.Greater(plan.UnitsOf(Iron), 0);
             Assert.GreaterOrEqual(plan.Profit, fishAlone);
             Assert.GreaterOrEqual(plan.Profit, ironAlone);
         }
@@ -226,7 +226,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 new[] { Market(AtT1, AtT1), Market(AtT1, AtT1) }, Days(2, 1d), 1d);
 
             Assert.IsFalse(planner.TryPlanTrade(0, 200, null, out TradePlan plan));
-            Assert.AreEqual(0, plan.TotalBarrels);
+            Assert.AreEqual(0, plan.TotalUnits);
             Assert.IsFalse(planner.TryPlanRelocation(0, 200, null, null, out _));
         }
 
@@ -277,7 +277,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(1, planner.GoodCount);
             Assert.IsTrue(planner.TryPlanTrade(0, 200, null, out TradePlan plan));
-            Assert.AreEqual(0, plan.BarrelsOf(Iron));
+            Assert.AreEqual(0, plan.UnitsOf(Iron));
         }
 
         [Test]
@@ -339,6 +339,65 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsTrue(planner.TryPlanRelocation(0, 200, null, null, out int source, out double profitPerDay));
             Assert.AreEqual(1, source);
             Assert.AreEqual(trade.Profit / 6d, profitPerDay, 1e-9);
+        }
+
+        // Fish in bushels of ten barrels, iron in barrels.
+        private static GoodUnits FishInBushels => new GoodUnits(new[] { 10, 1 });
+
+        [Test]
+        public void TheBestMarginPerBarrelOfRoom_Wins()
+        {
+            // Both are in surplus here and lacking there. A fish bushel pays more than an iron
+            // barrel, but less than the ten iron barrels that take its room.
+            CityMarket source = Market(Surplus, Surplus);
+            CityMarket shortage = Market(Empty, Empty);
+            var planner = new TradeRoutePlanner(new[] { source, shortage }, Days(2, 1d), 1d, FishInBushels);
+
+            Assert.IsTrue(planner.TryPlanTrade(0, 10, null, out TradePlan plan));
+
+            long fishMargin = shortage.SellPriceOf(Fish, 0) - source.BuyPriceOf(Fish, 0);
+            long ironMargins = 0;
+
+            for (int i = 0; i < 10; i++)
+            {
+                ironMargins += shortage.SellPriceOf(Iron, i) - source.BuyPriceOf(Iron, i);
+            }
+
+            Assert.Greater(ironMargins, fishMargin);
+            Assert.AreEqual(0, plan.UnitsOf(Fish));
+            Assert.AreEqual(10, plan.UnitsOf(Iron));
+        }
+
+        [Test]
+        public void ABushelThatNoLongerFits_IsSkipped_WhileBarrelsStillLoad()
+        {
+            // Fish at 1 000 a bushel pays about 130 a barrel of room, iron at 10 a barrel about
+            // 13: three bushels first, then the nine barrels left take iron.
+            var goods = new[] { new MarketGood(1000, 2, 0, 0), new MarketGood(10, 2, 0, 0) };
+            var source = new CityMarket(
+                goods, TestMarkets.Thresholds, TestMarkets.Workforce, 0, TestMarkets.Pricing, 7, new CityPopulation(1000));
+            var shortage = new CityMarket(
+                goods, TestMarkets.Thresholds, TestMarkets.Workforce, 0, TestMarkets.Pricing, 7, new CityPopulation(1000));
+            Put(source, Fish, 120);
+            Put(source, Iron, 120);
+            var planner = new TradeRoutePlanner(new[] { source, shortage }, Days(2, 1d), 1d, FishInBushels);
+
+            Assert.IsTrue(planner.TryPlanTrade(0, 39, null, out TradePlan plan));
+
+            Assert.AreEqual(3, plan.UnitsOf(Fish));
+            Assert.AreEqual(9, plan.UnitsOf(Iron));
+        }
+
+        [Test]
+        public void WithoutUnits_EveryUnitTakesOneBarrel()
+        {
+            CityMarket source = Market(Surplus, AtT1);
+            CityMarket shortage = Market(Empty, AtT1);
+            var planner = new TradeRoutePlanner(new[] { source, shortage }, Days(2, 1d), 1d);
+
+            planner.TryPlanTrade(0, 7, null, out TradePlan plan);
+
+            Assert.AreEqual(7, plan.TotalUnits);
         }
 
         [Test]

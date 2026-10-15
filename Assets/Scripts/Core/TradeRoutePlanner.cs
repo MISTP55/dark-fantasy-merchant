@@ -17,8 +17,9 @@ namespace DarkFantasyMerchant.Core
         private readonly IReadOnlyList<CityMarket> markets;
         private readonly double[,] travelDays;
         private readonly double stopoverDays;
+        private readonly GoodUnits units;
 
-        // Barrels of each good in the cargo being worked out.
+        // Units of each good in the cargo being worked out.
         private readonly int[] loaded;
 
         /// <param name="travelDays">
@@ -26,7 +27,9 @@ namespace DarkFantasyMerchant.Core
         /// Read on every plan, so it can still be filled in after the planner is made.
         /// </param>
         /// <param name="stopoverDays">Days a ship stays in a port, counted in the length of a trade.</param>
-        public TradeRoutePlanner(IReadOnlyList<CityMarket> markets, double[,] travelDays, double stopoverDays)
+        /// <param name="units">The room a unit of each good takes in a hold. Without it, every unit takes one barrel.</param>
+        public TradeRoutePlanner(
+            IReadOnlyList<CityMarket> markets, double[,] travelDays, double stopoverDays, GoodUnits units = null)
         {
             this.markets = markets ?? throw new ArgumentNullException(nameof(markets));
             this.travelDays = travelDays ?? throw new ArgumentNullException(nameof(travelDays));
@@ -43,6 +46,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             this.stopoverDays = stopoverDays;
+            this.units = units ?? GoodUnits.AllBarrels;
 
             // Markets made from different catalogues only trade the goods they all have.
             int goodCount = markets.Count > 0 ? int.MaxValue : 0;
@@ -66,9 +70,9 @@ namespace DarkFantasyMerchant.Core
         public int GoodCount { get; }
 
         /// <summary>The trade from a port that earns the most per day of trip and stopover.</summary>
-        /// <param name="capacity">Barrels the ship has room for.</param>
+        /// <param name="capacity">Barrels of room the ship has.</param>
         /// <param name="incoming">
-        /// Barrels other ships are carrying to each port, by port then good: they count as
+        /// Units other ships are carrying to each port, by port then good: they count as
         /// already delivered there. Null for none.
         /// </param>
         /// <returns>False when no destination gives a profit.</returns>
@@ -81,7 +85,7 @@ namespace DarkFantasyMerchant.Core
             int bestDestination = -1;
             long bestProfit = 0;
             double bestScore = 0d;
-            int[] bestBarrels = null;
+            int[] bestUnits = null;
 
             for (int to = 0; to < PortCount; to++)
             {
@@ -105,12 +109,12 @@ namespace DarkFantasyMerchant.Core
                     bestDestination = to;
                     bestProfit = profit;
 
-                    if (bestBarrels == null)
+                    if (bestUnits == null)
                     {
-                        bestBarrels = new int[GoodCount];
+                        bestUnits = new int[GoodCount];
                     }
 
-                    Array.Copy(loaded, bestBarrels, GoodCount);
+                    Array.Copy(loaded, bestUnits, GoodCount);
                 }
             }
 
@@ -119,7 +123,7 @@ namespace DarkFantasyMerchant.Core
                 return false;
             }
 
-            plan = new TradePlan(bestDestination, bestBarrels, bestProfit, bestScore);
+            plan = new TradePlan(bestDestination, bestUnits, bestProfit, bestScore);
             return true;
         }
 
@@ -181,8 +185,9 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// Fills <see cref="loaded"/> with the cargo that earns the most between two ports:
-        /// barrel by barrel, the good whose next barrel pays best, while one pays.
-        /// The margin of a good only falls as it is loaded, so this is the best cargo.
+        /// unit by unit, the good whose next unit pays the most per barrel of room, among
+        /// those that still fit, while one pays. The margin of a good only falls as it is
+        /// loaded: with units of one size this is the best cargo, with bushels a close one.
         /// </summary>
         /// <returns>What the cargo earns.</returns>
         private long Load(int from, int to, int capacity, int[,] incoming)
@@ -190,26 +195,32 @@ namespace DarkFantasyMerchant.Core
             CityMarket source = markets[from];
             CityMarket destination = markets[to];
             long profit = 0;
+            int room = capacity;
 
             Array.Clear(loaded, 0, loaded.Length);
 
-            for (int total = 0; total < capacity; total++)
+            while (true)
             {
                 int bestGood = -1;
                 long bestMargin = 0;
+                double bestMarginPerBarrel = 0d;
 
                 for (int good = 0; good < GoodCount; good++)
                 {
-                    if (loaded[good] >= source.AvailableOf(good))
+                    int unitRoom = units.RoomOf(good);
+
+                    if (unitRoom > room || loaded[good] >= source.AvailableOf(good))
                     {
                         continue;
                     }
 
                     int delivered = (incoming != null ? incoming[to, good] : 0) + loaded[good];
                     long margin = destination.SellPriceOf(good, delivered) - source.BuyPriceOf(good, loaded[good]);
+                    double marginPerBarrel = (double)margin / unitRoom;
 
-                    if (margin > bestMargin)
+                    if (margin > 0 && marginPerBarrel > bestMarginPerBarrel)
                     {
+                        bestMarginPerBarrel = marginPerBarrel;
                         bestMargin = margin;
                         bestGood = good;
                     }
@@ -221,6 +232,7 @@ namespace DarkFantasyMerchant.Core
                 }
 
                 loaded[bestGood]++;
+                room -= units.RoomOf(bestGood);
                 profit += bestMargin;
             }
 

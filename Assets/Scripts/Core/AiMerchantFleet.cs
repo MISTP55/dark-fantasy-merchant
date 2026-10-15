@@ -188,11 +188,11 @@ namespace DarkFantasyMerchant.Core
 
             for (int good = 0; good < market.GoodCount; good++)
             {
-                int barrels = ship.Cargo.UnitsOf(good);
+                int units = ship.Cargo.UnitsOf(good);
 
-                if (barrels > 0)
+                if (units > 0)
                 {
-                    merchant.Profit += Trade.Sell(market, ship.Cargo, good, barrels).Gold;
+                    merchant.Profit += Trade.Sell(market, ship.Cargo, good, units).Gold;
                 }
             }
         }
@@ -222,11 +222,11 @@ namespace DarkFantasyMerchant.Core
             {
                 for (int good = 0; good < planner.GoodCount; good++)
                 {
-                    int barrels = plan.BarrelsOf(good);
+                    int units = plan.UnitsOf(good);
 
-                    if (barrels > 0)
+                    if (units > 0)
                     {
-                        merchant.Profit -= Trade.Buy(markets[from], ship.Cargo, good, barrels).Gold;
+                        merchant.Profit -= Trade.Buy(markets[from], ship.Cargo, good, units).Gold;
                     }
                 }
 
