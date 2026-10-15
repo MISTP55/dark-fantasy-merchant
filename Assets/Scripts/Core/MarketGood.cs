@@ -3,21 +3,21 @@ using System;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// The figures of one good in one city: its base price, and what the city consumes and
-    /// produces of it for the inhabitants it has.
+    /// The figures of one good in one city: its base price, what the city consumes of it
+    /// for the inhabitants it has, and the workshop that produces it there, if any.
     /// </summary>
     public readonly struct MarketGood
     {
         /// <param name="basePrice">Gold per barrel that the factors of the price curves multiply, at least 1.</param>
         /// <param name="dailyConsumptionPerThousand">Barrels 1 000 inhabitants consume in a day; it can be a fraction.</param>
-        /// <param name="productionRate">Production as a share of the consumption; 0 for a good the city does not produce.</param>
-        /// <param name="ceilingDays">Days of consumption above which the city's production stops raising the stock.</param>
+        /// <param name="maxWorkers">Most workers of the city's workshop for the good; 0 for a good the city does not produce.</param>
+        /// <param name="dailyOutputPerWorker">Barrels a worker of that workshop makes in a day, its efficiency included.</param>
         /// <param name="isFood">Whether the stock of the good feeds the city: only food makes its population change.</param>
         public MarketGood(
             long basePrice,
             double dailyConsumptionPerThousand,
-            double productionRate,
-            double ceilingDays,
+            int maxWorkers,
+            double dailyOutputPerWorker,
             bool isFood = false)
         {
             if (basePrice < 1)
@@ -25,14 +25,18 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentOutOfRangeException(nameof(basePrice));
             }
 
+            if (maxWorkers < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxWorkers));
+            }
+
             RequireNotNegative(dailyConsumptionPerThousand, nameof(dailyConsumptionPerThousand));
-            RequireNotNegative(productionRate, nameof(productionRate));
-            RequireNotNegative(ceilingDays, nameof(ceilingDays));
+            RequireNotNegative(dailyOutputPerWorker, nameof(dailyOutputPerWorker));
 
             BasePrice = basePrice;
             DailyConsumptionPerThousand = dailyConsumptionPerThousand;
-            ProductionRate = productionRate;
-            CeilingDays = ceilingDays;
+            MaxWorkers = maxWorkers;
+            DailyOutputPerWorker = dailyOutputPerWorker;
             IsFood = isFood;
         }
 
@@ -40,13 +44,16 @@ namespace DarkFantasyMerchant.Core
 
         public double DailyConsumptionPerThousand { get; }
 
-        public double ProductionRate { get; }
+        public int MaxWorkers { get; }
 
-        public double CeilingDays { get; }
+        public double DailyOutputPerWorker { get; }
 
         public bool IsFood { get; }
 
-        public bool IsProduced => ProductionRate > 0d;
+        public bool IsProduced => MaxWorkers > 0 && DailyOutputPerWorker > 0d;
+
+        /// <summary>Barrels the workshop makes in a day with all its workers: it does not depend on the city's size.</summary>
+        public double DailyCapacity => MaxWorkers * DailyOutputPerWorker;
 
         private static void RequireNotNegative(double value, string name)
         {

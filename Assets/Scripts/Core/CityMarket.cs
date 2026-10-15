@@ -4,12 +4,12 @@ using System.Collections.Generic;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// The stocks of goods of one city. Every day the city produces some goods and
-    /// consumes all of them; the price of a good follows its stock against thresholds that follow its consumption and production.
-    /// There is no limit to what a city can store. Goods are indices into the catalogue.
-    /// It also remembers what the days of the last week actually produced and consumed.
-    /// What it consumes and produces follows its population, which the food it holds
-    /// makes grow or decline every day.
+    /// The stocks of goods of one city. Every day the city consumes its goods, then its
+    /// workshops hire or lay off by where each stock stands against its thresholds, and
+    /// produce; the price of a good follows its stock against the same thresholds. There is
+    /// no limit to what a city can store. Goods are indices into the catalogue. It also
+    /// remembers what the days of the last week actually produced and consumed. What it
+    /// consumes follows its population, which the food it holds makes grow or decline every day.
     /// </summary>
     public sealed class CityMarket
     {
@@ -17,13 +17,16 @@ namespace DarkFantasyMerchant.Core
 
         private readonly MarketGood[] goods;
         private readonly double[] stocks;
+        private readonly int[] workers;
         private readonly ThresholdRule thresholdRule;
+        private readonly WorkforceRule workforce;
         private readonly MarketPricing pricing;
         private readonly int daysPerWeek;
         private readonly MarketWeekLog weekLog;
         private readonly FoodGrowth foodGrowth;
 
         /// <param name="thresholdRule">How the stock thresholds of a good, at which its prices are given, follow what the city consumes and produces of it.</param>
+        /// <param name="workforce">How the workshops hire, lay off and start.</param>
         /// <param name="startingDays">Days of consumption the city holds of every good when the game starts.</param>
         /// <param name="daysPerWeek">Days of the calendar's week, over which the weekly figures are given.</param>
         /// <param name="population">The inhabitants of the city, who set what it consumes.</param>
@@ -31,6 +34,7 @@ namespace DarkFantasyMerchant.Core
         public CityMarket(
             IReadOnlyList<MarketGood> goods,
             ThresholdRule thresholdRule,
+            WorkforceRule workforce,
             double startingDays,
             MarketPricing pricing,
             int daysPerWeek,
@@ -43,6 +47,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             this.thresholdRule = thresholdRule ?? throw new ArgumentNullException(nameof(thresholdRule));
+            this.workforce = workforce ?? throw new ArgumentNullException(nameof(workforce));
 
             // The negated comparisons also reject NaN.
             if (!(startingDays >= 0d) || double.IsInfinity(startingDays))
@@ -62,6 +67,7 @@ namespace DarkFantasyMerchant.Core
             weekLog = new MarketWeekLog(goods.Count, daysPerWeek);
             this.goods = new MarketGood[goods.Count];
             stocks = new double[goods.Count];
+            workers = new int[goods.Count];
 
             for (int i = 0; i < goods.Count; i++)
             {
@@ -69,6 +75,15 @@ namespace DarkFantasyMerchant.Core
 
                 // The same for every good, produced or not: producers fill up as the days pass.
                 stocks[i] = startingDays * DailyConsumptionOf(i);
+            }
+
+            int workshops = Array.FindAll(this.goods, good => good.IsProduced).Length;
+
+            for (int i = 0; i < this.goods.Length; i++)
+            {
+                workers[i] = this.goods[i].IsProduced
+                    ? workforce.StartingWorkersOf(this.goods[i].MaxWorkers, workshops)
+                    : 0;
             }
         }
 
@@ -146,15 +161,29 @@ namespace DarkFantasyMerchant.Core
         {
             RequireGood(good);
 
-            double consumption = DailyConsumptionOf(good);
-
-            return thresholdRule.ThresholdsFor(consumption, consumption * goods[good].ProductionRate);
+            return thresholdRule.ThresholdsFor(DailyConsumptionOf(good), goods[good].DailyCapacity);
         }
 
-        /// <summary>Barrels the city produces in a week while its stock is under the ceiling.</summary>
+        /// <summary>Workers of the city's workshop for a good: 0 for a good it does not produce.</summary>
+        public int WorkersOf(int good)
+        {
+            RequireGood(good);
+
+            return workers[good];
+        }
+
+        /// <summary>The most workers the city's workshop for a good can have: 0 for a good it does not produce.</summary>
+        public int MaxWorkersOf(int good)
+        {
+            RequireGood(good);
+
+            return goods[good].IsProduced ? goods[good].MaxWorkers : 0;
+        }
+
+        /// <summary>Barrels the workshop makes in a week with the workers of the moment, while the stock is not above T3.</summary>
         public double NominalWeeklyProductionOf(int good)
         {
-            return DailyConsumptionOf(good) * goods[good].ProductionRate * daysPerWeek;
+            return workers[good] * goods[good].DailyOutputPerWorker * daysPerWeek;
         }
 
         /// <summary>Barrels the city consumes in a week while it has them.</summary>
@@ -165,7 +194,7 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// Barrels the city actually produced over the last days, a week of them at most:
-        /// less than the nominal figure when the ceiling stopped the production.
+        /// less than the nominal figure on the days the stock was above T3.
         /// </summary>
         public double RecentProductionOf(int good)
         {
@@ -227,9 +256,10 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
-        /// One day of the city: it produces, up to each good's ceiling and never above,
-        /// then consumes, down to nothing. A stock that deliveries raised above its
-        /// ceiling is only consumed. The food that is left then changes the population.
+        /// One day of the city, as in Patrician III: the inhabitants consume every good, down
+        /// to nothing; then every workshop hires or lays off by where the stock left stands
+        /// against the thresholds, and produces, unless that stock is above T3. The food that
+        /// is left then changes the population.
         /// </summary>
         public void StartDay()
         {
@@ -238,18 +268,23 @@ namespace DarkFantasyMerchant.Core
             for (int i = 0; i < goods.Length; i++)
             {
                 MarketGood good = goods[i];
-                double consumption = DailyConsumptionOf(i);
-                double ceiling = consumption * good.CeilingDays;
-                double stockBefore = stocks[i];
-                double stock = stockBefore;
+                double consumed = Math.Min(stocks[i], DailyConsumptionOf(i));
+                double produced = 0d;
+                stocks[i] -= consumed;
 
-                if (stock < ceiling)
+                if (good.IsProduced)
                 {
-                    stock = Math.Min(ceiling, stock + consumption * good.ProductionRate);
+                    StockThresholds thresholds = ThresholdsOf(i);
+                    workers[i] = workforce.NextWorkers(workers[i], good.MaxWorkers, stocks[i], thresholds);
+
+                    if (WorkforceRule.ProducesAt(stocks[i], thresholds))
+                    {
+                        produced = workers[i] * good.DailyOutputPerWorker;
+                        stocks[i] += produced;
+                    }
                 }
 
-                stocks[i] = Math.Max(0d, stock - consumption);
-                weekLog.Record(i, stock - stockBefore, stock - stocks[i]);
+                weekLog.Record(i, produced, consumed);
             }
 
             if (foodGrowth != null)

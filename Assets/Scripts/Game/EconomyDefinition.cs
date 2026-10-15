@@ -19,16 +19,28 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Days of its consumption a city holds of every good when the game starts, whether it produces it or not.")]
         [SerializeField, Min(0f)] private double startingStockDays = 7d;
 
-        [Header("Production, as a share of the city's own consumption")]
-        [SerializeField, Min(0f)] private double efficientProductionRate = 2d;
+        [Header("Workshops (a good's maximum of workers and output per worker are the good's own)")]
+        [Tooltip("Share of a good's output per worker in a city that produces it inefficiently: 0.75 is Patrician III's 768 / 1024.")]
+        [SerializeField, Range(0f, 1f)] private double inefficientEfficiency = 0.75d;
 
-        [Tooltip("Days of consumption above which an efficient production stops raising the stock.")]
-        [SerializeField, Min(0f)] private double efficientCeilingDays = 60d;
+        [Tooltip("Workers a workshop hires in a day while the stock of its good is at T0 or under.")]
+        [SerializeField, Min(0)] private int hiredUpToT0 = 16;
 
-        [SerializeField, Min(0f)] private double inefficientProductionRate = 1.5d;
+        [Tooltip("Workers hired in a day while the stock is above T0, up to T1.")]
+        [SerializeField, Min(0)] private int hiredUpToT1 = 8;
 
-        [Tooltip("Days of consumption above which an inefficient production stops raising the stock.")]
-        [SerializeField, Min(0f)] private double inefficientCeilingDays = 36d;
+        [Tooltip("Workers hired in a day while the stock is above T1, up to T2.")]
+        [SerializeField, Min(0)] private int hiredUpToT2 = 4;
+
+        [Tooltip("Workers hired in a day while the stock is above T2, up to T3.")]
+        [SerializeField, Min(0)] private int hiredUpToT3 = 1;
+
+        [Tooltip("Workers a workshop keeps above T3, where it produces nothing.")]
+        [SerializeField, Min(0)] private int workersAboveT3 = 1;
+
+        [Header("Start of a game")]
+        [Tooltip("Workers every city starts with, spread evenly over its workshops: 250 is Patrician III's.")]
+        [SerializeField, Min(0)] private int startingWorkforce = 250;
 
         [Header("Stock thresholds T0 to T3 of a good in a city, at which its prices are given")]
         [Tooltip("T0: days of the city's consumption.")]
@@ -76,13 +88,19 @@ namespace DarkFantasyMerchant.Game
 
         public double StartingStockDays => startingStockDays;
 
-        public double EfficientProductionRate => efficientProductionRate;
+        public double InefficientEfficiency => inefficientEfficiency;
 
-        public double EfficientCeilingDays => efficientCeilingDays;
+        public int HiredUpToT0 => hiredUpToT0;
 
-        public double InefficientProductionRate => inefficientProductionRate;
+        public int HiredUpToT1 => hiredUpToT1;
 
-        public double InefficientCeilingDays => inefficientCeilingDays;
+        public int HiredUpToT2 => hiredUpToT2;
+
+        public int HiredUpToT3 => hiredUpToT3;
+
+        public int WorkersAboveT3 => workersAboveT3;
+
+        public int StartingWorkforce => startingWorkforce;
 
         public double T0Days => t0Days;
 
@@ -147,16 +165,17 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// Whether the price factors and the stock thresholds can be used: the Inspector lets
-        /// through values that <see cref="CreatePricing"/> and <see cref="CreateThresholdRule"/> refuse.
+        /// Whether the price factors, the stock thresholds and the workforce can be used: the
+        /// Inspector lets through values that the Create methods refuse.
         /// </summary>
         /// <param name="problem">Which setting is wrong and why, for the console; null when none is.</param>
-        public bool TryValidatePrices(out string problem)
+        public bool TryValidateSettings(out string problem)
         {
             problem = ProblemOf(() => buyFactors.ToCurve(), "the buy factors")
                 ?? ProblemOf(() => sellFactors.ToCurve(), "the sell factors")
                 ?? ProblemOf(() => CreatePricing(), "the sell factors against the buy factors")
-                ?? ProblemOf(() => CreateThresholdRule(), "the stock thresholds");
+                ?? ProblemOf(() => CreateThresholdRule(), "the stock thresholds")
+                ?? ProblemOf(() => CreateWorkforceRule(), "the workforce");
 
             return problem == null;
         }
@@ -177,7 +196,7 @@ namespace DarkFantasyMerchant.Game
         // Says at once, in the Editor, what would leave every city without a market in Play mode.
         private void OnValidate()
         {
-            if (!TryValidatePrices(out string problem))
+            if (!TryValidateSettings(out string problem))
             {
                 Debug.LogWarning($"EconomyDefinition '{name}', {problem}\nCities will have no market in Play mode.", this);
             }
@@ -199,6 +218,12 @@ namespace DarkFantasyMerchant.Game
         public ThresholdRule CreateThresholdRule()
         {
             return new ThresholdRule(t0Days, t1AddedDays, t2ProductionDays, t0Floor, t1Floor, t2Floor, t3Floor);
+        }
+
+        /// <summary>How the workshops hire, lay off and start, from these settings. Throws when one of them is unusable.</summary>
+        public WorkforceRule CreateWorkforceRule()
+        {
+            return new WorkforceRule(hiredUpToT0, hiredUpToT1, hiredUpToT2, hiredUpToT3, workersAboveT3, startingWorkforce);
         }
 
         /// <summary>
@@ -239,32 +264,33 @@ namespace DarkFantasyMerchant.Game
             for (int i = 0; i < goods.Count; i++)
             {
                 GoodDefinition good = goods[i];
-                double rate = 0d;
-                double ceilingDays = 0d;
+                int maxWorkers = 0;
+                double outputPerWorker = 0d;
 
                 switch (city.ProductionOf(good))
                 {
                     case GoodProduction.Efficient:
-                        rate = efficientProductionRate;
-                        ceilingDays = efficientCeilingDays;
+                        maxWorkers = good.MaxWorkers;
+                        outputPerWorker = good.DailyOutputPerWorker;
                         break;
                     case GoodProduction.Inefficient:
-                        rate = inefficientProductionRate;
-                        ceilingDays = inefficientCeilingDays;
+                        maxWorkers = good.MaxWorkers;
+                        outputPerWorker = good.DailyOutputPerWorker * inefficientEfficiency;
                         break;
                 }
 
                 marketGoods[i] = new MarketGood(
                     good.BasePrice,
                     good.WeeklyConsumptionPerThousand / daysPerWeek,
-                    rate,
-                    ceilingDays,
+                    maxWorkers,
+                    outputPerWorker,
                     good.Category == GoodCategory.Food);
             }
 
             return new CityMarket(
                 marketGoods,
                 CreateThresholdRule(),
+                CreateWorkforceRule(),
                 startingStockDays,
                 pricing,
                 daysPerWeek,

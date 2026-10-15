@@ -19,6 +19,12 @@ namespace DarkFantasyMerchant.Game
         [FormerlySerializedAs("consumptionPerThousand")]
         [SerializeField, Min(0f)] private double weeklyConsumptionPerThousand = 7d;
 
+        [Tooltip("Most workers a city's workshop for the good can have. The same in every city.")]
+        [SerializeField, Min(0)] private int maxWorkers = 60;
+
+        [Tooltip("Barrels a worker makes in a day in a city that produces the good efficiently.")]
+        [SerializeField, Min(0f)] private double dailyOutputPerWorker = 0.1d;
+
         public string DisplayName => displayName;
 
         public GoodCategory Category => category;
@@ -26,5 +32,9 @@ namespace DarkFantasyMerchant.Game
         public long BasePrice => basePrice;
 
         public double WeeklyConsumptionPerThousand => weeklyConsumptionPerThousand;
+
+        public int MaxWorkers => maxWorkers;
+
+        public double DailyOutputPerWorker => dailyOutputPerWorker;
     }
 }

@@ -12,7 +12,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             string displayName,
             long basePrice,
             double weeklyConsumptionPerThousand,
-            GoodCategory category = GoodCategory.Food)
+            GoodCategory category = GoodCategory.Food,
+            int maxWorkers = 60,
+            double dailyOutputPerWorker = 0.1)
         {
             var good = ScriptableObject.CreateInstance<GoodDefinition>();
             good.name = displayName;
@@ -22,6 +24,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             serialized.FindProperty("category").enumValueIndex = (int)category;
             serialized.FindProperty("basePrice").longValue = basePrice;
             serialized.FindProperty("weeklyConsumptionPerThousand").doubleValue = weeklyConsumptionPerThousand;
+            serialized.FindProperty("maxWorkers").intValue = maxWorkers;
+            serialized.FindProperty("dailyOutputPerWorker").doubleValue = dailyOutputPerWorker;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return good;
         }

@@ -36,6 +36,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             market = new CityMarket(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(60, 0, 0, 0) },
                 TestMarkets.Thresholds,
+                TestMarkets.Workforce,
                 30,
                 TestMarkets.Pricing,
                 7,
@@ -242,7 +243,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AMarketWithFewerGoodsThanRows_LeavesTheExtraRowsEmpty()
         {
             var small = new CityMarket(
-                new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, 30, TestMarkets.Pricing,
+                new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing,
                 7,
                 new CityPopulation(1000));
 

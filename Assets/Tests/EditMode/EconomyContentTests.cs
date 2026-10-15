@@ -44,6 +44,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(name, good.DisplayName);
             Assert.AreEqual(category, good.Category);
             Assert.GreaterOrEqual(good.BasePrice, 1);
+            Assert.Greater(good.MaxWorkers, 0);
+            Assert.Greater(good.DailyOutputPerWorker, 0d);
             Assert.Greater(good.WeeklyConsumptionPerThousand, 0d);
         }
 
@@ -55,6 +57,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsTrue(economy.TryValidate(out string problem), problem);
             Assert.DoesNotThrow(() => economy.CreatePricing());
             Assert.DoesNotThrow(() => economy.CreateThresholdRule());
+            Assert.DoesNotThrow(() => economy.CreateWorkforceRule());
+            Assert.IsTrue(economy.TryValidateSettings(out string settingsProblem), settingsProblem);
             Assert.DoesNotThrow(() => economy.CreateFoodGrowth(30));
         }
 

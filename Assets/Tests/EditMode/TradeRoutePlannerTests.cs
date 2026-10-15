@@ -20,6 +20,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var market = new CityMarket(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 0, 0) },
                 TestMarkets.Thresholds,
+                TestMarkets.Workforce,
                 0,
                 TestMarkets.Pricing,
                 7,
@@ -136,6 +137,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var source = new CityMarket(
                 new[] { new MarketGood(10, 0, 0, 0), new MarketGood(50, 0, 0, 0) },
                 TestMarkets.Thresholds,
+                TestMarkets.Workforce,
                 0,
                 TestMarkets.Pricing,
                 7,
@@ -144,6 +146,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var destination = new CityMarket(
                 new[] { new MarketGood(100, 2, 0, 0), new MarketGood(50, 2, 0, 0) },
                 TestMarkets.Thresholds,
+                TestMarkets.Workforce,
                 0,
                 TestMarkets.Pricing,
                 7,
@@ -269,7 +272,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void MarketsOfDifferentCatalogues_TradeTheGoodsTheyShare()
         {
             var small = new CityMarket(
-                new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, 0, TestMarkets.Pricing, 7, new CityPopulation(1000));
+                new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, TestMarkets.Workforce, 0, TestMarkets.Pricing, 7, new CityPopulation(1000));
             var planner = new TradeRoutePlanner(new[] { Market(Surplus, Surplus), small }, Days(2, 1d), 1d);
 
             Assert.AreEqual(1, planner.GoodCount);

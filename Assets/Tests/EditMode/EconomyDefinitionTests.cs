@@ -22,9 +22,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [SetUp]
         public void SetUp()
         {
-            // Per week for 1 000 inhabitants: 2, 1.5 and 0.5 barrels a day.
-            wheat = Track(TestEconomy.CreateGood("Blé", 10, 14));
-            fish = Track(TestEconomy.CreateGood("Poisson", 12, 10.5));
+            // Per week for 1 000 inhabitants: 2, 1.5 and 0.5 barrels a day. Workshops of 60 workers
+            // making 0.4, 0.3 and 0.1 barrels each.
+            wheat = Track(TestEconomy.CreateGood("Blé", 10, 14, dailyOutputPerWorker: 0.4));
+            fish = Track(TestEconomy.CreateGood("Poisson", 12, 10.5, dailyOutputPerWorker: 0.3));
             salt = Track(TestEconomy.CreateGood("Sel", 18, 3.5));
             economy = Track(TestEconomy.CreateEconomy(wheat, fish, salt));
         }
@@ -57,10 +58,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             EconomyDefinition fresh = Track(ScriptableObject.CreateInstance<EconomyDefinition>());
 
             Assert.AreEqual(7, fresh.StartingStockDays);
-            Assert.AreEqual(2, fresh.EfficientProductionRate);
-            Assert.AreEqual(60, fresh.EfficientCeilingDays);
-            Assert.AreEqual(1.5, fresh.InefficientProductionRate);
-            Assert.AreEqual(36, fresh.InefficientCeilingDays);
+            Assert.AreEqual(0.75, fresh.InefficientEfficiency);
+            Assert.AreEqual(16, fresh.HiredUpToT0);
+            Assert.AreEqual(8, fresh.HiredUpToT1);
+            Assert.AreEqual(4, fresh.HiredUpToT2);
+            Assert.AreEqual(1, fresh.HiredUpToT3);
+            Assert.AreEqual(1, fresh.WorkersAboveT3);
+            Assert.AreEqual(250, fresh.StartingWorkforce);
             Assert.AreEqual(7, fresh.T0Days);
             Assert.AreEqual(14, fresh.T1AddedDays);
             Assert.AreEqual(10, fresh.T2ProductionDays);
@@ -92,6 +96,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityDefinition city = Track(ScriptableObject.CreateInstance<CityDefinition>());
 
             Assert.GreaterOrEqual(good.BasePrice, 1);
+            Assert.Greater(good.MaxWorkers, 0);
+            Assert.Greater(good.DailyOutputPerWorker, 0d);
             Assert.AreEqual(GoodCategory.RawMaterial, good.Category);
             Assert.AreEqual(0, city.Population);
             Assert.AreEqual(0, city.EfficientGoods.Count);
@@ -180,7 +186,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void CreateMarket_ProducesAtTheDefinitionsRates()
+        public void CreateMarket_ProducesAtTheDefinitionsOutputs()
         {
             CityDefinition city = City(6000, new[] { wheat }, new[] { fish });
             CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
@@ -266,9 +272,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void TryValidatePrices_AcceptsTheGamesSettings()
+        public void TryValidateSettings_AcceptsTheGamesSettings()
         {
-            Assert.IsTrue(economy.TryValidatePrices(out string problem), problem);
+            Assert.IsTrue(economy.TryValidateSettings(out string problem), problem);
             Assert.IsNull(problem);
         }
 
@@ -276,15 +282,53 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase("sellFactors.empty", 0, "sell factors", "above 0")]
         [TestCase("sellFactors.atT1", 1.2, "sell factors", "At T1")]
         [TestCase("t2Floor", 8, "stock thresholds", "t2Floor")]
-        public void TryValidatePrices_SaysWhichSettingIsWrong_AndWhy(string property, double value, string setting, string detail)
+        public void TryValidateSettings_SaysWhichSettingIsWrong_AndWhy(string property, double value, string setting, string detail)
         {
             var serialized = new SerializedObject(economy);
             serialized.FindProperty(property).doubleValue = value;
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
-            Assert.IsFalse(economy.TryValidatePrices(out string problem));
+            Assert.IsFalse(economy.TryValidateSettings(out string problem));
             StringAssert.Contains(setting, problem);
             StringAssert.Contains(detail, problem);
+        }
+
+        [Test]
+        public void CreateMarket_SpreadsTheStartingWorkforce_OverTheCitysWorkshops()
+        {
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty("startingWorkforce").intValue = 50;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            CityDefinition city = City(6000, new[] { wheat }, new[] { fish });
+
+            CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
+
+            Assert.AreEqual(25, market.WorkersOf(0));
+            Assert.AreEqual(25, market.WorkersOf(1));
+            Assert.AreEqual(0, market.WorkersOf(2));
+            Assert.AreEqual(60, market.MaxWorkersOf(1));
+        }
+
+        [Test]
+        public void CreateWorkforceRule_UsesTheDefinitionsSettings()
+        {
+            WorkforceRule rule = economy.CreateWorkforceRule();
+
+            Assert.AreEqual(16, rule.HiredUpToT0);
+            Assert.AreEqual(1, rule.WorkersAboveT3);
+            Assert.AreEqual(250, rule.StartingWorkforce);
+        }
+
+        [Test]
+        public void TryValidateSettings_SaysWhenTheWorkforceIsWrong()
+        {
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty("workersAboveT3").intValue = -1;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.IsFalse(economy.TryValidateSettings(out string problem));
+            StringAssert.Contains("the workforce", problem);
+            StringAssert.Contains("workersAboveT3", problem);
         }
 
         [Test]

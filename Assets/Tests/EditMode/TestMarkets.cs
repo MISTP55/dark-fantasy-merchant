@@ -11,6 +11,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         /// </summary>
         public static ThresholdRule Thresholds => new ThresholdRule(10, 20, 10, 5, 10, 15, 20);
 
+        /// <summary>
+        /// Patrician III's hiring, and a starting workforce large enough that every workshop
+        /// of a test market starts with its maximum of workers.
+        /// </summary>
+        public static WorkforceRule Workforce => new WorkforceRule(16, 8, 4, 1, 1, 1000);
+
         /// <summary>The factors at which the player buys in Patrician III.</summary>
         public static PriceCurve BuyCurve => new PriceCurve(4, 1.5, 1, 0.8, 0.6);
 
