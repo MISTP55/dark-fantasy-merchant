@@ -48,7 +48,7 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>Writes what the day that last started produced and consumed of a good.</summary>
-        public void Record(int good, double producedBarrels, double consumedBarrels)
+        public void Record(int good, double producedUnits, double consumedUnits)
         {
             RequireGood(good);
 
@@ -57,17 +57,17 @@ namespace DarkFantasyMerchant.Core
                 throw new InvalidOperationException("No day has started.");
             }
 
-            produced[currentDay][good] = producedBarrels;
-            consumed[currentDay][good] = consumedBarrels;
+            produced[currentDay][good] = producedUnits;
+            consumed[currentDay][good] = consumedUnits;
         }
 
-        /// <summary>Barrels produced over the days remembered.</summary>
+        /// <summary>Units produced over the days remembered.</summary>
         public double ProducedOf(int good)
         {
             return Sum(produced, good);
         }
 
-        /// <summary>Barrels consumed over the days remembered.</summary>
+        /// <summary>Units consumed over the days remembered.</summary>
         public double ConsumedOf(int good)
         {
             return Sum(consumed, good);

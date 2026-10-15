@@ -266,7 +266,7 @@ namespace DarkFantasyMerchant.Core
 
             if (incoming != null && (incoming.GetLength(0) < PortCount || incoming.GetLength(1) < GoodCount))
             {
-                throw new ArgumentException("The incoming barrels must have a row per port and a column per good.", nameof(incoming));
+                throw new ArgumentException("The incoming units must have a row per port and a column per good.", nameof(incoming));
             }
         }
     }

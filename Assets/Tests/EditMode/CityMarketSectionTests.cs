@@ -257,9 +257,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase(true, false, 10)]
         [TestCase(false, true, 100)]
         [TestCase(true, true, 100)]
-        public void BarrelsFor_FollowsTheModifierKeys(bool shift, bool ctrl, int expected)
+        public void UnitsFor_FollowsTheModifierKeys(bool shift, bool ctrl, int expected)
         {
-            Assert.AreEqual(expected, CityMarketSection.BarrelsFor(shift, ctrl));
+            Assert.AreEqual(expected, CityMarketSection.UnitsFor(shift, ctrl));
         }
 
         [Test]

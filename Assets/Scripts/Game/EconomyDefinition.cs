@@ -58,16 +58,16 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("T2: T1 plus these days of the city's production; T2 is T1 for a good the city does not produce. T3 is T2 plus T0.")]
         [SerializeField, Min(0f)] private double t2ProductionDays = 10d;
 
-        [Tooltip("The lowest T0, in barrels. Above 0.")]
+        [Tooltip("The lowest T0, in units of the good. Above 0.")]
         [SerializeField, Min(0f)] private double t0Floor = 5d;
 
-        [Tooltip("The lowest T1, in barrels. At least the T0 floor.")]
+        [Tooltip("The lowest T1, in units of the good. At least the T0 floor.")]
         [SerializeField, Min(0f)] private double t1Floor = 10d;
 
-        [Tooltip("The lowest T2, in barrels. At least the T1 floor.")]
+        [Tooltip("The lowest T2, in units of the good. At least the T1 floor.")]
         [SerializeField, Min(0f)] private double t2Floor = 15d;
 
-        [Tooltip("The lowest T3, in barrels. At least the T2 floor.")]
+        [Tooltip("The lowest T3, in units of the good. At least the T2 floor.")]
         [SerializeField, Min(0f)] private double t3Floor = 20d;
 
         [Header("Prices, as factors of a good's base price")]

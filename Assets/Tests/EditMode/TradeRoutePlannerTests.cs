@@ -391,13 +391,20 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void WithoutUnits_EveryUnitTakesOneBarrel()
         {
-            CityMarket source = Market(Surplus, AtT1);
-            CityMarket shortage = Market(Empty, AtT1);
+            // The markets of the test above: with fish taking one barrel, it fills the hold.
+            var goods = new[] { new MarketGood(1000, 2, 0, 0), new MarketGood(10, 2, 0, 0) };
+            var source = new CityMarket(
+                goods, TestMarkets.Thresholds, TestMarkets.Workforce, 0, TestMarkets.Pricing, 7, new CityPopulation(1000));
+            var shortage = new CityMarket(
+                goods, TestMarkets.Thresholds, TestMarkets.Workforce, 0, TestMarkets.Pricing, 7, new CityPopulation(1000));
+            Put(source, Fish, 120);
+            Put(source, Iron, 120);
             var planner = new TradeRoutePlanner(new[] { source, shortage }, Days(2, 1d), 1d);
 
-            planner.TryPlanTrade(0, 7, null, out TradePlan plan);
+            Assert.IsTrue(planner.TryPlanTrade(0, 39, null, out TradePlan plan));
 
-            Assert.AreEqual(7, plan.TotalUnits);
+            Assert.AreEqual(39, plan.UnitsOf(Fish));
+            Assert.AreEqual(0, plan.UnitsOf(Iron));
         }
 
         [Test]

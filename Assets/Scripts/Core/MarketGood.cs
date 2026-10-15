@@ -9,9 +9,9 @@ namespace DarkFantasyMerchant.Core
     public readonly struct MarketGood
     {
         /// <param name="basePrice">Gold per unit that the factors of the price curves multiply, above 0; it can be a fraction.</param>
-        /// <param name="dailyConsumptionPerThousand">Barrels 1 000 inhabitants consume in a day; it can be a fraction.</param>
+        /// <param name="dailyConsumptionPerThousand">Units of the good 1 000 inhabitants consume in a day; it can be a fraction.</param>
         /// <param name="maxWorkers">Most workers of the city's workshop for the good; 0 for a good the city does not produce.</param>
-        /// <param name="dailyOutputPerWorker">Barrels a worker of that workshop makes in a day, its efficiency included.</param>
+        /// <param name="dailyOutputPerWorker">Units of the good a worker of that workshop makes in a day, its efficiency included.</param>
         /// <param name="isFood">Whether the stock of the good feeds the city: only food makes its population change.</param>
         public MarketGood(
             double basePrice,
@@ -53,7 +53,7 @@ namespace DarkFantasyMerchant.Core
 
         public bool IsProduced => MaxWorkers > 0 && DailyOutputPerWorker > 0d;
 
-        /// <summary>Barrels the workshop makes in a day with all its workers: it does not depend on the city's size.</summary>
+        /// <summary>Units the workshop makes in a day with all its workers: it does not depend on the city's size.</summary>
         public double DailyCapacity => MaxWorkers * DailyOutputPerWorker;
 
         private static void RequireNotNegative(double value, string name)

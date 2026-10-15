@@ -170,7 +170,7 @@ namespace DarkFantasyMerchant.Game
             return $"{Mathf.RoundToInt(speedFactor * 100f)}\u00A0%";
         }
 
-        /// <summary>The barrels aboard out of the capacity: "60 / 200".</summary>
+        /// <summary>The barrels of room taken out of the capacity: "60 / 200".</summary>
         public static string FormatHold(CargoHold hold)
         {
             return $"{TreasuryHudController.FormatNumber(hold.Used)} / {TreasuryHudController.FormatNumber(hold.Capacity)}";

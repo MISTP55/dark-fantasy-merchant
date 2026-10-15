@@ -16,7 +16,7 @@ namespace DarkFantasyMerchant.Game
         /// <summary>On the section while a hold is shown: reveals the hold column.</summary>
         public const string TradingClass = "market--trading";
 
-        /// <summary>Written instead of a buy price when the city has no barrel to sell.</summary>
+        /// <summary>Written instead of a buy price when the city has no whole unit to sell.</summary>
         public const string NoPrice = "—";
 
         private const string RowClass = "market__row";
@@ -78,8 +78,8 @@ namespace DarkFantasyMerchant.Game
             Hide();
         }
 
-        /// <summary>Barrels a click trades: 1, 10 with Shift, 100 with Ctrl.</summary>
-        public static int BarrelsFor(bool shift, bool ctrl)
+        /// <summary>Units a click trades, barrels or bushels: 1, 10 with Shift, 100 with Ctrl.</summary>
+        public static int UnitsFor(bool shift, bool ctrl)
         {
             if (ctrl)
             {
@@ -120,21 +120,21 @@ namespace DarkFantasyMerchant.Game
             section.style.display = DisplayStyle.None;
         }
 
-        /// <summary>Buys up to that many barrels of a good into the shown hold; nothing without one.</summary>
-        public void Buy(int good, int barrels)
+        /// <summary>Buys up to that many units of a good into the shown hold; nothing without one.</summary>
+        public void Buy(int good, int units)
         {
             if (hold != null && good < market.GoodCount)
             {
-                Trade.Buy(market, hold, treasury, good, barrels);
+                Trade.Buy(market, hold, treasury, good, units);
             }
         }
 
-        /// <summary>Sells up to that many barrels of a good from the shown hold; nothing without one.</summary>
-        public void Sell(int good, int barrels)
+        /// <summary>Sells up to that many units of a good from the shown hold; nothing without one.</summary>
+        public void Sell(int good, int units)
         {
             if (hold != null && good < market.GoodCount)
             {
-                Trade.Sell(market, hold, treasury, good, barrels);
+                Trade.Sell(market, hold, treasury, good, units);
             }
         }
 
@@ -149,8 +149,8 @@ namespace DarkFantasyMerchant.Game
             var row = new Row
             {
                 Stock = AddLabel(element, NumberCellClass),
-                BuyPrice = AddPrice(element, evt => Buy(good, BarrelsFor(evt.shiftKey, evt.ctrlKey))),
-                SellPrice = AddPrice(element, evt => Sell(good, BarrelsFor(evt.shiftKey, evt.ctrlKey))),
+                BuyPrice = AddPrice(element, evt => Buy(good, UnitsFor(evt.shiftKey, evt.ctrlKey))),
+                SellPrice = AddPrice(element, evt => Sell(good, UnitsFor(evt.shiftKey, evt.ctrlKey))),
                 Held = AddLabel(element, NumberCellClass, TradeCellClass),
             };
 

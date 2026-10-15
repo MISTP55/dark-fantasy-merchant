@@ -38,7 +38,7 @@ namespace DarkFantasyMerchant.Core
         private readonly Dictionary<Ship, Merchant> merchantsByShip = new Dictionary<Ship, Merchant>();
         private readonly List<Merchant> merchants = new List<Merchant>();
 
-        // Barrels under way to each port, by port then good. Rebuilt for every decision.
+        // Units under way to each port, by port then good. Rebuilt for every decision.
         private readonly int[,] incoming;
 
         // Ports another ship of the fleet is sailing to empty, to trade from. Rebuilt with incoming.

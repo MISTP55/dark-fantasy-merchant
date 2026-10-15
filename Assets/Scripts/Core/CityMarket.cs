@@ -13,7 +13,7 @@ namespace DarkFantasyMerchant.Core
     /// </summary>
     public sealed class CityMarket
     {
-        private const double WholeBarrelMargin = 1e-9;
+        private const double WholeUnitMargin = 1e-9;
 
         private readonly MarketGood[] goods;
         private readonly double[] stocks;
@@ -102,11 +102,11 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// Raised once by a day that starts, after the population has changed, and once
-        /// when barrels were taken or put.
+        /// when units were taken or put.
         /// </summary>
         public event Action Changed;
 
-        /// <summary>Barrels the inhabitants consume in a day while the city has them.</summary>
+        /// <summary>Units the inhabitants consume in a day while the city has them.</summary>
         public double DailyConsumptionOf(int good)
         {
             RequireGood(good);
@@ -141,7 +141,7 @@ namespace DarkFantasyMerchant.Core
             return foods > 0;
         }
 
-        /// <summary>Barrels in stock; a city consumes fractions of a barrel, so it is not whole.</summary>
+        /// <summary>Units in stock; a city consumes fractions of a unit, so it is not whole.</summary>
         public double StockOf(int good)
         {
             RequireGood(good);
@@ -149,11 +149,11 @@ namespace DarkFantasyMerchant.Core
             return stocks[good];
         }
 
-        /// <summary>Whole barrels in stock: what is shown and what can be bought.</summary>
+        /// <summary>Whole units in stock: what is shown and what can be bought.</summary>
         public int AvailableOf(int good)
         {
             // Days of fractional consumption leave a whole stock a hair short of itself.
-            return (int)Math.Min(int.MaxValue, Math.Floor(StockOf(good) + WholeBarrelMargin));
+            return (int)Math.Min(int.MaxValue, Math.Floor(StockOf(good) + WholeUnitMargin));
         }
 
         /// <summary>The stocks at which the prices of a good are given, for the population of the moment.</summary>
@@ -180,20 +180,20 @@ namespace DarkFantasyMerchant.Core
             return goods[good].IsProduced ? goods[good].MaxWorkers : 0;
         }
 
-        /// <summary>Barrels the workshop makes in a week with the workers of the moment, while the stock is not above T3.</summary>
+        /// <summary>Units the workshop makes in a week with the workers of the moment, while the stock is not above T3.</summary>
         public double NominalWeeklyProductionOf(int good)
         {
             return workers[good] * goods[good].DailyOutputPerWorker * daysPerWeek;
         }
 
-        /// <summary>Barrels the city consumes in a week while it has them.</summary>
+        /// <summary>Units the city consumes in a week while it has them.</summary>
         public double NominalWeeklyConsumptionOf(int good)
         {
             return DailyConsumptionOf(good) * daysPerWeek;
         }
 
         /// <summary>
-        /// Barrels the city actually produced over the last days, a week of them at most:
+        /// Units the city actually produced over the last days, a week of them at most:
         /// less than the nominal figure on the days the stock was above T3.
         /// </summary>
         public double RecentProductionOf(int good)
@@ -202,7 +202,7 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
-        /// Barrels the city actually consumed over the last days, a week of them at most:
+        /// Units the city actually consumed over the last days, a week of them at most:
         /// less than the nominal figure when the stock ran out. What the player buys is not counted.
         /// </summary>
         public double RecentConsumptionOf(int good)
@@ -210,48 +210,48 @@ namespace DarkFantasyMerchant.Core
             return weekLog.ConsumedOf(good);
         }
 
-        /// <summary>What the player pays for the next barrel, or for a later one of the same purchase.</summary>
-        /// <param name="barrelsAlreadyBought">Barrels of this purchase that come before it.</param>
-        public long BuyPriceOf(int good, int barrelsAlreadyBought = 0)
+        /// <summary>What the player pays for the next unit, or for a later one of the same purchase.</summary>
+        /// <param name="unitsAlreadyBought">Units of this purchase that come before it.</param>
+        public long BuyPriceOf(int good, int unitsAlreadyBought = 0)
         {
             RequireGood(good);
-            RequireNotNegative(barrelsAlreadyBought, nameof(barrelsAlreadyBought));
+            RequireNotNegative(unitsAlreadyBought, nameof(unitsAlreadyBought));
 
-            return pricing.BuyPrice(goods[good].BasePrice, StockOf(good) - barrelsAlreadyBought, ThresholdsOf(good));
+            return pricing.BuyPrice(goods[good].BasePrice, StockOf(good) - unitsAlreadyBought, ThresholdsOf(good));
         }
 
-        /// <summary>What the player is paid for the next barrel, or for a later one of the same sale.</summary>
-        /// <param name="barrelsAlreadySold">Barrels of this sale that come before it.</param>
-        public long SellPriceOf(int good, int barrelsAlreadySold = 0)
+        /// <summary>What the player is paid for the next unit, or for a later one of the same sale.</summary>
+        /// <param name="unitsAlreadySold">Units of this sale that come before it.</param>
+        public long SellPriceOf(int good, int unitsAlreadySold = 0)
         {
             RequireGood(good);
-            RequireNotNegative(barrelsAlreadySold, nameof(barrelsAlreadySold));
+            RequireNotNegative(unitsAlreadySold, nameof(unitsAlreadySold));
 
-            return pricing.SellPrice(goods[good].BasePrice, StockOf(good) + barrelsAlreadySold, ThresholdsOf(good));
+            return pricing.SellPrice(goods[good].BasePrice, StockOf(good) + unitsAlreadySold, ThresholdsOf(good));
         }
 
-        /// <summary>Takes whole barrels out of the stock. Throws when fewer are available.</summary>
-        public void Take(int good, int barrels)
+        /// <summary>Takes whole units out of the stock. Throws when fewer are available.</summary>
+        public void Take(int good, int units)
         {
-            RequirePositive(barrels);
+            RequirePositive(units);
 
-            if (barrels > AvailableOf(good))
+            if (units > AvailableOf(good))
             {
-                throw new ArgumentOutOfRangeException(nameof(barrels));
+                throw new ArgumentOutOfRangeException(nameof(units));
             }
 
-            // Not below nothing: the last barrel can be that hair short.
-            stocks[good] = Math.Max(0d, stocks[good] - barrels);
+            // Not below nothing: the last unit can be that hair short.
+            stocks[good] = Math.Max(0d, stocks[good] - units);
             Changed?.Invoke();
         }
 
-        /// <summary>Adds whole barrels to the stock, whatever it already holds.</summary>
-        public void Put(int good, int barrels)
+        /// <summary>Adds whole units to the stock, whatever it already holds.</summary>
+        public void Put(int good, int units)
         {
             RequireGood(good);
-            RequirePositive(barrels);
+            RequirePositive(units);
 
-            stocks[good] += barrels;
+            stocks[good] += units;
             Changed?.Invoke();
         }
 
@@ -303,17 +303,17 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
-        private static void RequirePositive(int barrels)
+        private static void RequirePositive(int units)
         {
-            if (barrels < 1)
+            if (units < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(barrels));
+                throw new ArgumentOutOfRangeException(nameof(units));
             }
         }
 
-        private static void RequireNotNegative(int barrels, string name)
+        private static void RequireNotNegative(int units, string name)
         {
-            if (barrels < 0)
+            if (units < 0)
             {
                 throw new ArgumentOutOfRangeException(name);
             }

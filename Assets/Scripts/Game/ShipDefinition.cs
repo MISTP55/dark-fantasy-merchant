@@ -17,7 +17,7 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Sailors the ship has room for.")]
         [SerializeField, Min(1)] private int crewCapacity = 10;
 
-        [Tooltip("Barrels of goods the hold has room for.")]
+        [Tooltip("Room in the hold, in barrels: a bushel takes the economy's barrels per bushel.")]
         [SerializeField, Min(0)] private int cargoCapacity = 200;
 
         [Tooltip("One sprite per heading, clockwise from north: N, NE, E, SE, S, SW, W, NW.")]

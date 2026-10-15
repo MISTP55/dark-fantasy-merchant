@@ -40,7 +40,7 @@ namespace DarkFantasyMerchant.Game
         private const string GoodGroupClass = "debug-cities__cell--good-group";
 
         // Not the French culture: its separators and its minus sign depend on the platform.
-        private static readonly NumberFormatInfo BarrelFormat = new NumberFormatInfo
+        private static readonly NumberFormatInfo QuantityFormat = new NumberFormatInfo
         {
             NumberGroupSeparator = "\u00A0",
             NumberDecimalSeparator = ",",
@@ -120,17 +120,17 @@ namespace DarkFantasyMerchant.Game
             WriteTotals();
         }
 
-        /// <summary>Barrels as the table writes them: "1 234,6", one decimal, the French way.</summary>
-        public static string FormatBarrels(double barrels)
+        /// <summary>A quantity as the table writes it, in the unit of its good: "1 234,6", one decimal, the French way.</summary>
+        public static string FormatQuantity(double quantity)
         {
-            return Rounded(barrels).ToString("N1", BarrelFormat);
+            return Rounded(quantity).ToString("N1", QuantityFormat);
         }
 
         /// <summary>A net gain as the table writes it: "+42,0" or "-5,6", coloured, or a plain "0,0".</summary>
-        public static string FormatNet(double barrels)
+        public static string FormatNet(double quantity)
         {
-            double rounded = Rounded(barrels);
-            string text = rounded.ToString("N1", BarrelFormat);
+            double rounded = Rounded(quantity);
+            string text = rounded.ToString("N1", QuantityFormat);
 
             if (rounded > 0d)
             {
@@ -151,7 +151,7 @@ namespace DarkFantasyMerchant.Game
         public static string FormatRate(double rate)
         {
             double rounded = Rounded(rate * 100d);
-            string text = $"{rounded.ToString("N1", BarrelFormat)}\u00A0%";
+            string text = $"{rounded.ToString("N1", QuantityFormat)}\u00A0%";
 
             if (rounded > 0d)
             {
@@ -234,16 +234,16 @@ namespace DarkFantasyMerchant.Game
         }
 
         // A value that rounds to nothing is written without a sign.
-        private static double Rounded(double barrels)
+        private static double Rounded(double value)
         {
-            double rounded = Math.Round(barrels, 1, MidpointRounding.AwayFromZero);
+            double rounded = Math.Round(value, 1, MidpointRounding.AwayFromZero);
 
             return rounded == 0d ? 0d : rounded;
         }
 
         private static string FormatFigure(double nominal, double recent)
         {
-            return $"{FormatBarrels(nominal)} ({FormatBarrels(recent)})";
+            return $"{FormatQuantity(nominal)} ({FormatQuantity(recent)})";
         }
 
         private void Write(Row row)
@@ -325,7 +325,7 @@ namespace DarkFantasyMerchant.Game
                         continue;
                     }
 
-                    // The whole barrels, as the rows write them.
+                    // The whole units, as the rows write them.
                     stock += market.AvailableOf(i);
                     nominalProduction += market.NominalWeeklyProductionOf(i);
                     nominalConsumption += market.NominalWeeklyConsumptionOf(i);

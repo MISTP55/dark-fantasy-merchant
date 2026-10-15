@@ -3,7 +3,7 @@ using System;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// The four stocks of a good in a city at which its price factors are given, in barrels,
+    /// The four stocks of a good in a city at which its price factors are given, in units of the good,
     /// from the lowest to the highest. Two of them can be equal.
     /// </summary>
     public readonly struct StockThresholds

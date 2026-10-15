@@ -453,11 +453,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void FormatBarrels_WritesOneDecimal_TheFrenchWay()
+        public void FormatQuantity_WritesOneDecimal_TheFrenchWay()
         {
-            Assert.AreEqual("84,0", DebugCitiesTable.FormatBarrels(84));
-            Assert.AreEqual("5,6", DebugCitiesTable.FormatBarrels(5.6));
-            Assert.AreEqual("1\u00A0234,6", DebugCitiesTable.FormatBarrels(1234.56));
+            Assert.AreEqual("84,0", DebugCitiesTable.FormatQuantity(84));
+            Assert.AreEqual("5,6", DebugCitiesTable.FormatQuantity(5.6));
+            Assert.AreEqual("1\u00A0234,6", DebugCitiesTable.FormatQuantity(1234.56));
         }
 
         [Test]
