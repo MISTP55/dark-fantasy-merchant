@@ -34,7 +34,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(1, result.Barrels);
             Assert.AreEqual(price, result.Gold);
             Assert.AreEqual(59, market.AvailableOf(Good));
-            Assert.AreEqual(1, hold.BarrelsOf(Good));
+            Assert.AreEqual(1, hold.UnitsOf(Good));
             Assert.AreEqual(10000 - price, treasury.Gold);
         }
 
@@ -64,7 +64,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(60, result.Barrels);
             Assert.AreEqual(0, market.AvailableOf(Good));
-            Assert.AreEqual(60, hold.BarrelsOf(Good));
+            Assert.AreEqual(60, hold.UnitsOf(Good));
         }
 
         [Test]
@@ -117,7 +117,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(3, result.Barrels);
             Assert.AreEqual(expected, result.Gold);
-            Assert.AreEqual(2, hold.BarrelsOf(Good));
+            Assert.AreEqual(2, hold.UnitsOf(Good));
             Assert.AreEqual(63, market.AvailableOf(Good));
             Assert.AreEqual(10000 + expected, treasury.Gold);
         }
@@ -130,7 +130,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             TradeResult result = Trade.Sell(market, hold, treasury, Good, 100);
 
             Assert.AreEqual(2, result.Barrels);
-            Assert.AreEqual(0, hold.BarrelsOf(Good));
+            Assert.AreEqual(0, hold.UnitsOf(Good));
         }
 
         [Test]
@@ -213,7 +213,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(30, result.Barrels);
             Assert.AreEqual(expected, result.Gold);
             Assert.AreEqual(30, market.AvailableOf(Good));
-            Assert.AreEqual(30, hold.BarrelsOf(Good));
+            Assert.AreEqual(30, hold.UnitsOf(Good));
         }
 
         [Test]
@@ -237,7 +237,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(3, result.Barrels);
             Assert.AreEqual(expected, result.Gold);
-            Assert.AreEqual(2, hold.BarrelsOf(Good));
+            Assert.AreEqual(2, hold.UnitsOf(Good));
             Assert.AreEqual(63, market.AvailableOf(Good));
         }
 

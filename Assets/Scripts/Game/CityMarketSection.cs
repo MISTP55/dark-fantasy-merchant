@@ -222,7 +222,7 @@ namespace DarkFantasyMerchant.Game
                 bool isInMarket = i < market.GoodCount;
                 int available = isInMarket ? market.AvailableOf(i) : 0;
                 long buyPrice = isInMarket ? market.BuyPriceOf(i) : 0;
-                int held = hold != null ? hold.BarrelsOf(i) : 0;
+                int held = hold != null ? hold.UnitsOf(i) : 0;
 
                 row.Stock.text = TreasuryHudController.FormatNumber(available);
                 row.BuyPrice.text = available > 0 ? TreasuryHudController.FormatNumber(buyPrice) : NoPrice;

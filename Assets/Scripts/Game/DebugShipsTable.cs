@@ -256,7 +256,7 @@ namespace DarkFantasyMerchant.Game
 
             for (int i = 0; i < goodCount; i++)
             {
-                row.Goods[i].text = TreasuryHudController.FormatNumber(ship.Cargo.BarrelsOf(i));
+                row.Goods[i].text = TreasuryHudController.FormatNumber(ship.Cargo.UnitsOf(i));
             }
         }
 

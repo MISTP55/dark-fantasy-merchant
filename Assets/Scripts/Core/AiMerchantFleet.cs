@@ -188,7 +188,7 @@ namespace DarkFantasyMerchant.Core
 
             for (int good = 0; good < market.GoodCount; good++)
             {
-                int barrels = ship.Cargo.BarrelsOf(good);
+                int barrels = ship.Cargo.UnitsOf(good);
 
                 if (barrels > 0)
                 {
@@ -273,7 +273,7 @@ namespace DarkFantasyMerchant.Core
 
                 for (int good = 0; good < planner.GoodCount; good++)
                 {
-                    incoming[port, good] += other.Ship.Cargo.BarrelsOf(good);
+                    incoming[port, good] += other.Ship.Cargo.UnitsOf(good);
                 }
             }
         }

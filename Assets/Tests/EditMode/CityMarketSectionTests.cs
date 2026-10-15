@@ -139,7 +139,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             section.Buy(Wheat, 10);
 
-            Assert.AreEqual(10, hold.BarrelsOf(Wheat));
+            Assert.AreEqual(10, hold.UnitsOf(Wheat));
             Assert.AreEqual("50", Text(Wheat, StockCell));
             Assert.AreEqual("10", Text(Wheat, HoldCell));
             Assert.AreEqual(market.BuyPriceOf(Wheat).ToString(), Text(Wheat, BuyCell));
@@ -156,7 +156,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             section.Sell(Wine, 100);
 
-            Assert.AreEqual(0, hold.BarrelsOf(Wine));
+            Assert.AreEqual(0, hold.UnitsOf(Wine));
             Assert.AreEqual("20", Text(Wine, StockCell));
             Assert.IsFalse(IsEnabled(Wine, SellCell));
             Assert.Greater(treasury.Gold, 10000);
@@ -236,7 +236,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.DoesNotThrow(() => readOnly.Show(market, hold));
             Assert.DoesNotThrow(() => readOnly.Buy(Wheat, 1));
-            Assert.AreEqual(0, hold.BarrelsOf(Wheat));
+            Assert.AreEqual(0, hold.UnitsOf(Wheat));
         }
 
         [Test]

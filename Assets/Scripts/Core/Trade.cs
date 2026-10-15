@@ -97,7 +97,7 @@ namespace DarkFantasyMerchant.Core
         {
             Require(market, hold, barrels);
 
-            int sold = Math.Min(barrels, hold.BarrelsOf(good));
+            int sold = Math.Min(barrels, hold.UnitsOf(good));
 
             if (sold == 0)
             {

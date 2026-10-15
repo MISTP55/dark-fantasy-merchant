@@ -159,7 +159,7 @@ namespace DarkFantasyMerchant.Game
 
             for (int i = 0; i < economy.Goods.Count; i++)
             {
-                int barrels = shownCargo.BarrelsOf(i);
+                int barrels = shownCargo.UnitsOf(i);
 
                 if (barrels < 1 || economy.Goods[i] == null)
                 {

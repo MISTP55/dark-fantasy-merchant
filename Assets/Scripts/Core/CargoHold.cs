@@ -4,16 +4,19 @@ using System.Collections.Generic;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// The barrels of goods aboard one ship, out of those it has room for. Goods are
-    /// indices into the catalogue; every barrel takes the same room whatever it holds.
+    /// The goods aboard one ship, out of the room it has. Goods are indices into the
+    /// catalogue and are counted in their own unit, a barrel or a bushel; the room they
+    /// take is counted in barrels, a bushel taking several.
     /// </summary>
     public sealed class CargoHold
     {
-        // Barrels of each good, by index; grown when a good is first loaded.
-        private readonly List<int> barrelsByGood = new List<int>();
+        // Units of each good, by index; grown when a good is first loaded.
+        private readonly List<int> unitsByGood = new List<int>();
+        private readonly GoodUnits units;
 
-        /// <param name="capacity">Barrels the hold has room for; zero for a ship that carries nothing.</param>
-        public CargoHold(int capacity)
+        /// <param name="capacity">Barrels of room; zero for a ship that carries nothing.</param>
+        /// <param name="units">The room a unit of each good takes. Without it, every unit takes one barrel.</param>
+        public CargoHold(int capacity, GoodUnits units = null)
         {
             if (capacity < 0)
             {
@@ -21,60 +24,73 @@ namespace DarkFantasyMerchant.Core
             }
 
             Capacity = capacity;
+            this.units = units ?? GoodUnits.AllBarrels;
         }
 
+        /// <summary>Barrels of room.</summary>
         public int Capacity { get; }
 
-        /// <summary>Barrels aboard, all goods together.</summary>
+        /// <summary>Barrels of room taken, all goods together.</summary>
         public int Used { get; private set; }
 
         public int Free => Capacity - Used;
 
-        /// <summary>Raised when barrels were loaded or unloaded, not by a refusal.</summary>
+        /// <summary>Raised when goods were loaded or unloaded, not by a refusal.</summary>
         public event Action Changed;
 
-        public int BarrelsOf(int good)
+        /// <summary>Units of a good aboard.</summary>
+        public int UnitsOf(int good)
         {
             RequireGood(good);
 
-            return good < barrelsByGood.Count ? barrelsByGood[good] : 0;
+            return good < unitsByGood.Count ? unitsByGood[good] : 0;
+        }
+
+        /// <summary>The whole units of a good the free room still takes.</summary>
+        public int RoomFor(int good)
+        {
+            RequireGood(good);
+
+            return Free / units.RoomOf(good);
         }
 
         /// <returns>False when the hold has no room for all of them; nothing was loaded then.</returns>
-        public bool TryAdd(int good, int barrels)
+        public bool TryAdd(int good, int count)
         {
             RequireGood(good);
-            RequirePositive(barrels);
+            RequirePositive(count);
 
-            if (barrels > Free)
+            long room = (long)count * units.RoomOf(good);
+
+            if (room > Free)
             {
                 return false;
             }
 
-            while (barrelsByGood.Count <= good)
+            while (unitsByGood.Count <= good)
             {
-                barrelsByGood.Add(0);
+                unitsByGood.Add(0);
             }
 
-            barrelsByGood[good] += barrels;
-            Used += barrels;
+            unitsByGood[good] += count;
+            Used += (int)room;
             Changed?.Invoke();
             return true;
         }
 
         /// <returns>False when fewer are aboard; nothing was unloaded then.</returns>
-        public bool TryRemove(int good, int barrels)
+        public bool TryRemove(int good, int count)
         {
             RequireGood(good);
-            RequirePositive(barrels);
+            RequirePositive(count);
 
-            if (barrels > BarrelsOf(good))
+            if (count > UnitsOf(good))
             {
                 return false;
             }
 
-            barrelsByGood[good] -= barrels;
-            Used -= barrels;
+            unitsByGood[good] -= count;
+            Used -= count * units.RoomOf(good);
             Changed?.Invoke();
             return true;
         }
@@ -87,11 +103,11 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
-        private static void RequirePositive(int barrels)
+        private static void RequirePositive(int count)
         {
-            if (barrels < 1)
+            if (count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(barrels));
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
         }
     }
