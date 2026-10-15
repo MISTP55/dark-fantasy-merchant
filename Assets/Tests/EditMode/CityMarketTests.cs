@@ -111,6 +111,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(1, market.WorkersOf(0));
             Assert.AreEqual(0, market.RecentProductionOf(0), Tolerance);
         }
+
         [Test]
         public void StartDay_RefillsAProducedGoodByItsSurplus()
         {
@@ -178,6 +179,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(0, market.WorkersOf(0));
             Assert.AreEqual(0, market.NominalWeeklyProductionOf(0), Tolerance);
         }
+
         [Test]
         public void AStockAboveT3_IsOnlyConsumed()
         {
@@ -188,6 +190,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(218, market.StockOf(0), Tolerance);
         }
+
         [Test]
         public void AProducerLeftAlone_StaysBetweenT2AndT3()
         {
@@ -206,6 +209,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 Assert.LessOrEqual(market.StockOf(0), 113d, $"day {day}");
             }
         }
+
         [Test]
         public void AvailableOf_IsTheWholeBarrels()
         {
@@ -453,6 +457,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(0, market.RecentProductionOf(0), Tolerance);
             Assert.AreEqual(6, market.RecentConsumptionOf(0), Tolerance);
         }
+
         [Test]
         public void RecentProduction_IsNothingAboveT3()
         {
@@ -477,6 +482,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(113, market.StockOf(0), Tolerance);
             Assert.AreEqual(3, market.RecentProductionOf(0), Tolerance);
         }
+
         [Test]
         public void RecentConsumption_StopsAtAnEmptyStock()
         {

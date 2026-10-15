@@ -100,9 +100,11 @@ namespace DarkFantasyMerchant.Game
         // A doubtful city still gets a market: these are mistakes of content, not reasons to stop.
         private void WarnAbout(CityDefinition city)
         {
-            if (city.Population < 1)
+            if (!ProducesAnyGood(city))
             {
-                Debug.LogWarning($"CityDefinition '{city.name}' has no inhabitant; its market is empty.", city);
+                Debug.LogWarning(
+                    $"CityDefinition '{city.name}' produces no good of the economy; it still starts with the economy's population.",
+                    city);
             }
 
             WarnAboutGoods(city, city.EfficientGoods);
@@ -117,6 +119,19 @@ namespace DarkFantasyMerchant.Game
                         city);
                 }
             }
+        }
+
+        private bool ProducesAnyGood(CityDefinition city)
+        {
+            foreach (GoodDefinition good in economy.Goods)
+            {
+                if (city.ProductionOf(good) != GoodProduction.None)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void WarnAboutGoods(CityDefinition city, IReadOnlyList<GoodDefinition> produced)

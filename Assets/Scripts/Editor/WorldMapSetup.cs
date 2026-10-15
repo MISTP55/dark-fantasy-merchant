@@ -17,8 +17,7 @@ namespace DarkFantasyMerchant.Editor
     /// player treasury, treasury HUD, player notifications, notifications HUD, ship
     /// arrival notifier, player expenses, world economy, AI merchants and debug panel objects when
     /// it has none, and the references to them that are empty. Cities of the map that
-    /// have no inhabitant are given the population and the productions of the sample
-    /// content.
+    /// produce nothing are given the productions of the sample content.
     /// </summary>
     public static class WorldMapSetup
     {
@@ -134,7 +133,6 @@ namespace DarkFantasyMerchant.Editor
                 float y,
                 CityAccess access,
                 CitySize size,
-                int population,
                 string[] efficientGoods,
                 string[] inefficientGoods,
                 string description)
@@ -143,7 +141,6 @@ namespace DarkFantasyMerchant.Editor
                 Position = new Vector2(x, y);
                 Access = access;
                 Size = size;
-                Population = population;
                 EfficientGoods = efficientGoods;
                 InefficientGoods = inefficientGoods;
                 Description = description;
@@ -153,12 +150,11 @@ namespace DarkFantasyMerchant.Editor
             public Vector2 Position { get; }
             public CityAccess Access { get; }
             public CitySize Size { get; }
-            public int Population { get; }
 
-            /// <summary>Asset names of the goods produced well above the consumption.</summary>
+            /// <summary>Asset names of the goods the city has a workshop for, at the full output.</summary>
             public string[] EfficientGoods { get; }
 
-            /// <summary>Asset names of the goods produced above the consumption, less than the efficient ones.</summary>
+            /// <summary>Asset names of the goods the city has a workshop for, at the inefficient share of the output.</summary>
             public string[] InefficientGoods { get; }
 
             public string Description { get; }
@@ -168,25 +164,25 @@ namespace DarkFantasyMerchant.Editor
         // with the placement tool. Every good is produced efficiently by at least one city.
         private static readonly SampleCity[] SampleCities =
         {
-            new SampleCity("Sparia", 0.115f, 0.645f, CityAccess.Coastal, CitySize.Town, 2100,
+            new SampleCity("Sparia", 0.115f, 0.645f, CityAccess.Coastal, CitySize.Town,
                 new[] { "Grain" }, new[] { "Fish", "Beer" },
                 "Une ville portuaire battue par les vents sur le cap occidental, première terre en vue des navires qui traversent la mer d'Aedean occidentale."),
-            new SampleCity("Elforth", 0.196f, 0.609f, CityAccess.Coastal, CitySize.Village, 1500,
+            new SampleCity("Elforth", 0.196f, 0.609f, CityAccess.Coastal, CitySize.Village,
                 new[] { "Fish", "Vegetables" }, new[] { "Meat" },
                 "Un village de pêcheurs abrité par les bois du sud, connu pour sa morue salée et ses contrebandiers discrets."),
-            new SampleCity("Bactfied", 0.374f, 0.554f, CityAccess.Coastal, CitySize.Town, 2000,
+            new SampleCity("Bactfied", 0.374f, 0.554f, CityAccess.Coastal, CitySize.Town,
                 new[] { "Iron", "Beer" }, new[] { "Meat", "Vegetables" },
                 "Un port marchand animé sur la mer d'Eamiq, où les barges fluviales rencontrent les navires de haute mer."),
-            new SampleCity("Hitrun", 0.470f, 0.598f, CityAccess.Coastal, CitySize.Village, 1800,
+            new SampleCity("Hitrun", 0.470f, 0.598f, CityAccess.Coastal, CitySize.Village,
                 new[] { "Meat" }, new[] { "Fish", "Iron", "Grain", "Vegetables" },
                 "Un village perché au-dessus d'une crique étroite, qui vend laine et pierre aux caboteurs de passage."),
-            new SampleCity("Cerbias", 0.554f, 0.500f, CityAccess.Coastal, CitySize.Village, 1500,
+            new SampleCity("Cerbias", 0.554f, 0.500f, CityAccess.Coastal, CitySize.Village,
                 new[] { "Beer", "Vegetables" }, new[] { "Fish", "Meat" },
                 "Un mouillage isolé à la pointe de la langue de sable méridionale, dernier abri avant le large de la mer de Rakmitag."),
-            new SampleCity("Hazer Empire", 0.586f, 0.627f, CityAccess.Coastal, CitySize.Capital, 2500,
+            new SampleCity("Hazer Empire", 0.586f, 0.627f, CityAccess.Coastal, CitySize.Capital,
                 new[] { "Iron" }, new[] { "Fish", "Beer", "Grain", "Meat" },
                 "La capitale impériale qui garde le détroit, dont les douanes taxent chaque navire en route vers la côte du désert."),
-            new SampleCity("Liveria", 0.345f, 0.651f, CityAccess.River, CitySize.Capital, 2100,
+            new SampleCity("Liveria", 0.345f, 0.651f, CityAccess.River, CitySize.Capital,
                 new[] { "Grain" }, new[] { "Iron", "Vegetables" },
                 "Une capitale fluviale hérissée de clochers au cœur des Bois de la Couronne, que l'on ne rejoint qu'en barge."),
         };
@@ -553,8 +549,8 @@ namespace DarkFantasyMerchant.Editor
             return $"{GoodsFolder}/{assetName}.asset";
         }
 
-        // A city without inhabitants has no economy yet: one made before the economy existed, or
-        // just created. A city that has a population is the user's and is left untouched.
+        // A city that produces nothing has no economy yet: one made before the economy existed, or
+        // just created. A city that produces something is the user's and is left untouched.
         private static void FillCityEconomies()
         {
             var definition = AssetDatabase.LoadAssetAtPath<WorldMapDefinition>(DefinitionPath);
@@ -566,7 +562,7 @@ namespace DarkFantasyMerchant.Editor
 
             foreach (CityDefinition city in definition.Cities)
             {
-                if (city == null || city.Population != 0)
+                if (city == null || city.EfficientGoods.Count + city.InefficientGoods.Count > 0)
                 {
                     continue;
                 }
@@ -585,7 +581,6 @@ namespace DarkFantasyMerchant.Editor
         private static void FillCityEconomy(CityDefinition city, SampleCity sample)
         {
             var serialized = new SerializedObject(city);
-            serialized.FindProperty("population").intValue = sample.Population;
             SetGoods(serialized.FindProperty("efficientGoods"), sample.EfficientGoods);
             SetGoods(serialized.FindProperty("inefficientGoods"), sample.InefficientGoods);
             serialized.ApplyModifiedPropertiesWithoutUndo();

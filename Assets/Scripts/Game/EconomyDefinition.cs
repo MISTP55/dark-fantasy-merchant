@@ -42,6 +42,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Workers every city starts with, spread evenly over its workshops: 250 is Patrician III's.")]
         [SerializeField, Min(0)] private int startingWorkforce = 250;
 
+        [Tooltip("Inhabitants per starting worker: 72 / 17 is Patrician III's 4, plus a seventeenth of beggars.")]
+        [SerializeField, Min(0f)] private double inhabitantsPerWorker = 72d / 17d;
+
         [Header("Stock thresholds T0 to T3 of a good in a city, at which its prices are given")]
         [Tooltip("T0: days of the city's consumption.")]
         [SerializeField, Min(0f)] private double t0Days = 7d;
@@ -101,6 +104,11 @@ namespace DarkFantasyMerchant.Game
         public int WorkersAboveT3 => workersAboveT3;
 
         public int StartingWorkforce => startingWorkforce;
+
+        public double InhabitantsPerWorker => inhabitantsPerWorker;
+
+        /// <summary>The inhabitants of every city when the game starts: the starting workforce, times the inhabitants per worker.</summary>
+        public double StartingPopulation => startingWorkforce * inhabitantsPerWorker;
 
         public double T0Days => t0Days;
 
@@ -175,7 +183,8 @@ namespace DarkFantasyMerchant.Game
                 ?? ProblemOf(() => sellFactors.ToCurve(), "the sell factors")
                 ?? ProblemOf(() => CreatePricing(), "the sell factors against the buy factors")
                 ?? ProblemOf(() => CreateThresholdRule(), "the stock thresholds")
-                ?? ProblemOf(() => CreateWorkforceRule(), "the workforce");
+                ?? ProblemOf(() => CreateWorkforceRule(), "the workforce")
+                ?? ProblemOf(() => new CityPopulation(StartingPopulation), "the starting population (workforce times inhabitants per worker)");
 
             return problem == null;
         }
@@ -237,8 +246,8 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// The market of a city at the start of the game, with the population of its
-        /// definition and one stock per good of the catalogue. Call
+        /// The market of a city at the start of the game, with the starting population,
+        /// the same in every city, and one stock per good of the catalogue. Call
         /// <see cref="TryValidate"/> first. Throws when a setting or a good's figure is unusable.
         /// </summary>
         /// <param name="daysPerWeek">Days of the calendar's week: goods give their consumption per week.</param>
@@ -294,7 +303,7 @@ namespace DarkFantasyMerchant.Game
                 startingStockDays,
                 pricing,
                 daysPerWeek,
-                new CityPopulation(Math.Max(0, city.Population)),
+                new CityPopulation(StartingPopulation),
                 foodGrowth);
         }
     }

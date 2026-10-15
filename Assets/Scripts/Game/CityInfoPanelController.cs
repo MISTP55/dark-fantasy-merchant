@@ -179,6 +179,9 @@ namespace DarkFantasyMerchant.Game
             return root.panel.Pick(panelPosition) != null;
         }
 
+        /// <summary>What the panel shows of a city that has no market: its population is the market's.</summary>
+        public const string NoPopulation = "Population : —";
+
         /// <summary>The population as the panel writes it: "Population : 6 000".</summary>
         public static string FormatPopulation(int population)
         {
@@ -217,7 +220,7 @@ namespace DarkFantasyMerchant.Game
             cityPanel.style.display = DisplayStyle.Flex;
         }
 
-        // The inhabitants of the game are in the market; a city without one shows those it starts with.
+        // The inhabitants of the game are in the market; a city without one has none to show.
         private void ShowPopulationOf(CityDefinition city)
         {
             FollowPopulationOf(worldEconomy != null ? worldEconomy.MarketOf(city) : null);
@@ -228,7 +231,7 @@ namespace DarkFantasyMerchant.Game
             }
             else
             {
-                populationLabel.text = FormatPopulation(city.Population);
+                populationLabel.text = NoPopulation;
             }
         }
 

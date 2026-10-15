@@ -63,13 +63,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void EveryCity_HasInhabitants_AndProducesOnlyGoodsOfTheCatalogue_Once()
+        public void EveryCity_ProducesSomething_OnlyGoodsOfTheCatalogue_Once()
         {
             EconomyDefinition economy = LoadEconomy();
 
             foreach (CityDefinition city in LoadMap().Cities)
             {
-                Assert.Greater(city.Population, 0, city.name);
+                Assert.Greater(city.EfficientGoods.Count + city.InefficientGoods.Count, 0, city.name);
 
                 var seen = new HashSet<GoodDefinition>();
 
@@ -105,25 +105,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             }
         }
 
-        [TestCase("Sparia", 2100)]
-        [TestCase("Elforth", 1500)]
-        [TestCase("Bactfied", 2000)]
-        [TestCase("Hitrun", 1800)]
-        [TestCase("Cerbias", 1500)]
-        [TestCase("Hazer Empire", 2500)]
-        [TestCase("Liveria", 2100)]
-        public void ACity_HasItsPopulation(string cityName, int population)
+        [Test]
+        public void EveryCity_StartsWithPatricianIIIsWorkforce()
         {
-            foreach (CityDefinition city in LoadMap().Cities)
-            {
-                if (city.DisplayName == cityName)
-                {
-                    Assert.AreEqual(population, city.Population);
-                    return;
-                }
-            }
+            EconomyDefinition economy = LoadEconomy();
 
-            Assert.Fail($"{cityName} is not on the map.");
+            Assert.AreEqual(250, economy.StartingWorkforce);
+            Assert.AreEqual(72d / 17d, economy.InhabitantsPerWorker, 1e-9);
         }
 
         [Test]

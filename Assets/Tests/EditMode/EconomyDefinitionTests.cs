@@ -47,9 +47,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return instance;
         }
 
-        private CityDefinition City(int population, GoodDefinition[] efficient, GoodDefinition[] inefficient)
+        private CityDefinition City(GoodDefinition[] efficient, GoodDefinition[] inefficient)
         {
-            return Track(TestEconomy.CreateCity(population, efficient, inefficient));
+            return Track(TestEconomy.CreateCity(efficient, inefficient));
         }
 
         [Test]
@@ -65,6 +65,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(1, fresh.HiredUpToT3);
             Assert.AreEqual(1, fresh.WorkersAboveT3);
             Assert.AreEqual(250, fresh.StartingWorkforce);
+            Assert.AreEqual(72d / 17d, fresh.InhabitantsPerWorker, Tolerance);
             Assert.AreEqual(7, fresh.T0Days);
             Assert.AreEqual(14, fresh.T1AddedDays);
             Assert.AreEqual(10, fresh.T2ProductionDays);
@@ -99,7 +100,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.Greater(good.MaxWorkers, 0);
             Assert.Greater(good.DailyOutputPerWorker, 0d);
             Assert.AreEqual(GoodCategory.RawMaterial, good.Category);
-            Assert.AreEqual(0, city.Population);
             Assert.AreEqual(0, city.EfficientGoods.Count);
             Assert.AreEqual(0, city.InefficientGoods.Count);
         }
@@ -118,7 +118,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void ProductionOf_ReadsTheCitysLists()
         {
-            CityDefinition city = City(6000, new[] { wheat }, new[] { fish });
+            CityDefinition city = City(new[] { wheat }, new[] { fish });
 
             Assert.AreEqual(GoodProduction.Efficient, city.ProductionOf(wheat));
             Assert.AreEqual(GoodProduction.Inefficient, city.ProductionOf(fish));
@@ -129,7 +129,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AGoodInBothLists_IsEfficient()
         {
-            CityDefinition city = City(6000, new[] { wheat }, new[] { wheat });
+            CityDefinition city = City(new[] { wheat }, new[] { wheat });
 
             Assert.AreEqual(GoodProduction.Efficient, city.ProductionOf(wheat));
         }
@@ -137,7 +137,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AnEmptyEntry_IsIgnored()
         {
-            CityDefinition city = City(6000, new GoodDefinition[] { null, wheat }, new GoodDefinition[] { null });
+            CityDefinition city = City(new GoodDefinition[] { null, wheat }, new GoodDefinition[] { null });
 
             Assert.AreEqual(GoodProduction.Efficient, city.ProductionOf(wheat));
             Assert.AreEqual(GoodProduction.None, city.ProductionOf(null));
@@ -147,7 +147,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void CreateMarket_StocksEveryGoodOfTheCatalogue_FromThePopulation()
         {
-            CityDefinition city = City(6000, new[] { wheat }, new[] { fish });
+            CityDefinition city = City(new[] { wheat }, new[] { fish });
 
             CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
 
@@ -167,7 +167,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void CreateMarket_SpreadsTheWeeklyConsumptionOverTheDaysOfTheWeek()
         {
-            CityDefinition city = City(6000, new GoodDefinition[0], new GoodDefinition[0]);
+            CityDefinition city = City(new GoodDefinition[0], new GoodDefinition[0]);
 
             // Wheat: 84 barrels a week, over a week of 10 days; T0 is 7 days of it.
             CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), 10);
@@ -179,7 +179,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase(-1)]
         public void CreateMarket_RejectsAWeekWithoutDays(int daysPerWeek)
         {
-            CityDefinition city = City(6000, new GoodDefinition[0], new GoodDefinition[0]);
+            CityDefinition city = City(new GoodDefinition[0], new GoodDefinition[0]);
 
             Assert.Throws<System.ArgumentOutOfRangeException>(
                 () => economy.CreateMarket(city, economy.CreatePricing(), daysPerWeek));
@@ -188,7 +188,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void CreateMarket_ProducesAtTheDefinitionsOutputs()
         {
-            CityDefinition city = City(6000, new[] { wheat }, new[] { fish });
+            CityDefinition city = City(new[] { wheat }, new[] { fish });
             CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
 
             market.StartDay();
@@ -199,24 +199,54 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void CreateMarket_ForACityWithoutInhabitants_HasEmptyStocks()
+        public void CreateMarket_WithoutStartingWorkforce_StartsEmpty()
         {
-            CityDefinition city = City(0, new[] { wheat }, new GoodDefinition[0]);
+            TestEconomy.SetStartingPopulation(economy, 0);
+            CityDefinition city = City(new[] { wheat }, new GoodDefinition[0]);
 
             CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
 
+            Assert.AreEqual(0, market.Population.Inhabitants);
+            Assert.AreEqual(0, market.WorkersOf(0));
             Assert.AreEqual(0, market.AvailableOf(0));
             Assert.AreEqual(0, market.AvailableOf(2));
         }
 
         [Test]
-        public void CreateMarket_StartsWithThePopulationOfTheCity()
+        public void CreateMarket_StartsWithThePopulationOfTheWorkforce()
         {
-            CityDefinition city = City(6000, new GoodDefinition[0], new GoodDefinition[0]);
+            // Patrician III's: 250 workers and 72 / 17 inhabitants each.
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty("startingWorkforce").intValue = 250;
+            serialized.FindProperty("inhabitantsPerWorker").doubleValue = 72d / 17d;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
 
-            CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
+            CityMarket market = economy.CreateMarket(City(new[] { wheat }, new[] { fish }), economy.CreatePricing(), DaysPerWeek);
 
-            Assert.AreEqual(6000, market.Population.Inhabitants);
+            Assert.AreEqual(250d * 72d / 17d, economy.StartingPopulation, Tolerance);
+            Assert.AreEqual(250d * 72d / 17d, market.Population.Count, Tolerance);
+            Assert.AreEqual(1059, market.Population.Inhabitants);
+        }
+
+        [Test]
+        public void CreateMarket_ForACityThatProducesNothing_HasNoWorkers_AndTheSamePopulation()
+        {
+            CityMarket producer = economy.CreateMarket(City(new[] { wheat }, new GoodDefinition[0]), economy.CreatePricing(), DaysPerWeek);
+            CityMarket idle = economy.CreateMarket(City(new GoodDefinition[0], new GoodDefinition[0]), economy.CreatePricing(), DaysPerWeek);
+
+            Assert.AreEqual(0, idle.WorkersOf(0));
+            Assert.AreEqual(producer.Population.Count, idle.Population.Count, Tolerance);
+        }
+
+        [Test]
+        public void TryValidateSettings_SaysWhenThePopulationPerWorkerIsWrong()
+        {
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty("inhabitantsPerWorker").doubleValue = -1;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.IsFalse(economy.TryValidateSettings(out string problem));
+            StringAssert.Contains("starting population", problem);
         }
 
         [Test]
@@ -237,7 +267,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // The city starts with a week of everything; only the iron is then piled up.
             GoodDefinition iron = Track(TestEconomy.CreateGood("Fer", 50, 7, GoodCategory.RawMaterial));
             EconomyDefinition mixed = Track(TestEconomy.CreateEconomy(wheat, iron));
-            CityDefinition city = City(1000, new GoodDefinition[0], new GoodDefinition[0]);
+            TestEconomy.SetStartingPopulation(mixed, 1000);
+            CityDefinition city = City(new GoodDefinition[0], new GoodDefinition[0]);
 
             CityMarket market = mixed.CreateMarket(city, mixed.CreatePricing(), DaysPerWeek, mixed.CreateFoodGrowth(30));
             market.Put(1, 1000);
@@ -299,7 +330,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var serialized = new SerializedObject(economy);
             serialized.FindProperty("startingWorkforce").intValue = 50;
             serialized.ApplyModifiedPropertiesWithoutUndo();
-            CityDefinition city = City(6000, new[] { wheat }, new[] { fish });
+            CityDefinition city = City(new[] { wheat }, new[] { fish });
 
             CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
 
@@ -316,7 +347,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(16, rule.HiredUpToT0);
             Assert.AreEqual(1, rule.WorkersAboveT3);
-            Assert.AreEqual(250, rule.StartingWorkforce);
+            // The test economy starts its cities with 6 000 workers (TestEconomy.CreateEconomy).
+            Assert.AreEqual(6000, rule.StartingWorkforce);
         }
 
         [Test]
@@ -347,7 +379,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void CreateMarket_ThresholdsFollowTheProductionOfTheCity()
         {
             // Wheat efficient (12 a day, 24 produced), fish inefficient (9, 13.5), salt not produced (3).
-            CityDefinition city = City(6000, new[] { wheat }, new[] { fish });
+            CityDefinition city = City(new[] { wheat }, new[] { fish });
             CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
 
             Assert.AreEqual(492, market.ThresholdsOf(0).T2, Tolerance);
@@ -362,7 +394,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void CreateMarket_PricesAGoodByTheCurvesAndItsThresholds()
         {
             // Salt: base price 18, 3 barrels a day, 21 in stock: T0 exactly.
-            CityDefinition city = City(6000, new GoodDefinition[0], new GoodDefinition[0]);
+            CityDefinition city = City(new GoodDefinition[0], new GoodDefinition[0]);
             CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
 
             // Bought: 18 x 1.5595, the average over [20, 21] from 1.619 to 1.5.

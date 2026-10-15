@@ -16,13 +16,10 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private CityAccess access;
         [SerializeField] private CitySize size;
 
-        [Tooltip("Inhabitants when the game starts. They set how much of every good the city consumes.")]
-        [SerializeField, Min(0)] private int population;
-
-        [Tooltip("Goods the city produces well above what it consumes.")]
+        [Tooltip("Goods the city has a workshop for, at the full output of a worker.")]
         [SerializeField] private List<GoodDefinition> efficientGoods = new List<GoodDefinition>();
 
-        [Tooltip("Goods the city produces above what it consumes, less than the efficient ones.")]
+        [Tooltip("Goods the city has a workshop for, at the economy's inefficient share of the output.")]
         [SerializeField] private List<GoodDefinition> inefficientGoods = new List<GoodDefinition>();
 
         public string DisplayName => displayName;
@@ -34,9 +31,6 @@ namespace DarkFantasyMerchant.Game
         public CityAccess Access => access;
 
         public CitySize Size => size;
-
-        /// <summary>The inhabitants at the start of the game: those of a game are in the city's market.</summary>
-        public int Population => population;
 
         public IReadOnlyList<GoodDefinition> EfficientGoods => efficientGoods;
 

@@ -30,18 +30,18 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return good;
         }
 
-        public static CityDefinition CreateCity(int population, GoodDefinition[] efficient, GoodDefinition[] inefficient)
+        public static CityDefinition CreateCity(GoodDefinition[] efficient, GoodDefinition[] inefficient)
         {
             var city = ScriptableObject.CreateInstance<CityDefinition>();
 
             var serialized = new SerializedObject(city);
-            serialized.FindProperty("population").intValue = population;
             SetGoods(serialized.FindProperty("efficientGoods"), efficient);
             SetGoods(serialized.FindProperty("inefficientGoods"), inefficient);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return city;
         }
 
+        /// <summary>An economy of these goods whose cities start with 6 000 inhabitants.</summary>
         public static EconomyDefinition CreateEconomy(params GoodDefinition[] goods)
         {
             var economy = ScriptableObject.CreateInstance<EconomyDefinition>();
@@ -49,7 +49,20 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var serialized = new SerializedObject(economy);
             SetGoods(serialized.FindProperty("goods"), goods);
             serialized.ApplyModifiedPropertiesWithoutUndo();
+            SetStartingPopulation(economy, 6000);
             return economy;
+        }
+
+        /// <summary>
+        /// Makes every city of the economy start with these inhabitants: as many workers, one
+        /// inhabitant each. The workshops then start full.
+        /// </summary>
+        public static void SetStartingPopulation(EconomyDefinition economy, int inhabitants)
+        {
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty("startingWorkforce").intValue = inhabitants;
+            serialized.FindProperty("inhabitantsPerWorker").doubleValue = 1d;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void SetGoods(SerializedProperty list, GoodDefinition[] goods)
