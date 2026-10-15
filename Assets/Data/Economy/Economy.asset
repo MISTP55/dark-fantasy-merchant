@@ -19,14 +19,30 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d9bb6e94b66a421687ef25e233f60109, type: 2}
   - {fileID: 11400000, guid: c9607b4c46834ebbacb371dea4d9b561, type: 2}
   - {fileID: 11400000, guid: b9131add122b4aeebf9bddd520381956, type: 2}
-  targetStockDays: 10
   startingStockDays: 7
   efficientProductionRate: 2
   efficientCeilingDays: 60
   inefficientProductionRate: 1.5
   inefficientCeilingDays: 36
-  buyMargin: 0.05
-  sellMargin: 0.05
+  t0Days: 7
+  t1AddedDays: 14
+  t2ProductionDays: 10
+  t0Floor: 5
+  t1Floor: 10
+  t2Floor: 15
+  t3Floor: 20
+  buyFactors:
+    empty: 4
+    atT0: 1.5
+    atT1: 1
+    atT2: 0.8
+    atT3: 0.6
+  sellFactors:
+    empty: 2
+    atT0: 1.4
+    atT1: 1
+    atT2: 0.7
+    atT3: 0.5
   stableFoodDays: 7
   abundantFoodDays: 14
   maxMonthlyGrowth: 0.05

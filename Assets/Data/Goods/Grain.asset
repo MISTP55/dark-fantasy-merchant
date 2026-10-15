@@ -14,7 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Grain
   category: 1
-  minPrice: 50
   basePrice: 80
-  maxPrice: 132
   weeklyConsumptionPerThousand: 40

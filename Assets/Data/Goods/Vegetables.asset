@@ -14,7 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: "L\xE9gumes"
   category: 1
-  minPrice: 63
   basePrice: 100
-  maxPrice: 165
   weeklyConsumptionPerThousand: 30
