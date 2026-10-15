@@ -6,120 +6,137 @@ namespace DarkFantasyMerchant.Tests.EditMode
 {
     public class MarketPricingTests
     {
-        private static MarketPricing Pricing => new MarketPricing(0.05, 0.05);
+        private static readonly StockThresholds Thresholds = new StockThresholds(20, 40, 60, 80);
 
-        [TestCase(0, 25)]
-        [TestCase(50, 17.5)]
-        [TestCase(100, 10)]
-        [TestCase(150, 7.5)]
-        [TestCase(200, 5)]
-        [TestCase(5000, 5)]
-        public void Price_GoesFromTheMaximumToTheBasePriceToTheMinimum_AsTheStockRises(double stock, double expected)
-        {
-            Assert.AreEqual(expected, Pricing.Price(5, 10, 25, stock, 100), 1e-9);
-        }
+        // A good the city does not produce: T2 is T1.
+        private static readonly StockThresholds Step = new StockThresholds(20, 60, 60, 80);
 
-        [TestCase(0, 100)]
-        [TestCase(50, 55)]
-        [TestCase(100, 10)]
-        [TestCase(150, 6)]
-        [TestCase(200, 2)]
-        public void Price_FollowsTheBoundsOfTheGood_NotAShareOfItsBasePrice(double stock, double expected)
+        private static MarketPricing Pricing => TestMarkets.Pricing;
+
+        [Test]
+        public void AroundT1_TheTwoPricesAreCloseToTheBasePrice()
         {
-            Assert.AreEqual(expected, Pricing.Price(2, 10, 100, stock, 100), 1e-9);
+            // Bought: 100 x 1.0125, the average over [39, 40], rounded up.
+            Assert.AreEqual(102, Pricing.BuyPrice(100, 40, Thresholds));
+
+            // Sold: 100 x 0.9925, the average over [40, 41], rounded down.
+            Assert.AreEqual(99, Pricing.SellPrice(100, 40, Thresholds));
         }
 
         [Test]
-        public void Price_OfANegativeStock_IsThatOfAnEmptyOne()
+        public void BuyPrice_IsTheAverageOverTheBarrelThatLeaves_RoundedUp()
         {
-            Assert.AreEqual(25, Pricing.Price(5, 10, 25, -1, 100), 1e-9);
+            // The last barrel: 10 x 3.9375, the average from 4 at 0 to 3.875 at 1.
+            Assert.AreEqual(40, Pricing.BuyPrice(10, 1, Thresholds));
         }
 
         [Test]
-        public void Price_WithoutATarget_IsTheBasePrice()
+        public void SellPrice_IsTheAverageOverTheBarrelThatComesIn_RoundedDown()
         {
-            Assert.AreEqual(10, Pricing.Price(5, 10, 25, 0, 0), 1e-9);
-            Assert.AreEqual(10, Pricing.Price(5, 10, 25, 40, 0), 1e-9);
+            // Into an empty stock: 10 x 1.985, the average from 2 at 0 to 1.97 at 1.
+            Assert.AreEqual(19, Pricing.SellPrice(10, 0, Thresholds));
         }
 
         [Test]
-        public void AGoodWhoseBoundsAreItsBasePrice_HasOnePrice()
+        public void ABarrelPastAnEmptyStock_CostsTheEmptyFactor()
         {
-            Assert.AreEqual(10, Pricing.Price(10, 10, 10, 0, 100), 1e-9);
-            Assert.AreEqual(10, Pricing.Price(10, 10, 10, 300, 100), 1e-9);
-        }
-
-        [Test]
-        public void BuyPrice_IsThePriceOnceTheBarrelIsGone_PlusTheMargin_RoundedUp()
-        {
-            // One barrel left of a target of 100: the maximum price, 25, plus 5 %.
-            Assert.AreEqual(27, Pricing.BuyPrice(5, 10, 25, 1, 100));
-        }
-
-        [Test]
-        public void SellPrice_IsThePriceBeforeTheBarrelIsIn_MinusTheMargin_RoundedDown()
-        {
-            // Empty stock: 25, minus 5 %.
-            Assert.AreEqual(23, Pricing.SellPrice(5, 10, 25, 0, 100));
+            Assert.AreEqual(40, Pricing.BuyPrice(10, 0, Thresholds));
+            Assert.AreEqual(40, Pricing.BuyPrice(10, -3, Thresholds));
         }
 
         [Test]
         public void Prices_ThatAreWholeNumbers_AreNotRoundedAway()
         {
-            // 20 x 1.05 is 21.000000000000004 in floating point: still 21, not 22.
-            Assert.AreEqual(21, Pricing.BuyPrice(10, 20, 50, 101, 100));
-            Assert.AreEqual(19, Pricing.SellPrice(10, 20, 50, 100, 100));
+            // 20 x 1.1 is 22.000000000000004 and 100 x 0.29 is 28.999999999999996 in floating
+            // point: still 22 and 29, however far above T3.
+            var pricing = new MarketPricing(new PriceCurve(4, 1.5, 1.2, 1.1, 1.1), new PriceCurve(2, 1.2, 1, 0.5, 0.29));
+
+            for (int stock = 81; stock <= 1000; stock++)
+            {
+                Assert.AreEqual(22, pricing.BuyPrice(20, stock, Thresholds), $"stock {stock}");
+                Assert.AreEqual(29, pricing.SellPrice(100, stock, Thresholds), $"stock {stock}");
+            }
+
+            Assert.AreEqual(22, pricing.BuyPrice(20, 100000, Thresholds));
+            Assert.AreEqual(29, pricing.SellPrice(100, 100000, Thresholds));
         }
 
         [Test]
-        public void TheMargins_ComeOnTopOfTheBounds()
+        public void BuyPrice_IsAtLeastOneCoin_AndSellPriceCanBeNothing()
         {
-            // Bought at the maximum plus the margin, sold at the minimum minus it.
-            Assert.AreEqual(105, Pricing.BuyPrice(40, 60, 100, 1, 100));
-            Assert.AreEqual(38, Pricing.SellPrice(40, 60, 100, 500, 100));
+            // 1 x 0.6 and 1 x 0.5.
+            Assert.AreEqual(1, Pricing.BuyPrice(1, 500, Thresholds));
+            Assert.AreEqual(0, Pricing.SellPrice(1, 500, Thresholds));
         }
 
         [Test]
-        public void SellPrice_CanBeNothing()
+        public void ATradeOfSeveralBarrels_CostsTheIntegralOfTheCurve_UpToTheRounding()
         {
-            Assert.AreEqual(0, Pricing.SellPrice(1, 1, 1, 500, 100));
+            MarketPricing pricing = Pricing;
+            long bought = 0;
+            long sold = 0;
+
+            for (int i = 0; i < 50; i++)
+            {
+                bought += pricing.BuyPrice(10, 70 - i, Thresholds);
+                sold += pricing.SellPrice(10, 20 + i, Thresholds);
+            }
+
+            // From 70 barrels down to 20, and from 20 up to 70.
+            double boughtIntegral = 10 * 50 * pricing.BuyCurve.AverageFactor(20, 70, Thresholds);
+            double soldIntegral = 10 * 50 * pricing.SellCurve.AverageFactor(20, 70, Thresholds);
+
+            Assert.GreaterOrEqual(bought, boughtIntegral - 1e-6);
+            Assert.Less(bought, boughtIntegral + 50);
+            Assert.LessOrEqual(sold, soldIntegral + 1e-6);
+            Assert.Greater(sold, soldIntegral - 50);
         }
 
-        [TestCase(1, 1, 1)]
-        [TestCase(5, 10, 25)]
-        [TestCase(75, 150, 375)]
-        [TestCase(2, 10, 100)]
-        public void BuyingABarrelAndSellingItBack_AlwaysLosesGold(long minPrice, long basePrice, long maxPrice)
+        [TestCase(1)]
+        [TestCase(10)]
+        [TestCase(600)]
+        public void BuyingABarrelAndSellingItBack_NeverGainsGold(long basePrice)
         {
             MarketPricing pricing = Pricing;
 
-            for (int stock = 1; stock <= 300; stock++)
+            foreach (StockThresholds thresholds in new[] { Thresholds, Step })
             {
-                long paid = pricing.BuyPrice(minPrice, basePrice, maxPrice, stock, 100);
-                long received = pricing.SellPrice(minPrice, basePrice, maxPrice, stock - 1, 100);
+                for (int stock = 1; stock <= 300; stock++)
+                {
+                    long paid = pricing.BuyPrice(basePrice, stock, thresholds);
+                    long received = pricing.SellPrice(basePrice, stock - 1, thresholds);
 
-                Assert.Less(received, paid, $"stock {stock}");
+                    Assert.LessOrEqual(received, paid, $"stock {stock}");
+                }
             }
         }
 
         [Test]
-        public void WithoutMargins_BuyingAndSellingBackIsNeverAGain()
+        public void WithTheSameCurveForBoth_BuyingAndSellingBackIsStillNeverAGain()
         {
-            var pricing = new MarketPricing(0, 0);
+            var pricing = new MarketPricing(TestMarkets.BuyCurve, TestMarkets.BuyCurve);
 
             for (int stock = 1; stock <= 300; stock++)
             {
-                Assert.LessOrEqual(pricing.SellPrice(5, 10, 25, stock - 1, 100), pricing.BuyPrice(5, 10, 25, stock, 100));
+                Assert.LessOrEqual(pricing.SellPrice(10, stock - 1, Step), pricing.BuyPrice(10, stock, Step));
             }
         }
 
-        [TestCase(-0.1, 0.05)]
-        [TestCase(0.05, 1.0)]
-        [TestCase(double.NaN, 0.05)]
-        [TestCase(0.05, double.NaN)]
-        public void RejectsMarginsThatMakeNoSense(double buyMargin, double sellMargin)
+        [Test]
+        public void RejectsASellCurveAboveTheBuyCurve_AtAnyPoint()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketPricing(buyMargin, sellMargin));
+            // 0.9 at T2, above the 0.8 at which the player buys.
+            var above = new PriceCurve(2, 1.4, 1, 0.9, 0.5);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketPricing(TestMarkets.BuyCurve, above));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketPricing(TestMarkets.SellCurve, TestMarkets.BuyCurve));
+        }
+
+        [Test]
+        public void RejectsMissingCurves()
+        {
+            Assert.Throws<ArgumentNullException>(() => new MarketPricing(null, TestMarkets.SellCurve));
+            Assert.Throws<ArgumentNullException>(() => new MarketPricing(TestMarkets.BuyCurve, null));
         }
     }
 }

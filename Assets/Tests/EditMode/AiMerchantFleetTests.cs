@@ -46,11 +46,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             };
         }
 
-        /// <summary>One good, 2 barrels a day, a target of 60 barrels.</summary>
+        /// <summary>One good, 2 barrels a day, its threshold T1 at 60 barrels.</summary>
         private static CityMarket Market(double days)
         {
             return new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 2, 0, 0) }, 30, days, new MarketPricing(0.05, 0.05), 7, new CityPopulation(1000));
+                new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, days, TestMarkets.Pricing, 7, new CityPopulation(1000));
         }
 
         private void CreateFleet(double daysInA, double daysInB, double daysInC)
@@ -172,7 +172,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void WithoutARoute_ItWaitsAndAsksAgain()
         {
-            CreateFleet(30, 30, 30);
+            // Every port at 15 days, under T1, where a city still pays for more: the same
+            // everywhere, so nothing pays until A has a surplus.
+            CreateFleet(15, 15, 15);
             Ship ship = AddShip(A);
 
             fleet.Advance(Stopover);

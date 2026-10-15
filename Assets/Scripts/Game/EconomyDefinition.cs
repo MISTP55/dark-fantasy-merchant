@@ -16,9 +16,6 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("The goods of the game. Their order is their order on screen.")]
         [SerializeField] private List<GoodDefinition> goods = new List<GoodDefinition>();
 
-        [Tooltip("Days of its consumption a city holds when a good is at its base price.")]
-        [SerializeField, Min(0f)] private double targetStockDays = 10d;
-
         [Tooltip("Days of its consumption a city holds of every good when the game starts, whether it produces it or not.")]
         [SerializeField, Min(0f)] private double startingStockDays = 7d;
 
@@ -33,12 +30,34 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Days of consumption above which an inefficient production stops raising the stock.")]
         [SerializeField, Min(0f)] private double inefficientCeilingDays = 36d;
 
-        [Header("Margins, as a share of the price (its bounds are each good's own)")]
-        [Tooltip("What a city adds to the price when it sells to the player.")]
-        [SerializeField, Range(0f, 0.99f)] private double buyMargin = 0.05d;
+        [Header("Stock thresholds T0 to T3 of a good in a city, at which its prices are given")]
+        [Tooltip("T0: days of the city's consumption.")]
+        [SerializeField, Min(0f)] private double t0Days = 7d;
 
-        [Tooltip("What a city takes off the price when it buys from the player.")]
-        [SerializeField, Range(0f, 0.99f)] private double sellMargin = 0.05d;
+        [Tooltip("T1: T0 plus these days of consumption.")]
+        [SerializeField, Min(0f)] private double t1AddedDays = 14d;
+
+        [Tooltip("T2: T1 plus these days of the city's production; T2 is T1 for a good the city does not produce. T3 is T2 plus T0.")]
+        [SerializeField, Min(0f)] private double t2ProductionDays = 10d;
+
+        [Tooltip("The lowest T0, in barrels. Above 0.")]
+        [SerializeField, Min(0f)] private double t0Floor = 5d;
+
+        [Tooltip("The lowest T1, in barrels. At least the T0 floor.")]
+        [SerializeField, Min(0f)] private double t1Floor = 10d;
+
+        [Tooltip("The lowest T2, in barrels. At least the T1 floor.")]
+        [SerializeField, Min(0f)] private double t2Floor = 15d;
+
+        [Tooltip("The lowest T3, in barrels. At least the T2 floor.")]
+        [SerializeField, Min(0f)] private double t3Floor = 20d;
+
+        [Header("Prices, as factors of a good's base price")]
+        [Tooltip("What the player pays when buying from a city.")]
+        [SerializeField] private PriceFactors buyFactors = new PriceFactors(4d, 1.5d, 1d, 0.8d, 0.6d);
+
+        [Tooltip("What the player is paid when selling to a city. At no point above the buy factors.")]
+        [SerializeField] private PriceFactors sellFactors = new PriceFactors(2d, 1.4d, 1d, 0.7d, 0.5d);
 
         [Header("Population, by the days of its consumption a city holds of food (the average of its foods)")]
         [Tooltip("Days of food at which the population does not change. Under them it declines.")]
@@ -55,8 +74,6 @@ namespace DarkFantasyMerchant.Game
 
         public IReadOnlyList<GoodDefinition> Goods => goods;
 
-        public double TargetStockDays => targetStockDays;
-
         public double StartingStockDays => startingStockDays;
 
         public double EfficientProductionRate => efficientProductionRate;
@@ -67,9 +84,23 @@ namespace DarkFantasyMerchant.Game
 
         public double InefficientCeilingDays => inefficientCeilingDays;
 
-        public double BuyMargin => buyMargin;
+        public double T0Days => t0Days;
 
-        public double SellMargin => sellMargin;
+        public double T1AddedDays => t1AddedDays;
+
+        public double T2ProductionDays => t2ProductionDays;
+
+        public double T0Floor => t0Floor;
+
+        public double T1Floor => t1Floor;
+
+        public double T2Floor => t2Floor;
+
+        public double T3Floor => t3Floor;
+
+        public PriceFactors BuyFactors => buyFactors;
+
+        public PriceFactors SellFactors => sellFactors;
 
         public double StableFoodDays => stableFoodDays;
 
@@ -121,7 +152,16 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         public MarketPricing CreatePricing()
         {
-            return new MarketPricing(buyMargin, sellMargin);
+            return new MarketPricing(buyFactors.ToCurve(), sellFactors.ToCurve());
+        }
+
+        /// <summary>
+        /// How the stock thresholds of a good follow a city's consumption and production, from
+        /// these settings. Throws when one of them is unusable.
+        /// </summary>
+        public ThresholdRule CreateThresholdRule()
+        {
+            return new ThresholdRule(t0Days, t1AddedDays, t2ProductionDays, t0Floor, t1Floor, t2Floor, t3Floor);
         }
 
         /// <summary>
@@ -178,9 +218,7 @@ namespace DarkFantasyMerchant.Game
                 }
 
                 marketGoods[i] = new MarketGood(
-                    good.MinPrice,
                     good.BasePrice,
-                    good.MaxPrice,
                     good.WeeklyConsumptionPerThousand / daysPerWeek,
                     rate,
                     ceilingDays,
@@ -189,7 +227,7 @@ namespace DarkFantasyMerchant.Game
 
             return new CityMarket(
                 marketGoods,
-                targetStockDays,
+                CreateThresholdRule(),
                 startingStockDays,
                 pricing,
                 daysPerWeek,

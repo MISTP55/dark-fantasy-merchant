@@ -3,90 +3,60 @@ using System;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// What a barrel costs in a city, from the city's stock against its target stock:
-    /// the good's maximum price when the stock is empty, its base price at the target,
-    /// its minimum price when the stock is high. A city sells a little above that price
-    /// and buys a little below it.
+    /// What a barrel costs in a city, as in Patrician III: a good's base price times a factor
+    /// that follows the city's stock against its thresholds. The player buys on one curve and
+    /// sells on another, never above it. Every barrel is priced at the average factor over the
+    /// stock it takes away or adds, so a trade of several barrels costs the integral of the curve.
     /// </summary>
     public sealed class MarketPricing
     {
-        // Prices are worked out in floating point: 20 x 1.05 must round up to 21, not 22.
+        // Prices are worked out in floating point: 20 x 1.1 must round up to 22, not 23.
         private const double RoundingMargin = 1e-9;
 
-        // The stock, as a share of the target, from which the price stops falling.
-        private const double SurplusRatio = 2d;
-
-        private readonly double buyMargin;
-        private readonly double sellMargin;
-
-        /// <param name="buyMargin">What the city adds when it sells to the player, from 0 to below 1.</param>
-        /// <param name="sellMargin">What the city takes off when it buys from the player, from 0 to below 1.</param>
-        public MarketPricing(double buyMargin, double sellMargin)
+        /// <param name="buyCurve">The factors of what the player pays.</param>
+        /// <param name="sellCurve">The factors of what the player is paid, never above the buy curve.</param>
+        public MarketPricing(PriceCurve buyCurve, PriceCurve sellCurve)
         {
-            // The negated comparisons also reject NaN.
-            if (!(buyMargin >= 0d && buyMargin < 1d))
-            {
-                throw new ArgumentOutOfRangeException(nameof(buyMargin));
-            }
+            BuyCurve = buyCurve ?? throw new ArgumentNullException(nameof(buyCurve));
+            SellCurve = sellCurve ?? throw new ArgumentNullException(nameof(sellCurve));
 
-            if (!(sellMargin >= 0d && sellMargin < 1d))
+            // Both curves are straight lines between the same thresholds: checking the five
+            // points checks every stock.
+            if (sellCurve.Empty > buyCurve.Empty
+                || sellCurve.AtT0 > buyCurve.AtT0
+                || sellCurve.AtT1 > buyCurve.AtT1
+                || sellCurve.AtT2 > buyCurve.AtT2
+                || sellCurve.AtT3 > buyCurve.AtT3)
             {
-                throw new ArgumentOutOfRangeException(nameof(sellMargin));
+                throw new ArgumentOutOfRangeException(nameof(sellCurve), "A barrel never sells for more than it costs.");
             }
-
-            this.buyMargin = buyMargin;
-            this.sellMargin = sellMargin;
         }
 
-        /// <summary>
-        /// The price of a good at a stock, before the margins: a straight line from its
-        /// maximum price at an empty stock to its base price at the target, then down to
-        /// its minimum price at twice the target, where it stays. The base price for a
-        /// good without a target, which the city does not consume.
-        /// </summary>
-        public double Price(long minPrice, long basePrice, long maxPrice, double stock, double target)
-        {
-            if (!(target > 0d))
-            {
-                return basePrice;
-            }
+        public PriceCurve BuyCurve { get; }
 
-            double ratio = Math.Max(0d, stock) / target;
-
-            if (ratio <= 1d)
-            {
-                return maxPrice + (basePrice - maxPrice) * ratio;
-            }
-
-            if (ratio < SurplusRatio)
-            {
-                return basePrice + (minPrice - basePrice) * (ratio - 1d) / (SurplusRatio - 1d);
-            }
-
-            return minPrice;
-        }
+        public PriceCurve SellCurve { get; }
 
         /// <summary>
         /// What the player pays for one barrel from a city whose stock is
-        /// <paramref name="stock"/>: the price once that barrel is gone, plus the margin,
-        /// rounded up, at least one coin. The margin comes on top of the maximum price.
+        /// <paramref name="stock"/>: the base price times the average buy factor from the
+        /// stock once the barrel is gone to the stock before, rounded up, at least one coin.
         /// </summary>
-        public long BuyPrice(long minPrice, long basePrice, long maxPrice, double stock, double target)
+        public long BuyPrice(long basePrice, double stock, StockThresholds thresholds)
         {
-            double price = Price(minPrice, basePrice, maxPrice, stock - 1d, target) * (1d + buyMargin);
+            double price = basePrice * BuyCurve.AverageFactor(stock - 1d, stock, thresholds);
 
             return Math.Max(1L, (long)Math.Ceiling(price - RoundingMargin));
         }
 
         /// <summary>
         /// What the player is paid for one barrel by a city whose stock is
-        /// <paramref name="stock"/>: the price before that barrel is in, minus the margin,
-        /// rounded down. The margin comes off the minimum price too. Both prices are taken
-        /// at the lower of the two stocks, so buying a barrel and selling it back loses gold.
+        /// <paramref name="stock"/>: the base price times the average sell factor from the
+        /// stock before to the stock once the barrel is in, rounded down. Buying a barrel and
+        /// selling it back never gains gold.
         /// </summary>
-        public long SellPrice(long minPrice, long basePrice, long maxPrice, double stock, double target)
+        public long SellPrice(long basePrice, double stock, StockThresholds thresholds)
         {
-            double price = Price(minPrice, basePrice, maxPrice, stock, target) * (1d - sellMargin);
+            double price = basePrice * SellCurve.AverageFactor(stock, stock + 1d, thresholds);
 
             return Math.Max(0L, (long)Math.Floor(price + RoundingMargin));
         }

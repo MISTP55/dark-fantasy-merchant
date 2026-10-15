@@ -7,7 +7,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
     /// <summary>In-memory goods, cities and economies. The caller destroys what it creates.</summary>
     public static class TestEconomy
     {
-        /// <summary>A good whose price goes from half its base price to two and a half times it.</summary>
+        /// <summary>A good priced from its base price by the economy's curves.</summary>
         public static GoodDefinition CreateGood(
             string displayName,
             long basePrice,
@@ -20,9 +20,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var serialized = new SerializedObject(good);
             serialized.FindProperty("displayName").stringValue = displayName;
             serialized.FindProperty("category").enumValueIndex = (int)category;
-            serialized.FindProperty("minPrice").longValue = basePrice / 2;
             serialized.FindProperty("basePrice").longValue = basePrice;
-            serialized.FindProperty("maxPrice").longValue = basePrice * 5 / 2;
             serialized.FindProperty("weeklyConsumptionPerThousand").doubleValue = weeklyConsumptionPerThousand;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return good;

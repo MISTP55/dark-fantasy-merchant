@@ -43,9 +43,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             GoodDefinition good = economy.Goods[index];
             Assert.AreEqual(name, good.DisplayName);
             Assert.AreEqual(category, good.Category);
-            Assert.GreaterOrEqual(good.MinPrice, 1);
-            Assert.LessOrEqual(good.MinPrice, good.BasePrice);
-            Assert.GreaterOrEqual(good.MaxPrice, good.BasePrice);
+            Assert.GreaterOrEqual(good.BasePrice, 1);
             Assert.Greater(good.WeeklyConsumptionPerThousand, 0d);
         }
 
@@ -56,6 +54,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.IsTrue(economy.TryValidate(out string problem), problem);
             Assert.DoesNotThrow(() => economy.CreatePricing());
+            Assert.DoesNotThrow(() => economy.CreateThresholdRule());
             Assert.DoesNotThrow(() => economy.CreateFoodGrowth(30));
         }
 

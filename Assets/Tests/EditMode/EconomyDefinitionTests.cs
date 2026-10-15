@@ -56,14 +56,28 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             EconomyDefinition fresh = Track(ScriptableObject.CreateInstance<EconomyDefinition>());
 
-            Assert.AreEqual(10, fresh.TargetStockDays);
             Assert.AreEqual(7, fresh.StartingStockDays);
             Assert.AreEqual(2, fresh.EfficientProductionRate);
             Assert.AreEqual(60, fresh.EfficientCeilingDays);
             Assert.AreEqual(1.5, fresh.InefficientProductionRate);
             Assert.AreEqual(36, fresh.InefficientCeilingDays);
-            Assert.AreEqual(0.05, fresh.BuyMargin);
-            Assert.AreEqual(0.05, fresh.SellMargin);
+            Assert.AreEqual(7, fresh.T0Days);
+            Assert.AreEqual(14, fresh.T1AddedDays);
+            Assert.AreEqual(10, fresh.T2ProductionDays);
+            Assert.AreEqual(5, fresh.T0Floor);
+            Assert.AreEqual(10, fresh.T1Floor);
+            Assert.AreEqual(15, fresh.T2Floor);
+            Assert.AreEqual(20, fresh.T3Floor);
+            Assert.AreEqual(4, fresh.BuyFactors.Empty);
+            Assert.AreEqual(1.5, fresh.BuyFactors.AtT0);
+            Assert.AreEqual(1, fresh.BuyFactors.AtT1);
+            Assert.AreEqual(0.8, fresh.BuyFactors.AtT2);
+            Assert.AreEqual(0.6, fresh.BuyFactors.AtT3);
+            Assert.AreEqual(2, fresh.SellFactors.Empty);
+            Assert.AreEqual(1.4, fresh.SellFactors.AtT0);
+            Assert.AreEqual(1, fresh.SellFactors.AtT1);
+            Assert.AreEqual(0.7, fresh.SellFactors.AtT2);
+            Assert.AreEqual(0.5, fresh.SellFactors.AtT3);
             Assert.AreEqual(7, fresh.StableFoodDays);
             Assert.AreEqual(14, fresh.AbundantFoodDays);
             Assert.AreEqual(0.05, fresh.MaxMonthlyGrowth);
@@ -139,8 +153,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(63, market.StockOf(1), Tolerance);
             Assert.AreEqual(21, market.StockOf(2), Tolerance);
 
-            // The target is 10 days.
-            Assert.AreEqual(30, market.TargetOf(2), Tolerance);
+            // Salt is not produced: T0 is 7 days, T1 14 more.
+            Assert.AreEqual(21, market.ThresholdsOf(2).T0, Tolerance);
+            Assert.AreEqual(63, market.ThresholdsOf(2).T1, Tolerance);
         }
 
         [Test]
@@ -148,10 +163,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityDefinition city = City(6000, new GoodDefinition[0], new GoodDefinition[0]);
 
-            // Wheat: 84 barrels a week, over a week of 10 days.
+            // Wheat: 84 barrels a week, over a week of 10 days; T0 is 7 days of it.
             CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), 10);
 
-            Assert.AreEqual(8.4 * 10, market.TargetOf(0), Tolerance);
+            Assert.AreEqual(8.4 * 7, market.ThresholdsOf(0).T0, Tolerance);
         }
 
         [TestCase(0)]
@@ -230,36 +245,65 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void CreatePricing_UsesTheDefinitionsMargins()
+        public void CreatePricing_UsesTheDefinitionsFactors()
         {
             MarketPricing pricing = economy.CreatePricing();
 
-            Assert.AreEqual(21, pricing.BuyPrice(10, 20, 50, 101, 100));
-            Assert.AreEqual(19, pricing.SellPrice(10, 20, 50, 100, 100));
+            Assert.AreEqual(4, pricing.BuyCurve.Empty);
+            Assert.AreEqual(0.6, pricing.BuyCurve.AtT3);
+            Assert.AreEqual(2, pricing.SellCurve.Empty);
+            Assert.AreEqual(0.5, pricing.SellCurve.AtT3);
         }
 
         [Test]
-        public void CreateMarket_PricesAGoodBetweenItsOwnMinimumAndMaximum()
+        public void CreatePricing_RejectsSellFactorsAboveTheBuyFactors()
         {
-            // Salt: minimum 9, base 18, maximum 45; 3 barrels a day, 21 in stock, a target of 30.
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty("sellFactors.atT1").doubleValue = 1.2;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => economy.CreatePricing());
+        }
+
+        [Test]
+        public void CreateThresholdRule_UsesTheDefinitionsDaysAndFloors()
+        {
+            // Two barrels a day consumed and four produced.
+            StockThresholds thresholds = economy.CreateThresholdRule().ThresholdsFor(2, 4);
+
+            Assert.AreEqual(14, thresholds.T0, Tolerance);
+            Assert.AreEqual(42, thresholds.T1, Tolerance);
+            Assert.AreEqual(82, thresholds.T2, Tolerance);
+            Assert.AreEqual(96, thresholds.T3, Tolerance);
+        }
+
+        [Test]
+        public void CreateMarket_ThresholdsFollowTheProductionOfTheCity()
+        {
+            // Wheat efficient (12 a day, 24 produced), fish inefficient (9, 13.5), salt not produced (3).
+            CityDefinition city = City(6000, new[] { wheat }, new[] { fish });
+            CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
+
+            Assert.AreEqual(492, market.ThresholdsOf(0).T2, Tolerance);
+            Assert.AreEqual(576, market.ThresholdsOf(0).T3, Tolerance);
+            Assert.AreEqual(324, market.ThresholdsOf(1).T2, Tolerance);
+            Assert.AreEqual(387, market.ThresholdsOf(1).T3, Tolerance);
+            Assert.AreEqual(63, market.ThresholdsOf(2).T2, Tolerance);
+            Assert.AreEqual(84, market.ThresholdsOf(2).T3, Tolerance);
+        }
+
+        [Test]
+        public void CreateMarket_PricesAGoodByTheCurvesAndItsThresholds()
+        {
+            // Salt: base price 18, 3 barrels a day, 21 in stock: T0 exactly.
             CityDefinition city = City(6000, new GoodDefinition[0], new GoodDefinition[0]);
             CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
 
-            // The last barrel is bought at the maximum plus 5 %: 47.25.
-            Assert.AreEqual(48, market.BuyPriceOf(2, 20));
+            // Bought: 18 x 1.5595, the average over [20, 21] from 1.619 to 1.5.
+            Assert.AreEqual(29, market.BuyPriceOf(2));
 
-            // A barrel sold into twice the target or more is paid the minimum minus 5 %: 8.55.
-            Assert.AreEqual(8, market.SellPriceOf(2, 159));
-        }
-
-        [Test]
-        public void ANewGood_HasBoundsAroundItsBasePrice()
-        {
-            GoodDefinition good = Track(ScriptableObject.CreateInstance<GoodDefinition>());
-
-            Assert.GreaterOrEqual(good.MinPrice, 1);
-            Assert.LessOrEqual(good.MinPrice, good.BasePrice);
-            Assert.GreaterOrEqual(good.MaxPrice, good.BasePrice);
+            // Sold: 18 x 1.3952, the average over [21, 22] from 1.4 to 1.3905.
+            Assert.AreEqual(25, market.SellPriceOf(2));
         }
 
         [Test]

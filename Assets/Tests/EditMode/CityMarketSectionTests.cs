@@ -34,10 +34,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             // Wheat: 2 barrels a day, 60 in stock. Wine: not consumed here, none in stock.
             market = new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 2, 0, 0), new MarketGood(30, 60, 150, 0, 0, 0) },
+                new[] { new MarketGood(10, 2, 0, 0), new MarketGood(60, 0, 0, 0) },
+                TestMarkets.Thresholds,
                 30,
-                30,
-                new MarketPricing(0.05, 0.05),
+                TestMarkets.Pricing,
                 7,
                 new CityPopulation(1000));
             hold = new CargoHold(200);
@@ -242,7 +242,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AMarketWithFewerGoodsThanRows_LeavesTheExtraRowsEmpty()
         {
             var small = new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 2, 0, 0) }, 30, 30, new MarketPricing(0.05, 0.05),
+                new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, 30, TestMarkets.Pricing,
                 7,
                 new CityPopulation(1000));
 

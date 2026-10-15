@@ -89,40 +89,34 @@ namespace DarkFantasyMerchant.Editor
                 string assetName,
                 string displayName,
                 GoodCategory category,
-                long minPrice,
                 long basePrice,
-                long maxPrice,
                 double weeklyConsumptionPerThousand)
             {
                 AssetName = assetName;
                 DisplayName = displayName;
                 Category = category;
-                MinPrice = minPrice;
                 BasePrice = basePrice;
-                MaxPrice = maxPrice;
                 WeeklyConsumptionPerThousand = weeklyConsumptionPerThousand;
             }
 
             public string AssetName { get; }
             public string DisplayName { get; }
             public GoodCategory Category { get; }
-            public long MinPrice { get; }
             public long BasePrice { get; }
-            public long MaxPrice { get; }
             public double WeeklyConsumptionPerThousand { get; }
         }
 
-        // In the order of the catalogue, which is their order on screen. Category, minimum, base
-        // and maximum price, then what 1 000 inhabitants consume in a week: the values a good that
-        // is missing is created with, which are then balanced by hand in the asset.
+        // In the order of the catalogue, which is their order on screen. Category, base price,
+        // then what 1 000 inhabitants consume in a week: the values a good that is missing is
+        // created with, which are then balanced by hand in the asset.
         private static readonly SampleGood[] SampleGoods =
         {
-            new SampleGood("Fish", "Poisson", GoodCategory.Food, 6, 12, 30, 10.5),
-            new SampleGood("Iron", "Fer", GoodCategory.RawMaterial, 25, 50, 125, 2.8),
-            new SampleGood("Beer", "Bière", GoodCategory.Food, 31, 50, 82, 50),
-            new SampleGood("Grain", "Grain", GoodCategory.Food, 50, 80, 132, 40),
-            new SampleGood("Meat", "Viande", GoodCategory.Food, 380, 600, 990, 8),
-            new SampleGood("Vegetables", "Légumes", GoodCategory.Food, 63, 100, 165, 30),
+            new SampleGood("Fish", "Poisson", GoodCategory.Food, 12, 10.5),
+            new SampleGood("Iron", "Fer", GoodCategory.RawMaterial, 50, 2.8),
+            new SampleGood("Beer", "Bière", GoodCategory.Food, 50, 50),
+            new SampleGood("Grain", "Grain", GoodCategory.Food, 80, 40),
+            new SampleGood("Meat", "Viande", GoodCategory.Food, 600, 8),
+            new SampleGood("Vegetables", "Légumes", GoodCategory.Food, 100, 30),
         };
 
         private readonly struct SampleCity
@@ -538,9 +532,7 @@ namespace DarkFantasyMerchant.Editor
             var serialized = new SerializedObject(good);
             serialized.FindProperty("displayName").stringValue = sample.DisplayName;
             serialized.FindProperty("category").enumValueIndex = (int)sample.Category;
-            serialized.FindProperty("minPrice").longValue = sample.MinPrice;
             serialized.FindProperty("basePrice").longValue = sample.BasePrice;
-            serialized.FindProperty("maxPrice").longValue = sample.MaxPrice;
             serialized.FindProperty("weeklyConsumptionPerThousand").doubleValue = sample.WeeklyConsumptionPerThousand;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             AssetDatabase.CreateAsset(good, path);

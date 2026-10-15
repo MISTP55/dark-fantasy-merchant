@@ -40,19 +40,19 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // A thousand inhabitants. Fish: 2 barrels a day, not produced, 60 in stock.
             // Iron: 2 barrels a day and 3 produced, 60 in stock under a ceiling of 120.
             market = new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 2, 0, 0), new MarketGood(25, 50, 125, 2, 1.5, 60) },
+                new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 1.5, 60) },
+                TestMarkets.Thresholds,
                 30,
-                30,
-                new MarketPricing(0.05, 0.05),
+                TestMarkets.Pricing,
                 7,
                 new CityPopulation(1000));
 
             // A village of 500: 1 barrel of fish a day, 30 in stock, and half a barrel of iron, 15 in stock.
             village = new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 2, 0, 0), new MarketGood(25, 50, 125, 1, 0, 0) },
+                new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 1, 0, 0) },
+                TestMarkets.Thresholds,
                 30,
-                30,
-                new MarketPricing(0.05, 0.05),
+                TestMarkets.Pricing,
                 7,
                 new CityPopulation(500));
             table = new DebugCitiesTable(header, rows, totals, new[] { "Poisson", "Fer" });
@@ -209,10 +209,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static CityMarket FedMarket(double startingDays, double inhabitants = 1000)
         {
             return new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 2, 0, 0, isFood: true) },
-                30,
+                new[] { new MarketGood(10, 2, 0, 0, isFood: true) },
+                TestMarkets.Thresholds,
                 startingDays,
-                new MarketPricing(0.05, 0.05),
+                TestMarkets.Pricing,
                 7,
                 new CityPopulation(inhabitants),
                 new FoodGrowth(7, 14, 0.05, 0.1, 30));
@@ -318,7 +318,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AMarketWithFewerGoodsThanColumns_LeavesTheExtraCellsEmpty()
         {
             var small = new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 2, 0, 0) }, 30, 30, new MarketPricing(0.05, 0.05), 7, new CityPopulation(1000));
+                new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, 30, TestMarkets.Pricing, 7, new CityPopulation(1000));
 
             Assert.DoesNotThrow(() => table.AddCity("Sparia", small));
             Assert.AreEqual("60", Text(0, Fish, Stock));
@@ -393,7 +393,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TheTotals_LeaveOutAGoodThatAMarketDoesNotHave()
         {
             var small = new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 2, 0, 0) }, 30, 30, new MarketPricing(0.05, 0.05), 7, new CityPopulation(1000));
+                new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, 30, TestMarkets.Pricing, 7, new CityPopulation(1000));
 
             table.AddCity("Sparia", market);
             table.AddCity("Elforth", small);

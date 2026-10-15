@@ -5,7 +5,7 @@ namespace DarkFantasyMerchant.Core
 {
     /// <summary>
     /// The stocks of goods of one city. Every day the city produces some goods and
-    /// consumes all of them; the price of a good follows its stock against a target.
+    /// consumes all of them; the price of a good follows its stock against thresholds that follow its consumption and production.
     /// There is no limit to what a city can store. Goods are indices into the catalogue.
     /// It also remembers what the days of the last week actually produced and consumed.
     /// What it consumes and produces follows its population, which the food it holds
@@ -17,20 +17,20 @@ namespace DarkFantasyMerchant.Core
 
         private readonly MarketGood[] goods;
         private readonly double[] stocks;
-        private readonly double targetDays;
+        private readonly ThresholdRule thresholdRule;
         private readonly MarketPricing pricing;
         private readonly int daysPerWeek;
         private readonly MarketWeekLog weekLog;
         private readonly FoodGrowth foodGrowth;
 
-        /// <param name="targetDays">Days of consumption a city holds when a good is at its base price.</param>
+        /// <param name="thresholds">How the stock thresholds of a good, at which its prices are given, follow what the city consumes and produces of it.</param>
         /// <param name="startingDays">Days of consumption the city holds of every good when the game starts.</param>
         /// <param name="daysPerWeek">Days of the calendar's week, over which the weekly figures are given.</param>
         /// <param name="population">The inhabitants of the city, who set what it consumes.</param>
         /// <param name="foodGrowth">How food changes the population. Without it, the population stays what it is.</param>
         public CityMarket(
             IReadOnlyList<MarketGood> goods,
-            double targetDays,
+            ThresholdRule thresholds,
             double startingDays,
             MarketPricing pricing,
             int daysPerWeek,
@@ -42,12 +42,9 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentNullException(nameof(goods));
             }
 
-            // The negated comparisons also reject NaN.
-            if (!(targetDays >= 0d) || double.IsInfinity(targetDays))
-            {
-                throw new ArgumentOutOfRangeException(nameof(targetDays));
-            }
+            thresholdRule = thresholds ?? throw new ArgumentNullException(nameof(thresholds));
 
+            // The negated comparisons also reject NaN.
             if (!(startingDays >= 0d) || double.IsInfinity(startingDays))
             {
                 throw new ArgumentOutOfRangeException(nameof(startingDays));
@@ -61,7 +58,6 @@ namespace DarkFantasyMerchant.Core
             this.pricing = pricing ?? throw new ArgumentNullException(nameof(pricing));
             Population = population ?? throw new ArgumentNullException(nameof(population));
             this.foodGrowth = foodGrowth;
-            this.targetDays = targetDays;
             this.daysPerWeek = daysPerWeek;
             weekLog = new MarketWeekLog(goods.Count, daysPerWeek);
             this.goods = new MarketGood[goods.Count];
@@ -145,12 +141,14 @@ namespace DarkFantasyMerchant.Core
             return (int)Math.Min(int.MaxValue, Math.Floor(StockOf(good) + WholeBarrelMargin));
         }
 
-        /// <summary>The stock at which the good is at its base price.</summary>
-        public double TargetOf(int good)
+        /// <summary>The stocks at which the prices of a good are given, for the population of the moment.</summary>
+        public StockThresholds ThresholdsOf(int good)
         {
             RequireGood(good);
 
-            return targetDays * DailyConsumptionOf(good);
+            double consumption = DailyConsumptionOf(good);
+
+            return thresholdRule.ThresholdsFor(consumption, consumption * goods[good].ProductionRate);
         }
 
         /// <summary>Barrels the city produces in a week while its stock is under the ceiling.</summary>
@@ -190,10 +188,7 @@ namespace DarkFantasyMerchant.Core
             RequireGood(good);
             RequireNotNegative(barrelsAlreadyBought, nameof(barrelsAlreadyBought));
 
-            MarketGood figures = goods[good];
-
-            return pricing.BuyPrice(
-                figures.MinPrice, figures.BasePrice, figures.MaxPrice, StockOf(good) - barrelsAlreadyBought, TargetOf(good));
+            return pricing.BuyPrice(goods[good].BasePrice, StockOf(good) - barrelsAlreadyBought, ThresholdsOf(good));
         }
 
         /// <summary>What the player is paid for the next barrel, or for a later one of the same sale.</summary>
@@ -203,10 +198,7 @@ namespace DarkFantasyMerchant.Core
             RequireGood(good);
             RequireNotNegative(barrelsAlreadySold, nameof(barrelsAlreadySold));
 
-            MarketGood figures = goods[good];
-
-            return pricing.SellPrice(
-                figures.MinPrice, figures.BasePrice, figures.MaxPrice, StockOf(good) + barrelsAlreadySold, TargetOf(good));
+            return pricing.SellPrice(goods[good].BasePrice, StockOf(good) + barrelsAlreadySold, ThresholdsOf(good));
         }
 
         /// <summary>Takes whole barrels out of the stock. Throws when fewer are available.</summary>

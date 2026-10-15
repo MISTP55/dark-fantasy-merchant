@@ -15,9 +15,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [SetUp]
         public void SetUp()
         {
-            // One good at base price 10, two barrels a day: 60 in stock, the target.
+            // One good at base price 10, two barrels a day: 60 in stock, the threshold T1.
             market = new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 2, 0, 0) }, 30, 30, new MarketPricing(0.05, 0.05),
+                new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, 30, TestMarkets.Pricing,
                 7,
                 new CityPopulation(1000));
             hold = new CargoHold(200);

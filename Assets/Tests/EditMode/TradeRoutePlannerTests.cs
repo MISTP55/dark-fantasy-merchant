@@ -9,19 +9,19 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Fish = 0;
         private const int Iron = 1;
 
-        // Days of consumption a market starts with. The target is 30 days.
+        // Days of consumption a market starts with. T1 is 30 days.
         private const double Empty = 0d;
         private const double AtTarget = 30d;
         private const double Surplus = 60d;
 
-        // Two goods, 2 barrels a day each: 60 barrels at the target, 120 in surplus.
+        // Two goods, 2 barrels a day each: 60 barrels at T1, 120 in surplus, above T3.
         private static CityMarket Market(double fishDays, double ironDays)
         {
             var market = new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 2, 0, 0), new MarketGood(25, 50, 125, 2, 0, 0) },
-                30,
+                new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 0, 0) },
+                TestMarkets.Thresholds,
                 0,
-                new MarketPricing(0.05, 0.05),
+                TestMarkets.Pricing,
                 7,
                 new CityPopulation(1000));
 
@@ -130,17 +130,25 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void LoadingStopsAtTheStock()
         {
-            // A city that does not consume a good sells it at its base price down to the
-            // last barrel: only its stock of 10 stops the loading.
+            // The source does not consume fish and holds 10 barrels: its last one costs
+            // 10 x 3.75. The destination, empty, prices fish at 100 and pays at least 170 a
+            // barrel: only the stock stops the loading.
             var source = new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 0, 0, 0), new MarketGood(25, 50, 125, 0, 0, 0) },
-                30,
+                new[] { new MarketGood(10, 0, 0, 0), new MarketGood(50, 0, 0, 0) },
+                TestMarkets.Thresholds,
                 0,
-                new MarketPricing(0.05, 0.05),
+                TestMarkets.Pricing,
                 7,
                 new CityPopulation(1000));
             source.Put(Fish, 10);
-            var planner = new TradeRoutePlanner(new[] { source, Market(Empty, AtTarget) }, Days(2, 1d), 1d);
+            var destination = new CityMarket(
+                new[] { new MarketGood(100, 2, 0, 0), new MarketGood(50, 2, 0, 0) },
+                TestMarkets.Thresholds,
+                0,
+                TestMarkets.Pricing,
+                7,
+                new CityPopulation(1000));
+            var planner = new TradeRoutePlanner(new[] { source, destination }, Days(2, 1d), 1d);
 
             Assert.IsTrue(planner.TryPlanTrade(0, 200, null, out TradePlan plan));
             Assert.AreEqual(10, plan.BarrelsOf(Fish));
@@ -181,10 +189,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void APortThatCannotBeReached_IsIgnored()
         {
+            // Port 1 holds 10 days of fish, its T0: it buys the surplus, though for less than
+            // the empty port 2 would. At T1 it would not: a city that does not produce fish
+            // pays only the T2 factor for a barrel beyond T1.
             double[,] days = Days(3, 1d);
             SetDays(days, 0, 2, double.PositiveInfinity);
             var planner = new TradeRoutePlanner(
-                new[] { Market(Surplus, AtTarget), Market(AtTarget, AtTarget), Market(Empty, AtTarget) }, days, 1d);
+                new[] { Market(Surplus, AtTarget), Market(10d, AtTarget), Market(Empty, AtTarget) }, days, 1d);
 
             Assert.IsTrue(planner.TryPlanTrade(0, 200, null, out TradePlan plan));
             Assert.AreEqual(1, plan.Destination);
@@ -258,7 +269,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void MarketsOfDifferentCatalogues_TradeTheGoodsTheyShare()
         {
             var small = new CityMarket(
-                new[] { new MarketGood(5, 10, 25, 2, 0, 0) }, 30, 0, new MarketPricing(0.05, 0.05), 7, new CityPopulation(1000));
+                new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, 0, TestMarkets.Pricing, 7, new CityPopulation(1000));
             var planner = new TradeRoutePlanner(new[] { Market(Surplus, Surplus), small }, Days(2, 1d), 1d);
 
             Assert.AreEqual(1, planner.GoodCount);
