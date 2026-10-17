@@ -7,9 +7,8 @@ using UnityEngine.UIElements;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The table of the cities debug panel: one row per city with its population, the rate
-    /// at which it grows or declines in a month, how much it has grown or declined since
-    /// the game started and, for every good, its stock and what it produces, consumes and
+    /// The table of the cities debug panel: one row per city with its population,
+    /// how much it has grown or declined since the game started and, for every good, its stock and what it produces, consumes and
     /// gains in a week, the nominal figure first and the one of the last days in brackets,
     /// the workers of its workshop over their maximum,
     /// and a last row with the total of every column. Follows the markets while it is shown.
@@ -31,7 +30,6 @@ namespace DarkFantasyMerchant.Game
         private const string CellClass = "debug-cities__cell";
         private const string NameCellClass = "debug-cities__cell--name";
         private const string PopulationCellClass = "debug-cities__cell--population";
-        private const string GrowthCellClass = "debug-cities__cell--growth";
         private const string GrowthSinceStartCellClass = "debug-cities__cell--growth-since-start";
         private const string StockCellClass = "debug-cities__cell--stock";
         private const string FigureCellClass = "debug-cities__cell--figure";
@@ -58,7 +56,6 @@ namespace DarkFantasyMerchant.Game
         private sealed class Row
         {
             public Label Population;
-            public Label Growth;
             public Label GrowthSinceStart;
             public CityMarket Market;
             public GoodCells[] Goods;
@@ -69,7 +66,6 @@ namespace DarkFantasyMerchant.Game
         private readonly int goodCount;
         private readonly List<Row> rows = new List<Row>();
         private readonly Label totalPopulation;
-        private readonly Label totalGrowth;
         private readonly Label totalGrowthSinceStart;
         private readonly GoodCells[] totalGoods;
 
@@ -113,7 +109,6 @@ namespace DarkFantasyMerchant.Game
             totalRow.AddToClassList(TotalRowClass);
             AddLabel(totalRow, NameCellClass).text = "Total";
             totalPopulation = AddLabel(totalRow, PopulationCellClass);
-            totalGrowth = AddLabel(totalRow, GrowthCellClass);
             totalGrowthSinceStart = AddLabel(totalRow, GrowthSinceStartCellClass);
             totalGoods = AddGoodCells(totalRow, goodCount);
             totalContainer.Add(totalRow);
@@ -177,7 +172,6 @@ namespace DarkFantasyMerchant.Game
             var row = new Row
             {
                 Population = AddLabel(element, PopulationCellClass),
-                Growth = AddLabel(element, GrowthCellClass),
                 GrowthSinceStart = AddLabel(element, GrowthSinceStartCellClass),
                 Market = market,
                 Goods = AddGoodCells(element, goodCount),
@@ -251,7 +245,6 @@ namespace DarkFantasyMerchant.Game
             CityMarket market = row.Market;
 
             row.Population.text = TreasuryHudController.FormatNumber(market.Population.Inhabitants);
-            row.Growth.text = FormatRate(market.MonthlyGrowthRate);
             row.GrowthSinceStart.text = FormatRate(market.Population.GrowthSinceStart);
 
             for (int i = 0; i < row.Goods.Length; i++)
@@ -285,25 +278,19 @@ namespace DarkFantasyMerchant.Game
         private void WriteTotals()
         {
             long inhabitants = 0;
-            double population = 0d;
-            double startingPopulation = 0d;
-            double monthlyChange = 0d;
+            long startingInhabitants = 0;
 
             foreach (Row row in rows)
             {
-                // The whole inhabitants, as the rows write them.
                 inhabitants += row.Market.Population.Inhabitants;
-                population += row.Market.Population.Count;
-                startingPopulation += row.Market.Population.StartingCount;
-                monthlyChange += row.Market.Population.Count * row.Market.MonthlyGrowthRate;
+                startingInhabitants += row.Market.Population.StartingInhabitants;
             }
 
             totalPopulation.text = TreasuryHudController.FormatNumber(inhabitants);
 
-            // The rate of the world: what its cities gain and lose together, against what they are.
-            totalGrowth.text = FormatRate(population > 0d ? monthlyChange / population : 0d);
+            // The growth of the world: all its inhabitants together, against all those it started with.
             totalGrowthSinceStart.text = FormatRate(
-                startingPopulation > 0d ? population / startingPopulation - 1d : 0d);
+                startingInhabitants > 0 ? (double)inhabitants / startingInhabitants - 1d : 0d);
 
             for (int i = 0; i < totalGoods.Length; i++)
             {
@@ -397,7 +384,6 @@ namespace DarkFantasyMerchant.Game
             columns.AddToClassList(HeaderRowClass);
             AddLabel(columns, NameCellClass).text = "Ville";
             AddLabel(columns, PopulationCellClass).text = "Population";
-            AddLabel(columns, GrowthCellClass).text = "Croiss. / mois";
             AddLabel(columns, GrowthSinceStartCellClass).text = "Croiss. totale";
 
             foreach (string goodName in goodNames)

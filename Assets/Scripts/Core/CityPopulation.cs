@@ -3,56 +3,165 @@ using System;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// The inhabitants of one city. Their number changes a little every day, so it is
-    /// not whole; what is shown is the nearest whole number.
+    /// The inhabitants of one city, in whole numbers: the housed ones, who live in its
+    /// houses (the room), and the beggars, who have no place. Nothing changes them but
+    /// the labour of the city: workers' families are housed or sent back to the beggars.
     /// </summary>
     public sealed class CityPopulation
     {
-        public CityPopulation(double count)
+        /// <summary>A city with housed inhabitants only, in houses with exactly their room.</summary>
+        public CityPopulation(int housed)
+            : this(housed, 0, housed)
         {
-            // The negated comparison also rejects NaN.
-            if (!(count >= 0d) || double.IsInfinity(count))
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-
-            Count = count;
-            StartingCount = count;
         }
 
-        public double Count { get; private set; }
+        public CityPopulation(int housed, int beggars, int room)
+        {
+            if (housed < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(housed));
+            }
+
+            if (beggars < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(beggars));
+            }
+
+            if (room < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(room));
+            }
+
+            Housed = housed;
+            Beggars = beggars;
+            Room = room;
+            StartingInhabitants = housed + beggars;
+        }
+
+        /// <summary>The inhabitants who live in a house.</summary>
+        public int Housed { get; private set; }
+
+        /// <summary>The inhabitants who have no house.</summary>
+        public int Beggars { get; private set; }
+
+        /// <summary>The places of the city's houses.</summary>
+        public int Room { get; private set; }
+
+        /// <summary>The places left in the houses; never negative, even when more are housed than there is room.</summary>
+        public int FreeRoom => Math.Max(0, Room - Housed);
+
+        /// <summary>Every inhabitant, housed or not.</summary>
+        public int Inhabitants => Housed + Beggars;
 
         /// <summary>The inhabitants the city had when the game started.</summary>
-        public double StartingCount { get; }
+        public int StartingInhabitants { get; }
 
         /// <summary>
         /// The change since the game started, as a share of the inhabitants it started
         /// with: 0.25 is +25 %. 0 for a city that started empty.
         /// </summary>
-        public double GrowthSinceStart => StartingCount > 0d ? Count / StartingCount - 1d : 0d;
-
-        /// <summary>The inhabitants as they are shown.</summary>
-        public int Inhabitants => (int)Math.Min(int.MaxValue, Math.Round(Count, MidpointRounding.AwayFromZero));
+        public double GrowthSinceStart => StartingInhabitants > 0 ? (double)Inhabitants / StartingInhabitants - 1d : 0d;
 
         /// <summary>
-        /// One day at a monthly rate: the days of a month at the same rate change the
-        /// population by exactly that rate.
+        /// The population of a new game, as Patrician III starts it: every worker's family is housed,
+        /// a share of beggars comes with them, and the houses are as many as the housed need.
         /// </summary>
-        /// <param name="monthlyRate">The change over a month as a share of the population: 0.05 is +5 %. Not under -1.</param>
-        public void GrowForADay(double monthlyRate, int daysPerMonth)
+        /// <param name="workers">Workers of the city.</param>
+        /// <param name="inhabitantsPerWorker">Inhabitants a worker's family takes up, at least 1.</param>
+        /// <param name="beggarsPerWorker">Beggars per worker, rounded down for the city.</param>
+        /// <param name="roomPerHouse">Places of one house, at least 1; the room is a whole number of houses, rounded up.</param>
+        public static CityPopulation AtStart(int workers, int inhabitantsPerWorker, double beggarsPerWorker, int roomPerHouse)
         {
+            if (workers < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(workers));
+            }
+
+            if (inhabitantsPerWorker < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inhabitantsPerWorker));
+            }
+
+            if (roomPerHouse < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(roomPerHouse));
+            }
+
             // The negated comparison also rejects NaN.
-            if (!(monthlyRate >= -1d) || double.IsInfinity(monthlyRate))
+            if (!(beggarsPerWorker >= 0d) || double.IsInfinity(beggarsPerWorker))
             {
-                throw new ArgumentOutOfRangeException(nameof(monthlyRate));
+                throw new ArgumentOutOfRangeException(nameof(beggarsPerWorker));
             }
 
-            if (daysPerMonth < 1)
+            int housed = workers * inhabitantsPerWorker;
+            int beggars = (int)Math.Floor(workers * beggarsPerWorker + 1e-9);
+            int room = (housed + roomPerHouse - 1) / roomPerHouse * roomPerHouse;
+
+            return new CityPopulation(housed, beggars, room);
+        }
+
+        /// <summary>Adds places to the city's houses.</summary>
+        public void AddRoom(int places)
+        {
+            if (places < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(daysPerMonth));
+                throw new ArgumentOutOfRangeException(nameof(places));
             }
 
-            Count *= Math.Pow(1d + monthlyRate, 1d / daysPerMonth);
+            Room += places;
+        }
+
+        /// <summary>Houses the families of hired workers: their inhabitants leave the beggars.</summary>
+        public void Hire(int workers, int inhabitantsPerWorker)
+        {
+            int inhabitants = InhabitantsOf(workers, inhabitantsPerWorker);
+
+            if (inhabitants > Beggars)
+            {
+                throw new ArgumentOutOfRangeException(nameof(workers));
+            }
+
+            Beggars -= inhabitants;
+            Housed += inhabitants;
+        }
+
+        /// <summary>Sends the families of workers who leave their jobs back to the beggars.</summary>
+        public void SendToBeggars(int workers, int inhabitantsPerWorker)
+        {
+            int inhabitants = InhabitantsOf(workers, inhabitantsPerWorker);
+
+            if (inhabitants > Housed)
+            {
+                throw new ArgumentOutOfRangeException(nameof(workers));
+            }
+
+            Housed -= inhabitants;
+            Beggars += inhabitants;
+        }
+
+        public void SetBeggars(int beggars)
+        {
+            if (beggars < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(beggars));
+            }
+
+            Beggars = beggars;
+        }
+
+        private static int InhabitantsOf(int workers, int inhabitantsPerWorker)
+        {
+            if (workers < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(workers));
+            }
+
+            if (inhabitantsPerWorker < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inhabitantsPerWorker));
+            }
+
+            return workers * inhabitantsPerWorker;
         }
     }
 }

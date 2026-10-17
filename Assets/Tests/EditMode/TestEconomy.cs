@@ -93,7 +93,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var serialized = new SerializedObject(economy);
             serialized.FindProperty("startingWorkforce").intValue = inhabitants;
-            serialized.FindProperty("inhabitantsPerWorker").doubleValue = 1d;
+            serialized.FindProperty("inhabitantsPerWorker").intValue = 1;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 

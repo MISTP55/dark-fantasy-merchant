@@ -48,8 +48,8 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Workers every city starts with, spread evenly over its workshops: 250 is Patrician III's.")]
         [SerializeField, Min(0)] private int startingWorkforce = 250;
 
-        [Tooltip("Inhabitants per starting worker: 72 / 17 is Patrician III's 4, plus a seventeenth of beggars.")]
-        [SerializeField, Min(0f)] private double inhabitantsPerWorker = 72d / 17d;
+        [Tooltip("Inhabitants housed per starting worker: 4 is Patrician III's.")]
+        [SerializeField, Min(0)] private int inhabitantsPerWorker = 4;
 
         [Header("Stock thresholds T0 to T3 of a good in a city, at which its prices are given")]
         [Tooltip("T0: days of the city's consumption.")]
@@ -80,19 +80,6 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("What the player is paid when selling to a city. At no point above the buy factors.")]
         [SerializeField] private PriceFactors sellFactors = new PriceFactors(2d, 1.4d, 1d, 0.7d, 0.5d);
 
-        [Header("Population, by the days of its consumption a city holds of food (the average of its foods)")]
-        [Tooltip("Days of food at which the population does not change. Under them it declines.")]
-        [SerializeField, Min(0f)] private double stableFoodDays = 7d;
-
-        [Tooltip("Days of food at which the population grows the fastest. A food is not counted for more.")]
-        [SerializeField, Min(0f)] private double abundantFoodDays = 14d;
-
-        [Tooltip("Growth of the population over a month at the abundant days, as a share: 0.05 is +5 %.")]
-        [SerializeField, Min(0f)] private double maxMonthlyGrowth = 0.05d;
-
-        [Tooltip("Decline of the population over a month with no food at all, as a share: 0.1 is -10 %.")]
-        [SerializeField, Range(0f, 1f)] private double maxMonthlyDecline = 0.1d;
-
         /// <summary>The active goods of the catalogue, in its order: the only goods of the game.</summary>
         public IReadOnlyList<GoodDefinition> Goods => activeGoods ??= ActiveGoodsOfTheCatalogue();
 
@@ -117,10 +104,10 @@ namespace DarkFantasyMerchant.Game
 
         public int StartingWorkforce => startingWorkforce;
 
-        public double InhabitantsPerWorker => inhabitantsPerWorker;
+        public int InhabitantsPerWorker => inhabitantsPerWorker;
 
         /// <summary>The inhabitants of every city when the game starts: the starting workforce, times the inhabitants per worker.</summary>
-        public double StartingPopulation => startingWorkforce * inhabitantsPerWorker;
+        public int StartingPopulation => startingWorkforce * inhabitantsPerWorker;
 
         public double T0Days => t0Days;
 
@@ -139,14 +126,6 @@ namespace DarkFantasyMerchant.Game
         public PriceFactors BuyFactors => buyFactors;
 
         public PriceFactors SellFactors => sellFactors;
-
-        public double StableFoodDays => stableFoodDays;
-
-        public double AbundantFoodDays => abundantFoodDays;
-
-        public double MaxMonthlyGrowth => maxMonthlyGrowth;
-
-        public double MaxMonthlyDecline => maxMonthlyDecline;
 
         /// <returns>
         /// The index of a good among the active goods, which is what Core knows it by, or -1,
@@ -354,27 +333,15 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// How food changes the population of a city, from these settings. Throws when one
-        /// of them is unusable.
-        /// </summary>
-        /// <param name="daysPerMonth">Days of the calendar's month: the rates are given per month.</param>
-        public FoodGrowth CreateFoodGrowth(int daysPerMonth)
-        {
-            return new FoodGrowth(stableFoodDays, abundantFoodDays, maxMonthlyGrowth, maxMonthlyDecline, daysPerMonth);
-        }
-
-        /// <summary>
         /// The market of a city at the start of the game, with the starting population,
         /// the same in every city, and one stock per active good. Call
         /// <see cref="TryValidate"/> first. Throws when a setting or a good's figure is unusable.
         /// </summary>
         /// <param name="daysPerWeek">Days of the calendar's week: goods give their consumption per week.</param>
-        /// <param name="foodGrowth">How food changes the population. Without it, the population stays what it is.</param>
         public CityMarket CreateMarket(
             CityDefinition city,
             MarketPricing pricing,
-            int daysPerWeek,
-            FoodGrowth foodGrowth = null)
+            int daysPerWeek)
         {
             if (city == null)
             {
@@ -410,8 +377,7 @@ namespace DarkFantasyMerchant.Game
                     good.BasePrice,
                     good.WeeklyConsumptionPerThousand / daysPerWeek,
                     maxWorkers,
-                    outputPerWorker,
-                    good.Category == GoodCategory.Food);
+                    outputPerWorker);
             }
 
             return new CityMarket(
@@ -421,8 +387,7 @@ namespace DarkFantasyMerchant.Game
                 startingStockDays,
                 pricing,
                 daysPerWeek,
-                new CityPopulation(StartingPopulation),
-                foodGrowth);
+                new CityPopulation(StartingPopulation));
         }
     }
 }

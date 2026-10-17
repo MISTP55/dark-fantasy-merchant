@@ -81,7 +81,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.DoesNotThrow(() => economy.CreateThresholdRule());
             Assert.DoesNotThrow(() => economy.CreateWorkforceRule());
             Assert.IsTrue(economy.TryValidateSettings(out string settingsProblem), settingsProblem);
-            Assert.DoesNotThrow(() => economy.CreateFoodGrowth(30));
         }
 
         [Test]
@@ -134,7 +133,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             EconomyDefinition economy = LoadEconomy();
 
             Assert.AreEqual(250, economy.StartingWorkforce);
-            Assert.AreEqual(72d / 17d, economy.InhabitantsPerWorker, 1e-9);
+            Assert.AreEqual(4, economy.InhabitantsPerWorker);
         }
 
         [Test]

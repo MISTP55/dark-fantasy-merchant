@@ -12,13 +12,11 @@ namespace DarkFantasyMerchant.Core
         /// <param name="dailyConsumptionPerThousand">Units of the good 1 000 inhabitants consume in a day; it can be a fraction.</param>
         /// <param name="maxWorkers">Most workers of the city's workshop for the good; 0 for a good the city does not produce.</param>
         /// <param name="dailyOutputPerWorker">Units of the good a worker of that workshop makes in a day, its efficiency included.</param>
-        /// <param name="isFood">Whether the stock of the good feeds the city: only food makes its population change.</param>
         public MarketGood(
             double basePrice,
             double dailyConsumptionPerThousand,
             int maxWorkers,
-            double dailyOutputPerWorker,
-            bool isFood = false)
+            double dailyOutputPerWorker)
         {
             // The negated comparison also rejects NaN.
             if (!(basePrice > 0d) || double.IsInfinity(basePrice))
@@ -38,7 +36,6 @@ namespace DarkFantasyMerchant.Core
             DailyConsumptionPerThousand = dailyConsumptionPerThousand;
             MaxWorkers = maxWorkers;
             DailyOutputPerWorker = dailyOutputPerWorker;
-            IsFood = isFood;
         }
 
         public double BasePrice { get; }
@@ -48,8 +45,6 @@ namespace DarkFantasyMerchant.Core
         public int MaxWorkers { get; }
 
         public double DailyOutputPerWorker { get; }
-
-        public bool IsFood { get; }
 
         public bool IsProduced => MaxWorkers > 0 && DailyOutputPerWorker > 0d;
 

@@ -6,90 +6,85 @@ namespace DarkFantasyMerchant.Tests.EditMode
 {
     public class CityPopulationTests
     {
-        private const double Tolerance = 1e-6;
+        [TestCase(252, 1008, 59, 1100)] // Patrician III's start: 4 × W, 4 × W ÷ 17, houses rounded up
+        [TestCase(250, 1000, 58, 1000)]
+        [TestCase(17, 68, 4, 100)]
+        [TestCase(0, 0, 0, 0)]
+        public void AtStart_SplitsTheWorkersFamilies(int workers, int housed, int beggars, int room)
+        {
+            CityPopulation population = CityPopulation.AtStart(workers, 4, 4d / 17d, 100);
+            Assert.AreEqual(housed, population.Housed);
+            Assert.AreEqual(beggars, population.Beggars);
+            Assert.AreEqual(room, population.Room);
+            Assert.AreEqual(housed + beggars, population.Inhabitants);
+            Assert.AreEqual(housed + beggars, population.StartingInhabitants);
+        }
 
         [Test]
-        public void StartsWithItsInhabitants()
+        public void ConstructedWithTheHousedOnly_HasNoBeggarAndExactlyTheirRoom()
         {
             var population = new CityPopulation(2100);
 
-            Assert.AreEqual(2100, population.Count);
+            Assert.AreEqual(2100, population.Housed);
+            Assert.AreEqual(0, population.Beggars);
+            Assert.AreEqual(2100, population.Room);
             Assert.AreEqual(2100, population.Inhabitants);
+            Assert.AreEqual(0, population.FreeRoom);
+        }
+
+        [Test] public void FreeRoom_IsNeverNegative() => Assert.AreEqual(0, new CityPopulation(1000, 0, 800).FreeRoom);
+
+        [Test]
+        public void Hire_TurnsFourBeggarsPerWorkerIntoHousedInhabitants()
+        {
+            var population = new CityPopulation(1000, 40, 1100);
+            population.Hire(6, 4);
+            Assert.AreEqual(1024, population.Housed);
+            Assert.AreEqual(16, population.Beggars);
+            Assert.AreEqual(76, population.FreeRoom);
+            Assert.Throws<ArgumentOutOfRangeException>(() => population.Hire(5, 4));
         }
 
         [Test]
-        public void Inhabitants_AreTheNearestWholeNumber()
+        public void SendToBeggars_GivesFourHousedInhabitantsPerWorkerBack()
         {
-            Assert.AreEqual(1999, new CityPopulation(1999.4).Inhabitants);
-            Assert.AreEqual(2000, new CityPopulation(1999.5).Inhabitants);
-            Assert.AreEqual(0, new CityPopulation(0).Inhabitants);
-        }
-
-        [TestCase(0.05, 2100)]
-        [TestCase(-0.1, 1800)]
-        [TestCase(0, 2000)]
-        public void TheDaysOfAMonth_ChangeThePopulationByTheMonthlyRate(double monthlyRate, double expected)
-        {
-            var population = new CityPopulation(2000);
-
-            for (int day = 0; day < 30; day++)
-            {
-                population.GrowForADay(monthlyRate, 30);
-            }
-
-            Assert.AreEqual(expected, population.Count, Tolerance);
+            var population = new CityPopulation(1000, 0, 1000);
+            population.SendToBeggars(4, 4);
+            Assert.AreEqual(984, population.Housed);
+            Assert.AreEqual(16, population.Beggars);
+            Assert.Throws<ArgumentOutOfRangeException>(() => population.SendToBeggars(1000, 4));
         }
 
         [Test]
-        public void OneDay_IsASmallShareOfTheMonth()
+        public void GrowthSinceStart_FollowsTheInhabitants()
         {
-            var population = new CityPopulation(2000);
-
-            population.GrowForADay(0.05, 30);
-
-            Assert.AreEqual(2000 * Math.Pow(1.05, 1d / 30), population.Count, Tolerance);
-            Assert.Greater(population.Count, 2003d);
-            Assert.Less(population.Count, 2004d);
-        }
-
-        [Test]
-        public void GrowthSinceStart_ComparesTheInhabitantsWithThoseOfTheStart()
-        {
-            var population = new CityPopulation(2000);
-            Assert.AreEqual(0, population.GrowthSinceStart, Tolerance);
-
-            for (int day = 0; day < 60; day++)
-            {
-                population.GrowForADay(0.05, 30);
-            }
-
-            Assert.AreEqual(2000, population.StartingCount);
-            Assert.AreEqual(0.1025, population.GrowthSinceStart, Tolerance);
+            var population = new CityPopulation(1000, 0, 1100);
+            population.SetBeggars(100);
+            Assert.AreEqual(0.1, population.GrowthSinceStart, 1e-9);
             Assert.AreEqual(0, new CityPopulation(0).GrowthSinceStart);
         }
 
         [Test]
-        public void AnEmptyCity_StaysEmpty()
+        public void AddRoom_AddsPlaces()
         {
-            var population = new CityPopulation(0);
-
-            population.GrowForADay(0.05, 30);
-
-            Assert.AreEqual(0, population.Count);
+            var population = new CityPopulation(1000);
+            population.AddRoom(100);
+            Assert.AreEqual(1100, population.Room);
+            Assert.Throws<ArgumentOutOfRangeException>(() => population.AddRoom(0));
         }
 
         [Test]
-        public void RejectsFiguresThatMakeNoSense()
+        public void TheConstructors_RejectNegativeCounts()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new CityPopulation(-1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new CityPopulation(double.NaN));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new CityPopulation(double.PositiveInfinity));
-
-            var population = new CityPopulation(2000);
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => population.GrowForADay(-1.5, 30));
-            Assert.Throws<ArgumentOutOfRangeException>(() => population.GrowForADay(double.NaN, 30));
-            Assert.Throws<ArgumentOutOfRangeException>(() => population.GrowForADay(0.05, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CityPopulation(-1, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CityPopulation(0, -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CityPopulation(0, 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(-1, 4, 0.2, 100));
+            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(10, 0, 0.2, 100));
+            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(10, 4, 0.2, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(10, 4, double.NaN, 100));
+            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(10, 4, -0.1, 100));
         }
     }
 }

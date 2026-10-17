@@ -80,12 +80,11 @@ namespace DarkFantasyMerchant.Game
                 // unusable setting leaves the cities without a market, as the others do.
                 economy.CreateGoodUnits();
                 int daysPerWeek = worldClock.Calendar.DaysPerWeek;
-                FoodGrowth foodGrowth = economy.CreateFoodGrowth(worldClock.Calendar.DaysPerMonth);
 
                 foreach (CityDefinition city in mapView.Cities)
                 {
                     WarnAbout(city);
-                    markets[city] = economy.CreateMarket(city, pricing, daysPerWeek, foodGrowth);
+                    markets[city] = economy.CreateMarket(city, pricing, daysPerWeek);
                 }
             }
             catch (ArgumentOutOfRangeException exception)

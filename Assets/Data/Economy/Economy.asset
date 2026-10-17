@@ -62,7 +62,7 @@ MonoBehaviour:
   hiredUpToT3: 1
   workersAboveT3: 1
   startingWorkforce: 250
-  inhabitantsPerWorker: 4.235294117647059
+  inhabitantsPerWorker: 4
   t0Days: 7
   t1AddedDays: 14
   t2ProductionDays: 10
@@ -82,7 +82,3 @@ MonoBehaviour:
     atT1: 1
     atT2: 0.7
     atT3: 0.5
-  stableFoodDays: 7
-  abundantFoodDays: 14
-  maxMonthlyGrowth: 0.05
-  maxMonthlyDecline: 0.1

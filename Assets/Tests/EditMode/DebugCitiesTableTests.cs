@@ -10,13 +10,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Fish = 0;
         private const int Iron = 1;
 
-        // Children of a row, in order: the city, its population, its growth in a month and
-        // since the start, then five cells per good.
+        // Children of a row, in order: the city, its population, its growth since the start,
+        // then five cells per good.
         private const int NameCell = 0;
         private const int PopulationCell = 1;
-        private const int GrowthCell = 2;
-        private const int GrowthSinceStartCell = 3;
-        private const int FirstGoodCell = 4;
+        private const int GrowthSinceStartCell = 2;
+        private const int FirstGoodCell = 3;
         private const int CellsPerGood = 5;
         private const int Stock = 0;
         private const int Production = 1;
@@ -104,7 +103,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(FirstGoodCell + 2 * CellsPerGood, header[1].childCount);
             Assert.AreEqual("Ville", ((Label)header[1][NameCell]).text);
             Assert.AreEqual("Population", ((Label)header[1][PopulationCell]).text);
-            Assert.AreEqual("Croiss. / mois", ((Label)header[1][GrowthCell]).text);
             Assert.AreEqual("Croiss. totale", ((Label)header[1][GrowthSinceStartCell]).text);
             Assert.AreEqual("Stock", ((Label)header[1][FirstGoodCell + Stock]).text);
             Assert.AreEqual("Prod.", ((Label)header[1][FirstGoodCell + Production]).text);
@@ -127,77 +125,41 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void ARow_WritesTheMonthlyGrowth_OfAPopulationThatFoodChanges()
-        {
-            // Fish is food: 20 barrels for 2 a day is 10 days, between the 7 that keep the
-            // population and the 14 that make it grow by 5 % a month.
-            CityMarket fed = FedMarket(startingDays: 10);
-            CityMarket starved = FedMarket(startingDays: 0);
-
-            table.AddCity("Sparia", fed);
-            table.AddCity("Elforth", starved);
-            table.AddCity("Hitrun", market);
-
-            Assert.AreEqual(Positive("+2,1\u00A0%"), Text(0, GrowthCell));
-            Assert.AreEqual(Negative("-10,0\u00A0%"), Text(1, GrowthCell));
-
-            // A market whose population nothing changes.
-            Assert.AreEqual("0,0\u00A0%", Text(2, GrowthCell));
-        }
-
-        [Test]
         public void WhileShown_ADayThatStarts_RewritesThePopulation_AndTheTotals()
         {
-            CityMarket starved = FedMarket(startingDays: 0);
-            table.AddCity("Elforth", starved);
+            CityMarket city = FedMarket(startingDays: 0, new CityPopulation(900, 100, 1000));
+            table.AddCity("Elforth", city);
             table.Show();
 
-            for (int day = 0; day < 30; day++)
-            {
-                starved.StartDay();
-            }
+            city.Population.SetBeggars(0);
+            city.StartDay();
 
-            // A month without food: a tenth of the thousand inhabitants is gone.
             Assert.AreEqual("900", Text(0, PopulationCell));
             Assert.AreEqual("900", Total(PopulationCell));
-            Assert.AreEqual(Negative("-10,0\u00A0%"), Total(GrowthCell));
         }
 
         [Test]
         public void ARow_WritesTheGrowthSinceTheStart_AndTheTotalTheOneOfAllTheInhabitants()
         {
-            // 1 000 inhabitants without food and 4 000 with plenty of it.
-            CityMarket starved = FedMarket(startingDays: 0);
-            CityMarket fed = FedMarket(startingDays: 1000, inhabitants: 4000);
-            table.AddCity("Elforth", starved);
-            table.AddCity("Sparia", fed);
+            CityMarket shrinking = FedMarket(startingDays: 0, new CityPopulation(900, 100, 1000));
+            CityMarket growing = FedMarket(startingDays: 0, new CityPopulation(1000, 0, 1100));
+            table.AddCity("Elforth", shrinking);
+            table.AddCity("Sparia", growing);
 
             Assert.AreEqual("0,0\u00A0%", Text(0, GrowthSinceStartCell));
             Assert.AreEqual("0,0\u00A0%", Total(GrowthSinceStartCell));
 
             table.Show();
 
-            for (int day = 0; day < 30; day++)
-            {
-                starved.StartDay();
-                fed.StartDay();
-            }
+            shrinking.Population.SetBeggars(0);
+            growing.Population.SetBeggars(50);
+            shrinking.StartDay();
+            growing.StartDay();
 
-            // A month: 900 and 4 200 inhabitants, 5 100 for the 5 000 of the start.
+            // 900 and 1 050 inhabitants, 1 950 for the 2 000 of the start.
             Assert.AreEqual(Negative("-10,0\u00A0%"), Text(0, GrowthSinceStartCell));
             Assert.AreEqual(Positive("+5,0\u00A0%"), Text(1, GrowthSinceStartCell));
-            Assert.AreEqual(Positive("+2,0\u00A0%"), Total(GrowthSinceStartCell));
-        }
-
-        [Test]
-        public void TheTotalGrowth_IsTheOneOfAllTheInhabitantsTogether()
-        {
-            // 1 000 inhabitants who lose 10 % a month and 4 000 who gain 5 %: +100 of 5 000.
-            table.AddCity("Elforth", FedMarket(startingDays: 0));
-            table.AddCity("Sparia", FedMarket(startingDays: 14, inhabitants: 4000));
-
-            Assert.AreEqual("5\u00A0000", Total(PopulationCell));
-            Assert.AreEqual(Positive("+2,0\u00A0%"), Total(GrowthCell));
+            Assert.AreEqual(Negative("-2,5\u00A0%"), Total(GrowthSinceStartCell));
         }
 
         [Test]
@@ -209,18 +171,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("0,0\u00A0%", DebugCitiesTable.FormatRate(-0.0004));
         }
 
-        // One food, 2 barrels a day per thousand inhabitants, in a city whose population follows it.
-        private static CityMarket FedMarket(double startingDays, double inhabitants = 1000)
+        // One good, 2 barrels a day per thousand inhabitants, in a city with the given population.
+        private static CityMarket FedMarket(double startingDays, CityPopulation population)
         {
             return new CityMarket(
-                new[] { new MarketGood(10, 2, 0, 0, isFood: true) },
+                new[] { new MarketGood(10, 2, 0, 0) },
                 TestMarkets.Thresholds,
                 TestMarkets.Workforce,
                 startingDays,
                 TestMarkets.Pricing,
                 7,
-                new CityPopulation(inhabitants),
-                new FoodGrowth(7, 14, 0.05, 0.1, 30));
+                population);
         }
 
         [Test]
@@ -338,7 +299,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(1, totals.childCount);
             Assert.AreEqual("Total", Total(NameCell));
             Assert.AreEqual("0", Total(PopulationCell));
-            Assert.AreEqual("0,0\u00A0%", Total(GrowthCell));
             Assert.AreEqual("0,0\u00A0%", Total(GrowthSinceStartCell));
             Assert.AreEqual("0", Total(Fish, Stock));
             Assert.AreEqual("0,0 (0,0)", Total(Fish, Production));
