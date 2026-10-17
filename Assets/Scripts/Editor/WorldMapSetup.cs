@@ -135,7 +135,7 @@ namespace DarkFantasyMerchant.Editor
             new SampleGood("Cloth", "Étoffe", GoodCategory.RawMaterial, GoodUnit.Barrel, 206.8, 8.575, 60, 0.12971, 9),
             new SampleGood("Skins", "Peaux", GoodCategory.RawMaterial, GoodUnit.Barrel, 676.5, 5.25, 72, 0.05672, 9),
             new SampleGood("Oil", "Huile", GoodCategory.RawMaterial, GoodUnit.Barrel, 82.5, 7.525, 60, 0.13659, 9),
-            new SampleGood("Timber", "Bois", GoodCategory.RawMaterial, GoodUnit.Bushel, 55, 1.96, 48, 0.01533, 11),
+            new SampleGood("Timber", "Bois", GoodCategory.RawMaterial, GoodUnit.Bushel, 55, 1.96, 48, 0.08, 11),
             new SampleGood("Metal", "Métal", GoodCategory.RawMaterial, GoodUnit.Barrel, 255.6, 16.625, 78, 0.16580, 11),
             new SampleGood("Leather", "Cuir", GoodCategory.RawMaterial, GoodUnit.Barrel, 224, 6.265, 60, 0.04642, 9),
             new SampleGood("Wool", "Laine", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, 0.875, 50, 0.00977, 11),
