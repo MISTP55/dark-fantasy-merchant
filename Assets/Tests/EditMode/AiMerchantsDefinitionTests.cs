@@ -35,7 +35,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TheDefaults_AreTheGames()
         {
-            Assert.AreEqual(5, definition.ShipCount);
+            Assert.AreEqual(1, definition.ShipsPerCity);
             Assert.AreEqual(14, definition.Crew);
             Assert.AreEqual(1f, definition.StopoverDays);
             Assert.Greater(definition.Tint.b, definition.Tint.r);

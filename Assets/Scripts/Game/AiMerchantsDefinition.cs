@@ -5,16 +5,16 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// Static definition of the merchants that trade on their own: how many ships they
-    /// have, what they sail and how they behave. Holds no runtime state.
+    /// Static definition of the merchants that trade on their own: how many ships each city
+    /// has, what they sail and how they behave. Holds no runtime state.
     /// </summary>
     [CreateAssetMenu(fileName = "AiMerchants", menuName = "Dark Fantasy Merchant/AI Merchants")]
     public sealed class AiMerchantsDefinition : ScriptableObject
     {
         private const string DefaultShipNameFormat = "Marchand indépendant {0}";
 
-        [Tooltip("Ships that trade on their own. Each starts in the port of a city drawn at random.")]
-        [SerializeField, Min(0)] private int shipCount = 5;
+        [Tooltip("AI ships whose home is each city that reaches another by water. Each starts in the port of its home.")]
+        [SerializeField, Min(0)] private int shipsPerCity = 1;
 
         [SerializeField] private ShipDefinition shipDefinition;
 
@@ -30,7 +30,7 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Name of a ship; {0} is its number, from 1.")]
         [SerializeField] private string shipNameFormat = DefaultShipNameFormat;
 
-        public int ShipCount => shipCount;
+        public int ShipsPerCity => shipsPerCity;
 
         public ShipDefinition ShipDefinition => shipDefinition;
 

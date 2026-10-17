@@ -8,8 +8,8 @@ using Debug = UnityEngine.Debug;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The merchants that trade on their own: puts their ships in the ports of cities
-    /// drawn at random, and lets them buy and sell between the cities of the map as the
+    /// The merchants that trade on their own: homes ships in every city that reaches
+    /// another by water, and lets them buy and sell between the cities of the map as the
     /// world's time passes. The player cannot order them.
     /// </summary>
     public sealed class AiMerchants : MonoBehaviour
@@ -45,11 +45,19 @@ namespace DarkFantasyMerchant.Game
         /// <summary>False until the merchants have started, and on a map with no city to trade between.</summary>
         public bool CanAddShip => fleet != null && candidates.Count > 0;
 
-        /// <summary>Adds a ship in the port of a city drawn at random. For the debug tools.</summary>
+        /// <summary>
+        /// Adds a ship homed in the city with the fewest AI ships homed there, at random among ties.
+        /// For the debug tools.
+        /// </summary>
         /// <returns>The ship, or null when none can be added.</returns>
         public Ship AddShip()
         {
-            return CanAddShip ? SpawnShip(candidates[UnityEngine.Random.Range(0, candidates.Count)]) : null;
+            if (!CanAddShip)
+            {
+                return null;
+            }
+
+            return SpawnShip(HomePortChoice.Pick(candidates, fleet.ShipsHomedAt, bound => UnityEngine.Random.Range(0, bound)));
         }
 
         /// <summary>Takes one of these merchants' ships off the map, with what it carries. For the debug tools.</summary>
@@ -75,6 +83,27 @@ namespace DarkFantasyMerchant.Game
             }
 
             profit = fleet.ProfitOf(ship);
+            return true;
+        }
+
+        /// <summary>For the debug tools.</summary>
+        /// <param name="finalDestination">Null when the ship has none.</param>
+        /// <returns>False for a ship that is not one of these merchants'.</returns>
+        public bool TryGetTour(Ship ship, out CityDefinition home, out CityDefinition finalDestination)
+        {
+            home = null;
+            finalDestination = null;
+
+            if (fleet == null || !fleet.Contains(ship))
+            {
+                return false;
+            }
+
+            int homePort = fleet.HomeOf(ship);
+            int destinationPort = fleet.FinalDestinationOf(ship);
+
+            home = homePort >= 0 ? ports[homePort] : null;
+            finalDestination = destinationPort >= 0 ? ports[destinationPort] : null;
             return true;
         }
 
@@ -229,17 +258,15 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            var startPorts = new List<int>();
-
-            // Not seeded: another draw at every launch.
-            StartPortDraw.Draw(definition.ShipCount, candidates, bound => UnityEngine.Random.Range(0, bound), startPorts);
-
-            foreach (int port in startPorts)
+            foreach (int candidate in candidates)
             {
-                // ShipsView already logged why.
-                if (SpawnShip(port) == null)
+                for (int i = 0; i < definition.ShipsPerCity; i++)
                 {
-                    return;
+                    // ShipsView already logged why. The port becomes the ship's home.
+                    if (SpawnShip(candidate) == null)
+                    {
+                        return;
+                    }
                 }
             }
         }

@@ -11,12 +11,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const string ShipDefinitionPath = "Assets/Data/Ships/MerchantShip.asset";
 
         [Test]
-        public void FiveMerchantShips_SailAtFullSpeed()
+        public void OneMerchantShipPerCity_SailsAtFullSpeed()
         {
             var merchants = AssetDatabase.LoadAssetAtPath<AiMerchantsDefinition>(AiMerchantsPath);
             Assert.IsNotNull(merchants, AiMerchantsPath);
 
-            Assert.AreEqual(5, merchants.ShipCount);
+            Assert.AreEqual(1, merchants.ShipsPerCity);
             Assert.AreSame(AssetDatabase.LoadAssetAtPath<ShipDefinition>(ShipDefinitionPath), merchants.ShipDefinition);
             Assert.AreEqual(1f, merchants.CreateCrew().SpeedFactor);
         }
