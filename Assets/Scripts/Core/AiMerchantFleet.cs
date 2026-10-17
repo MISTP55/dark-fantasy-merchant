@@ -5,13 +5,19 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// The merchant ships that trade on their own. A ship sells its whole hold when it
-    /// enters a port, stays there for a stopover, then buys the cargo that earns the most
-    /// and sails to where it sells; when a trade from another port earns more per day,
-    /// or with nothing to trade, it sails there empty, or waits. Their gold is not limited: only their profit is counted.
+    /// The merchant ships that trade on their own, on Patrician III's tour. Every ship has a home
+    /// city. From home it sails straight to a final destination, with the cargo the planner loads
+    /// for it, and sells everything there; then it comes back home, stopping on the way at the
+    /// cities worth a short detour, where it sells only up to their T1 and keeps what home lacks;
+    /// at home it sells everything and chooses the next final destination, or waits. In every port
+    /// it stays for a stopover. What a ship loads for a port counts as under way to it, for every
+    /// ship's decisions, until it enters that port. Their gold is not limited: only their profit is counted.
     /// </summary>
     public sealed class AiMerchantFleet<TPort> where TPort : class
     {
+        // Rounding slack, as the planner's: a fractional lack a hair over a whole unit is that unit.
+        private const double WholeUnitMargin = 1e-9;
+
         private sealed class Merchant
         {
             public Ship Ship;
@@ -25,36 +31,52 @@ namespace DarkFantasyMerchant.Core
 
             // It could not be sent back to that port: nothing more is tried for it at sea.
             public bool IsStranded;
+
+            // The city its tours start from and end in.
+            public int Home;
+
+            // Where the tour goes: a city away from home on the way out, home on the way back; -1 for none.
+            public int FinalDestination;
+
+            // The port it sails to when its stopover is over: a stopover, or the final destination.
+            public int NextPort;
+
+            // The cities of this return trip, which are no stopover again before it enters home.
+            public bool[] Visited;
+
+            // Units it loaded for a port and has not delivered there, by port then good.
+            public int[,] Records;
         }
 
         private readonly ShipDocking<TPort> docking;
         private readonly IReadOnlyList<TPort> ports;
         private readonly IReadOnlyList<Vector2> portPositions;
         private readonly IReadOnlyList<CityMarket> markets;
-        private readonly TradeRoutePlanner planner;
+        private readonly SupplyPlanner planner;
         private readonly double stopoverSeconds;
 
         private readonly Dictionary<TPort, int> portIndices = new Dictionary<TPort, int>();
         private readonly Dictionary<Ship, Merchant> merchantsByShip = new Dictionary<Ship, Merchant>();
         private readonly List<Merchant> merchants = new List<Merchant>();
 
-        // Units under way to each port, by port then good. Rebuilt for every decision.
-        private readonly int[,] incoming;
+        // The sum of every ship's records, by port then good. Changed only with the records.
+        private readonly int[,] underWay;
 
-        // Ports another ship of the fleet is sailing to empty, to trade from. Rebuilt with incoming.
-        private readonly bool[] claimed;
+        // The units of each good the planner loads, reused.
+        private readonly int[] cargo;
 
         /// <param name="docking">The docking of the map: the ships are ordered through it.</param>
         /// <param name="ports">The ports the ships trade between, in the planner's order.</param>
         /// <param name="portPositions">Normalized map position of each port, as an order to it takes.</param>
         /// <param name="markets">The market of each port.</param>
+        /// <param name="planner">Chooses the destinations, the stopovers and the cargo, over the same ports.</param>
         /// <param name="stopoverSeconds">Seconds of the world a ship stays in a port.</param>
         public AiMerchantFleet(
             ShipDocking<TPort> docking,
             IReadOnlyList<TPort> ports,
             IReadOnlyList<Vector2> portPositions,
             IReadOnlyList<CityMarket> markets,
-            TradeRoutePlanner planner,
+            SupplyPlanner planner,
             double stopoverSeconds)
         {
             this.docking = docking ?? throw new ArgumentNullException(nameof(docking));
@@ -76,8 +98,8 @@ namespace DarkFantasyMerchant.Core
             }
 
             this.stopoverSeconds = stopoverSeconds;
-            incoming = new int[planner.PortCount, planner.GoodCount];
-            claimed = new bool[planner.PortCount];
+            underWay = new int[planner.PortCount, planner.GoodCount];
+            cargo = new int[planner.GoodCount];
 
             for (int i = 0; i < ports.Count; i++)
             {
@@ -100,17 +122,62 @@ namespace DarkFantasyMerchant.Core
             return ship != null && merchantsByShip.TryGetValue(ship, out Merchant merchant) ? merchant.Profit : 0;
         }
 
-        /// <summary>Takes a ship into the fleet and orders it into the port it starts beside.</summary>
-        public void Add(Ship ship, int startPort)
+        /// <returns>The port of the ship's home; -1 for a ship that is not of the fleet.</returns>
+        public int HomeOf(Ship ship)
+        {
+            return ship != null && merchantsByShip.TryGetValue(ship, out Merchant merchant) ? merchant.Home : -1;
+        }
+
+        /// <returns>The port the ship's tour goes to; -1 for none, and for a ship that is not of the fleet.</returns>
+        public int FinalDestinationOf(Ship ship)
+        {
+            return ship != null && merchantsByShip.TryGetValue(ship, out Merchant merchant) ? merchant.FinalDestination : -1;
+        }
+
+        /// <summary>The ships of the fleet whose home is a port.</summary>
+        public int ShipsHomedAt(int port)
+        {
+            int count = 0;
+
+            foreach (Merchant merchant in merchants)
+            {
+                if (merchant.Home == port)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>Units of a good the ships of the fleet have loaded for a port and not delivered there yet.</summary>
+        public int UnderWayTo(int port, int good)
+        {
+            if (port < 0 || port >= planner.PortCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(port));
+            }
+
+            if (good < 0 || good >= planner.GoodCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(good));
+            }
+
+            return underWay[port, good];
+        }
+
+        /// <summary>Takes a ship into the fleet and orders it into its home, where its tours start.</summary>
+        /// <param name="ship">A ship beside its home.</param>
+        public void Add(Ship ship, int home)
         {
             if (ship == null)
             {
                 throw new ArgumentNullException(nameof(ship));
             }
 
-            if (startPort < 0 || startPort >= ports.Count)
+            if (home < 0 || home >= ports.Count)
             {
-                throw new ArgumentOutOfRangeException(nameof(startPort));
+                throw new ArgumentOutOfRangeException(nameof(home));
             }
 
             if (merchantsByShip.ContainsKey(ship))
@@ -118,15 +185,26 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentException("The ship is already in the fleet.", nameof(ship));
             }
 
-            var merchant = new Merchant { Ship = ship, LastPort = startPort, Wait = stopoverSeconds };
+            var merchant = new Merchant
+            {
+                Ship = ship,
+                LastPort = home,
+                Wait = stopoverSeconds,
+                Home = home,
+                FinalDestination = -1,
+                NextPort = -1,
+                Visited = new bool[planner.PortCount],
+                Records = new int[planner.PortCount, planner.GoodCount],
+            };
+
             merchants.Add(merchant);
             merchantsByShip.Add(ship, merchant);
-            SendTo(merchant, startPort);
+            SendTo(merchant, home);
         }
 
         /// <summary>
-        /// Lets a ship go: it no longer trades, and its profit is forgotten. The ship itself
-        /// is left as it is, where it is, with what it carries.
+        /// Lets a ship go: it no longer trades, its profit is forgotten and what it carries no
+        /// longer counts as under way. The ship itself is left as it is, where it is, with what it carries.
         /// </summary>
         /// <returns>False for a ship that is not of the fleet.</returns>
         public bool Remove(Ship ship)
@@ -136,6 +214,7 @@ namespace DarkFantasyMerchant.Core
                 return false;
             }
 
+            ClearRecords(merchant);
             merchantsByShip.Remove(ship);
             merchants.Remove(merchant);
             return true;
@@ -183,18 +262,42 @@ namespace DarkFantasyMerchant.Core
             merchant.IsStranded = false;
             merchant.Wait = stopoverSeconds;
 
-            // The whole hold, whatever the prices have become since it was bought.
-            CityMarket market = markets[index];
+            // Delivered, whatever it sells here.
+            ClearRecordsFor(merchant, index);
 
-            for (int good = 0; good < market.GoodCount; good++)
+            if (index == merchant.Home)
             {
-                int units = ship.Cargo.UnitsOf(good);
+                SellEverything(merchant, index);
+                CutRecordsToCargo(merchant);
 
-                if (units > 0)
-                {
-                    merchant.Profit += Trade.Sell(market, ship.Cargo, good, units).Gold;
-                }
+                // A new tour starts.
+                Array.Clear(merchant.Visited, 0, merchant.Visited.Length);
+                merchant.FinalDestination = planner.ChooseDestination(merchant.Home, underWay);
+                merchant.NextPort = merchant.FinalDestination;
+                return;
             }
+
+            // Only a ship sent back from the sea enters a port away from home without a tour.
+            if (merchant.FinalDestination < 0)
+            {
+                merchant.FinalDestination = merchant.Home;
+            }
+
+            if (index == merchant.FinalDestination)
+            {
+                SellEverything(merchant, index);
+                merchant.FinalDestination = merchant.Home;
+            }
+            else
+            {
+                SellUpToT1(merchant, index);
+            }
+
+            merchant.Visited[index] = true;
+            CutRecordsToCargo(merchant);
+
+            int stopover = planner.ChooseStopover(index, merchant.Home, underWay, merchant.Visited);
+            merchant.NextPort = stopover >= 0 ? stopover : merchant.Home;
         }
 
         private void Depart(Merchant merchant)
@@ -208,73 +311,149 @@ namespace DarkFantasyMerchant.Core
                 return;
             }
 
-            CountIncoming(merchant);
-
-            int capacity = ship.Cargo.Free;
-
-            bool hasTrade = planner.TryPlanTrade(from, capacity, incoming, out TradePlan plan);
-            bool hasRelocation = planner.TryPlanRelocation(
-                from, capacity, incoming, claimed, out int betterPort, out double relocationProfitPerDay);
-
-            // Sailing empty to a port with more to sell can earn more per day than the best
-            // trade from here: without it, ships go round the ports that always have a little.
-            if (hasTrade && !(hasRelocation && relocationProfitPerDay > plan.ProfitPerDay))
+            if (merchant.FinalDestination < 0)
             {
-                for (int good = 0; good < planner.GoodCount; good++)
-                {
-                    int units = plan.UnitsOf(good);
+                merchant.FinalDestination = from == merchant.Home
+                    ? planner.ChooseDestination(merchant.Home, underWay)
+                    : merchant.Home;
+                merchant.NextPort = merchant.FinalDestination;
+            }
 
-                    if (units > 0)
-                    {
-                        merchant.Profit -= Trade.Buy(markets[from], ship.Cargo, good, units).Gold;
-                    }
+            if (merchant.FinalDestination < 0)
+            {
+                // Nothing worth a tour from home yet.
+                merchant.Wait = stopoverSeconds;
+                return;
+            }
+
+            if (merchant.NextPort < 0)
+            {
+                merchant.NextPort = merchant.FinalDestination;
+            }
+
+            LoadFor(merchant, from, merchant.FinalDestination);
+
+            if (merchant.NextPort != merchant.FinalDestination)
+            {
+                // A stopover is worth its own cargo only with more than a quarter of the hold free.
+                if (ship.Cargo.Free * 4 > ship.Cargo.Capacity)
+                {
+                    LoadFor(merchant, from, merchant.NextPort);
+                }
+                else
+                {
+                    merchant.NextPort = merchant.FinalDestination;
+                }
+            }
+
+            SendTo(merchant, merchant.NextPort);
+        }
+
+        /// <summary>Buys in a port the cargo the planner loads for another, and records it as under way there.</summary>
+        private void LoadFor(Merchant merchant, int from, int to)
+        {
+            CargoHold hold = merchant.Ship.Cargo;
+            planner.Load(from, to, hold.Free, underWay, cargo);
+
+            for (int good = 0; good < planner.GoodCount; good++)
+            {
+                if (cargo[good] <= 0)
+                {
+                    continue;
                 }
 
-                SendTo(merchant, plan.Destination);
-            }
-            else if (hasRelocation)
-            {
-                SendTo(merchant, betterPort);
-            }
-            else
-            {
-                merchant.Wait = stopoverSeconds;
+                TradeResult bought = Trade.Buy(markets[from], hold, good, cargo[good]);
+                merchant.Profit -= bought.Gold;
+                Record(merchant, to, good, bought.Units);
             }
         }
 
-        /// <summary>
-        /// What the other ships of the fleet are carrying to each port, and the ports they
-        /// are sailing to empty: those are going there to buy.
-        /// </summary>
-        private void CountIncoming(Merchant deciding)
+        // The whole hold, whatever the prices have become since it was bought.
+        private void SellEverything(Merchant merchant, int port)
         {
-            Array.Clear(incoming, 0, incoming.Length);
-            Array.Clear(claimed, 0, claimed.Length);
+            CargoHold hold = merchant.Ship.Cargo;
+            CityMarket market = markets[port];
 
-            foreach (Merchant other in merchants)
+            for (int good = 0; good < market.GoodCount; good++)
             {
-                if (ReferenceEquals(other, deciding))
+                int units = hold.UnitsOf(good);
+
+                if (units > 0)
+                {
+                    merchant.Profit += Trade.Sell(market, hold, good, units).Gold;
+                }
+            }
+        }
+
+        // What brings the city to its T1, out of what home does not lack.
+        private void SellUpToT1(Merchant merchant, int port)
+        {
+            CargoHold hold = merchant.Ship.Cargo;
+            CityMarket market = markets[port];
+            CityMarket home = markets[merchant.Home];
+
+            for (int good = 0; good < planner.GoodCount; good++)
+            {
+                int aboard = hold.UnitsOf(good);
+
+                if (aboard <= 0)
                 {
                     continue;
                 }
 
-                TPort destination = docking.DestinationPortOf(other.Ship);
+                double keep = Math.Ceiling(Math.Max(0d, home.ThresholdsOf(good).T1 - home.StockOf(good)) - WholeUnitMargin);
+                double lack = Math.Max(0d, market.ThresholdsOf(good).T1 - market.StockOf(good));
+                double units = Math.Floor(Math.Min(aboard - keep, lack) + WholeUnitMargin);
 
-                if (destination == null || !portIndices.TryGetValue(destination, out int port))
+                if (units > 0d)
                 {
-                    continue;
+                    merchant.Profit += Trade.Sell(market, hold, good, (int)units).Gold;
                 }
+            }
+        }
 
-                if (other.Ship.Cargo.Used == 0)
-                {
-                    claimed[port] = true;
-                    continue;
-                }
+        private void Record(Merchant merchant, int port, int good, int units)
+        {
+            merchant.Records[port, good] += units;
+            underWay[port, good] += units;
+        }
 
-                for (int good = 0; good < planner.GoodCount; good++)
+        // A record never exceeds what is aboard of its good.
+        private void CutRecordsToCargo(Merchant merchant)
+        {
+            CargoHold hold = merchant.Ship.Cargo;
+
+            for (int good = 0; good < planner.GoodCount; good++)
+            {
+                int aboard = hold.UnitsOf(good);
+
+                for (int port = 0; port < planner.PortCount; port++)
                 {
-                    incoming[port, good] += other.Ship.Cargo.UnitsOf(good);
+                    int excess = merchant.Records[port, good] - aboard;
+
+                    if (excess > 0)
+                    {
+                        merchant.Records[port, good] -= excess;
+                        underWay[port, good] -= excess;
+                    }
                 }
+            }
+        }
+
+        private void ClearRecordsFor(Merchant merchant, int port)
+        {
+            for (int good = 0; good < planner.GoodCount; good++)
+            {
+                underWay[port, good] -= merchant.Records[port, good];
+                merchant.Records[port, good] = 0;
+            }
+        }
+
+        private void ClearRecords(Merchant merchant)
+        {
+            for (int port = 0; port < planner.PortCount; port++)
+            {
+                ClearRecordsFor(merchant, port);
             }
         }
 
