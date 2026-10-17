@@ -366,6 +366,35 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void ANewGood_HasAnAiWeightOfNine()
+        {
+            var good = ScriptableObject.CreateInstance<GoodDefinition>();
+            Assert.AreEqual(9, good.AiWeight);
+            Object.DestroyImmediate(good);
+        }
+
+        [Test]
+        public void CreateAiWeights_GivesTheWeightOfEveryGood_InTheCataloguesOrder()
+        {
+            GoodDefinition grain = Track(TestEconomy.CreateGood("Céréales", 110, 4.725, aiWeight: 16));
+            GoodDefinition tiles = Track(TestEconomy.CreateGood("Tuiles", 79.8, 0.016, aiWeight: 8));
+            EconomyDefinition mixed = Track(TestEconomy.CreateEconomy(grain, tiles));
+
+            CollectionAssert.AreEqual(new[] { 16, 8 }, mixed.CreateAiWeights());
+        }
+
+        [Test]
+        public void TryValidateSettings_SaysWhichGoodHasANegativeAiWeight()
+        {
+            GoodDefinition salt = Track(TestEconomy.CreateGood("Sel", 28.5, 0.35, aiWeight: -1));
+            EconomyDefinition broken = Track(TestEconomy.CreateEconomy(salt));
+
+            Assert.IsFalse(broken.TryValidateSettings(out string problem));
+            StringAssert.Contains("AI weight", problem);
+            StringAssert.Contains("Sel", problem);
+        }
+
+        [Test]
         public void CreateGoodUnits_GivesABushelTheBarrelsPerBushel()
         {
             GoodDefinition grain = Track(TestEconomy.CreateGood("Céréales", 110, 4.725, unit: GoodUnit.Bushel));

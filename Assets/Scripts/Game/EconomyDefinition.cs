@@ -185,6 +185,7 @@ namespace DarkFantasyMerchant.Game
         public bool TryValidateSettings(out string problem)
         {
             problem = ProblemOf(() => CreateGoodUnits(), "the barrels per bushel")
+                ?? ProblemOf(() => CreateAiWeights(), "the AI weights")
                 ?? ProblemOf(() => buyFactors.ToCurve(), "the buy factors")
                 ?? ProblemOf(() => sellFactors.ToCurve(), "the sell factors")
                 ?? ProblemOf(() => CreatePricing(), "the sell factors against the buy factors")
@@ -264,6 +265,32 @@ namespace DarkFantasyMerchant.Game
             }
 
             return new GoodUnits(rooms);
+        }
+
+        /// <summary>The weight the AI merchants give each good of the catalogue, by index. Throws when a good has a negative weight.</summary>
+        public int[] CreateAiWeights()
+        {
+            var weights = new int[goods.Count];
+
+            for (int i = 0; i < goods.Count; i++)
+            {
+                GoodDefinition good = goods[i];
+
+                // An empty entry is refused by TryValidate; here it is a good no one carries.
+                if (good == null)
+                {
+                    continue;
+                }
+
+                if (good.AiWeight < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(goods), $"'{good.name}' has a negative AI weight.");
+                }
+
+                weights[i] = good.AiWeight;
+            }
+
+            return weights;
         }
 
         /// <summary>

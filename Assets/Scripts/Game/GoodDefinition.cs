@@ -28,6 +28,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Units of the good a worker makes in a day in a city that produces the good efficiently.")]
         [SerializeField, Min(0f)] private double dailyOutputPerWorker = 0.1d;
 
+        [Tooltip("How much the AI merchants care to carry the good, as in Patrician III: the gap of price factors between two cities is multiplied by it. 0: they never carry it.")]
+        [SerializeField, Min(0)] private int aiWeight = 9;
+
         public string DisplayName => displayName;
 
         public GoodCategory Category => category;
@@ -41,5 +44,7 @@ namespace DarkFantasyMerchant.Game
         public int MaxWorkers => maxWorkers;
 
         public double DailyOutputPerWorker => dailyOutputPerWorker;
+
+        public int AiWeight => aiWeight;
     }
 }

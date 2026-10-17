@@ -19,3 +19,4 @@ MonoBehaviour:
   weeklyConsumptionPerThousand: 0.875
   maxWorkers: 50
   dailyOutputPerWorker: 0.02779
+  aiWeight: 11

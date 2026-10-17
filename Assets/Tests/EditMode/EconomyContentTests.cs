@@ -27,28 +27,28 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         // Patrician III's twenty goods, in its order, with its units and base prices.
-        [TestCase(0, "Céréales", GoodCategory.Food, GoodUnit.Bushel, 110)]
-        [TestCase(1, "Viande", GoodCategory.Food, GoodUnit.Bushel, 957)]
-        [TestCase(2, "Poisson", GoodCategory.Food, GoodUnit.Bushel, 440)]
-        [TestCase(3, "Bière", GoodCategory.Food, GoodUnit.Barrel, 34.8)]
-        [TestCase(4, "Sel", GoodCategory.RawMaterial, GoodUnit.Barrel, 28.5)]
-        [TestCase(5, "Miel", GoodCategory.RawMaterial, GoodUnit.Barrel, 110)]
-        [TestCase(6, "Épices", GoodCategory.RawMaterial, GoodUnit.Barrel, 280)]
-        [TestCase(7, "Vin", GoodCategory.RawMaterial, GoodUnit.Barrel, 220)]
-        [TestCase(8, "Étoffe", GoodCategory.RawMaterial, GoodUnit.Barrel, 206.8)]
-        [TestCase(9, "Peaux", GoodCategory.RawMaterial, GoodUnit.Barrel, 676.5)]
-        [TestCase(10, "Huile", GoodCategory.RawMaterial, GoodUnit.Barrel, 82.5)]
-        [TestCase(11, "Bois", GoodCategory.RawMaterial, GoodUnit.Bushel, 55)]
-        [TestCase(12, "Métal", GoodCategory.RawMaterial, GoodUnit.Barrel, 255.6)]
-        [TestCase(13, "Cuir", GoodCategory.RawMaterial, GoodUnit.Barrel, 224)]
-        [TestCase(14, "Laine", GoodCategory.RawMaterial, GoodUnit.Bushel, 880)]
-        [TestCase(15, "Brai", GoodCategory.RawMaterial, GoodUnit.Barrel, 55.6)]
-        [TestCase(16, "Fonte brute", GoodCategory.RawMaterial, GoodUnit.Bushel, 880)]
-        [TestCase(17, "Chanvre", GoodCategory.RawMaterial, GoodUnit.Bushel, 440)]
-        [TestCase(18, "Poterie", GoodCategory.RawMaterial, GoodUnit.Barrel, 171)]
-        [TestCase(19, "Tuiles", GoodCategory.RawMaterial, GoodUnit.Bushel, 79.8)]
+        [TestCase(0, "Céréales", GoodCategory.Food, GoodUnit.Bushel, 110, 16)]
+        [TestCase(1, "Viande", GoodCategory.Food, GoodUnit.Bushel, 957, 9)]
+        [TestCase(2, "Poisson", GoodCategory.Food, GoodUnit.Bushel, 440, 9)]
+        [TestCase(3, "Bière", GoodCategory.Food, GoodUnit.Barrel, 34.8, 9)]
+        [TestCase(4, "Sel", GoodCategory.RawMaterial, GoodUnit.Barrel, 28.5, 16)]
+        [TestCase(5, "Miel", GoodCategory.RawMaterial, GoodUnit.Barrel, 110, 9)]
+        [TestCase(6, "Épices", GoodCategory.RawMaterial, GoodUnit.Barrel, 280, 9)]
+        [TestCase(7, "Vin", GoodCategory.RawMaterial, GoodUnit.Barrel, 220, 9)]
+        [TestCase(8, "Étoffe", GoodCategory.RawMaterial, GoodUnit.Barrel, 206.8, 9)]
+        [TestCase(9, "Peaux", GoodCategory.RawMaterial, GoodUnit.Barrel, 676.5, 9)]
+        [TestCase(10, "Huile", GoodCategory.RawMaterial, GoodUnit.Barrel, 82.5, 9)]
+        [TestCase(11, "Bois", GoodCategory.RawMaterial, GoodUnit.Bushel, 55, 11)]
+        [TestCase(12, "Métal", GoodCategory.RawMaterial, GoodUnit.Barrel, 255.6, 11)]
+        [TestCase(13, "Cuir", GoodCategory.RawMaterial, GoodUnit.Barrel, 224, 9)]
+        [TestCase(14, "Laine", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, 11)]
+        [TestCase(15, "Brai", GoodCategory.RawMaterial, GoodUnit.Barrel, 55.6, 8)]
+        [TestCase(16, "Fonte brute", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, 8)]
+        [TestCase(17, "Chanvre", GoodCategory.RawMaterial, GoodUnit.Bushel, 440, 9)]
+        [TestCase(18, "Poterie", GoodCategory.RawMaterial, GoodUnit.Barrel, 171, 9)]
+        [TestCase(19, "Tuiles", GoodCategory.RawMaterial, GoodUnit.Bushel, 79.8, 8)]
         public void TheCatalogue_HasPatricianIIIsGoods_InOrder(
-            int index, string name, GoodCategory category, GoodUnit unit, double basePrice)
+            int index, string name, GoodCategory category, GoodUnit unit, double basePrice, int aiWeight)
         {
             EconomyDefinition economy = LoadEconomy();
 
@@ -59,6 +59,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(category, good.Category);
             Assert.AreEqual(unit, good.Unit);
             Assert.AreEqual(basePrice, good.BasePrice, 1e-9);
+            Assert.AreEqual(aiWeight, good.AiWeight);
             Assert.GreaterOrEqual(good.WeeklyConsumptionPerThousand, 0d);
             Assert.Greater(good.MaxWorkers, 0);
             Assert.Greater(good.DailyOutputPerWorker, 0d);

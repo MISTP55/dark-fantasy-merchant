@@ -92,7 +92,8 @@ namespace DarkFantasyMerchant.Editor
                 double basePrice,
                 double weeklyConsumptionPerThousand,
                 int maxWorkers,
-                double dailyOutputPerWorker)
+                double dailyOutputPerWorker,
+                int aiWeight)
             {
                 AssetName = assetName;
                 DisplayName = displayName;
@@ -102,6 +103,7 @@ namespace DarkFantasyMerchant.Editor
                 WeeklyConsumptionPerThousand = weeklyConsumptionPerThousand;
                 MaxWorkers = maxWorkers;
                 DailyOutputPerWorker = dailyOutputPerWorker;
+                AiWeight = aiWeight;
             }
 
             public string AssetName { get; }
@@ -112,6 +114,7 @@ namespace DarkFantasyMerchant.Editor
             public double WeeklyConsumptionPerThousand { get; }
             public int MaxWorkers { get; }
             public double DailyOutputPerWorker { get; }
+            public int AiWeight { get; }
         }
 
         // Patrician III's goods, in the order of the catalogue, which is their order on screen.
@@ -120,26 +123,26 @@ namespace DarkFantasyMerchant.Editor
         // missing is created with, which are then balanced by hand in the asset.
         private static readonly SampleGood[] SampleGoods =
         {
-            new SampleGood("Grain", "Céréales", GoodCategory.Food, GoodUnit.Bushel, 110, 4.725, 68, 0.03396),
-            new SampleGood("Meat", "Viande", GoodCategory.Food, GoodUnit.Bushel, 957, 1.552, 60, 0.01643),
-            new SampleGood("Fish", "Poisson", GoodCategory.Food, GoodUnit.Bushel, 440, 3.08, 65, 0.02316),
-            new SampleGood("Beer", "Bière", GoodCategory.Food, GoodUnit.Barrel, 34.8, 29.575, 68, 0.21254),
-            new SampleGood("Salt", "Sel", GoodCategory.RawMaterial, GoodUnit.Barrel, 28.5, 0.35, 54, 0.01029),
-            new SampleGood("Honey", "Miel", GoodCategory.RawMaterial, GoodUnit.Barrel, 110, 5.425, 60, 0.08206),
-            new SampleGood("Spices", "Épices", GoodCategory.RawMaterial, GoodUnit.Barrel, 280, 0.77, 60, 0.02038),
-            new SampleGood("Wine", "Vin", GoodCategory.RawMaterial, GoodUnit.Barrel, 220, 9.24, 93, 0.15780),
-            new SampleGood("Cloth", "Étoffe", GoodCategory.RawMaterial, GoodUnit.Barrel, 206.8, 8.575, 60, 0.22699),
-            new SampleGood("Skins", "Peaux", GoodCategory.RawMaterial, GoodUnit.Barrel, 676.5, 5.25, 72, 0.11581),
-            new SampleGood("Oil", "Huile", GoodCategory.RawMaterial, GoodUnit.Barrel, 82.5, 7.525, 60, 0.19919),
-            new SampleGood("Timber", "Bois", GoodCategory.RawMaterial, GoodUnit.Bushel, 55, 1.96, 48, 0.02594),
-            new SampleGood("Metal", "Métal", GoodCategory.RawMaterial, GoodUnit.Barrel, 255.6, 16.625, 78, 0.19344),
-            new SampleGood("Leather", "Cuir", GoodCategory.RawMaterial, GoodUnit.Barrel, 224, 6.265, 60, 0.09476),
-            new SampleGood("Wool", "Laine", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, 0.875, 50, 0.02779),
-            new SampleGood("Pitch", "Brai", GoodCategory.RawMaterial, GoodUnit.Barrel, 55.6, 0, 26, 0.03846),
-            new SampleGood("PigIron", "Fonte brute", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, 0, 70, 0.01429),
-            new SampleGood("Hemp", "Chanvre", GoodCategory.RawMaterial, GoodUnit.Bushel, 440, 0.089, 62, 0.00228),
-            new SampleGood("Pottery", "Poterie", GoodCategory.RawMaterial, GoodUnit.Barrel, 171, 5.46, 58, 0.14951),
-            new SampleGood("Tiles", "Tuiles", GoodCategory.RawMaterial, GoodUnit.Bushel, 79.8, 0.016, 27, 0.00094),
+            new SampleGood("Grain", "Céréales", GoodCategory.Food, GoodUnit.Bushel, 110, 4.725, 68, 0.03396, 16),
+            new SampleGood("Meat", "Viande", GoodCategory.Food, GoodUnit.Bushel, 957, 1.552, 60, 0.01643, 9),
+            new SampleGood("Fish", "Poisson", GoodCategory.Food, GoodUnit.Bushel, 440, 3.08, 65, 0.02316, 9),
+            new SampleGood("Beer", "Bière", GoodCategory.Food, GoodUnit.Barrel, 34.8, 29.575, 68, 0.21254, 9),
+            new SampleGood("Salt", "Sel", GoodCategory.RawMaterial, GoodUnit.Barrel, 28.5, 0.35, 54, 0.01029, 16),
+            new SampleGood("Honey", "Miel", GoodCategory.RawMaterial, GoodUnit.Barrel, 110, 5.425, 60, 0.08206, 9),
+            new SampleGood("Spices", "Épices", GoodCategory.RawMaterial, GoodUnit.Barrel, 280, 0.77, 60, 0.02038, 9),
+            new SampleGood("Wine", "Vin", GoodCategory.RawMaterial, GoodUnit.Barrel, 220, 9.24, 93, 0.15780, 9),
+            new SampleGood("Cloth", "Étoffe", GoodCategory.RawMaterial, GoodUnit.Barrel, 206.8, 8.575, 60, 0.22699, 9),
+            new SampleGood("Skins", "Peaux", GoodCategory.RawMaterial, GoodUnit.Barrel, 676.5, 5.25, 72, 0.11581, 9),
+            new SampleGood("Oil", "Huile", GoodCategory.RawMaterial, GoodUnit.Barrel, 82.5, 7.525, 60, 0.19919, 9),
+            new SampleGood("Timber", "Bois", GoodCategory.RawMaterial, GoodUnit.Bushel, 55, 1.96, 48, 0.02594, 11),
+            new SampleGood("Metal", "Métal", GoodCategory.RawMaterial, GoodUnit.Barrel, 255.6, 16.625, 78, 0.19344, 11),
+            new SampleGood("Leather", "Cuir", GoodCategory.RawMaterial, GoodUnit.Barrel, 224, 6.265, 60, 0.09476, 9),
+            new SampleGood("Wool", "Laine", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, 0.875, 50, 0.02779, 11),
+            new SampleGood("Pitch", "Brai", GoodCategory.RawMaterial, GoodUnit.Barrel, 55.6, 0, 26, 0.03846, 8),
+            new SampleGood("PigIron", "Fonte brute", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, 0, 70, 0.01429, 8),
+            new SampleGood("Hemp", "Chanvre", GoodCategory.RawMaterial, GoodUnit.Bushel, 440, 0.089, 62, 0.00228, 9),
+            new SampleGood("Pottery", "Poterie", GoodCategory.RawMaterial, GoodUnit.Barrel, 171, 5.46, 58, 0.14951, 9),
+            new SampleGood("Tiles", "Tuiles", GoodCategory.RawMaterial, GoodUnit.Bushel, 79.8, 0.016, 27, 0.00094, 8),
         };
 
         private readonly struct SampleCity
@@ -557,6 +560,7 @@ namespace DarkFantasyMerchant.Editor
             serialized.FindProperty("weeklyConsumptionPerThousand").doubleValue = sample.WeeklyConsumptionPerThousand;
             serialized.FindProperty("maxWorkers").intValue = sample.MaxWorkers;
             serialized.FindProperty("dailyOutputPerWorker").doubleValue = sample.DailyOutputPerWorker;
+            serialized.FindProperty("aiWeight").intValue = sample.AiWeight;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             AssetDatabase.CreateAsset(good, path);
             return good;
