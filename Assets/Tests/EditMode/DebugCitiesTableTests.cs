@@ -10,12 +10,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Fish = 0;
         private const int Iron = 1;
 
-        // Children of a row, in order: the city, its population, its growth since the start,
+        // Children of a row, in order: the city, its population, its beggars, its housing, its growth since the start,
         // then five cells per good.
         private const int NameCell = 0;
         private const int PopulationCell = 1;
-        private const int GrowthSinceStartCell = 2;
-        private const int FirstGoodCell = 3;
+        private const int BeggarsCell = 2;
+        private const int HousingCell = 3;
+        private const int GrowthSinceStartCell = 4;
+        private const int FirstGoodCell = 5;
         private const int CellsPerGood = 5;
         private const int Stock = 0;
         private const int Production = 1;
@@ -103,6 +105,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(FirstGoodCell + 2 * CellsPerGood, header[1].childCount);
             Assert.AreEqual("Ville", ((Label)header[1][NameCell]).text);
             Assert.AreEqual("Population", ((Label)header[1][PopulationCell]).text);
+            Assert.AreEqual("Mendiants", ((Label)header[1][BeggarsCell]).text);
+            Assert.AreEqual("Logements", ((Label)header[1][HousingCell]).text);
             Assert.AreEqual("Croiss. totale", ((Label)header[1][GrowthSinceStartCell]).text);
             Assert.AreEqual("Stock", ((Label)header[1][FirstGoodCell + Stock]).text);
             Assert.AreEqual("Prod.", ((Label)header[1][FirstGoodCell + Production]).text);
@@ -410,6 +414,85 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual("40/70", Total(Iron, Workers));
             Assert.AreEqual(DebugCitiesTable.NoFigure, Total(Fish, Workers));
+        }
+
+        [Test]
+        public void FormatBeggars_WritesTheBeggarsAndTheirTarget()
+        {
+            Assert.AreEqual("59 (62)", DebugCitiesTable.FormatBeggars(59, 62));
+        }
+
+        [Test]
+        public void FormatHousing_WritesTheHousedOverTheRoom()
+        {
+            Assert.AreEqual("1\u00A0008 / 1\u00A0100", DebugCitiesTable.FormatHousing(1008, 1100));
+        }
+
+        [Test]
+        public void FormatWorkers_AddsTheReserve_WhenThereIsOne()
+        {
+            Assert.AreEqual("45/60 +10", DebugCitiesTable.FormatWorkers(45, 60, 10));
+            Assert.AreEqual("45/60", DebugCitiesTable.FormatWorkers(45, 60));
+            Assert.AreEqual(DebugCitiesTable.NoFigure, DebugCitiesTable.FormatWorkers(0, 0, 0));
+        }
+
+        // A thousand housed in a room of 1 100, 100 beggars. Iron is stocked above T3: the workshop lays off to 1 worker.
+        private static CityMarket LabourMarket()
+        {
+            return new CityMarket(
+                new[] { new MarketGood(10, 2, 0, 0), new MarketGood(10, 2, 60, 0.1) },
+                TestMarkets.Thresholds,
+                new WorkforceRule(16, 8, 4, 1, 1, 10),
+                100,
+                TestMarkets.Pricing,
+                7,
+                new CityPopulation(1000, 100, 1100),
+                TestMarkets.Labour);
+        }
+
+        [Test]
+        public void ARow_WritesTheBeggarsTheirTarget_TheHousing_AndAReserveAfterALayoff()
+        {
+            CityMarket city = LabourMarket();
+            table.AddCity("Sparia", city);
+            table.Show();
+
+            city.StartDay();
+
+            Assert.Greater(city.ReserveOf(Iron), 0);
+            Assert.AreEqual(
+                DebugCitiesTable.FormatBeggars(city.Population.Beggars, city.BeggarTarget), Text(0, BeggarsCell));
+            Assert.AreEqual(
+                DebugCitiesTable.FormatHousing(city.Population.Housed, city.Population.Room), Text(0, HousingCell));
+            Assert.AreEqual(
+                $"{city.WorkersOf(Iron)}/{city.MaxWorkersOf(Iron)} +{city.ReserveOf(Iron)}", Text(0, Iron, Workers));
+            Assert.AreEqual(DebugCitiesTable.NoFigure, Text(0, Fish, Workers));
+        }
+
+        [Test]
+        public void TheTotalRow_SumsTheBeggarsAndTheirTargets_TheHousedAndTheRoom_AndTheReserves()
+        {
+            CityMarket first = LabourMarket();
+            CityMarket second = LabourMarket();
+            table.AddCity("Sparia", first);
+            table.AddCity("Elforth", second);
+            table.Show();
+
+            first.StartDay();
+            second.StartDay();
+
+            Assert.AreEqual(
+                DebugCitiesTable.FormatBeggars(
+                    first.Population.Beggars + second.Population.Beggars, first.BeggarTarget + second.BeggarTarget),
+                Total(BeggarsCell));
+            Assert.AreEqual(
+                DebugCitiesTable.FormatHousing(
+                    first.Population.Housed + second.Population.Housed, first.Population.Room + second.Population.Room),
+                Total(HousingCell));
+            Assert.AreEqual(
+                $"{first.WorkersOf(Iron) + second.WorkersOf(Iron)}/{first.MaxWorkersOf(Iron) + second.MaxWorkersOf(Iron)}"
+                + $" +{first.ReserveOf(Iron) + second.ReserveOf(Iron)}",
+                Total(Iron, Workers));
         }
 
         [Test]

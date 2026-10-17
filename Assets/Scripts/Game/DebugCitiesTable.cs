@@ -8,9 +8,9 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// The table of the cities debug panel: one row per city with its population,
-    /// how much it has grown or declined since the game started and, for every good, its stock and what it produces, consumes and
+    /// its beggars over the number they tend to, its housed inhabitants over its room, how much it has grown or declined since the game started and, for every good, its stock and what it produces, consumes and
     /// gains in a week, the nominal figure first and the one of the last days in brackets,
-    /// the workers of its workshop over their maximum,
+    /// the workers of its workshop over their maximum and its reserve,
     /// and a last row with the total of every column. Follows the markets while it is shown.
     /// </summary>
     public sealed class DebugCitiesTable
@@ -30,6 +30,8 @@ namespace DarkFantasyMerchant.Game
         private const string CellClass = "debug-cities__cell";
         private const string NameCellClass = "debug-cities__cell--name";
         private const string PopulationCellClass = "debug-cities__cell--population";
+        private const string BeggarsCellClass = "debug-cities__cell--beggars";
+        private const string HousingCellClass = "debug-cities__cell--housing";
         private const string GrowthSinceStartCellClass = "debug-cities__cell--growth-since-start";
         private const string StockCellClass = "debug-cities__cell--stock";
         private const string FigureCellClass = "debug-cities__cell--figure";
@@ -56,6 +58,8 @@ namespace DarkFantasyMerchant.Game
         private sealed class Row
         {
             public Label Population;
+            public Label Beggars;
+            public Label Housing;
             public Label GrowthSinceStart;
             public CityMarket Market;
             public GoodCells[] Goods;
@@ -66,6 +70,8 @@ namespace DarkFantasyMerchant.Game
         private readonly int goodCount;
         private readonly List<Row> rows = new List<Row>();
         private readonly Label totalPopulation;
+        private readonly Label totalBeggars;
+        private readonly Label totalHousing;
         private readonly Label totalGrowthSinceStart;
         private readonly GoodCells[] totalGoods;
 
@@ -109,6 +115,8 @@ namespace DarkFantasyMerchant.Game
             totalRow.AddToClassList(TotalRowClass);
             AddLabel(totalRow, NameCellClass).text = "Total";
             totalPopulation = AddLabel(totalRow, PopulationCellClass);
+            totalBeggars = AddLabel(totalRow, BeggarsCellClass);
+            totalHousing = AddLabel(totalRow, HousingCellClass);
             totalGrowthSinceStart = AddLabel(totalRow, GrowthSinceStartCellClass);
             totalGoods = AddGoodCells(totalRow, goodCount);
             totalContainer.Add(totalRow);
@@ -135,10 +143,30 @@ namespace DarkFantasyMerchant.Game
             return rounded < 0d ? $"<color={NegativeColor}>{text}</color>" : text;
         }
 
-        /// <summary>Workers as the table writes them: "45/60", or a dash where no workshop can have any.</summary>
-        public static string FormatWorkers(long workers, long maxWorkers)
+        /// <summary>
+        /// Workers as the table writes them: "45/60", followed by the reserve ("45/60 +10") when there is one,
+        /// or a dash where no workshop can have any.
+        /// </summary>
+        public static string FormatWorkers(long workers, long maxWorkers, long reserve = 0)
         {
-            return maxWorkers > 0 ? $"{workers}/{maxWorkers}" : NoFigure;
+            if (maxWorkers <= 0)
+            {
+                return NoFigure;
+            }
+
+            return reserve > 0 ? $"{workers}/{maxWorkers} +{reserve}" : $"{workers}/{maxWorkers}";
+        }
+
+        /// <summary>Beggars as the table writes them, with the number they tend to: "59 (62)".</summary>
+        public static string FormatBeggars(long beggars, long target)
+        {
+            return $"{beggars} ({target})";
+        }
+
+        /// <summary>The housed inhabitants over the room of the houses: "1 008 / 1 100".</summary>
+        public static string FormatHousing(long housed, long room)
+        {
+            return $"{TreasuryHudController.FormatNumber(housed)} / {TreasuryHudController.FormatNumber(room)}";
         }
 
         /// <summary>A rate as the table writes it: "+2,5 %" or "-10,0 %", coloured, or a plain "0,0 %".</summary>
@@ -172,6 +200,8 @@ namespace DarkFantasyMerchant.Game
             var row = new Row
             {
                 Population = AddLabel(element, PopulationCellClass),
+                Beggars = AddLabel(element, BeggarsCellClass),
+                Housing = AddLabel(element, HousingCellClass),
                 GrowthSinceStart = AddLabel(element, GrowthSinceStartCellClass),
                 Market = market,
                 Goods = AddGoodCells(element, goodCount),
@@ -245,6 +275,8 @@ namespace DarkFantasyMerchant.Game
             CityMarket market = row.Market;
 
             row.Population.text = TreasuryHudController.FormatNumber(market.Population.Inhabitants);
+            row.Beggars.text = FormatBeggars(market.Population.Beggars, market.BeggarTarget);
+            row.Housing.text = FormatHousing(market.Population.Housed, market.Population.Room);
             row.GrowthSinceStart.text = FormatRate(market.Population.GrowthSinceStart);
 
             for (int i = 0; i < row.Goods.Length; i++)
@@ -270,7 +302,8 @@ namespace DarkFantasyMerchant.Game
                     market.RecentProductionOf(i),
                     market.RecentConsumptionOf(i),
                     market.WorkersOf(i),
-                    market.MaxWorkersOf(i));
+                    market.MaxWorkersOf(i),
+                    market.ReserveOf(i));
             }
         }
 
@@ -279,14 +312,24 @@ namespace DarkFantasyMerchant.Game
         {
             long inhabitants = 0;
             long startingInhabitants = 0;
+            long beggars = 0;
+            long beggarTargets = 0;
+            long housed = 0;
+            long room = 0;
 
             foreach (Row row in rows)
             {
+                beggars += row.Market.Population.Beggars;
+                beggarTargets += row.Market.BeggarTarget;
+                housed += row.Market.Population.Housed;
+                room += row.Market.Population.Room;
                 inhabitants += row.Market.Population.Inhabitants;
                 startingInhabitants += row.Market.Population.StartingInhabitants;
             }
 
             totalPopulation.text = TreasuryHudController.FormatNumber(inhabitants);
+            totalBeggars.text = FormatBeggars(beggars, beggarTargets);
+            totalHousing.text = FormatHousing(housed, room);
 
             // The growth of the world: all its inhabitants together, against all those it started with.
             totalGrowthSinceStart.text = FormatRate(
@@ -301,6 +344,7 @@ namespace DarkFantasyMerchant.Game
                 double recentConsumption = 0d;
                 long workers = 0;
                 long maxWorkers = 0;
+                long reserve = 0;
 
                 foreach (Row row in rows)
                 {
@@ -320,6 +364,7 @@ namespace DarkFantasyMerchant.Game
                     recentConsumption += market.RecentConsumptionOf(i);
                     workers += market.WorkersOf(i);
                     maxWorkers += market.MaxWorkersOf(i);
+                    reserve += market.ReserveOf(i);
                 }
 
                 Write(
@@ -330,7 +375,8 @@ namespace DarkFantasyMerchant.Game
                     recentProduction,
                     recentConsumption,
                     workers,
-                    maxWorkers);
+                    maxWorkers,
+                    reserve);
             }
         }
 
@@ -342,14 +388,15 @@ namespace DarkFantasyMerchant.Game
             double recentProduction,
             double recentConsumption,
             long workers,
-            long maxWorkers)
+            long maxWorkers,
+            long reserve)
         {
             cells.Stock.text = TreasuryHudController.FormatNumber(stock);
             cells.Production.text = FormatFigure(nominalProduction, recentProduction);
             cells.Consumption.text = FormatFigure(nominalConsumption, recentConsumption);
             cells.Net.text = $"{FormatNet(nominalProduction - nominalConsumption)} "
                 + $"({FormatNet(recentProduction - recentConsumption)})";
-            cells.Workers.text = FormatWorkers(workers, maxWorkers);
+            cells.Workers.text = FormatWorkers(workers, maxWorkers, reserve);
         }
 
         private static GoodCells[] AddGoodCells(VisualElement row, int goodCount)
@@ -384,6 +431,8 @@ namespace DarkFantasyMerchant.Game
             columns.AddToClassList(HeaderRowClass);
             AddLabel(columns, NameCellClass).text = "Ville";
             AddLabel(columns, PopulationCellClass).text = "Population";
+            AddLabel(columns, BeggarsCellClass).text = "Mendiants";
+            AddLabel(columns, HousingCellClass).text = "Logements";
             AddLabel(columns, GrowthSinceStartCellClass).text = "Croiss. totale";
 
             foreach (string goodName in goodNames)

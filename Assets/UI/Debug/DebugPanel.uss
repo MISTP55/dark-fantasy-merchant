@@ -65,6 +65,14 @@
     width: 100px;
 }
 
+.debug-cities__cell--beggars {
+    width: 90px;
+}
+
+.debug-cities__cell--housing {
+    width: 130px;
+}
+
 .debug-cities__cell--growth-since-start {
     width: 110px;
 }
@@ -80,17 +88,17 @@
 }
 
 .debug-cities__cell--workers {
-    width: 70px;
+    width: 90px;
 }
 
-/* As wide as the name, the population and its growth. */
+/* As wide as the name, the population, the beggars, the housing and the growth. */
 .debug-cities__cell--city-group {
-    width: 360px;
+    width: 580px;
 }
 
 /* As wide as the stock, the three figures and the workers of a good. */
 .debug-cities__row--header .debug-cities__cell--good-group {
-    width: 570px;
+    width: 590px;
     border-left-width: 1px;
     border-left-color: rgb(110, 84, 52);
     color: rgb(240, 226, 196);
