@@ -17,6 +17,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         /// </summary>
         public static WorkforceRule Workforce => new WorkforceRule(16, 8, 4, 1, 1, 1000);
 
+        /// <summary>Patrician III's labour, as the economy's defaults.</summary>
+        public static LabourRule Labour => new LabourRule(4, 50, 3, 8, 5, 10, 5, 3, 0.02, 30);
+
         /// <summary>The factors at which the player buys in Patrician III.</summary>
         public static PriceCurve BuyCurve => new PriceCurve(4, 1.5, 1, 0.8, 0.6);
 
