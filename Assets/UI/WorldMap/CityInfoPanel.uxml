@@ -21,7 +21,9 @@
             <ui:VisualElement name="ship-list" />
             <ui:VisualElement name="buildings-section" class="buildings">
                 <ui:Label text="Vos bâtiments" class="city-panel__section" />
-                <ui:VisualElement name="buildings-rows" />
+                <ui:ScrollView class="buildings__scroll">
+                    <ui:VisualElement name="buildings-rows" />
+                </ui:ScrollView>
                 <ui:Label name="buildings-costs" class="buildings__costs" />
             </ui:VisualElement>
             <ui:VisualElement name="market-section" class="market">

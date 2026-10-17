@@ -80,9 +80,27 @@
     border-color: rgb(240, 226, 196);
 }
 
-/* Wider than the ship panel: the market is a table. */
+/* Wider than the ship panel: the market is a table. A big city's panel is taller than the
+   screen: it shrinks to the screen less its margins, and only the building rows and the
+   market's rows give up height, each scrolling what no longer fits. */
 .city-panel {
     width: 480px;
+    margin: 16px 0;
+    flex-shrink: 1;
+}
+
+.city-panel > * {
+    flex-shrink: 0;
+}
+
+.city-panel > .buildings,
+.city-panel > .market {
+    flex-shrink: 1;
+}
+
+.buildings > *,
+.market > * {
+    flex-shrink: 0;
 }
 
 .market__title {
@@ -107,9 +125,12 @@
     color: rgb(190, 164, 120);
 }
 
-/* Twenty goods do not fit on a screen: the rows scroll under their header. */
-.market__scroll {
+/* Twenty goods do not fit on a screen: the rows scroll under their header, in less height
+   when the panel must shrink, but never under five rows. */
+.market > .market__scroll {
     max-height: 340px;
+    min-height: 130px;
+    flex-shrink: 1;
 }
 
 .market__cell {
@@ -185,7 +206,13 @@
     display: flex;
 }
 
-/* The player's buildings: a text and the button that builds, one row each. */
+/* The player's buildings: a text and the button that builds, one row each. The rows scroll
+   when the panel must shrink, never under three rows. */
+.buildings > .buildings__scroll {
+    min-height: 72px;
+    flex-shrink: 1;
+}
+
 .buildings__row {
     flex-direction: row;
     justify-content: space-between;
