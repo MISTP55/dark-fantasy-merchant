@@ -9,7 +9,11 @@ namespace DarkFantasyMerchant.Core
     /// produce; the price of a good follows its stock against the same thresholds. There is
     /// no limit to what a city can store. Goods are indices into the catalogue. It also
     /// remembers what the days of the last week actually produced and consumed. What it
-    /// consumes follows its population.
+    /// consumes follows its population. Given a <see cref="LabourRule"/>, its workshops hire
+    /// from their reserves and the beggars within the free room of the houses, lay off into a
+    /// reserve that leaks back to the beggars, the player's workshops fill their vacancies from
+    /// the beggars, and the beggars come or go; without one, hiring is immediate, layoffs
+    /// vanish and the population stays as it is.
     /// </summary>
     public sealed class CityMarket
     {
@@ -18,6 +22,9 @@ namespace DarkFantasyMerchant.Core
         private readonly MarketGood[] goods;
         private readonly double[] stocks;
         private readonly int[] workers;
+        private readonly int[] reserves;
+        private readonly double[] leakCounters;
+        private readonly List<PlayerWorkshop> playerWorkshops = new List<PlayerWorkshop>();
         private readonly ThresholdRule thresholdRule;
         private readonly WorkforceRule workforce;
         private readonly MarketPricing pricing;
@@ -29,6 +36,7 @@ namespace DarkFantasyMerchant.Core
         /// <param name="startingDays">Days of consumption the city holds of every good when the game starts.</param>
         /// <param name="daysPerWeek">Days of the calendar's week, over which the weekly figures are given.</param>
         /// <param name="population">The inhabitants of the city, who set what it consumes.</param>
+        /// <param name="labour">How the workshops take their workers from the population; null for immediate hiring and a population that stays.</param>
         public CityMarket(
             IReadOnlyList<MarketGood> goods,
             ThresholdRule thresholdRule,
@@ -36,7 +44,8 @@ namespace DarkFantasyMerchant.Core
             double startingDays,
             MarketPricing pricing,
             int daysPerWeek,
-            CityPopulation population)
+            CityPopulation population,
+            LabourRule labour = null)
         {
             if (goods == null)
             {
@@ -59,11 +68,14 @@ namespace DarkFantasyMerchant.Core
 
             this.pricing = pricing ?? throw new ArgumentNullException(nameof(pricing));
             Population = population ?? throw new ArgumentNullException(nameof(population));
+            Labour = labour;
             this.daysPerWeek = daysPerWeek;
             weekLog = new MarketWeekLog(goods.Count, daysPerWeek);
             this.goods = new MarketGood[goods.Count];
             stocks = new double[goods.Count];
-            workers = new int[goods.Count];
+            workers = StartingWorkersOf(goods, workforce);
+            reserves = new int[goods.Count];
+            leakCounters = new double[goods.Count];
 
             for (int i = 0; i < goods.Count; i++)
             {
@@ -72,20 +84,20 @@ namespace DarkFantasyMerchant.Core
                 // The same for every good, produced or not: producers fill up as the days pass.
                 stocks[i] = startingDays * DailyConsumptionOf(i);
             }
-
-            int workshops = Array.FindAll(this.goods, good => good.IsProduced).Length;
-
-            for (int i = 0; i < this.goods.Length; i++)
-            {
-                workers[i] = this.goods[i].IsProduced
-                    ? workforce.StartingWorkersOf(this.goods[i].MaxWorkers, workshops)
-                    : 0;
-            }
         }
 
         public int GoodCount => goods.Length;
 
         public CityPopulation Population { get; }
+
+        /// <summary>How the workshops take their workers from the population; null when hiring is immediate.</summary>
+        public LabourRule Labour { get; }
+
+        /// <summary>The beggars the city draws towards: 0 without labour.</summary>
+        public int BeggarTarget => Labour?.BeggarTargetFor(Population.Inhabitants) ?? 0;
+
+        /// <summary>Houses the player has built in the city.</summary>
+        public int PlayerHouses { get; private set; }
 
         /// <summary>
         /// Raised once by a day that starts and once
@@ -130,6 +142,103 @@ namespace DarkFantasyMerchant.Core
             RequireGood(good);
 
             return workers[good];
+        }
+
+        /// <summary>Laid-off workers of the city's workshop for a good, still housed, waiting to be hired back.</summary>
+        public int ReserveOf(int good)
+        {
+            RequireGood(good);
+
+            return reserves[good];
+        }
+
+        /// <summary>Workshops the player has built for a good in the city.</summary>
+        public int PlayerWorkshopsOf(int good)
+        {
+            RequireGood(good);
+
+            return playerWorkshops.FindAll(workshop => workshop.Good == good).Count;
+        }
+
+        /// <summary>Workers of all the player's workshops for a good in the city.</summary>
+        public int PlayerWorkersOf(int good)
+        {
+            RequireGood(good);
+            int sum = 0;
+
+            foreach (PlayerWorkshop workshop in playerWorkshops)
+            {
+                if (workshop.Good == good)
+                {
+                    sum += workshop.Workers;
+                }
+            }
+
+            return sum;
+        }
+
+        /// <summary>Jobs of all the player's workshops for a good in the city.</summary>
+        public int PlayerJobsOf(int good)
+        {
+            RequireGood(good);
+            int sum = 0;
+
+            foreach (PlayerWorkshop workshop in playerWorkshops)
+            {
+                if (workshop.Good == good)
+                {
+                    sum += workshop.Jobs;
+                }
+            }
+
+            return sum;
+        }
+
+        /// <summary>
+        /// The workers the city's workshops start with, added up: the starting workforce
+        /// spread over the goods that are produced, as the constructor spreads it.
+        /// </summary>
+        public static int StartingWorkforceOf(IReadOnlyList<MarketGood> goods, WorkforceRule workforce)
+        {
+            int sum = 0;
+
+            foreach (int count in StartingWorkersOf(goods, workforce))
+            {
+                sum += count;
+            }
+
+            return sum;
+        }
+
+        /// <summary>
+        /// Adds a workshop of the player for a good the city produces, with no worker yet: its
+        /// vacancies are filled from the beggars, after the city's workshops have hired, and
+        /// only with labour.
+        /// </summary>
+        public void AddPlayerWorkshop(int good, int jobs)
+        {
+            RequireGood(good);
+
+            if (!goods[good].IsProduced)
+            {
+                throw new ArgumentOutOfRangeException(nameof(good), "The city does not produce the good.");
+            }
+
+            if (jobs < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(jobs));
+            }
+
+            playerWorkshops.Add(new PlayerWorkshop(good, jobs));
+            Changed?.Invoke();
+        }
+
+        /// <summary>Adds a house of the player: its room is the city's, open to any inhabitant.</summary>
+        public void AddPlayerHouse(int room)
+        {
+            Population.AddRoom(room);
+            PlayerHouses++;
+            Changed?.Invoke();
         }
 
         /// <summary>The most workers the city's workshop for a good can have: 0 for a good it does not produce.</summary>
@@ -251,7 +360,9 @@ namespace DarkFantasyMerchant.Core
         /// <summary>
         /// One day of the city, as in Patrician III: the inhabitants consume every good, down
         /// to nothing; then every workshop hires or lays off by where the stock left stands
-        /// against the thresholds, and produces, unless that stock is above T3.
+        /// against the thresholds, and produces, unless that stock is above T3. With labour,
+        /// the player's workshops then fill their vacancies from the beggars, and the beggars
+        /// come or go.
         /// </summary>
         public void StartDay()
         {
@@ -267,7 +378,20 @@ namespace DarkFantasyMerchant.Core
                 if (good.IsProduced)
                 {
                     StockThresholds thresholds = ThresholdsOf(i);
-                    workers[i] = workforce.NextWorkers(workers[i], good.MaxWorkers, stocks[i], thresholds);
+                    int target = workforce.NextWorkers(workers[i], good.MaxWorkers, stocks[i], thresholds);
+
+                    if (Labour == null)
+                    {
+                        workers[i] = target;
+                    }
+                    else if (target > workers[i])
+                    {
+                        Hire(i, target - workers[i]);
+                    }
+                    else if (target < workers[i])
+                    {
+                        LayOff(i, workers[i] - target);
+                    }
 
                     if (WorkforceRule.ProducesAt(stocks[i], thresholds))
                     {
@@ -279,7 +403,108 @@ namespace DarkFantasyMerchant.Core
                 weekLog.Record(i, produced, consumed);
             }
 
+            if (Labour != null)
+            {
+                FillVacancies();
+                Population.SetBeggars(Labour.NextBeggars(Population.Beggars, Population.Inhabitants));
+            }
+
             Changed?.Invoke();
+        }
+
+        private static int[] StartingWorkersOf(IReadOnlyList<MarketGood> goods, WorkforceRule workforce)
+        {
+            if (goods == null)
+            {
+                throw new ArgumentNullException(nameof(goods));
+            }
+
+            if (workforce == null)
+            {
+                throw new ArgumentNullException(nameof(workforce));
+            }
+
+            int workshops = 0;
+
+            for (int i = 0; i < goods.Count; i++)
+            {
+                if (goods[i].IsProduced)
+                {
+                    workshops++;
+                }
+            }
+
+            var starting = new int[goods.Count];
+
+            for (int i = 0; i < goods.Count; i++)
+            {
+                starting[i] = goods[i].IsProduced ? workforce.StartingWorkersOf(goods[i].MaxWorkers, workshops) : 0;
+            }
+
+            return starting;
+        }
+
+        // Patrician III's order: the workshop's own reserve, the beggars within the free room,
+        // then the reserves of the other workshops in the order of the catalogue. What is still
+        // missing is not hired today.
+        private void Hire(int good, int wanted)
+        {
+            wanted -= TakeFromReserve(good, good, wanted);
+
+            int fromBeggars = Math.Min(wanted, Labour.WorkersHireableFrom(Population.Beggars, Population.FreeRoom));
+            Population.Hire(fromBeggars, Labour.InhabitantsPerWorker);
+            workers[good] += fromBeggars;
+            wanted -= fromBeggars;
+
+            for (int other = 0; other < goods.Length && wanted > 0; other++)
+            {
+                if (other != good)
+                {
+                    wanted -= TakeFromReserve(other, good, wanted);
+                }
+            }
+        }
+
+        // Moves up to the wanted workers from a workshop's reserve to a workshop; housed inhabitants do not change.
+        private int TakeFromReserve(int reserve, int good, int wanted)
+        {
+            int taken = Math.Min(wanted, reserves[reserve]);
+            reserves[reserve] -= taken;
+            workers[good] += taken;
+
+            return taken;
+        }
+
+        // The laid-off workers stay housed in the reserve, which leaks back to the beggars.
+        private void LayOff(int good, int laidOff)
+        {
+            workers[good] -= laidOff;
+            reserves[good] += laidOff;
+
+            ReserveLeak leak = Labour.LeakAfterLayoff(leakCounters[good], workers[good], reserves[good]);
+            leakCounters[good] = leak.Counter;
+            reserves[good] -= leak.Leaving;
+            Population.SendToBeggars(leak.Leaving, Labour.InhabitantsPerWorker);
+        }
+
+        // Patrician III's second hiring: the beggars fill the player's workshops in the order
+        // they were built, each up to its jobs.
+        private void FillVacancies()
+        {
+            int fillable = Labour.VacanciesFillable(Population.Beggars, Population.FreeRoom);
+
+            foreach (PlayerWorkshop workshop in playerWorkshops)
+            {
+                if (fillable == 0)
+                {
+                    break;
+                }
+
+                int hired = Math.Min(fillable, workshop.Jobs - workshop.Workers);
+                Population.Hire(hired, Labour.InhabitantsPerWorker);
+                workshop.Workers += hired;
+                fillable -= hired;
+            }
         }
 
         private void RequireGood(int good)
@@ -304,6 +529,22 @@ namespace DarkFantasyMerchant.Core
             {
                 throw new ArgumentOutOfRangeException(name);
             }
+        }
+
+        /// <summary>A workshop the player has built: its good, its jobs and the workers it has.</summary>
+        private sealed class PlayerWorkshop
+        {
+            public PlayerWorkshop(int good, int jobs)
+            {
+                Good = good;
+                Jobs = jobs;
+            }
+
+            public int Good { get; }
+
+            public int Jobs { get; }
+
+            public int Workers { get; set; }
         }
     }
 }
