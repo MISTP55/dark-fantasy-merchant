@@ -193,6 +193,39 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
+        /// The factor at which the city sells the good to a buyer when its stock is <paramref name="stock"/>,
+        /// as the AI merchants weigh it: one point of the curve, no integral.
+        /// </summary>
+        public double BuyFactorAt(int good, double stock)
+        {
+            RequireGood(good);
+
+            return pricing.BuyCurve.FactorAt(stock, ThresholdsOf(good));
+        }
+
+        /// <summary>
+        /// The factor at which the city buys the good from a seller when its stock is <paramref name="stock"/>,
+        /// as the AI merchants weigh it: one point of the curve, no integral.
+        /// </summary>
+        public double SellFactorAt(int good, double stock)
+        {
+            RequireGood(good);
+
+            return pricing.SellCurve.FactorAt(stock, ThresholdsOf(good));
+        }
+
+        /// <summary>
+        /// Units the workshop makes in a day with the workers of the moment, whatever the stock;
+        /// 0 for a good the city does not produce.
+        /// </summary>
+        public double DailyProductionOf(int good)
+        {
+            RequireGood(good);
+
+            return workers[good] * goods[good].DailyOutputPerWorker;
+        }
+
+        /// <summary>
         /// Units the city actually produced over the last days, a week of them at most:
         /// less than the nominal figure on the days the stock was above T3.
         /// </summary>

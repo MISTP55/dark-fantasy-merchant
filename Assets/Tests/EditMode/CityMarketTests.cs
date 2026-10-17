@@ -700,5 +700,39 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(1, changes);
             Assert.Less(seen, 1000d);
         }
+
+        [Test]
+        public void TheFactors_AreReadOnTheCurves_AtTheGivenStock()
+        {
+            // Two barrels a day: T0 20, T1 60, T2 60, T3 80.
+            CityMarket market = MarketOf(NotProduced);
+
+            Assert.AreEqual(4.0, market.BuyFactorAt(0, 0), Tolerance);
+            Assert.AreEqual(1.25, market.BuyFactorAt(0, 40), Tolerance);
+            Assert.AreEqual(0.6, market.BuyFactorAt(0, 120), Tolerance);
+            Assert.AreEqual(2.0, market.SellFactorAt(0, 0), Tolerance);
+            Assert.AreEqual(1.2, market.SellFactorAt(0, 40), Tolerance);
+            Assert.AreEqual(1.0, market.SellFactorAt(0, 60), Tolerance);
+        }
+
+        [Test]
+        public void DailyProduction_IsTheWorkersOfTheMomentTimesTheirOutput()
+        {
+            CityMarket market = MarketOf(NotProduced, Efficient);
+
+            Assert.AreEqual(0d, market.DailyProductionOf(0), Tolerance);
+            Assert.AreEqual(3d, market.DailyProductionOf(1), Tolerance);
+            Assert.AreEqual(market.NominalWeeklyProductionOf(1) / DaysPerWeek, market.DailyProductionOf(1), Tolerance);
+        }
+
+        [Test]
+        public void TheFactorsAndTheProduction_RejectAGoodOutOfRange()
+        {
+            CityMarket market = MarketOf(NotProduced);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => market.BuyFactorAt(1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => market.SellFactorAt(-1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => market.DailyProductionOf(1));
+        }
     }
 }
