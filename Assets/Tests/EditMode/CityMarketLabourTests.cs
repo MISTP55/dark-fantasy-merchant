@@ -110,6 +110,130 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void AWorkshopThatWantsTwo_TakesThemFromItsOwnReserve_BeforeTheBeggars()
+        {
+            // A workshop of 3 workers at most, which starts with 3. Near 1 000 inhabitants:
+            // T0 20, T1 60, T2 = 60 + 10 days × 0.3 = 63, T3 = 63 + 20 = 83.
+            var good = new MarketGood(10, 2, 3, 0.1);
+            var market = new CityMarket(new[] { good }, TestMarkets.Thresholds, Workforce, 100,
+                TestMarkets.Pricing, 7, new CityPopulation(1000, 100, 2000), TestMarkets.Labour);
+
+            // 200 barrels, above T3: 1 worker kept, 2 in the reserve (a leak of 2 × 0.02: none).
+            market.StartDay();
+            Assert.AreEqual(1, market.WorkersOf(0));
+            Assert.AreEqual(2, market.ReserveOf(0));
+            Assert.AreEqual(1000, market.Population.Housed);
+
+            // An empty stock: 1 + 16, cut to the maximum of 3, so 2 wanted, with 100 beggars and
+            // 1 000 free places that could give them.
+            market.Take(0, market.AvailableOf(0));
+            market.StartDay();
+
+            Assert.AreEqual(3, market.WorkersOf(0));
+            Assert.AreEqual(0, market.ReserveOf(0));
+            Assert.AreEqual(1000, market.Population.Housed);
+        }
+
+        [Test]
+        public void AWorkshopThatWantsTwo_WithoutAReserve_HiresBeggars_BeforeAnotherReserve()
+        {
+            // Good 0: a workshop of up to 60 that starts with 10 and lays 9 off on the first day
+            // (200 barrels, above its T3 of 140; a leak of 9 × 0.02: none). Good 1: a workshop of
+            // 12 at most that starts with 10; an empty stock wants 10 + 16, cut to 12: 2 more.
+            var market = new CityMarket(new[] { Good, new MarketGood(10, 2, 12, 0.1) }, TestMarkets.Thresholds,
+                TwoWorkshopsWorkforce, 100, TestMarkets.Pricing, 7, new CityPopulation(1000, 100, 2000), TestMarkets.Labour);
+            market.Take(1, market.AvailableOf(1));
+
+            market.StartDay();
+
+            Assert.AreEqual(1, market.WorkersOf(0));
+            Assert.AreEqual(9, market.ReserveOf(0));
+            Assert.AreEqual(12, market.WorkersOf(1));
+
+            // 2 from the beggars: 8 more housed.
+            Assert.AreEqual(1008, market.Population.Housed);
+        }
+
+        [Test]
+        public void OverManyDays_TheHousedAreFourPerWorkerOrReserve_WithinTheRoom()
+        {
+            // A workshop under 30 (it leaks), one of 60, and a good the city does not produce.
+            // 60 workers spread over two workshops: 20 (cut) and 30. 200 housed, 11 beggars, 200 places.
+            MarketGood[] goods = { new MarketGood(10, 2, 20, 0.1), new MarketGood(10, 2, 60, 0.1), new MarketGood(10, 2, 0, 0) };
+            var workforce = new WorkforceRule(16, 8, 4, 1, 1, 60);
+            int startingWorkers = CityMarket.StartingWorkforceOf(goods, workforce);
+            CityPopulation population = CityPopulation.AtStart(startingWorkers, 4, 4d / 17d, 100);
+            var market = new CityMarket(goods, TestMarkets.Thresholds, workforce, 7, TestMarkets.Pricing, 7,
+                population, TestMarkets.Labour);
+            market.AddPlayerHouse(100);
+            market.AddPlayerWorkshop(0, 30);
+
+            int leaks = 0;
+            int previousCityWorkers = CityWorkersAndReserves(market);
+            Assert.AreEqual(50, startingWorkers);
+            AssertHousing(market, "at the start");
+
+            for (int day = 0; day < 200; day++)
+            {
+                // Three days flooded (the workshops lay off), then three days emptied (they hire again).
+                for (int good = 0; good < 2; good++)
+                {
+                    if (day % 6 == 0)
+                    {
+                        market.Put(good, 10000);
+                    }
+                    else if (day % 6 == 3 && market.AvailableOf(good) > 0)
+                    {
+                        market.Take(good, market.AvailableOf(good));
+                    }
+                }
+
+                market.StartDay();
+                AssertHousing(market, $"on day {day}");
+
+                // Hiring from the reserves moves nobody out; only a leak lowers this sum.
+                int cityWorkers = CityWorkersAndReserves(market);
+
+                if (cityWorkers < previousCityWorkers)
+                {
+                    leaks++;
+                }
+
+                previousCityWorkers = cityWorkers;
+            }
+
+            Assert.Greater(leaks, 0);
+            Assert.Greater(market.PlayerWorkersOf(0), 0);
+            Assert.AreNotEqual(population.StartingInhabitants, market.Population.Inhabitants);
+            Assert.AreEqual(2d * market.Population.Inhabitants / 1000d, market.DailyConsumptionOf(0), 1e-12);
+        }
+
+        private static int CityWorkersAndReserves(CityMarket market)
+        {
+            int total = 0;
+
+            for (int good = 0; good < market.GoodCount; good++)
+            {
+                total += market.WorkersOf(good) + market.ReserveOf(good);
+            }
+
+            return total;
+        }
+
+        private static void AssertHousing(CityMarket market, string when)
+        {
+            int employed = CityWorkersAndReserves(market);
+
+            for (int good = 0; good < market.GoodCount; good++)
+            {
+                employed += market.PlayerWorkersOf(good);
+            }
+
+            Assert.AreEqual(4 * employed, market.Population.Housed, when);
+            Assert.LessOrEqual(market.Population.Housed, market.Population.Room, when);
+        }
+
+        [Test]
         public void ALeak_SendsFourInhabitantsPerWorkerToTheBeggars()
         {
             CityMarket market = Market(100, new CityPopulation(1000), new LabourRule(4, 50, 3, 8, 5, 10, 5, 3, 0.5, 30));
