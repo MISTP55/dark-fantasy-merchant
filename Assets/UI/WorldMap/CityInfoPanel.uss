@@ -41,6 +41,12 @@
     -unity-font-style: bold;
 }
 
+.city-panel__goods {
+    color: rgb(222, 210, 188);
+    font-size: 15px;
+    white-space: normal;
+}
+
 .city-panel__empty {
     color: rgb(140, 124, 100);
     font-size: 14px;

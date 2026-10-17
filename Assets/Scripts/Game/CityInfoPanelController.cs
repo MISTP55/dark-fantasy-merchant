@@ -15,6 +15,8 @@ namespace DarkFantasyMerchant.Game
     {
         private const string ShipRowClass = "city-panel__ship";
         private const string SelectedShipRowClass = "city-panel__ship--selected";
+        private const string ProducedGoodsClass = "city-panel__goods";
+        private const string EmptyClass = "city-panel__empty";
 
         [SerializeField] private WorldMapView mapView;
         [SerializeField] private Camera mapCamera;
@@ -38,6 +40,8 @@ namespace DarkFantasyMerchant.Game
         private Label sizeLabel;
         private Label accessLabel;
         private Label descriptionLabel;
+        private Label efficientGoodsLabel;
+        private Label inefficientGoodsLabel;
         private Label noShipLabel;
         private VisualElement shipList;
         private Button closeButton;
@@ -73,6 +77,8 @@ namespace DarkFantasyMerchant.Game
             sizeLabel = root.Q<Label>("city-size");
             accessLabel = root.Q<Label>("city-access");
             descriptionLabel = root.Q<Label>("city-description");
+            efficientGoodsLabel = root.Q<Label>("efficient-goods");
+            inefficientGoodsLabel = root.Q<Label>("inefficient-goods");
             noShipLabel = root.Q<Label>("no-ship-label");
             shipList = root.Q<VisualElement>("ship-list");
             closeButton = root.Q<Button>("close-button");
@@ -86,6 +92,7 @@ namespace DarkFantasyMerchant.Game
 
             if (cityPanel == null || hoverLabel == null || nameLabel == null || sizeLabel == null
                 || accessLabel == null || descriptionLabel == null || noShipLabel == null
+                || efficientGoodsLabel == null || inefficientGoodsLabel == null
                 || shipList == null || closeButton == null || populationLabel == null
                 || marketElement == null || marketRows == null || marketHoldLabel == null)
             {
@@ -215,6 +222,7 @@ namespace DarkFantasyMerchant.Game
             accessLabel.text = AccessText(city.Access);
             ShowPopulationOf(city);
             descriptionLabel.text = city.Description;
+            ShowProducedGoodsOf(city);
             ShowShipsIn(city);
             ShowMarketOf(city);
             cityPanel.style.display = DisplayStyle.Flex;
@@ -377,6 +385,64 @@ namespace DarkFantasyMerchant.Game
         private void OnCloseClicked()
         {
             mapView.Selection.ClearSelection();
+        }
+
+        /// <summary>What a production section of the panel shows when the city produces nothing that way.</summary>
+        public const string NoProducedGoods = "Aucune";
+
+        /// <summary>
+        /// The goods the city produces in this way, named in the order of the goods given and
+        /// separated by commas, or <see cref="NoProducedGoods"/>. A good that is not given (an
+        /// inactive good, which is not among the economy's goods) is left out.
+        /// </summary>
+        public static string ProducedGoodsText(CityDefinition city, IReadOnlyList<GoodDefinition> goods, GoodProduction production)
+        {
+            var names = new List<string>();
+
+            foreach (GoodDefinition good in goods)
+            {
+                if (good != null && city.ProductionOf(good) == production)
+                {
+                    names.Add(good.DisplayName);
+                }
+            }
+
+            return names.Count > 0 ? string.Join(", ", names) : NoProducedGoods;
+        }
+
+        private void ShowProducedGoodsOf(CityDefinition city)
+        {
+            IReadOnlyList<GoodDefinition> goods = worldEconomy != null && worldEconomy.Economy != null
+                ? worldEconomy.Economy.Goods
+                : ProducedGoodsListedBy(city);
+
+            WriteProducedGoods(efficientGoodsLabel, ProducedGoodsText(city, goods, GoodProduction.Efficient));
+            WriteProducedGoods(inefficientGoodsLabel, ProducedGoodsText(city, goods, GoodProduction.Inefficient));
+        }
+
+        // Without an economy, the city's own lists say what it produces, in their order.
+        private static List<GoodDefinition> ProducedGoodsListedBy(CityDefinition city)
+        {
+            var goods = new List<GoodDefinition>(city.EfficientGoods);
+
+            foreach (GoodDefinition good in city.InefficientGoods)
+            {
+                // A good listed both ways is efficient: it is named once.
+                if (!goods.Contains(good))
+                {
+                    goods.Add(good);
+                }
+            }
+
+            return goods;
+        }
+
+        private static void WriteProducedGoods(Label label, string text)
+        {
+            bool none = text == NoProducedGoods;
+            label.text = text;
+            label.EnableInClassList(ProducedGoodsClass, !none);
+            label.EnableInClassList(EmptyClass, none);
         }
 
         private static string SizeText(CitySize size)

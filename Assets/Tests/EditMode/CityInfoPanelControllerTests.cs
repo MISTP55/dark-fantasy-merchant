@@ -1,0 +1,72 @@
+using System.Collections.Generic;
+using DarkFantasyMerchant.Game;
+using NUnit.Framework;
+using UnityEngine;
+
+namespace DarkFantasyMerchant.Tests.EditMode
+{
+    public class CityInfoPanelControllerTests
+    {
+        private readonly List<Object> created = new List<Object>();
+
+        private GoodDefinition grain;
+        private GoodDefinition fish;
+        private GoodDefinition salt;
+        private GoodDefinition wine;
+
+        [SetUp]
+        public void SetUp()
+        {
+            grain = Track(TestEconomy.CreateGood("Céréales", 110, 7));
+            fish = Track(TestEconomy.CreateGood("Poisson", 440, 7));
+            salt = Track(TestEconomy.CreateGood("Sel", 28.5, 7));
+            wine = Track(TestEconomy.CreateGood("Vin", 220, 7));
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            foreach (Object instance in created)
+            {
+                Object.DestroyImmediate(instance);
+            }
+
+            created.Clear();
+        }
+
+        private T Track<T>(T instance) where T : Object
+        {
+            created.Add(instance);
+            return instance;
+        }
+
+        [Test]
+        public void ProducedGoodsText_NamesTheGoodsOfAProduction_InTheOrderOfTheGoods()
+        {
+            CityDefinition city = Track(TestEconomy.CreateCity(new[] { salt, grain }, new[] { wine }));
+            var goods = new[] { grain, fish, salt, wine };
+
+            Assert.AreEqual("Céréales, Sel", CityInfoPanelController.ProducedGoodsText(city, goods, GoodProduction.Efficient));
+            Assert.AreEqual("Vin", CityInfoPanelController.ProducedGoodsText(city, goods, GoodProduction.Inefficient));
+        }
+
+        [Test]
+        public void ProducedGoodsText_LeavesOutTheGoodsThatAreNotGiven()
+        {
+            // An inactive good is not among the economy's goods.
+            CityDefinition city = Track(TestEconomy.CreateCity(new[] { grain, salt }, new GoodDefinition[0]));
+
+            Assert.AreEqual("Sel", CityInfoPanelController.ProducedGoodsText(city, new[] { fish, salt }, GoodProduction.Efficient));
+        }
+
+        [Test]
+        public void ProducedGoodsText_SaysNone_WhenTheCityProducesNothingThatWay()
+        {
+            CityDefinition city = Track(TestEconomy.CreateCity(new[] { grain }, new GoodDefinition[0]));
+
+            Assert.AreEqual(
+                CityInfoPanelController.NoProducedGoods,
+                CityInfoPanelController.ProducedGoodsText(city, new[] { grain, fish }, GoodProduction.Inefficient));
+        }
+    }
+}

@@ -12,6 +12,10 @@
             <ui:Label name="city-access" class="city-panel__tag" />
             <ui:Label name="city-population" class="city-panel__tag" />
             <ui:Label name="city-description" class="city-panel__description" />
+            <ui:Label text="Production efficace" class="city-panel__section" />
+            <ui:Label name="efficient-goods" class="city-panel__goods" />
+            <ui:Label text="Production inefficace" class="city-panel__section" />
+            <ui:Label name="inefficient-goods" class="city-panel__goods" />
             <ui:Label text="Navires au port" class="city-panel__section" />
             <ui:Label name="no-ship-label" text="Aucun navire au port" class="city-panel__empty" />
             <ui:VisualElement name="ship-list" />
