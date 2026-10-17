@@ -13,7 +13,17 @@ namespace DarkFantasyMerchant.Game
         /// <param name="portName">Name of the city whose port the ship lies in; null at sea.</param>
         /// <param name="destinationName">Name of the city whose port the ship will enter; null for none.</param>
         /// <param name="profit">Cumulated profit of a merchant that trades on its own; null for the player's ships.</param>
-        public DebugShipInfo(string name, bool isPlayer, Ship ship, string portName, string destinationName, long? profit)
+        /// <param name="homeName">Name of the city a merchant that trades on its own is homed in; null for none.</param>
+        /// <param name="finalDestinationName">Name of the city a merchant that trades on its own sails to for its tour; null for none.</param>
+        public DebugShipInfo(
+            string name,
+            bool isPlayer,
+            Ship ship,
+            string portName,
+            string destinationName,
+            long? profit,
+            string homeName = null,
+            string finalDestinationName = null)
         {
             Name = name;
             IsPlayer = isPlayer;
@@ -21,6 +31,8 @@ namespace DarkFantasyMerchant.Game
             PortName = portName;
             DestinationName = destinationName;
             Profit = profit;
+            HomeName = homeName;
+            FinalDestinationName = finalDestinationName;
         }
 
         public string Name { get; }
@@ -34,12 +46,16 @@ namespace DarkFantasyMerchant.Game
         public string DestinationName { get; }
 
         public long? Profit { get; }
+
+        public string HomeName { get; }
+
+        public string FinalDestinationName { get; }
     }
 
     /// <summary>
     /// The table of the ships debug tab: one row per ship, the player's and the others,
-    /// with its owner, what it is doing, where it is and goes, its crew, its hold and,
-    /// for a merchant that trades on its own, its profit. Rewritten by every refresh.
+    /// with its owner, what it is doing, where it is and goes, its home and final destination,
+    /// its crew, its hold and, for a merchant that trades on its own, its profit. Rewritten by every refresh.
     /// When it is given a way to remove a ship, the rows of the ships that are not the
     /// player's end with a button that does.
     /// </summary>
@@ -69,6 +85,8 @@ namespace DarkFantasyMerchant.Game
             public Label State;
             public Label Place;
             public Label Destination;
+            public Label Home;
+            public Label FinalDestination;
             public Label Crew;
             public Label Speed;
             public Label Hold;
@@ -123,6 +141,8 @@ namespace DarkFantasyMerchant.Game
             titles.State.text = "État";
             titles.Place.text = "Lieu";
             titles.Destination.text = "Destination";
+            titles.Home.text = "Attache";
+            titles.FinalDestination.text = "Destination finale";
             titles.Crew.text = "Équipage";
             titles.Speed.text = "Vitesse";
             titles.Hold.text = "Cale";
@@ -249,6 +269,8 @@ namespace DarkFantasyMerchant.Game
             row.State.text = FormatState(isDocked, ship.IsMoving);
             row.Place.text = isDocked ? info.PortName : FormatPosition(ship.Position);
             row.Destination.text = DestinationOf(info);
+            row.Home.text = info.HomeName ?? NoValue;
+            row.FinalDestination.text = info.FinalDestinationName ?? NoValue;
             row.Crew.text = FormatCrew(ship.Crew);
             row.Speed.text = FormatSpeed(ship.Crew.SpeedFactor);
             row.Hold.text = FormatHold(ship.Cargo);
@@ -286,6 +308,8 @@ namespace DarkFantasyMerchant.Game
                 State = AddLabel(element, TextCellClass),
                 Place = AddLabel(element, TextCellClass),
                 Destination = AddLabel(element, TextCellClass),
+                Home = AddLabel(element, TextCellClass),
+                FinalDestination = AddLabel(element, TextCellClass),
                 Crew = AddLabel(element, NumberCellClass),
                 Speed = AddLabel(element, NumberCellClass),
                 Hold = AddLabel(element, NumberCellClass),

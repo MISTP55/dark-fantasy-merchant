@@ -15,11 +15,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int StateCell = 2;
         private const int PlaceCell = 3;
         private const int DestinationCell = 4;
-        private const int CrewCell = 5;
-        private const int SpeedCell = 6;
-        private const int HoldCell = 7;
-        private const int FirstGoodCell = 8;
-        private const int ProfitCell = 10;
+        private const int HomeCell = 5;
+        private const int FinalDestinationCell = 6;
+        private const int CrewCell = 7;
+        private const int SpeedCell = 8;
+        private const int HoldCell = 9;
+        private const int FirstGoodCell = 10;
+        private const int ProfitCell = 12;
 
         private VisualElement header;
         private VisualElement rows;
@@ -56,6 +58,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("État", ((Label)header[0][StateCell]).text);
             Assert.AreEqual("Lieu", ((Label)header[0][PlaceCell]).text);
             Assert.AreEqual("Destination", ((Label)header[0][DestinationCell]).text);
+            Assert.AreEqual("Attache", ((Label)header[0][HomeCell]).text);
+            Assert.AreEqual("Destination finale", ((Label)header[0][FinalDestinationCell]).text);
             Assert.AreEqual("Équipage", ((Label)header[0][CrewCell]).text);
             Assert.AreEqual("Vitesse", ((Label)header[0][SpeedCell]).text);
             Assert.AreEqual("Cale", ((Label)header[0][HoldCell]).text);
@@ -101,6 +105,22 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("0", Text(0, FirstGoodCell));
             Assert.AreEqual("60", Text(0, FirstGoodCell + 1));
             Assert.AreEqual("-1\u00A0250 or", Text(0, ProfitCell));
+        }
+
+        [Test]
+        public void AnAiShip_ShowsItsHome_AndItsFinalDestination()
+        {
+            ships.Add(new DebugShipInfo("A", false, CreateShip(), "Elforth", null, 0, "Sparia", "Elforth"));
+            ships.Add(new DebugShipInfo("B", false, CreateShip(), "Sparia", null, 0, "Sparia", null));
+            ships.Add(new DebugShipInfo("Navire marchand", true, CreateShip(), null, null, null));
+
+            table.Refresh(ships);
+
+            Assert.AreEqual("Sparia", Text(0, HomeCell));
+            Assert.AreEqual("Elforth", Text(0, FinalDestinationCell));
+            Assert.AreEqual(DebugShipsTable.NoValue, Text(1, FinalDestinationCell));
+            Assert.AreEqual(DebugShipsTable.NoValue, Text(2, HomeCell));
+            Assert.AreEqual(DebugShipsTable.NoValue, Text(2, FinalDestinationCell));
         }
 
         [Test]

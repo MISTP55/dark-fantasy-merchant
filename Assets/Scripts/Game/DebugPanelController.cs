@@ -233,7 +233,8 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        // In the port of a city drawn at random. Nothing happens before the merchants have started.
+        // In the port of a city with the fewest AI ships homed there, at random among ties.
+        // Nothing happens before the merchants have started.
         private void AddShip()
         {
             aiMerchants.AddShip();
@@ -256,6 +257,13 @@ namespace DarkFantasyMerchant.Game
                 CityDefinition port = shipsView.Docking.PortOf(ship);
                 CityDefinition destination = shipsView.Docking.DestinationPortOf(ship);
                 long? profit = aiMerchants != null && aiMerchants.TryGetProfit(ship, out long gold) ? gold : (long?)null;
+                CityDefinition home = null;
+                CityDefinition finalDestination = null;
+
+                if (aiMerchants != null)
+                {
+                    aiMerchants.TryGetTour(ship, out home, out finalDestination);
+                }
 
                 shipInfos.Add(new DebugShipInfo(
                     shipsView.DisplayNameOf(ship),
@@ -263,7 +271,9 @@ namespace DarkFantasyMerchant.Game
                     ship,
                     port != null ? port.DisplayName : null,
                     destination != null ? destination.DisplayName : null,
-                    profit));
+                    profit,
+                    home != null ? home.DisplayName : null,
+                    finalDestination != null ? finalDestination.DisplayName : null));
             }
 
             shipsTable.Refresh(shipInfos);
