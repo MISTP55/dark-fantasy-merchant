@@ -102,7 +102,7 @@ namespace DarkFantasyMerchant.Game
                 + $"({TreasuryHudController.FormatNumber(workers)} / {TreasuryHudController.FormatNumber(jobs)} ouvriers)";
         }
 
-        /// <summary>The button of a building that cannot be built, which shows no price.</summary>
+        /// <summary>The button of a building that cannot be built now, which shows no price.</summary>
         public const string BuildText = "Construire";
 
         /// <summary>"Construire (12 340 or)".</summary>
@@ -273,8 +273,8 @@ namespace DarkFantasyMerchant.Game
                         : default;
                 }
 
-                bool available = row.Good == HouseRow ? houseCost != null : workshopCost != null;
-                row.Button.text = available ? BuildButtonText(quote.Gold) : BuildText;
+                // An impossible quote's gold means nothing: the button shows no price.
+                row.Button.text = quote.IsPossible ? BuildButtonText(quote.Gold) : BuildText;
                 row.Button.SetEnabled(quote.IsPossible);
             }
         }

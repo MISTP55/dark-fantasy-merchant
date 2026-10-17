@@ -420,6 +420,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void FormatBeggars_WritesTheBeggarsAndTheirTarget()
         {
             Assert.AreEqual("59 (62)", DebugCitiesTable.FormatBeggars(59, 62));
+            Assert.AreEqual("1 393 (1 480)", DebugCitiesTable.FormatBeggars(1393, 1480));
         }
 
         [Test]

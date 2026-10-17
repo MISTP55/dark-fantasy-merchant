@@ -157,6 +157,24 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void TryBuild_RefusesAHouseWithoutRoomOrAWorkshopWithoutJobs_BeforeTakingAnything()
+        {
+            CityMarket market = Market();
+            CargoHold hold = HoldWith(1);
+            var treasury = new Treasury(10000);
+            int stock = market.AvailableOf(0);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => Construction.TryBuildHouse(market, hold, treasury, Cost(), 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Construction.TryBuildWorkshop(market, hold, treasury, Cost(), 1, 0));
+
+            Assert.AreEqual(10000, treasury.Gold);
+            Assert.AreEqual(1, hold.UnitsOf(0));
+            Assert.AreEqual(stock, market.AvailableOf(0));
+            Assert.AreEqual(0, market.PlayerHouses);
+            Assert.AreEqual(0, market.PlayerWorkshopsOf(1));
+        }
+
+        [Test]
         public void BuildingCost_RejectsAGoodTwice()
         {
             Assert.Throws<ArgumentException>(() =>

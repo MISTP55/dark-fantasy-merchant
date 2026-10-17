@@ -160,7 +160,7 @@ namespace DarkFantasyMerchant.Game
         /// <summary>Beggars as the table writes them, with the number they tend to: "59 (62)".</summary>
         public static string FormatBeggars(long beggars, long target)
         {
-            return $"{beggars} ({target})";
+            return $"{TreasuryHudController.FormatNumber(beggars)} ({TreasuryHudController.FormatNumber(target)})";
         }
 
         /// <summary>The housed inhabitants over the room of the houses: "1 008 / 1 100".</summary>

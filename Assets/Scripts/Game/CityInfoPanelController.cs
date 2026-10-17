@@ -215,7 +215,7 @@ namespace DarkFantasyMerchant.Game
         /// <summary>"Atelier construit à Lübeck : céréales."</summary>
         public static string WorkshopBuiltText(string city, string good)
         {
-            return $"Atelier construit à {city} : {good.ToLower()}.";
+            return $"Atelier construit à {city} : {good.ToLowerInvariant()}.";
         }
 
         /// <summary>"Logement construit à Lübeck."</summary>

@@ -103,7 +103,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void AButton_ShowsTheQuote_AndIsDisabledWhenImpossible()
+        public void AButton_ShowsTheQuote_AndIsDisabledWithoutAPriceWhenImpossible()
         {
             section.Show(market, null);
             ConstructionQuote quote = Construction.QuoteHouse(market, null, treasury, houseCost);
@@ -117,6 +117,19 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.IsFalse(ButtonOf(rows[0]).enabledSelf);
             Assert.IsFalse(ButtonOf(rows[1]).enabledSelf);
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(rows[0]).text);
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(rows[1]).text);
+        }
+
+        [Test]
+        public void WithoutTheMaterials_TheButtonsShowNoPrice()
+        {
+            section.Show(market, null);
+            market.Take(Material, market.AvailableOf(Material));
+
+            Assert.IsFalse(ButtonOf(rows[0]).enabledSelf);
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(rows[0]).text);
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(rows[1]).text);
         }
 
         [Test]
@@ -126,6 +139,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             section.Show(market, null);
 
             Assert.IsFalse(ButtonOf(rows[0]).enabledSelf);
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(rows[0]).text);
             Assert.IsFalse(section.BuildHouse());
             Assert.AreEqual(0, market.PlayerHouses);
         }

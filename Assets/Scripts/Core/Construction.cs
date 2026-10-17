@@ -111,8 +111,11 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <returns>False when the quote is impossible; nothing was taken then.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">A room under 1, before anything is taken.</exception>
         public static bool TryBuildHouse(CityMarket market, CargoHold hold, Treasury treasury, BuildingCost cost, int room)
         {
+            RequireAtLeastOne(room, nameof(room));
+
             ConstructionQuote quote = QuoteHouse(market, hold, treasury, cost);
 
             if (!quote.IsPossible)
@@ -126,8 +129,11 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <returns>False when the quote is impossible; nothing was taken then.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Jobs under 1, before anything is taken.</exception>
         public static bool TryBuildWorkshop(CityMarket market, CargoHold hold, Treasury treasury, BuildingCost cost, int good, int jobs)
         {
+            RequireAtLeastOne(jobs, nameof(jobs));
+
             ConstructionQuote quote = QuoteWorkshop(market, hold, treasury, cost, good);
 
             if (!quote.IsPossible)
@@ -192,6 +198,14 @@ namespace DarkFantasyMerchant.Core
             int fromHold = hold == null ? 0 : Math.Min(hold.UnitsOf(material.Good), material.Units);
 
             return material.Units - fromHold;
+        }
+
+        private static void RequireAtLeastOne(int value, string name)
+        {
+            if (value < 1)
+            {
+                throw new ArgumentOutOfRangeException(name);
+            }
         }
 
         private static void Require(CityMarket market, Treasury treasury, BuildingCost cost)

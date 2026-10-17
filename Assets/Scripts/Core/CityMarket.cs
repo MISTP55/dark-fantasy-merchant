@@ -100,8 +100,8 @@ namespace DarkFantasyMerchant.Core
         public int PlayerHouses { get; private set; }
 
         /// <summary>
-        /// Raised once by a day that starts and once
-        /// when units were taken or put.
+        /// Raised once by a day that starts, once when units were taken or put, and once by
+        /// <see cref="AddPlayerWorkshop"/> and by <see cref="AddPlayerHouse"/>.
         /// </summary>
         public event Action Changed;
 
