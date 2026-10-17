@@ -26,7 +26,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return map;
         }
 
-        // Patrician III's twenty goods, in its order, with its units and base prices.
+        // Patrician III's twenty goods, in its order, with its units and base prices, active or not.
         [TestCase(0, "Céréales", GoodCategory.Food, GoodUnit.Bushel, 110, 16)]
         [TestCase(1, "Viande", GoodCategory.Food, GoodUnit.Bushel, 957, 9)]
         [TestCase(2, "Poisson", GoodCategory.Food, GoodUnit.Bushel, 440, 9)]
@@ -52,9 +52,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             EconomyDefinition economy = LoadEconomy();
 
-            Assert.AreEqual(20, economy.Goods.Count);
+            Assert.AreEqual(20, economy.Catalogue.Count);
 
-            GoodDefinition good = economy.Goods[index];
+            GoodDefinition good = economy.Catalogue[index].Good;
             Assert.AreEqual(name, good.DisplayName);
             Assert.AreEqual(category, good.Category);
             Assert.AreEqual(unit, good.Unit);
@@ -87,6 +87,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void EveryCity_ProducesSomething_OnlyGoodsOfTheCatalogue_Once()
         {
+            // Inactive goods count: a city keeps its workshop for a good while the good is switched off.
             EconomyDefinition economy = LoadEconomy();
 
             foreach (CityDefinition city in LoadMap().Cities)
@@ -97,13 +98,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
                 foreach (GoodDefinition good in city.EfficientGoods)
                 {
-                    Assert.GreaterOrEqual(economy.IndexOf(good), 0, city.name);
+                    Assert.IsTrue(economy.IsInCatalogue(good), city.name);
                     Assert.IsTrue(seen.Add(good), $"{city.name}: {good.name} is listed twice");
                 }
 
                 foreach (GoodDefinition good in city.InefficientGoods)
                 {
-                    Assert.GreaterOrEqual(economy.IndexOf(good), 0, city.name);
+                    Assert.IsTrue(economy.IsInCatalogue(good), city.name);
                     Assert.IsTrue(seen.Add(good), $"{city.name}: {good.name} is listed twice");
                 }
 

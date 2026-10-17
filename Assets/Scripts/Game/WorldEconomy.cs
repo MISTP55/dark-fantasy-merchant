@@ -107,7 +107,7 @@ namespace DarkFantasyMerchant.Game
             if (!ProducesAnyGood(city))
             {
                 Debug.LogWarning(
-                    $"CityDefinition '{city.name}' produces no good of the economy; it still starts with the economy's population.",
+                    $"CityDefinition '{city.name}' produces no active good of the economy; it still starts with the economy's population.",
                     city);
             }
 
@@ -146,7 +146,7 @@ namespace DarkFantasyMerchant.Game
                 {
                     Debug.LogWarning($"CityDefinition '{city.name}' has an empty entry among its productions.", city);
                 }
-                else if (economy.IndexOf(good) < 0)
+                else if (!economy.IsInCatalogue(good))
                 {
                     Debug.LogWarning(
                         $"CityDefinition '{city.name}' produces '{good.name}', which is not in the economy's goods.",

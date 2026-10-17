@@ -533,7 +533,9 @@ namespace DarkFantasyMerchant.Editor
 
             for (int i = 0; i < goods.Length; i++)
             {
-                catalogue.GetArrayElementAtIndex(i).objectReferenceValue = goods[i];
+                SerializedProperty entry = catalogue.GetArrayElementAtIndex(i);
+                entry.FindPropertyRelative("good").objectReferenceValue = goods[i];
+                entry.FindPropertyRelative("active").boolValue = true;
             }
 
             serialized.ApplyModifiedPropertiesWithoutUndo();

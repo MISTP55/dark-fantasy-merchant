@@ -45,16 +45,44 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return city;
         }
 
-        /// <summary>An economy of these goods whose cities start with 6 000 inhabitants.</summary>
+        /// <summary>An economy of these goods, all active, whose cities start with 6 000 inhabitants.</summary>
         public static EconomyDefinition CreateEconomy(params GoodDefinition[] goods)
         {
             var economy = ScriptableObject.CreateInstance<EconomyDefinition>();
 
             var serialized = new SerializedObject(economy);
-            SetGoods(serialized.FindProperty("goods"), goods);
+            SerializedProperty catalogue = serialized.FindProperty("goods");
+            catalogue.arraySize = goods.Length;
+
+            for (int i = 0; i < goods.Length; i++)
+            {
+                SerializedProperty entry = catalogue.GetArrayElementAtIndex(i);
+                entry.FindPropertyRelative("good").objectReferenceValue = goods[i];
+                entry.FindPropertyRelative("active").boolValue = true;
+            }
+
             serialized.ApplyModifiedPropertiesWithoutUndo();
             SetStartingPopulation(economy, 6000);
             return economy;
+        }
+
+        /// <summary>Switches on or off every entry of the catalogue that holds this good.</summary>
+        public static void SetActive(EconomyDefinition economy, GoodDefinition good, bool active)
+        {
+            var serialized = new SerializedObject(economy);
+            SerializedProperty catalogue = serialized.FindProperty("goods");
+
+            for (int i = 0; i < catalogue.arraySize; i++)
+            {
+                SerializedProperty entry = catalogue.GetArrayElementAtIndex(i);
+
+                if (entry.FindPropertyRelative("good").objectReferenceValue == good)
+                {
+                    entry.FindPropertyRelative("active").boolValue = active;
+                }
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         /// <summary>

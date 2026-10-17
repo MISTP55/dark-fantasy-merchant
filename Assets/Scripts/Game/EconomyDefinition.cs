@@ -11,10 +11,13 @@ namespace DarkFantasyMerchant.Game
     /// state: the stocks are in a <see cref="CityMarket"/> per city.
     /// </summary>
     [CreateAssetMenu(fileName = "Economy", menuName = "Dark Fantasy Merchant/Economy")]
-    public sealed class EconomyDefinition : ScriptableObject
+    public sealed class EconomyDefinition : ScriptableObject, ISerializationCallbackReceiver
     {
-        [Tooltip("The goods of the game. Their order is their order on screen.")]
-        [SerializeField] private List<GoodDefinition> goods = new List<GoodDefinition>();
+        [Tooltip("The goods of the game. Their order is their order on screen. A good that is not active does not exist in the game.")]
+        [SerializeField] private List<CatalogueGood> goods = new List<CatalogueGood>();
+
+        // The active goods, worked out on first use and again after every change of the file.
+        private List<GoodDefinition> activeGoods;
 
         [Tooltip("Days of its consumption a city holds of every good when the game starts, whether it produces it or not.")]
         [SerializeField, Min(0f)] private double startingStockDays = 7d;
@@ -90,7 +93,11 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Decline of the population over a month with no food at all, as a share: 0.1 is -10 %.")]
         [SerializeField, Range(0f, 1f)] private double maxMonthlyDecline = 0.1d;
 
-        public IReadOnlyList<GoodDefinition> Goods => goods;
+        /// <summary>The active goods of the catalogue, in its order: the only goods of the game.</summary>
+        public IReadOnlyList<GoodDefinition> Goods => activeGoods ??= ActiveGoodsOfTheCatalogue();
+
+        /// <summary>Every good of the catalogue, active or not, for the Editor and the content checks.</summary>
+        public IReadOnlyList<CatalogueGood> Catalogue => goods;
 
         public double StartingStockDays => startingStockDays;
 
@@ -141,13 +148,25 @@ namespace DarkFantasyMerchant.Game
 
         public double MaxMonthlyDecline => maxMonthlyDecline;
 
-        /// <returns>The index of a good in the catalogue, which is what Core knows it by, or -1.</returns>
+        /// <returns>
+        /// The index of a good among the active goods, which is what Core knows it by, or -1,
+        /// also for a good of the catalogue that is not active.
+        /// </returns>
         public int IndexOf(GoodDefinition good)
         {
-            return good != null ? goods.IndexOf(good) : -1;
+            return good != null ? ((List<GoodDefinition>)Goods).IndexOf(good) : -1;
         }
 
-        /// <summary>Whether the catalogue can be used: at least one good, none missing, none twice.</summary>
+        /// <summary>Whether the good is listed in the catalogue, active or not.</summary>
+        public bool IsInCatalogue(GoodDefinition good)
+        {
+            return good != null && goods.Exists(entry => entry.Good == good);
+        }
+
+        /// <summary>
+        /// Whether the catalogue can be used: at least one good, none missing, none twice, active
+        /// or not, and at least one active.
+        /// </summary>
         /// <param name="problem">What is wrong, for the console; null when nothing is.</param>
         public bool TryValidate(out string problem)
         {
@@ -161,17 +180,25 @@ namespace DarkFantasyMerchant.Game
 
             for (int i = 0; i < goods.Count; i++)
             {
-                if (goods[i] == null)
+                GoodDefinition good = goods[i].Good;
+
+                if (good == null)
                 {
                     problem = $"its good {i} is empty";
                     return false;
                 }
 
-                if (goods.IndexOf(goods[i]) != i)
+                if (goods.FindIndex(entry => entry.Good == good) != i)
                 {
-                    problem = $"'{goods[i].name}' is listed twice";
+                    problem = $"'{good.name}' is listed twice";
                     return false;
                 }
+            }
+
+            if (Goods.Count == 0)
+            {
+                problem = "none of its goods is active";
+                return false;
             }
 
             return true;
@@ -212,10 +239,43 @@ namespace DarkFantasyMerchant.Game
         // Says at once, in the Editor, what would leave every city without a market in Play mode.
         private void OnValidate()
         {
+            activeGoods = null;
+
             if (!TryValidateSettings(out string problem))
             {
                 Debug.LogWarning($"EconomyDefinition '{name}', {problem}\nCities will have no market in Play mode.", this);
             }
+            else if (goods.Count > 0 && !TryValidate(out problem))
+            {
+                // An empty catalogue is a new asset, not yet filled in: no need to say it.
+                Debug.LogWarning($"EconomyDefinition '{name}': {problem}.\nCities will have no market in Play mode.", this);
+            }
+        }
+
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+        }
+
+        // A change made through a SerializedObject (the Inspector, an undo, the tests) comes in here.
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+            activeGoods = null;
+        }
+
+        private List<GoodDefinition> ActiveGoodsOfTheCatalogue()
+        {
+            var active = new List<GoodDefinition>(goods.Count);
+
+            foreach (CatalogueGood entry in goods)
+            {
+                // An empty entry stays in, active: TryValidate refuses it rather than hide it.
+                if (entry.Active)
+                {
+                    active.Add(entry.Good);
+                }
+            }
+
+            return active;
         }
 
         /// <summary>
@@ -248,7 +308,7 @@ namespace DarkFantasyMerchant.Game
             return good != null && good.Unit == GoodUnit.Bushel ? barrelsPerBushel : 1;
         }
 
-        /// <summary>The room a unit of each good of the catalogue takes, by index. Throws when the barrels per bushel are under 1.</summary>
+        /// <summary>The room a unit of each active good takes, by index. Throws when the barrels per bushel are under 1.</summary>
         public GoodUnits CreateGoodUnits()
         {
             // Checked even for a catalogue without bushels: the setting is wrong all the same.
@@ -257,24 +317,24 @@ namespace DarkFantasyMerchant.Game
                 throw new ArgumentOutOfRangeException(nameof(barrelsPerBushel), "A bushel takes at least one barrel of room.");
             }
 
-            var rooms = new int[goods.Count];
+            var rooms = new int[Goods.Count];
 
-            for (int i = 0; i < goods.Count; i++)
+            for (int i = 0; i < Goods.Count; i++)
             {
-                rooms[i] = RoomOf(goods[i]);
+                rooms[i] = RoomOf(Goods[i]);
             }
 
             return new GoodUnits(rooms);
         }
 
-        /// <summary>The weight the AI merchants give each good of the catalogue, by index. Throws when a good has a negative weight.</summary>
+        /// <summary>The weight the AI merchants give each active good, by index. Throws when a good has a negative weight.</summary>
         public int[] CreateAiWeights()
         {
-            var weights = new int[goods.Count];
+            var weights = new int[Goods.Count];
 
-            for (int i = 0; i < goods.Count; i++)
+            for (int i = 0; i < Goods.Count; i++)
             {
-                GoodDefinition good = goods[i];
+                GoodDefinition good = Goods[i];
 
                 // An empty entry is refused by TryValidate; here it is a good no one carries.
                 if (good == null)
@@ -305,7 +365,7 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>
         /// The market of a city at the start of the game, with the starting population,
-        /// the same in every city, and one stock per good of the catalogue. Call
+        /// the same in every city, and one stock per active good. Call
         /// <see cref="TryValidate"/> first. Throws when a setting or a good's figure is unusable.
         /// </summary>
         /// <param name="daysPerWeek">Days of the calendar's week: goods give their consumption per week.</param>
@@ -326,11 +386,11 @@ namespace DarkFantasyMerchant.Game
                 throw new ArgumentOutOfRangeException(nameof(daysPerWeek));
             }
 
-            var marketGoods = new MarketGood[goods.Count];
+            var marketGoods = new MarketGood[Goods.Count];
 
-            for (int i = 0; i < goods.Count; i++)
+            for (int i = 0; i < Goods.Count; i++)
             {
-                GoodDefinition good = goods[i];
+                GoodDefinition good = Goods[i];
                 int maxWorkers = 0;
                 double outputPerWorker = 0d;
 

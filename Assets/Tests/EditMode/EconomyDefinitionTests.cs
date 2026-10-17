@@ -343,6 +343,59 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void CreateMarket_SpreadsTheStartingWorkforce_OverTheWorkshopsOfActiveGoodsOnly()
+        {
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty("startingWorkforce").intValue = 50;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            TestEconomy.SetActive(economy, fish, false);
+            CityDefinition city = City(new[] { wheat }, new[] { fish });
+
+            CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek);
+
+            Assert.AreEqual(2, market.GoodCount);
+            Assert.AreEqual(50, market.WorkersOf(0));
+            Assert.AreEqual(0, market.WorkersOf(1));
+        }
+
+        [Test]
+        public void AnInactiveGood_IsLeftOutOfTheGoods_AndOfTheirIndices()
+        {
+            TestEconomy.SetActive(economy, fish, false);
+
+            CollectionAssert.AreEqual(new[] { wheat, salt }, economy.Goods);
+            Assert.AreEqual(1, economy.IndexOf(salt));
+            Assert.AreEqual(-1, economy.IndexOf(fish));
+            Assert.IsTrue(economy.IsInCatalogue(fish));
+            Assert.IsFalse(economy.IsInCatalogue(null));
+        }
+
+        [Test]
+        public void AGoodSwitchedBackOn_ReturnsToItsPlace()
+        {
+            TestEconomy.SetActive(economy, fish, false);
+            Assert.AreEqual(2, economy.Goods.Count);
+
+            TestEconomy.SetActive(economy, fish, true);
+
+            CollectionAssert.AreEqual(new[] { wheat, fish, salt }, economy.Goods);
+        }
+
+        [Test]
+        public void TheUnitsAndTheAiWeights_AreThoseOfTheActiveGoods()
+        {
+            GoodDefinition timber = Track(TestEconomy.CreateGood("Bois", 50, 7, unit: GoodUnit.Bushel, aiWeight: 11));
+            EconomyDefinition withTimber = Track(TestEconomy.CreateEconomy(wheat, fish, timber));
+            TestEconomy.SetActive(withTimber, fish, false);
+
+            GoodUnits units = withTimber.CreateGoodUnits();
+
+            Assert.AreEqual(2, units.Count);
+            Assert.AreEqual(10, units.RoomOf(1));
+            CollectionAssert.AreEqual(new[] { 9, 11 }, withTimber.CreateAiWeights());
+        }
+
+        [Test]
         public void CreateWorkforceRule_UsesTheDefinitionsSettings()
         {
             WorkforceRule rule = economy.CreateWorkforceRule();
@@ -480,6 +533,27 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TryValidate_RejectsAGoodListedTwice()
         {
             EconomyDefinition doubled = Track(TestEconomy.CreateEconomy(wheat, fish, wheat));
+
+            Assert.IsFalse(doubled.TryValidate(out string problem));
+            Assert.IsNotEmpty(problem);
+        }
+
+        [Test]
+        public void TryValidate_RejectsACatalogueWithNoActiveGood()
+        {
+            TestEconomy.SetActive(economy, wheat, false);
+            TestEconomy.SetActive(economy, fish, false);
+            TestEconomy.SetActive(economy, salt, false);
+
+            Assert.IsFalse(economy.TryValidate(out string problem));
+            StringAssert.Contains("active", problem);
+        }
+
+        [Test]
+        public void TryValidate_RejectsAnInactiveGoodListedTwice()
+        {
+            EconomyDefinition doubled = Track(TestEconomy.CreateEconomy(wheat, fish, fish));
+            TestEconomy.SetActive(doubled, fish, false);
 
             Assert.IsFalse(doubled.TryValidate(out string problem));
             Assert.IsNotEmpty(problem);
