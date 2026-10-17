@@ -56,6 +56,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Inhabitants a house shelters.")]
         [SerializeField, Min(1)] private int houseRoom = 100;
 
+        /// <summary>What the costs line writes for a building that cannot be built.</summary>
+        public const string UnavailableText = "indisponible";
+
         public BuildingType Workshop => workshop;
 
         public int WorkshopJobs => workshopJobs;
@@ -126,14 +129,16 @@ namespace DarkFantasyMerchant.Game
             return true;
         }
 
-        /// <summary>Whether both buildings can be used: costs that can be worked out, jobs and room of at least 1.</summary>
+        /// <summary>
+        /// Whether the buildings can be used at all: jobs and room of at least 1. The room of a
+        /// house also sets the houses of every city at the start. A cost that cannot be worked
+        /// out does not count here: it only makes its building unavailable
+        /// (<see cref="TryCreateCost"/>), since a material can be switched off.
+        /// </summary>
         /// <param name="problem">What is wrong, for the console; null when nothing is.</param>
-        public bool TryValidate(EconomyDefinition economy, out string problem)
+        public bool TryValidate(out string problem)
         {
-            if (!TryCreateCost(house, economy, out _, out problem) || !TryCreateCost(workshop, economy, out _, out problem))
-            {
-                return false;
-            }
+            problem = null;
 
             if (workshopJobs < 1)
             {
@@ -152,15 +157,21 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>
         /// What the buildings cost, for the player: "Logement : 5 000 or, 10 bois, 10 métal ·
-        /// Atelier : 10 000 or, 10 bois, 30 métal".
+        /// Atelier : 10 000 or, 10 bois, 30 métal", or "indisponible" for a building whose cost
+        /// cannot be worked out.
         /// </summary>
         public string CostsText(EconomyDefinition economy)
         {
-            return $"Logement : {CostText(house)} · Atelier : {CostText(workshop)}";
+            return $"Logement : {CostText(house, economy)} · Atelier : {CostText(workshop, economy)}";
         }
 
-        private static string CostText(BuildingType type)
+        private string CostText(BuildingType type, EconomyDefinition economy)
         {
+            if (!TryCreateCost(type, economy, out _, out _))
+            {
+                return UnavailableText;
+            }
+
             var text = new StringBuilder(TreasuryHudController.FormatGold(type.Gold));
 
             foreach (MaterialAmount material in type.Materials)

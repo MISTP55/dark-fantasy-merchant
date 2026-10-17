@@ -393,35 +393,26 @@ namespace DarkFantasyMerchant.Game
 
         private bool TryGetBuildingsSection(out CityBuildingsSection section)
         {
-            if (buildingsSection == null && worldEconomy != null && worldEconomy.IsReady
-                && worldEconomy.Buildings != null)
+            if (buildingsSection == null && worldEconomy != null && worldEconomy.IsReady)
             {
                 BuildingsDefinition buildings = worldEconomy.Buildings;
                 EconomyDefinition economy = worldEconomy.Economy;
+                var goodNames = new List<string>();
 
-                // WorldEconomy has validated them: this only fails on a definition changed since.
-                if (buildings.TryCreateCost(buildings.House, economy, out BuildingCost houseCost, out string houseProblem)
-                    && buildings.TryCreateCost(buildings.Workshop, economy, out BuildingCost workshopCost, out string workshopProblem))
+                foreach (GoodDefinition good in economy.Goods)
                 {
-                    var goodNames = new List<string>();
-
-                    foreach (GoodDefinition good in economy.Goods)
-                    {
-                        goodNames.Add(good.DisplayName);
-                    }
-
-                    Treasury treasury = playerTreasury != null && playerTreasury.IsReady ? playerTreasury.Treasury : null;
-                    buildingsSection = new CityBuildingsSection(
-                        buildingsElement, buildingsRows, buildingsCostsLabel, goodNames,
-                        houseCost, buildings.HouseRoom, workshopCost, buildings.WorkshopJobs,
-                        buildings.CostsText(economy), treasury);
-                    buildingsSection.HouseBuilt += OnHouseBuilt;
-                    buildingsSection.WorkshopBuilt += OnWorkshopBuilt;
+                    goodNames.Add(good.DisplayName);
                 }
-                else
-                {
-                    Debug.LogError("The buildings are invalid: the city panel shows none.", this);
-                }
+
+                // A building whose cost WorldEconomy could not work out has a null cost: its
+                // buttons stay disabled. WorldEconomy has warned about it once.
+                Treasury treasury = playerTreasury != null && playerTreasury.IsReady ? playerTreasury.Treasury : null;
+                buildingsSection = new CityBuildingsSection(
+                    buildingsElement, buildingsRows, buildingsCostsLabel, goodNames,
+                    worldEconomy.HouseCost, buildings.HouseRoom, worldEconomy.WorkshopCost, buildings.WorkshopJobs,
+                    buildings.CostsText(economy), treasury);
+                buildingsSection.HouseBuilt += OnHouseBuilt;
+                buildingsSection.WorkshopBuilt += OnWorkshopBuilt;
             }
 
             section = buildingsSection;

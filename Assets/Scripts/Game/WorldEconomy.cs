@@ -24,6 +24,12 @@ namespace DarkFantasyMerchant.Game
 
         public BuildingsDefinition Buildings => buildings;
 
+        /// <summary>What a house costs, or null when it cannot be built (a material that is not an active good, among others).</summary>
+        public BuildingCost HouseCost { get; private set; }
+
+        /// <summary>What a workshop costs, or null when it cannot be built (a material that is not an active good, among others).</summary>
+        public BuildingCost WorkshopCost { get; private set; }
+
         /// <summary>False until the markets exist, which is in Start, and for good when they could not be made.</summary>
         public bool IsReady { get; private set; }
 
@@ -60,11 +66,15 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            if (!buildings.TryValidate(economy, out problem))
+            if (!buildings.TryValidate(out problem))
             {
                 Debug.LogError($"BuildingsDefinition '{buildings.name}' is unusable: {problem}. Cities have no market.", buildings);
                 return;
             }
+
+            // A cost that cannot be worked out only takes that building away from the player.
+            HouseCost = CostOf(buildings.House, "house");
+            WorkshopCost = CostOf(buildings.Workshop, "workshop");
 
             if (!TryCreateMarkets())
             {
@@ -83,6 +93,17 @@ namespace DarkFantasyMerchant.Game
             {
                 clock.DayStarted -= OnDayStarted;
             }
+        }
+
+        private BuildingCost CostOf(BuildingsDefinition.BuildingType type, string building)
+        {
+            if (buildings.TryCreateCost(type, economy, out BuildingCost cost, out string problem))
+            {
+                return cost;
+            }
+
+            Debug.LogWarning($"BuildingsDefinition '{buildings.name}': {problem}. The player cannot build a {building}.", buildings);
+            return null;
         }
 
         private bool TryCreateMarkets()

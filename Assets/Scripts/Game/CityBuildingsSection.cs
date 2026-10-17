@@ -8,8 +8,9 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// The "Vos bâtiments" section of the city panel: a row for the player's houses, one row per
     /// good the city produces with the player's workshops of it, and the buttons that build, each
-    /// showing what the building would cost now. Follows the market, the hold and the treasury
-    /// while it is shown.
+    /// showing what the building would cost now. A building without a cost is unavailable: its
+    /// rows stay, their buttons disabled. Follows the market, the hold and the treasury while it
+    /// is shown.
     /// </summary>
     public sealed class CityBuildingsSection
     {
@@ -45,6 +46,8 @@ namespace DarkFantasyMerchant.Game
         /// <param name="section">The whole section, shown and hidden with the market.</param>
         /// <param name="rowContainer">Where the rows are built.</param>
         /// <param name="goodNames">The names of the goods, in the catalogue's order.</param>
+        /// <param name="houseCost">Null: a house is unavailable, its button stays disabled.</param>
+        /// <param name="workshopCost">Null: a workshop is unavailable, its buttons stay disabled.</param>
         /// <param name="treasury">What pays. Null: the buttons stay disabled.</param>
         public CityBuildingsSection(
             VisualElement section,
@@ -62,8 +65,8 @@ namespace DarkFantasyMerchant.Game
             this.rowContainer = rowContainer ?? throw new ArgumentNullException(nameof(rowContainer));
             this.costsLabel = costsLabel ?? throw new ArgumentNullException(nameof(costsLabel));
             this.goodNames = goodNames ?? throw new ArgumentNullException(nameof(goodNames));
-            this.houseCost = houseCost ?? throw new ArgumentNullException(nameof(houseCost));
-            this.workshopCost = workshopCost ?? throw new ArgumentNullException(nameof(workshopCost));
+            this.houseCost = houseCost;
+            this.workshopCost = workshopCost;
             this.houseRoom = houseRoom;
             this.workshopJobs = workshopJobs;
             this.costsText = costsText ?? string.Empty;
@@ -98,6 +101,9 @@ namespace DarkFantasyMerchant.Game
             return $"{goodName} : {TreasuryHudController.FormatNumber(workshops)} {noun} "
                 + $"({TreasuryHudController.FormatNumber(workers)} / {TreasuryHudController.FormatNumber(jobs)} ouvriers)";
         }
+
+        /// <summary>The button of a building that cannot be built, which shows no price.</summary>
+        public const string BuildText = "Construire";
 
         /// <summary>"Construire (12 340 or)".</summary>
         public static string BuildButtonText(long gold)
@@ -141,7 +147,7 @@ namespace DarkFantasyMerchant.Game
         /// <returns>True when a house was built in the shown city.</returns>
         public bool BuildHouse()
         {
-            if (market == null || treasury == null)
+            if (market == null || treasury == null || houseCost == null)
             {
                 return false;
             }
@@ -158,7 +164,7 @@ namespace DarkFantasyMerchant.Game
         /// <returns>True when a workshop of that good was built in the shown city.</returns>
         public bool BuildWorkshop(int good)
         {
-            if (market == null || treasury == null)
+            if (market == null || treasury == null || workshopCost == null)
             {
                 return false;
             }
@@ -251,7 +257,7 @@ namespace DarkFantasyMerchant.Game
                 if (row.Good == HouseRow)
                 {
                     row.Text.text = HousesText(market.PlayerHouses, market.Population.Housed, market.Population.Room);
-                    quote = treasury != null
+                    quote = treasury != null && houseCost != null
                         ? Construction.QuoteHouse(market, hold, treasury, houseCost)
                         : default;
                 }
@@ -262,12 +268,13 @@ namespace DarkFantasyMerchant.Game
                         market.PlayerWorkshopsOf(row.Good),
                         market.PlayerWorkersOf(row.Good),
                         market.PlayerJobsOf(row.Good));
-                    quote = treasury != null
+                    quote = treasury != null && workshopCost != null
                         ? Construction.QuoteWorkshop(market, hold, treasury, workshopCost, row.Good)
                         : default;
                 }
 
-                row.Button.text = BuildButtonText(quote.Gold);
+                bool available = row.Good == HouseRow ? houseCost != null : workshopCost != null;
+                row.Button.text = available ? BuildButtonText(quote.Gold) : BuildText;
                 row.Button.SetEnabled(quote.IsPossible);
             }
         }

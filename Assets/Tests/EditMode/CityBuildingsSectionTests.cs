@@ -195,6 +195,40 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void AnUnavailableBuilding_HasADisabledButtonWithoutAPrice_AndBuildsNothing()
+        {
+            houseCost = null;
+            section = NewSection(treasury);
+            section.Show(market, null);
+
+            Assert.AreEqual(2, rows.childCount);
+            StringAssert.StartsWith("Logements : 0", Text(rows[0]));
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(rows[0]).text);
+            Assert.IsFalse(ButtonOf(rows[0]).enabledSelf);
+            Assert.IsFalse(section.BuildHouse());
+            Assert.AreEqual(0, market.PlayerHouses);
+            Assert.AreEqual(100000, treasury.Gold);
+
+            // The other building is still available.
+            Assert.IsTrue(ButtonOf(rows[1]).enabledSelf);
+            Assert.IsTrue(section.BuildWorkshop(Produced));
+        }
+
+        [Test]
+        public void AnUnavailableWorkshop_HasDisabledButtons_AndBuildsNothing()
+        {
+            workshopCost = null;
+            section = NewSection(treasury);
+            section.Show(market, null);
+
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(rows[1]).text);
+            Assert.IsFalse(ButtonOf(rows[1]).enabledSelf);
+            Assert.IsFalse(section.BuildWorkshop(Produced));
+            Assert.AreEqual(0, market.PlayerWorkshopsOf(Produced));
+            Assert.IsTrue(ButtonOf(rows[0]).enabledSelf);
+        }
+
+        [Test]
         public void ATreasuryChange_RewritesTheButtons()
         {
             section.Show(market, null);

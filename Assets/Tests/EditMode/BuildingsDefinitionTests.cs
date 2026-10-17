@@ -128,19 +128,30 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryValidate_AcceptsTheGamesBuildings_AndRefusesNoJobsOrNoRoom()
         {
-            Assert.IsTrue(buildings.TryValidate(economy, out string problem), problem);
+            Assert.IsTrue(buildings.TryValidate(out string problem), problem);
 
             var serialized = new SerializedObject(buildings);
             serialized.FindProperty("workshopJobs").intValue = 0;
             serialized.ApplyModifiedPropertiesWithoutUndo();
-            Assert.IsFalse(buildings.TryValidate(economy, out problem));
+            Assert.IsFalse(buildings.TryValidate(out problem));
             StringAssert.Contains("jobs", problem);
 
             serialized.FindProperty("workshopJobs").intValue = 30;
             serialized.FindProperty("houseRoom").intValue = 0;
             serialized.ApplyModifiedPropertiesWithoutUndo();
-            Assert.IsFalse(buildings.TryValidate(economy, out problem));
+            Assert.IsFalse(buildings.TryValidate(out problem));
             StringAssert.Contains("room", problem);
+        }
+
+        [Test]
+        public void TryValidate_IgnoresTheCosts_AMaterialSwitchedOffOnlyMakesItsBuildingUnavailable()
+        {
+            TestEconomy.SetActive(economy, metal, false);
+            SetBuilding("house", 5000, (null, 10));
+
+            Assert.IsTrue(buildings.TryValidate(out string problem), problem);
+            Assert.IsFalse(buildings.TryCreateCost(buildings.House, economy, out _, out _));
+            Assert.IsFalse(buildings.TryCreateCost(buildings.Workshop, economy, out _, out _));
         }
 
         [Test]
@@ -149,6 +160,20 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(
                 "Logement : 5 000 or, 10 bois, 10 métal · Atelier : 10 000 or, 10 bois, 30 métal",
                 buildings.CostsText(economy));
+        }
+
+        [Test]
+        public void CostsText_WritesABuildingWhoseCostCannotBeCreatedAsUnavailable()
+        {
+            SetBuilding("house", 5000, (null, 10));
+
+            Assert.AreEqual(
+                "Logement : indisponible · Atelier : 10 000 or, 10 bois, 30 métal",
+                buildings.CostsText(economy));
+
+            TestEconomy.SetActive(economy, metal, false);
+
+            Assert.AreEqual("Logement : indisponible · Atelier : indisponible", buildings.CostsText(economy));
         }
     }
 }

@@ -169,7 +169,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(30, buildings.WorkshopJobs);
             AssertBuilding(buildings.House, 5000, 10, 10);
             Assert.AreEqual(100, buildings.HouseRoom);
-            Assert.IsTrue(buildings.TryValidate(LoadEconomy(), out string problem), problem);
+            Assert.IsTrue(buildings.TryValidate(out string problem), problem);
+            Assert.IsTrue(buildings.TryCreateCost(buildings.House, LoadEconomy(), out _, out problem), problem);
+            Assert.IsTrue(buildings.TryCreateCost(buildings.Workshop, LoadEconomy(), out _, out problem), problem);
         }
 
         private static void AssertBuilding(BuildingsDefinition.BuildingType building, long gold, int timber, int metal)
