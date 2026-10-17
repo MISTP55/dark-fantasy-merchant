@@ -206,7 +206,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void BackHome_ItUnloadsEverything_AndChoosesANewDestination()
+        public void BackHome_ItChoosesANewDestination()
         {
             CreateOutAndBack();
             Ship ship = AddShip(H);
@@ -226,7 +226,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             // S, at 49, needs 5 from home's 60.
             Assert.AreSame(ports[H], docking.PortOf(ship));
-            Assert.AreEqual(0, ship.Cargo.Used);
             Assert.AreEqual(S, fleet.FinalDestinationOf(ship));
         }
 
@@ -287,6 +286,27 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreSame(ports[H], docking.DestinationPortOf(ship));
             Assert.AreEqual(62, ship.Cargo.UnitsOf(Fish));
             Assert.AreEqual(60, markets[S].AvailableOf(Fish));
+        }
+
+        [Test]
+        public void BackHome_ItUnloadsWhatItCarried_AndClearsWhatWasUnderWayThere()
+        {
+            CreateHomeShort();
+            Ship ship = AddShip(H);
+            Depart();
+            Arrive(ship);
+            Depart();
+            Arrive(ship);
+            Depart();
+            Assert.AreSame(ports[H], docking.DestinationPortOf(ship));
+            Assert.AreEqual(62, ship.Cargo.UnitsOf(Fish));
+
+            Arrive(ship);
+
+            Assert.AreSame(ports[H], docking.PortOf(ship));
+            Assert.AreEqual(0, ship.Cargo.Used);
+            Assert.AreEqual(62, markets[H].AvailableOf(Fish));
+            Assert.AreEqual(0, fleet.UnderWayTo(H, Fish));
         }
 
         [Test]

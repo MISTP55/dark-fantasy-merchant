@@ -247,6 +247,12 @@ namespace DarkFantasyMerchant.Core
                 {
                     // Idle at sea, which its own orders never leave it: back to a port it knows.
                     merchant.IsStranded = !SendTo(merchant, merchant.LastPort);
+
+                    if (merchant.IsStranded)
+                    {
+                        // What it carries will never arrive.
+                        ClearRecords(merchant);
+                    }
                 }
             }
         }

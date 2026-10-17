@@ -27,7 +27,7 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// The units to carry from a source holding <paramref name="sourceStock"/> to a destination holding
-        /// <paramref name="projectedStock"/>, not rounded, never negative and never NaN.
+        /// <paramref name="projectedStock"/>, not rounded, never negative and, for valid thresholds (<see cref="StockThresholds"/> rejects NaN and infinity), never NaN.
         /// </summary>
         public static double Of(double sourceStock, StockThresholds source, double projectedStock, StockThresholds destination)
         {
