@@ -276,8 +276,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void FormatPopulation_WritesThousandsSeparators()
         {
-            Assert.AreEqual("Population : 6\u00A0000", CityInfoPanelController.FormatPopulation(6000));
-            Assert.AreEqual("Population : 0", CityInfoPanelController.FormatPopulation(0));
+            Assert.AreEqual("Habitants : 1\u00A0008 \u00B7 Mendiants : 59", CityInfoPanelController.FormatPopulation(1008, 59));
+            Assert.AreEqual("Habitants : 0 \u00B7 Mendiants : 0", CityInfoPanelController.FormatPopulation(0, 0));
+        }
+
+        [Test]
+        public void BuiltTexts_NameTheCityAndTheGood()
+        {
+            Assert.AreEqual("Atelier construit \u00E0 L\u00FCbeck : c\u00E9r\u00E9ales.", CityInfoPanelController.WorkshopBuiltText("L\u00FCbeck", "C\u00E9r\u00E9ales"));
+            Assert.AreEqual("Logement construit \u00E0 L\u00FCbeck.", CityInfoPanelController.HouseBuiltText("L\u00FCbeck"));
         }
     }
 }

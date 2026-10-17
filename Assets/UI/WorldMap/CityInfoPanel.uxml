@@ -19,6 +19,11 @@
             <ui:Label text="Navires au port" class="city-panel__section" />
             <ui:Label name="no-ship-label" text="Aucun navire au port" class="city-panel__empty" />
             <ui:VisualElement name="ship-list" />
+            <ui:VisualElement name="buildings-section" class="buildings">
+                <ui:Label text="Vos bâtiments" class="city-panel__section" />
+                <ui:VisualElement name="buildings-rows" />
+                <ui:Label name="buildings-costs" class="buildings__costs" />
+            </ui:VisualElement>
             <ui:VisualElement name="market-section" class="market">
                 <ui:VisualElement class="city-panel__section market__title">
                     <ui:Label text="Marché" />

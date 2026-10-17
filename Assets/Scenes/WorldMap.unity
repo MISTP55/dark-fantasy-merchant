@@ -408,6 +408,7 @@ MonoBehaviour:
   shipsView: {fileID: 948842205}
   worldEconomy: {fileID: 1991110005}
   playerTreasury: {fileID: 516856359}
+  playerNotifications: {fileID: 1513224809}
   hoverLabelOffset: {x: 14, y: -30}
 --- !u!114 &950679377
 MonoBehaviour:

@@ -1525,6 +1525,7 @@ namespace DarkFantasyMerchant.Editor
             {
                 changed |= FillReference(cityPanel, "worldEconomy", worldEconomy);
                 changed |= FillReference(cityPanel, "playerTreasury", FindInScene<PlayerTreasury>(scene));
+                changed |= FillReference(cityPanel, "playerNotifications", FindInScene<PlayerNotifications>(scene));
             }
 
             // The ship panel names the goods of the hold.

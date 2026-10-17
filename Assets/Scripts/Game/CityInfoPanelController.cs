@@ -30,6 +30,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Optional. Without it, the market is only read: nothing is bought or sold.")]
         [SerializeField] private PlayerTreasury playerTreasury;
 
+        [Tooltip("Optional. Without it, a building built is not announced.")]
+        [SerializeField] private PlayerNotifications playerNotifications;
+
         [Tooltip("Offset of the hover label from the city, in panel units.")]
         [SerializeField] private Vector2 hoverLabelOffset = new Vector2(14f, -30f);
 
@@ -49,9 +52,16 @@ namespace DarkFantasyMerchant.Game
         private VisualElement marketElement;
         private VisualElement marketRows;
         private Label marketHoldLabel;
+        private VisualElement buildingsElement;
+        private VisualElement buildingsRows;
+        private Label buildingsCostsLabel;
 
         // Made on the first city shown: the world's economy starts after this panel is enabled.
         private CityMarketSection marketSection;
+        private CityBuildingsSection buildingsSection;
+
+        // The city the buildings section shows, for the notifications.
+        private CityDefinition buildingsCity;
 
         // The market whose population the panel shows and follows, or null.
         private CityMarket populationMarket;
@@ -86,15 +96,20 @@ namespace DarkFantasyMerchant.Game
             marketElement = root.Q<VisualElement>("market-section");
             marketRows = root.Q<VisualElement>("market-rows");
             marketHoldLabel = root.Q<Label>("market-hold");
+            buildingsElement = root.Q<VisualElement>("buildings-section");
+            buildingsRows = root.Q<VisualElement>("buildings-rows");
+            buildingsCostsLabel = root.Q<Label>("buildings-costs");
 
-            // A document that is enabled again has a new tree: the section is rebuilt in it.
+            // A document that is enabled again has a new tree: the sections are rebuilt in it.
             marketSection = null;
+            buildingsSection = null;
 
             if (cityPanel == null || hoverLabel == null || nameLabel == null || sizeLabel == null
                 || accessLabel == null || descriptionLabel == null || noShipLabel == null
                 || efficientGoodsLabel == null || inefficientGoodsLabel == null
                 || shipList == null || closeButton == null || populationLabel == null
-                || marketElement == null || marketRows == null || marketHoldLabel == null)
+                || marketElement == null || marketRows == null || marketHoldLabel == null
+                || buildingsElement == null || buildingsRows == null || buildingsCostsLabel == null)
             {
                 Debug.LogError("CityInfoPanel.uxml is missing an expected element.", this);
                 return;
@@ -119,6 +134,7 @@ namespace DarkFantasyMerchant.Game
 
             // Hidden until a market is shown, also in a scene without an economy.
             marketElement.style.display = DisplayStyle.None;
+            buildingsElement.style.display = DisplayStyle.None;
 
             isBound = true;
 
@@ -146,6 +162,7 @@ namespace DarkFantasyMerchant.Game
 
             // Stops listening to the market, the hold and the treasury.
             marketSection?.Hide();
+            buildingsSection?.Hide();
             FollowPopulationOf(null);
 
             isBound = false;
@@ -187,12 +204,24 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>What the panel shows of a city that has no market: its population is the market's.</summary>
-        public const string NoPopulation = "Population : —";
+        public const string NoPopulation = "Habitants : —";
 
-        /// <summary>The population as the panel writes it: "Population : 6 000".</summary>
-        public static string FormatPopulation(int population)
+        /// <summary>The population as the panel writes it: "Habitants : 1 008 · Mendiants : 59".</summary>
+        public static string FormatPopulation(int housed, int beggars)
         {
-            return $"Population : {TreasuryHudController.FormatNumber(population)}";
+            return $"Habitants : {TreasuryHudController.FormatNumber(housed)} · Mendiants : {TreasuryHudController.FormatNumber(beggars)}";
+        }
+
+        /// <summary>"Atelier construit à Lübeck : céréales."</summary>
+        public static string WorkshopBuiltText(string city, string good)
+        {
+            return $"Atelier construit à {city} : {good.ToLower()}.";
+        }
+
+        /// <summary>"Logement construit à Lübeck."</summary>
+        public static string HouseBuiltText(string city)
+        {
+            return $"Logement construit à {city}.";
         }
 
         private void ShowHovered(CityDefinition city)
@@ -213,6 +242,7 @@ namespace DarkFantasyMerchant.Game
             {
                 cityPanel.style.display = DisplayStyle.None;
                 marketSection?.Hide();
+                buildingsSection?.Hide();
                 FollowPopulationOf(null);
                 return;
             }
@@ -272,7 +302,7 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            populationLabel.text = FormatPopulation(populationMarket.Population.Inhabitants);
+            populationLabel.text = FormatPopulation(populationMarket.Population.Housed, populationMarket.Population.Beggars);
         }
 
         private void ShowShipsIn(CityDefinition city)
@@ -346,10 +376,73 @@ namespace DarkFantasyMerchant.Game
             if (market == null)
             {
                 section.Hide();
+                buildingsSection?.Hide();
                 return;
             }
 
-            section.Show(market, HoldOfSelectedShipInPort());
+            CargoHold hold = HoldOfSelectedShipInPort();
+            section.Show(market, hold);
+
+            buildingsCity = city;
+
+            if (TryGetBuildingsSection(out CityBuildingsSection buildings))
+            {
+                buildings.Show(market, hold);
+            }
+        }
+
+        private bool TryGetBuildingsSection(out CityBuildingsSection section)
+        {
+            if (buildingsSection == null && worldEconomy != null && worldEconomy.IsReady
+                && worldEconomy.Buildings != null)
+            {
+                BuildingsDefinition buildings = worldEconomy.Buildings;
+                EconomyDefinition economy = worldEconomy.Economy;
+
+                // WorldEconomy has validated them: this only fails on a definition changed since.
+                if (buildings.TryCreateCost(buildings.House, economy, out BuildingCost houseCost, out string houseProblem)
+                    && buildings.TryCreateCost(buildings.Workshop, economy, out BuildingCost workshopCost, out string workshopProblem))
+                {
+                    var goodNames = new List<string>();
+
+                    foreach (GoodDefinition good in economy.Goods)
+                    {
+                        goodNames.Add(good.DisplayName);
+                    }
+
+                    Treasury treasury = playerTreasury != null && playerTreasury.IsReady ? playerTreasury.Treasury : null;
+                    buildingsSection = new CityBuildingsSection(
+                        buildingsElement, buildingsRows, buildingsCostsLabel, goodNames,
+                        houseCost, buildings.HouseRoom, workshopCost, buildings.WorkshopJobs,
+                        buildings.CostsText(economy), treasury);
+                    buildingsSection.HouseBuilt += OnHouseBuilt;
+                    buildingsSection.WorkshopBuilt += OnWorkshopBuilt;
+                }
+                else
+                {
+                    Debug.LogError("The buildings are invalid: the city panel shows none.", this);
+                }
+            }
+
+            section = buildingsSection;
+            return section != null;
+        }
+
+        private void OnHouseBuilt()
+        {
+            if (buildingsCity != null && playerNotifications != null && playerNotifications.IsReady)
+            {
+                playerNotifications.Feed.Post(HouseBuiltText(buildingsCity.DisplayName));
+            }
+        }
+
+        private void OnWorkshopBuilt(int good)
+        {
+            if (buildingsCity != null && playerNotifications != null && playerNotifications.IsReady)
+            {
+                playerNotifications.Feed.Post(WorkshopBuiltText(
+                    buildingsCity.DisplayName, worldEconomy.Economy.Goods[good].DisplayName));
+            }
         }
 
         private bool TryGetMarketSection(out CityMarketSection section)

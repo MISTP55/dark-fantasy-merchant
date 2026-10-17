@@ -184,3 +184,53 @@
 .market--trading .market__cell--trade {
     display: flex;
 }
+
+/* The player's buildings: a text and the button that builds, one row each. */
+.buildings__row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin: 2px 0;
+}
+
+.buildings__text {
+    flex-shrink: 1;
+    margin: 0;
+    padding: 0;
+    color: rgb(222, 210, 188);
+    font-size: 14px;
+    white-space: normal;
+}
+
+.buildings__button {
+    margin: 0 0 0 8px;
+    padding: 2px 8px;
+    color: rgb(222, 210, 188);
+    background-color: rgba(60, 44, 30, 0.9);
+    border-width: 1px;
+    border-radius: 0;
+    border-color: rgb(110, 84, 52);
+    font-size: 14px;
+}
+
+.buildings__button:hover {
+    background-color: rgb(84, 62, 40);
+}
+
+.buildings__button:active {
+    background-color: rgb(110, 84, 52);
+}
+
+.buildings__button:disabled,
+.buildings__button:disabled:hover {
+    color: rgb(140, 124, 100);
+    background-color: rgba(60, 44, 30, 0.5);
+    opacity: 1;
+}
+
+.buildings__costs {
+    margin-top: 4px;
+    color: rgb(190, 164, 120);
+    font-size: 13px;
+    white-space: normal;
+}

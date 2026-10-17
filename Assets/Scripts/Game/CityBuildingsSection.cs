@@ -1,0 +1,275 @@
+using System;
+using System.Collections.Generic;
+using DarkFantasyMerchant.Core;
+using UnityEngine.UIElements;
+
+namespace DarkFantasyMerchant.Game
+{
+    /// <summary>
+    /// The "Vos bâtiments" section of the city panel: a row for the player's houses, one row per
+    /// good the city produces with the player's workshops of it, and the buttons that build, each
+    /// showing what the building would cost now. Follows the market, the hold and the treasury
+    /// while it is shown.
+    /// </summary>
+    public sealed class CityBuildingsSection
+    {
+        private const string RowClass = "buildings__row";
+        private const string TextClass = "buildings__text";
+        private const string ButtonClass = "buildings__button";
+
+        private const int HouseRow = -1;
+
+        private sealed class Row
+        {
+            // The good of a workshop row, or HouseRow.
+            public int Good;
+            public Label Text;
+            public Button Button;
+        }
+
+        private readonly VisualElement section;
+        private readonly VisualElement rowContainer;
+        private readonly Label costsLabel;
+        private readonly IReadOnlyList<string> goodNames;
+        private readonly BuildingCost houseCost;
+        private readonly int houseRoom;
+        private readonly BuildingCost workshopCost;
+        private readonly int workshopJobs;
+        private readonly string costsText;
+        private readonly Treasury treasury;
+        private readonly List<Row> rows = new List<Row>();
+
+        private CityMarket market;
+        private CargoHold hold;
+
+        /// <param name="section">The whole section, shown and hidden with the market.</param>
+        /// <param name="rowContainer">Where the rows are built.</param>
+        /// <param name="goodNames">The names of the goods, in the catalogue's order.</param>
+        /// <param name="treasury">What pays. Null: the buttons stay disabled.</param>
+        public CityBuildingsSection(
+            VisualElement section,
+            VisualElement rowContainer,
+            Label costsLabel,
+            IReadOnlyList<string> goodNames,
+            BuildingCost houseCost,
+            int houseRoom,
+            BuildingCost workshopCost,
+            int workshopJobs,
+            string costsText,
+            Treasury treasury)
+        {
+            this.section = section ?? throw new ArgumentNullException(nameof(section));
+            this.rowContainer = rowContainer ?? throw new ArgumentNullException(nameof(rowContainer));
+            this.costsLabel = costsLabel ?? throw new ArgumentNullException(nameof(costsLabel));
+            this.goodNames = goodNames ?? throw new ArgumentNullException(nameof(goodNames));
+            this.houseCost = houseCost ?? throw new ArgumentNullException(nameof(houseCost));
+            this.workshopCost = workshopCost ?? throw new ArgumentNullException(nameof(workshopCost));
+            this.houseRoom = houseRoom;
+            this.workshopJobs = workshopJobs;
+            this.costsText = costsText ?? string.Empty;
+            this.treasury = treasury;
+
+            Hide();
+        }
+
+        /// <summary>Raised once a house is built.</summary>
+        public event Action HouseBuilt;
+
+        /// <summary>Raised once a workshop is built, with its good.</summary>
+        public event Action<int> WorkshopBuilt;
+
+        /// <summary>"Logements : 2 (ville : 1 008 / 1 300 places)".</summary>
+        public static string HousesText(int playerHouses, int housed, int room)
+        {
+            return $"Logements : {TreasuryHudController.FormatNumber(playerHouses)} "
+                + $"(ville : {TreasuryHudController.FormatNumber(housed)} / {TreasuryHudController.FormatNumber(room)} places)";
+        }
+
+        /// <summary>"Céréales : 2 ateliers (45 / 60 ouvriers)", or "Bière : 0 atelier".</summary>
+        public static string WorkshopsText(string goodName, int workshops, int workers, int jobs)
+        {
+            if (workshops <= 0)
+            {
+                return $"{goodName} : 0 atelier";
+            }
+
+            string noun = workshops > 1 ? "ateliers" : "atelier";
+
+            return $"{goodName} : {TreasuryHudController.FormatNumber(workshops)} {noun} "
+                + $"({TreasuryHudController.FormatNumber(workers)} / {TreasuryHudController.FormatNumber(jobs)} ouvriers)";
+        }
+
+        /// <summary>"Construire (12 340 or)".</summary>
+        public static string BuildButtonText(long gold)
+        {
+            return $"Construire ({TreasuryHudController.FormatGold(gold)})";
+        }
+
+        /// <summary>Shows a city's buildings; the materials come first from the hold, when one is given.</summary>
+        public void Show(CityMarket market, CargoHold hold)
+        {
+            Unbind();
+
+            this.market = market ?? throw new ArgumentNullException(nameof(market));
+            this.hold = hold;
+
+            BuildRows();
+            costsLabel.text = costsText;
+
+            this.market.Changed += Refresh;
+
+            if (this.hold != null)
+            {
+                this.hold.Changed += Refresh;
+            }
+
+            if (treasury != null)
+            {
+                treasury.Changed += OnGoldChanged;
+            }
+
+            section.style.display = DisplayStyle.Flex;
+            Refresh();
+        }
+
+        public void Hide()
+        {
+            Unbind();
+            section.style.display = DisplayStyle.None;
+        }
+
+        /// <returns>True when a house was built in the shown city.</returns>
+        public bool BuildHouse()
+        {
+            if (market == null || treasury == null)
+            {
+                return false;
+            }
+
+            if (!Construction.TryBuildHouse(market, hold, treasury, houseCost, houseRoom))
+            {
+                return false;
+            }
+
+            HouseBuilt?.Invoke();
+            return true;
+        }
+
+        /// <returns>True when a workshop of that good was built in the shown city.</returns>
+        public bool BuildWorkshop(int good)
+        {
+            if (market == null || treasury == null)
+            {
+                return false;
+            }
+
+            if (!Construction.TryBuildWorkshop(market, hold, treasury, workshopCost, good, workshopJobs))
+            {
+                return false;
+            }
+
+            WorkshopBuilt?.Invoke(good);
+            return true;
+        }
+
+        private void BuildRows()
+        {
+            rowContainer.Clear();
+            rows.Clear();
+
+            AddRow(HouseRow, () => BuildHouse());
+
+            for (int good = 0; good < market.GoodCount && good < goodNames.Count; good++)
+            {
+                if (market.MaxWorkersOf(good) > 0)
+                {
+                    int captured = good;
+                    AddRow(good, () => BuildWorkshop(captured));
+                }
+            }
+        }
+
+        private void AddRow(int good, Action build)
+        {
+            var element = new VisualElement();
+            element.AddToClassList(RowClass);
+
+            var text = new Label();
+            text.AddToClassList(TextClass);
+            element.Add(text);
+
+            var button = new Button(build);
+
+            // Buttons are clicked, not navigated: the keyboard pans the map.
+            button.focusable = false;
+            button.AddToClassList(ButtonClass);
+            element.Add(button);
+
+            rowContainer.Add(element);
+            rows.Add(new Row { Good = good, Text = text, Button = button });
+        }
+
+        private void Unbind()
+        {
+            if (market != null)
+            {
+                market.Changed -= Refresh;
+            }
+
+            if (hold != null)
+            {
+                hold.Changed -= Refresh;
+            }
+
+            if (treasury != null)
+            {
+                treasury.Changed -= OnGoldChanged;
+            }
+
+            market = null;
+            hold = null;
+        }
+
+        private void OnGoldChanged(long gold)
+        {
+            Refresh();
+        }
+
+        // A build changes the hold, the market and the gold: a few rewrites of a few labels.
+        private void Refresh()
+        {
+            // Another listener of the same change may have closed the section.
+            if (market == null)
+            {
+                return;
+            }
+
+            foreach (Row row in rows)
+            {
+                ConstructionQuote quote;
+
+                if (row.Good == HouseRow)
+                {
+                    row.Text.text = HousesText(market.PlayerHouses, market.Population.Housed, market.Population.Room);
+                    quote = treasury != null
+                        ? Construction.QuoteHouse(market, hold, treasury, houseCost)
+                        : default;
+                }
+                else
+                {
+                    row.Text.text = WorkshopsText(
+                        goodNames[row.Good],
+                        market.PlayerWorkshopsOf(row.Good),
+                        market.PlayerWorkersOf(row.Good),
+                        market.PlayerJobsOf(row.Good));
+                    quote = treasury != null
+                        ? Construction.QuoteWorkshop(market, hold, treasury, workshopCost, row.Good)
+                        : default;
+                }
+
+                row.Button.text = BuildButtonText(quote.Gold);
+                row.Button.SetEnabled(quote.IsPossible);
+            }
+        }
+    }
+}
