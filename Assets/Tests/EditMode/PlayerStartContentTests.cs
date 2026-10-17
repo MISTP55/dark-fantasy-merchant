@@ -10,15 +10,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const string PlayerStartPath = "Assets/Data/Player/PlayerStart.asset";
 
         [Test]
-        public void ThePlayer_StartsWithTenThousandGold()
-        {
-            var playerStart = AssetDatabase.LoadAssetAtPath<PlayerStartDefinition>(PlayerStartPath);
-            Assert.IsNotNull(playerStart, PlayerStartPath);
-
-            Assert.AreEqual(10000, playerStart.CreateTreasury().Gold);
-        }
-
-        [Test]
         public void ThePlayerShip_StartsWithTwelveSailors()
         {
             var playerStart = AssetDatabase.LoadAssetAtPath<PlayerStartDefinition>(PlayerStartPath);

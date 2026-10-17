@@ -96,7 +96,7 @@ Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, 
 ### Treasury
 
 - `Treasury` (Core) is the player's gold, in whole coins. It can be negative: the player is then in debt (`IsInDebt`). `Withdraw` always takes the amount and is for what is paid whatever the gold left (wages); `TryWithdraw` takes it only when `CanAfford` and is for what a lack of gold must block (buying goods). `Changed` is raised with the new gold, only on an actual change. Selling goods deposits and buying them withdraws (see Economy); the other withdrawal is the weekly expenses (see Expenses).
-- `PlayerStartDefinition` (Game, `Assets/Data/Player/PlayerStart.asset`) holds the starting gold (10000) and the starting crew of the player ship (see Crew). `PlayerTreasury` owns the treasury and creates it in `Awake`, before the components that read it (execution order -100, like `WorldClock`).
+- `PlayerStartDefinition` (Game, `Assets/Data/Player/PlayerStart.asset`) holds the starting gold and the starting crew of the player ship (see Crew). `PlayerTreasury` owns the treasury and creates it in `Awake`, before the components that read it (execution order -100, like `WorldClock`).
 - `TreasuryHudController` shows the gold at the top right of the screen (`Assets/UI/WorldMap/TreasuryHud.uxml`, "10 000 or", in red when in debt), in a third `UIDocument` on the same `PanelSettings`. Its label ignores the pointer, so the map under it stays reachable, and is rewritten on `Changed`, not every frame.
 
 ### Notifications
