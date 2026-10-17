@@ -48,6 +48,7 @@ namespace DarkFantasyMerchant.Editor
         private const string EconomyFolder = "Assets/Data/Economy";
         private const string ExpensesPath = EconomyFolder + "/Expenses.asset";
         private const string EconomyPath = EconomyFolder + "/Economy.asset";
+        private const string BuildingsPath = EconomyFolder + "/Buildings.asset";
         private const string GoodsFolder = "Assets/Data/Goods";
 
         private const string AiFolder = "Assets/Data/AI";
@@ -301,6 +302,7 @@ namespace DarkFantasyMerchant.Editor
             CreatePlayerStart();
             CreateExpenses();
             CreateEconomy();
+            CreateBuildings();
             FillCityEconomies();
             CreateAiMerchants(shipDefinition);
 
@@ -603,6 +605,54 @@ namespace DarkFantasyMerchant.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
             AssetDatabase.CreateAsset(economy, EconomyPath);
             return economy;
+        }
+
+        /// <summary>
+        /// Creates the buildings of the player when missing: a house and a workshop, whose materials
+        /// are the timber and the metal of the goods. Like the expenses, new buildings are the game's:
+        /// their defaults are the content. The goods are made by <see cref="CreateEconomy"/>, called first.
+        /// </summary>
+        public static BuildingsDefinition CreateBuildings()
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<BuildingsDefinition>(BuildingsPath);
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var timber = AssetDatabase.LoadAssetAtPath<GoodDefinition>(GoodsFolder + "/Timber.asset");
+            var metal = AssetDatabase.LoadAssetAtPath<GoodDefinition>(GoodsFolder + "/Metal.asset");
+
+            if (timber == null || metal == null)
+            {
+                throw new FileNotFoundException("The timber or the metal could not be loaded.", GoodsFolder);
+            }
+
+            // Filled in before the asset is created, so the file is written complete.
+            var buildings = ScriptableObject.CreateInstance<BuildingsDefinition>();
+            var serialized = new SerializedObject(buildings);
+            FillBuilding(serialized.FindProperty("house"), 5000, timber, 10, metal, 10);
+            FillBuilding(serialized.FindProperty("workshop"), 10000, timber, 10, metal, 30);
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.CreateAsset(buildings, BuildingsPath);
+            return buildings;
+        }
+
+        private static void FillBuilding(
+            SerializedProperty building, long gold, GoodDefinition timber, int timberUnits, GoodDefinition metal, int metalUnits)
+        {
+            building.FindPropertyRelative("gold").longValue = gold;
+            SerializedProperty materials = building.FindPropertyRelative("materials");
+            materials.arraySize = 2;
+
+            SerializedProperty first = materials.GetArrayElementAtIndex(0);
+            first.FindPropertyRelative("good").objectReferenceValue = timber;
+            first.FindPropertyRelative("units").intValue = timberUnits;
+
+            SerializedProperty second = materials.GetArrayElementAtIndex(1);
+            second.FindPropertyRelative("good").objectReferenceValue = metal;
+            second.FindPropertyRelative("units").intValue = metalUnits;
         }
 
         private static GoodDefinition CreateGood(SampleGood sample)
@@ -1435,6 +1485,13 @@ namespace DarkFantasyMerchant.Editor
                 throw new FileNotFoundException("The economy could not be loaded.", EconomyPath);
             }
 
+            var buildings = AssetDatabase.LoadAssetAtPath<BuildingsDefinition>(BuildingsPath);
+
+            if (buildings == null)
+            {
+                throw new FileNotFoundException("The buildings could not be loaded.", BuildingsPath);
+            }
+
             bool changed = false;
             var worldEconomy = FindInScene<WorldEconomy>(scene);
 
@@ -1449,6 +1506,7 @@ namespace DarkFantasyMerchant.Editor
 
             // Also for a scene in which one of them was deleted and made again.
             changed |= FillReference(worldEconomy, "economy", economy);
+            changed |= FillReference(worldEconomy, "buildings", buildings);
             changed |= FillReference(worldEconomy, "mapView", mapView);
             changed |= FillReference(worldEconomy, "worldClock", worldClock);
 

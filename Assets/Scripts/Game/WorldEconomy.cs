@@ -12,6 +12,7 @@ namespace DarkFantasyMerchant.Game
     public sealed class WorldEconomy : MonoBehaviour
     {
         [SerializeField] private EconomyDefinition economy;
+        [SerializeField] private BuildingsDefinition buildings;
         [SerializeField] private WorldMapView mapView;
         [SerializeField] private WorldClock worldClock;
 
@@ -20,6 +21,8 @@ namespace DarkFantasyMerchant.Game
         private GameClock clock;
 
         public EconomyDefinition Economy => economy;
+
+        public BuildingsDefinition Buildings => buildings;
 
         /// <summary>False until the markets exist, which is in Start, and for good when they could not be made.</summary>
         public bool IsReady { get; private set; }
@@ -48,6 +51,18 @@ namespace DarkFantasyMerchant.Game
             if (!economy.TryValidate(out string problem))
             {
                 Debug.LogError($"EconomyDefinition '{economy.name}' is unusable: {problem}. Cities have no market.", economy);
+                return;
+            }
+
+            if (buildings == null)
+            {
+                Debug.LogError("WorldEconomy needs a buildings definition: the houses of a city set its room. Cities have no market.", this);
+                return;
+            }
+
+            if (!buildings.TryValidate(economy, out problem))
+            {
+                Debug.LogError($"BuildingsDefinition '{buildings.name}' is unusable: {problem}. Cities have no market.", buildings);
                 return;
             }
 
@@ -80,11 +95,12 @@ namespace DarkFantasyMerchant.Game
                 // unusable setting leaves the cities without a market, as the others do.
                 economy.CreateGoodUnits();
                 int daysPerWeek = worldClock.Calendar.DaysPerWeek;
+                LabourRule labour = economy.CreateLabourRule();
 
                 foreach (CityDefinition city in mapView.Cities)
                 {
                     WarnAbout(city);
-                    markets[city] = economy.CreateMarket(city, pricing, daysPerWeek);
+                    markets[city] = economy.CreateMarket(city, pricing, daysPerWeek, labour, buildings.HouseRoom);
                 }
             }
             catch (ArgumentOutOfRangeException exception)
@@ -106,7 +122,7 @@ namespace DarkFantasyMerchant.Game
             if (!ProducesAnyGood(city))
             {
                 Debug.LogWarning(
-                    $"CityDefinition '{city.name}' produces no active good of the economy; it still starts with the economy's population.",
+                    $"CityDefinition '{city.name}' produces no active good of the economy; it starts with no inhabitant.",
                     city);
             }
 

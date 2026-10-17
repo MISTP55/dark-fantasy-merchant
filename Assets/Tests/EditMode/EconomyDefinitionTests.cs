@@ -247,6 +247,66 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void CreateMarket_WithLabour_SplitsThePopulationAsPatricianIII()
+        {
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty("startingWorkforce").intValue = 250;
+            serialized.FindProperty("inhabitantsPerWorker").intValue = 4;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            CityDefinition city = City(new[] { wheat }, new[] { fish });
+
+            // 125 workers a workshop, cut to the 60 of each: 120 workers.
+            CityMarket market = economy.CreateMarket(
+                city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), 100);
+
+            Assert.AreEqual(480, market.Population.Housed);
+            Assert.AreEqual(28, market.Population.Beggars);
+            Assert.AreEqual(500, market.Population.Room);
+            Assert.IsNotNull(market.Labour);
+        }
+
+        [Test]
+        public void CreateMarket_WithLabour_NeedsTheRoomOfAHouse()
+        {
+            CityDefinition city = City(new[] { wheat }, new[] { fish });
+
+            Assert.Throws<System.ArgumentOutOfRangeException>(
+                () => economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), 0));
+        }
+
+        [Test]
+        public void TryValidateSettings_SaysWhenTheLabourIsWrong()
+        {
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty("beggarArrivalDivisor").intValue = 0;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.IsFalse(economy.TryValidateSettings(out string problem));
+            StringAssert.Contains("labour", problem);
+        }
+
+        [Test]
+        public void CreateLabourRule_UsesTheDefinitionsSettings()
+        {
+            EconomyDefinition fresh = Track(ScriptableObject.CreateInstance<EconomyDefinition>());
+
+            Assert.AreEqual(4d / 17d, fresh.StartingBeggarsPerWorker, Tolerance);
+
+            LabourRule rule = fresh.CreateLabourRule();
+
+            Assert.AreEqual(4, rule.InhabitantsPerWorker);
+            Assert.AreEqual(50d, rule.BeggarSatisfaction);
+            Assert.AreEqual(3, rule.BeggarTargetDivisor);
+            Assert.AreEqual(8, rule.BeggarTargetMinimum);
+            Assert.AreEqual(5, rule.BeggarArrivalDivisor);
+            Assert.AreEqual(10, rule.BeggarDepartureDivisor);
+            Assert.AreEqual(5, rule.VacancyMinimumBeggars);
+            Assert.AreEqual(3, rule.VacancyMinimumFreeRoom);
+            Assert.AreEqual(0.02, rule.ReserveLeakShare);
+            Assert.AreEqual(30, rule.ReserveLeakCeiling);
+        }
+
+        [Test]
         public void CreatePricing_UsesTheDefinitionsFactors()
         {
             MarketPricing pricing = economy.CreatePricing();

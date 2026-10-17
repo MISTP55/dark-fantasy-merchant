@@ -1384,6 +1384,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.WorldEconomy
   economy: {fileID: 11400000, guid: 004dcabd3ae3f0646992f6e3f1fa345a, type: 2}
+  buildings: {fileID: 11400000, guid: 67b5244d21281d547bcd7ee53306b188, type: 2}
   mapView: {fileID: 935350158}
   worldClock: {fileID: 1809179065}
 --- !u!4 &1991110006

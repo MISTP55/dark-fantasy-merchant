@@ -63,6 +63,16 @@ MonoBehaviour:
   workersAboveT3: 1
   startingWorkforce: 250
   inhabitantsPerWorker: 4
+  startingBeggarsPerWorker: 0.23529411764705882
+  beggarSatisfaction: 50
+  beggarTargetDivisor: 3
+  beggarTargetMinimum: 8
+  beggarArrivalDivisor: 5
+  beggarDepartureDivisor: 10
+  vacancyMinimumBeggars: 5
+  vacancyMinimumFreeRoom: 3
+  reserveLeakShare: 0.02
+  reserveLeakCeiling: 30
   t0Days: 7
   t1AddedDays: 14
   t2ProductionDays: 10

@@ -51,6 +51,37 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Inhabitants housed per starting worker: 4 is Patrician III's.")]
         [SerializeField, Min(0)] private int inhabitantsPerWorker = 4;
 
+        [Header("Labour, as in Patrician III")]
+        [Tooltip("Beggars per starting worker, rounded down for the city: 4 / 17 is Patrician III's.")]
+        [SerializeField, Min(0f)] private double startingBeggarsPerWorker = 4d / 17d;
+
+        [Tooltip("How satisfied the beggars must be for the city to attract them: 50 is Patrician III's.")]
+        [SerializeField, Min(0f)] private double beggarSatisfaction = 50d;
+
+        [Tooltip("The beggars' target is the root of (inhabitants x satisfaction / 2) divided by this, plus the minimum.")]
+        [SerializeField, Min(1)] private int beggarTargetDivisor = 3;
+
+        [Tooltip("Beggars a city keeps whatever its size.")]
+        [SerializeField, Min(0)] private int beggarTargetMinimum = 8;
+
+        [Tooltip("Beggars arrive each day, under their target, at the root of the inhabitants divided by this, rounded up.")]
+        [SerializeField, Min(1)] private int beggarArrivalDivisor = 5;
+
+        [Tooltip("Beggars leave each day, above their target, at the root of the inhabitants divided by this, rounded up.")]
+        [SerializeField, Min(1)] private int beggarDepartureDivisor = 10;
+
+        [Tooltip("Beggars a city needs for the player's workshops to hire.")]
+        [SerializeField, Min(0)] private int vacancyMinimumBeggars = 5;
+
+        [Tooltip("Free room a city needs, more than this, for the player's workshops to hire.")]
+        [SerializeField, Min(0)] private int vacancyMinimumFreeRoom = 3;
+
+        [Tooltip("Share of a workshop's reserve that leaves for the beggars at every layoff.")]
+        [SerializeField, Range(0f, 1f)] private double reserveLeakShare = 0.02d;
+
+        [Tooltip("The reserve leaks only while the workers and the reserve of the workshop stay under this.")]
+        [SerializeField, Min(0)] private int reserveLeakCeiling = 30;
+
         [Header("Stock thresholds T0 to T3 of a good in a city, at which its prices are given")]
         [Tooltip("T0: days of the city's consumption.")]
         [SerializeField, Min(0f)] private double t0Days = 7d;
@@ -108,6 +139,8 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>The inhabitants of every city when the game starts: the starting workforce, times the inhabitants per worker.</summary>
         public int StartingPopulation => startingWorkforce * inhabitantsPerWorker;
+
+        public double StartingBeggarsPerWorker => startingBeggarsPerWorker;
 
         public double T0Days => t0Days;
 
@@ -197,7 +230,9 @@ namespace DarkFantasyMerchant.Game
                 ?? ProblemOf(() => CreatePricing(), "the sell factors against the buy factors")
                 ?? ProblemOf(() => CreateThresholdRule(), "the stock thresholds")
                 ?? ProblemOf(() => CreateWorkforceRule(), "the workforce")
-                ?? ProblemOf(() => new CityPopulation(StartingPopulation), "the starting population (workforce times inhabitants per worker)");
+                ?? ProblemOf(() => new CityPopulation(StartingPopulation), "the starting population (workforce times inhabitants per worker)")
+                ?? ProblemOf(() => CreateLabourRule(), "the labour")
+                ?? ProblemOf(() => CityPopulation.AtStart(0, inhabitantsPerWorker, startingBeggarsPerWorker, 1), "the starting beggars per worker");
 
             return problem == null;
         }
@@ -281,6 +316,22 @@ namespace DarkFantasyMerchant.Game
             return new WorkforceRule(hiredUpToT0, hiredUpToT1, hiredUpToT2, hiredUpToT3, workersAboveT3, startingWorkforce);
         }
 
+        /// <summary>How the workers are hired and the beggars come and go, from these settings. Throws when one of them is unusable.</summary>
+        public LabourRule CreateLabourRule()
+        {
+            return new LabourRule(
+                inhabitantsPerWorker,
+                beggarSatisfaction,
+                beggarTargetDivisor,
+                beggarTargetMinimum,
+                beggarArrivalDivisor,
+                beggarDepartureDivisor,
+                vacancyMinimumBeggars,
+                vacancyMinimumFreeRoom,
+                reserveLeakShare,
+                reserveLeakCeiling);
+        }
+
         /// <summary>Barrels of room a unit of a good takes in a hold: one, or the barrels per bushel.</summary>
         public int RoomOf(GoodDefinition good)
         {
@@ -333,15 +384,20 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// The market of a city at the start of the game, with the starting population,
-        /// the same in every city, and one stock per active good. Call
+        /// The market of a city at the start of the game, with one stock per active good and its
+        /// population: the starting population, the same in every city, or, with a labour rule,
+        /// the one Patrician III starts with (housed families, beggars, houses). Call
         /// <see cref="TryValidate"/> first. Throws when a setting or a good's figure is unusable.
         /// </summary>
         /// <param name="daysPerWeek">Days of the calendar's week: goods give their consumption per week.</param>
+        /// <param name="labour">The labour of the city, or null to keep the immediate hiring.</param>
+        /// <param name="roomPerHouse">Places of a house, at least 1 with a labour rule: the city starts with as many houses as its housed inhabitants need.</param>
         public CityMarket CreateMarket(
             CityDefinition city,
             MarketPricing pricing,
-            int daysPerWeek)
+            int daysPerWeek,
+            LabourRule labour = null,
+            int roomPerHouse = 0)
         {
             if (city == null)
             {
@@ -351,6 +407,11 @@ namespace DarkFantasyMerchant.Game
             if (daysPerWeek < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(daysPerWeek));
+            }
+
+            if (labour != null && roomPerHouse < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(roomPerHouse), "A house shelters at least one inhabitant.");
             }
 
             var marketGoods = new MarketGood[Goods.Count];
@@ -380,14 +441,26 @@ namespace DarkFantasyMerchant.Game
                     outputPerWorker);
             }
 
+            WorkforceRule workforce = CreateWorkforceRule();
+
+            // The labour relies on housed = inhabitants per worker x workers: only the start gives that.
+            CityPopulation population = labour == null
+                ? new CityPopulation(StartingPopulation)
+                : CityPopulation.AtStart(
+                    CityMarket.StartingWorkforceOf(marketGoods, workforce),
+                    inhabitantsPerWorker,
+                    startingBeggarsPerWorker,
+                    roomPerHouse);
+
             return new CityMarket(
                 marketGoods,
                 CreateThresholdRule(),
-                CreateWorkforceRule(),
+                workforce,
                 startingStockDays,
                 pricing,
                 daysPerWeek,
-                new CityPopulation(StartingPopulation));
+                population,
+                labour);
         }
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DarkFantasyMerchant.Core;
 using DarkFantasyMerchant.Game;
 using NUnit.Framework;
 using UnityEditor;
@@ -9,6 +10,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
     public class EconomyContentTests
     {
         private const string EconomyPath = "Assets/Data/Economy/Economy.asset";
+        private const string BuildingsPath = "Assets/Data/Economy/Buildings.asset";
         private const string MapPath = "Assets/Data/WorldMap/WorldMap.asset";
         private const string ShipPath = "Assets/Data/Ships/MerchantShip.asset";
 
@@ -134,6 +136,50 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(250, economy.StartingWorkforce);
             Assert.AreEqual(4, economy.InhabitantsPerWorker);
+        }
+
+        [Test]
+        public void TheEconomy_HasPatricianIIIsLabour()
+        {
+            EconomyDefinition economy = LoadEconomy();
+
+            Assert.AreEqual(4d / 17d, economy.StartingBeggarsPerWorker, 1e-9);
+
+            LabourRule rule = economy.CreateLabourRule();
+
+            Assert.AreEqual(4, rule.InhabitantsPerWorker);
+            Assert.AreEqual(50d, rule.BeggarSatisfaction);
+            Assert.AreEqual(3, rule.BeggarTargetDivisor);
+            Assert.AreEqual(8, rule.BeggarTargetMinimum);
+            Assert.AreEqual(5, rule.BeggarArrivalDivisor);
+            Assert.AreEqual(10, rule.BeggarDepartureDivisor);
+            Assert.AreEqual(5, rule.VacancyMinimumBeggars);
+            Assert.AreEqual(3, rule.VacancyMinimumFreeRoom);
+            Assert.AreEqual(0.02, rule.ReserveLeakShare, 1e-9);
+            Assert.AreEqual(30, rule.ReserveLeakCeiling);
+        }
+
+        [Test]
+        public void TheBuildings_AreTheWorkshopAndTheHouse()
+        {
+            var buildings = AssetDatabase.LoadAssetAtPath<BuildingsDefinition>(BuildingsPath);
+            Assert.IsNotNull(buildings, BuildingsPath);
+
+            AssertBuilding(buildings.Workshop, 10000, 10, 30);
+            Assert.AreEqual(30, buildings.WorkshopJobs);
+            AssertBuilding(buildings.House, 5000, 10, 10);
+            Assert.AreEqual(100, buildings.HouseRoom);
+            Assert.IsTrue(buildings.TryValidate(LoadEconomy(), out string problem), problem);
+        }
+
+        private static void AssertBuilding(BuildingsDefinition.BuildingType building, long gold, int timber, int metal)
+        {
+            Assert.AreEqual(gold, building.Gold);
+            Assert.AreEqual(2, building.Materials.Count);
+            Assert.AreEqual("Bois", building.Materials[0].Good.DisplayName);
+            Assert.AreEqual(timber, building.Materials[0].Units);
+            Assert.AreEqual("Métal", building.Materials[1].Good.DisplayName);
+            Assert.AreEqual(metal, building.Materials[1].Units);
         }
 
         [Test]
