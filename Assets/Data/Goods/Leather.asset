@@ -18,5 +18,5 @@ MonoBehaviour:
   basePrice: 224
   weeklyConsumptionPerThousand: 6.265
   maxWorkers: 60
-  dailyOutputPerWorker: 0.09476
+  dailyOutputPerWorker: 0.04642
   aiWeight: 9

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d2699d0edf858a47bbb403d53715af2, type: 3}
+  m_Name: Riga
+  m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
+  displayName: Riga
+  description: "Un royaume c\xF4tier \xE0 la pointe du d\xE9sert d'Alharia, o\xF9 les caravanes d\xE9posent peaux, sel et miel sur la mer de Rakmitag."
+  mapPosition: {x: 0.62, y: 0.485}
+  access: 0
+  size: 1
+  efficientGoods:
+  - {fileID: 11400000, guid: 610fada3e2af0f94a8f65494caaccba1, type: 2}
+  - {fileID: 11400000, guid: 6e7e1dd68eea0924888bedf71fa7be72, type: 2}
+  - {fileID: 11400000, guid: bce1ec221f911fe4fbb8d73be43de51b, type: 2}
+  - {fileID: 11400000, guid: 3a65d2812ceb57d40b5f455f5cad9518, type: 2}
+  - {fileID: 11400000, guid: a6f289409860c3845a74f080d558fd10, type: 2}
+  inefficientGoods:
+  - {fileID: 11400000, guid: c1aee0a6d45237f4f98a31437e2602e4, type: 2}

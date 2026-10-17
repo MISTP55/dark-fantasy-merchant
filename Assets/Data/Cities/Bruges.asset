@@ -10,17 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7d2699d0edf858a47bbb403d53715af2, type: 3}
-  m_Name: Sparia
+  m_Name: Bruges
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
-  displayName: Sparia
+  displayName: Bruges
   description: "Une ville portuaire battue par les vents sur le cap occidental, premi\xE8re terre en vue des navires qui traversent la mer d'Aedean occidentale."
   mapPosition: {x: 0.1250095, y: 0.62660563}
   access: 0
   size: 1
   efficientGoods:
-  - {fileID: 11400000, guid: 610fada3e2af0f94a8f65494caaccba1, type: 2}
   - {fileID: 11400000, guid: 6e7e1dd68eea0924888bedf71fa7be72, type: 2}
-  - {fileID: 11400000, guid: a6f289409860c3845a74f080d558fd10, type: 2}
+  - {fileID: 11400000, guid: 162c9bd0d68bff0479a6d68a5b63b40d, type: 2}
+  - {fileID: 11400000, guid: 00e756b06ca491c4ab15fc26b44160a0, type: 2}
+  - {fileID: 11400000, guid: 15fb5c777029f084daf4b709fbc1b570, type: 2}
   inefficientGoods:
   - {fileID: 11400000, guid: d9bb6e94b66a421687ef25e233f60109, type: 2}
-  - {fileID: 11400000, guid: e16d4cf6557c96944bd222d7b8d70c9d, type: 2}
+  - {fileID: 11400000, guid: bce1ec221f911fe4fbb8d73be43de51b, type: 2}
+  - {fileID: 11400000, guid: a553f4c2b71594a4993bd42d249791f5, type: 2}
+  - {fileID: 11400000, guid: 4ca27dedb2f7085448acb00de4c9761a, type: 2}

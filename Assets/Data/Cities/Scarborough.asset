@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d2699d0edf858a47bbb403d53715af2, type: 3}
+  m_Name: Scarborough
+  m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
+  displayName: Scarborough
+  description: "Un bourg de p\xEAcheurs au bout d'une presqu'\xEEle de la mer de Kharan, o\xF9 l'on fume le hareng sur les galets."
+  mapPosition: {x: 0.1, y: 0.866}
+  access: 0
+  size: 0
+  efficientGoods:
+  - {fileID: 11400000, guid: e16d4cf6557c96944bd222d7b8d70c9d, type: 2}
+  - {fileID: 11400000, guid: 62af8be376de6594eb9d2a3ca3dbb4fe, type: 2}
+  - {fileID: 11400000, guid: c1aee0a6d45237f4f98a31437e2602e4, type: 2}
+  - {fileID: 11400000, guid: 4aa4ecf3894e5d34b8ade5228cde2e48, type: 2}
+  - {fileID: 11400000, guid: 162c9bd0d68bff0479a6d68a5b63b40d, type: 2}
+  inefficientGoods:
+  - {fileID: 11400000, guid: c9607b4c46834ebbacb371dea4d9b561, type: 2}
+  - {fileID: 11400000, guid: 53df7d2fe4de6aa44a90c88b7759f7fc, type: 2}
+  - {fileID: 11400000, guid: 4ca27dedb2f7085448acb00de4c9761a, type: 2}

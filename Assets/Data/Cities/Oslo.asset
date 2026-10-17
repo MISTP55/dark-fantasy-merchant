@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d2699d0edf858a47bbb403d53715af2, type: 3}
+  m_Name: Oslo
+  m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
+  displayName: Oslo
+  description: "Un fort de pierre au bord du lac Malo, o\xF9 les b\xFBcherons des for\xEAts du nord vendent leur bois et leur brai."
+  mapPosition: {x: 0.18, y: 0.709}
+  access: 0
+  size: 0
+  efficientGoods:
+  - {fileID: 11400000, guid: 9a6198f3bd4d114488507974129e40ba, type: 2}
+  - {fileID: 11400000, guid: c1aee0a6d45237f4f98a31437e2602e4, type: 2}
+  - {fileID: 11400000, guid: a6f289409860c3845a74f080d558fd10, type: 2}
+  - {fileID: 11400000, guid: 742f8f0eb153b5340b4793df8bd7b622, type: 2}
+  - {fileID: 11400000, guid: 4ca27dedb2f7085448acb00de4c9761a, type: 2}
+  inefficientGoods:
+  - {fileID: 11400000, guid: 610fada3e2af0f94a8f65494caaccba1, type: 2}
+  - {fileID: 11400000, guid: 3a65d2812ceb57d40b5f455f5cad9518, type: 2}

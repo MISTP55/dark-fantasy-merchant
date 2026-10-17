@@ -43,7 +43,7 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// The text of an arrival: "Navire marchand a jeté l'ancre à Sparia." in a port,
+        /// The text of an arrival: "Navire marchand a jeté l'ancre à Bruges." in a port,
         /// "Navire marchand a atteint sa destination." at sea. Written without an article
         /// or a word that agrees with the ship's name or elides before the city's.
         /// </summary>

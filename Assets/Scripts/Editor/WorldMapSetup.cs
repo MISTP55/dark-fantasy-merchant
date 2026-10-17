@@ -123,31 +123,32 @@ namespace DarkFantasyMerchant.Editor
         // missing is created with, which are then balanced by hand in the asset.
         private static readonly SampleGood[] SampleGoods =
         {
-            new SampleGood("Grain", "Céréales", GoodCategory.Food, GoodUnit.Bushel, 110, 4.725, 68, 0.03396, 16),
-            new SampleGood("Meat", "Viande", GoodCategory.Food, GoodUnit.Bushel, 957, 1.552, 60, 0.01643, 9),
-            new SampleGood("Fish", "Poisson", GoodCategory.Food, GoodUnit.Bushel, 440, 3.08, 65, 0.02316, 9),
-            new SampleGood("Beer", "Bière", GoodCategory.Food, GoodUnit.Barrel, 34.8, 29.575, 68, 0.21254, 9),
-            new SampleGood("Salt", "Sel", GoodCategory.RawMaterial, GoodUnit.Barrel, 28.5, 0.35, 54, 0.01029, 16),
-            new SampleGood("Honey", "Miel", GoodCategory.RawMaterial, GoodUnit.Barrel, 110, 5.425, 60, 0.08206, 9),
+            new SampleGood("Grain", "Céréales", GoodCategory.Food, GoodUnit.Bushel, 110, 4.725, 68, 0.02911, 16),
+            new SampleGood("Meat", "Viande", GoodCategory.Food, GoodUnit.Bushel, 957, 1.552, 60, 0.01150, 9),
+            new SampleGood("Fish", "Poisson", GoodCategory.Food, GoodUnit.Bushel, 440, 3.08, 65, 0.02646, 9),
+            new SampleGood("Beer", "Bière", GoodCategory.Food, GoodUnit.Barrel, 34.8, 29.575, 68, 0.33833, 9),
+            new SampleGood("Salt", "Sel", GoodCategory.RawMaterial, GoodUnit.Barrel, 28.5, 0.35, 54, 0.00428, 16),
+            new SampleGood("Honey", "Miel", GoodCategory.RawMaterial, GoodUnit.Barrel, 110, 5.425, 60, 0.06154, 9),
             new SampleGood("Spices", "Épices", GoodCategory.RawMaterial, GoodUnit.Barrel, 280, 0.77, 60, 0.02038, 9),
-            new SampleGood("Wine", "Vin", GoodCategory.RawMaterial, GoodUnit.Barrel, 220, 9.24, 93, 0.15780, 9),
-            new SampleGood("Cloth", "Étoffe", GoodCategory.RawMaterial, GoodUnit.Barrel, 206.8, 8.575, 60, 0.22699, 9),
-            new SampleGood("Skins", "Peaux", GoodCategory.RawMaterial, GoodUnit.Barrel, 676.5, 5.25, 72, 0.11581, 9),
-            new SampleGood("Oil", "Huile", GoodCategory.RawMaterial, GoodUnit.Barrel, 82.5, 7.525, 60, 0.19919, 9),
-            new SampleGood("Timber", "Bois", GoodCategory.RawMaterial, GoodUnit.Bushel, 55, 1.96, 48, 0.02594, 11),
-            new SampleGood("Metal", "Métal", GoodCategory.RawMaterial, GoodUnit.Barrel, 255.6, 16.625, 78, 0.19344, 11),
-            new SampleGood("Leather", "Cuir", GoodCategory.RawMaterial, GoodUnit.Barrel, 224, 6.265, 60, 0.09476, 9),
-            new SampleGood("Wool", "Laine", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, 0.875, 50, 0.02779, 11),
+            new SampleGood("Wine", "Vin", GoodCategory.RawMaterial, GoodUnit.Barrel, 220, 9.24, 93, 0.13526, 9),
+            new SampleGood("Cloth", "Étoffe", GoodCategory.RawMaterial, GoodUnit.Barrel, 206.8, 8.575, 60, 0.12971, 9),
+            new SampleGood("Skins", "Peaux", GoodCategory.RawMaterial, GoodUnit.Barrel, 676.5, 5.25, 72, 0.05672, 9),
+            new SampleGood("Oil", "Huile", GoodCategory.RawMaterial, GoodUnit.Barrel, 82.5, 7.525, 60, 0.13659, 9),
+            new SampleGood("Timber", "Bois", GoodCategory.RawMaterial, GoodUnit.Bushel, 55, 1.96, 48, 0.01533, 11),
+            new SampleGood("Metal", "Métal", GoodCategory.RawMaterial, GoodUnit.Barrel, 255.6, 16.625, 78, 0.16580, 11),
+            new SampleGood("Leather", "Cuir", GoodCategory.RawMaterial, GoodUnit.Barrel, 224, 6.265, 60, 0.04642, 9),
+            new SampleGood("Wool", "Laine", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, 0.875, 50, 0.00977, 11),
             new SampleGood("Pitch", "Brai", GoodCategory.RawMaterial, GoodUnit.Barrel, 55.6, 0, 26, 0.03846, 8),
             new SampleGood("PigIron", "Fonte brute", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, 0, 70, 0.01429, 8),
-            new SampleGood("Hemp", "Chanvre", GoodCategory.RawMaterial, GoodUnit.Bushel, 440, 0.089, 62, 0.00228, 9),
-            new SampleGood("Pottery", "Poterie", GoodCategory.RawMaterial, GoodUnit.Barrel, 171, 5.46, 58, 0.14951, 9),
-            new SampleGood("Tiles", "Tuiles", GoodCategory.RawMaterial, GoodUnit.Bushel, 79.8, 0.016, 27, 0.00094, 8),
+            new SampleGood("Hemp", "Chanvre", GoodCategory.RawMaterial, GoodUnit.Bushel, 440, 0.089, 62, 0.00092, 9),
+            new SampleGood("Pottery", "Poterie", GoodCategory.RawMaterial, GoodUnit.Barrel, 171, 5.46, 58, 0.05696, 9),
+            new SampleGood("Tiles", "Tuiles", GoodCategory.RawMaterial, GoodUnit.Bushel, 79.8, 0.016, 27, 0.00031, 8),
         };
 
         private readonly struct SampleCity
         {
             public SampleCity(
+                string assetName,
                 string name,
                 float x,
                 float y,
@@ -157,6 +158,7 @@ namespace DarkFantasyMerchant.Editor
                 string[] inefficientGoods,
                 string description)
             {
+                AssetName = assetName;
                 Name = name;
                 Position = new Vector2(x, y);
                 Access = access;
@@ -166,7 +168,12 @@ namespace DarkFantasyMerchant.Editor
                 Description = description;
             }
 
+            /// <summary>Name of the city's asset, in English like every asset name.</summary>
+            public string AssetName { get; }
+
+            /// <summary>Name the player reads, in French.</summary>
             public string Name { get; }
+
             public Vector2 Position { get; }
             public CityAccess Access { get; }
             public CitySize Size { get; }
@@ -180,31 +187,86 @@ namespace DarkFantasyMerchant.Editor
             public string Description { get; }
         }
 
-        // Positions are read off the placeholder image and are meant to be refined
-        // with the placement tool. Every good is produced efficiently by at least one city.
+        // Patrician III's 24 towns of its standard map, with the goods they produce there
+        // (patrician3-re\resultats\Villes de la carte.md). A town's cattle makes meat and
+        // leather, its whale oil comes with an inefficient fishery, and its hidden supply of
+        // skins, wine or salt is an inefficient workshop. Each city stands on the navigable
+        // cell nearest a town drawn on the placeholder image. The seven first keep the
+        // places of the cities they replaced, so the player still starts where they did.
         private static readonly SampleCity[] SampleCities =
         {
-            new SampleCity("Sparia", 0.115f, 0.645f, CityAccess.Coastal, CitySize.Town,
-                new[] { "Fish", "Salt", "Pitch" }, new[] { "Grain", "Beer" },
+            new SampleCity("Bruges", "Bruges", 0.125f, 0.627f, CityAccess.Coastal, CitySize.Town,
+                new[] { "Salt", "Wool", "Hemp", "Pottery" }, new[] { "Grain", "Honey", "Wine", "Tiles" },
                 "Une ville portuaire battue par les vents sur le cap occidental, première terre en vue des navires qui traversent la mer d'Aedean occidentale."),
-            new SampleCity("Elforth", 0.196f, 0.609f, CityAccess.Coastal, CitySize.Village,
-                new[] { "Honey", "Timber", "Spices" }, new[] { "Fish", "Meat" },
+            new SampleCity("Groningen", "Groningen", 0.177f, 0.604f, CityAccess.Coastal, CitySize.Village,
+                new[] { "Grain", "Timber", "Hemp", "Tiles" }, new[] { "Salt", "Wine", "Pottery" },
                 "Un village de pêcheurs abrité par les bois du sud, connu pour sa morue salée et ses contrebandiers discrets."),
-            new SampleCity("Bactfied", 0.374f, 0.554f, CityAccess.Coastal, CitySize.Town,
-                new[] { "Beer", "Metal", "Pottery" }, new[] { "Grain", "Timber" },
+            new SampleCity("Hamburg", "Hambourg", 0.387f, 0.551f, CityAccess.Coastal, CitySize.Town,
+                new[] { "Grain", "Fish", "Beer", "Hemp" }, new[] { "Salt", "Timber", "Pottery" },
                 "Un port marchand animé sur la mer d'Eamiq, où les barges fluviales rencontrent les navires de haute mer."),
-            new SampleCity("Hitrun", 0.470f, 0.598f, CityAccess.Coastal, CitySize.Village,
-                new[] { "Wool", "Meat", "Tiles" }, new[] { "Grain", "Leather" },
+            new SampleCity("Lubeck", "Lübeck", 0.463f, 0.577f, CityAccess.Coastal, CitySize.Village,
+                new[] { "Fish", "Metal", "Pitch", "Tiles" }, new[] { "Grain", "Salt", "Wine", "Timber", "Hemp" },
                 "Un village perché au-dessus d'une crique étroite, qui vend laine et pierre aux caboteurs de passage."),
-            new SampleCity("Cerbias", 0.554f, 0.500f, CityAccess.Coastal, CitySize.Village,
-                new[] { "Wine", "Oil", "Hemp" }, new[] { "Fish", "Honey" },
+            new SampleCity("Stettin", "Stettin", 0.559f, 0.489f, CityAccess.Coastal, CitySize.Village,
+                new[] { "Grain", "Fish", "Beer", "Salt", "Hemp" }, new[] { "Timber" },
                 "Un mouillage isolé à la pointe de la langue de sable méridionale, dernier abri avant le large de la mer de Rakmitag."),
-            new SampleCity("Hazer Empire", 0.586f, 0.627f, CityAccess.Coastal, CitySize.Capital,
-                new[] { "Cloth", "PigIron", "Leather" }, new[] { "Beer", "Meat", "Metal" },
+            new SampleCity("Gdansk", "Gdansk", 0.584f, 0.626f, CityAccess.Coastal, CitySize.Capital,
+                new[] { "Grain", "Meat", "Beer", "Leather", "Pitch", "Hemp" }, new[] { "Wool" },
                 "La capitale impériale qui garde le détroit, dont les douanes taxent chaque navire en route vers la côte du désert."),
-            new SampleCity("Liveria", 0.345f, 0.651f, CityAccess.River, CitySize.Capital,
-                new[] { "Grain", "Skins" }, new[] { "Timber", "Beer", "Fish" },
+            new SampleCity("Cologne", "Cologne", 0.314f, 0.633f, CityAccess.River, CitySize.Capital,
+                new[] { "Honey", "Wine", "Pottery" }, new[] { "Grain", "Meat", "Timber", "Leather", "Wool" },
                 "Une capitale fluviale hérissée de clochers au cœur des Bois de la Couronne, que l'on ne rejoint qu'en barge."),
+            new SampleCity("Edinburgh", "Édimbourg", 0.061f, 0.912f, CityAccess.Coastal, CitySize.Town,
+                new[] { "Fish", "Cloth", "Metal" }, new[] { "Meat", "Timber", "Leather", "Wool", "PigIron" },
+                "Une cité royale adossée aux Monts Wispsong, dont les quais ferment au nord la mer de Kharan."),
+            new SampleCity("Scarborough", "Scarborough", 0.1f, 0.866f, CityAccess.Coastal, CitySize.Village,
+                new[] { "Beer", "Cloth", "Timber", "Metal", "Wool" }, new[] { "Meat", "Leather", "Tiles" },
+                "Un bourg de pêcheurs au bout d'une presqu'île de la mer de Kharan, où l'on fume le hareng sur les galets."),
+            new SampleCity("London", "Londres", 0.123f, 0.791f, CityAccess.Coastal, CitySize.Capital,
+                new[] { "Meat", "Beer", "Cloth", "Leather", "Wool", "PigIron" }, new[] { "Grain", "Wine" },
+                "La capitale de l'Empire de Roshan, dont la forteresse noire domine les quais les plus actifs de la mer de Kharan."),
+            new SampleCity("Bremen", "Brême", 0.294f, 0.666f, CityAccess.River, CitySize.Town,
+                new[] { "Beer", "Cloth", "Metal", "Tiles" }, new[] { "Grain", "Wool", "PigIron" },
+                "Une ville de bateliers sur le fleuve qui descend des Bois de la Couronne, où brasseurs et drapiers chargent les barges."),
+            new SampleCity("Ripen", "Ripen", 0.159f, 0.474f, CityAccess.Coastal, CitySize.Town,
+                new[] { "Salt", "Oil", "PigIron", "Pottery", "Tiles" }, new[] { "Grain", "Meat", "Fish", "Timber", "Leather" },
+                "Une ville fortifiée au nord de la mer de Sudraqin, dont les salines et les fours à tuiles fument jour et nuit."),
+            new SampleCity("Rostock", "Rostock", 0.431f, 0.448f, CityAccess.Coastal, CitySize.Town,
+                new[] { "Grain", "Salt", "Honey", "Hemp", "Pottery" }, new[] { "Meat", "Leather", "Tiles" },
+                "Une ville de meuniers et de potiers à l'embouchure d'une rivière, face aux mers d'Halvard."),
+            new SampleCity("Bergen", "Bergen", 0.355f, 0.441f, CityAccess.Coastal, CitySize.Town,
+                new[] { "Meat", "Oil", "Metal", "Leather", "Pitch" }, new[] { "Fish", "Skins", "Timber", "PigIron" },
+                "Un comptoir fortifié à la pointe des forêts du sud, où l'on vient de loin pour le brai, le métal et l'huile de baleine."),
+            new SampleCity("Oslo", "Oslo", 0.18f, 0.709f, CityAccess.Coastal, CitySize.Village,
+                new[] { "Oil", "Timber", "Pitch", "PigIron", "Tiles" }, new[] { "Fish", "Skins" },
+                "Un fort de pierre au bord du lac Malo, où les bûcherons des forêts du nord vendent leur bois et leur brai."),
+            new SampleCity("Aalborg", "Aalborg", 0.193f, 0.516f, CityAccess.Coastal, CitySize.Village,
+                new[] { "Meat", "Oil", "Timber", "Leather", "PigIron" }, new[] { "Fish", "Pottery", "Tiles" },
+                "Un village au bord des marais du sud, dont les baleiniers rapportent l'huile des eaux froides."),
+            new SampleCity("Malmo", "Malmö", 0.27f, 0.486f, CityAccess.Coastal, CitySize.Town,
+                new[] { "Meat", "Cloth", "Leather", "Wool" }, new[] { "Honey", "Skins", "Timber", "PigIron", "Tiles" },
+                "Un port d'éleveurs sur la mer de Sudraqin, où le bétail des plaines du sud est abattu et mis en barils."),
+            new SampleCity("Stockholm", "Stockholm", 0.667f, 0.847f, CityAccess.Coastal, CitySize.Town,
+                new[] { "Oil", "Timber", "Metal", "PigIron" }, new[] { "Meat", "Fish", "Leather", "Pottery" },
+                "Une cité de mineurs bâtie sur un promontoire des mers inconnues, dont les forges fondent le minerai des montagnes voisines."),
+            new SampleCity("Visby", "Visby", 0.72f, 0.838f, CityAccess.Coastal, CitySize.Village,
+                new[] { "Honey", "Cloth", "Wool", "Pottery" }, new[] { "Grain", "Hemp", "Tiles" },
+                "Un port de la côte nord, où tisserands et potiers vendent aux navires qui longent les mers inconnues."),
+            new SampleCity("Thorn", "Thorn", 0.653f, 0.729f, CityAccess.Coastal, CitySize.Town,
+                new[] { "Meat", "Honey", "Timber", "Leather", "Wool", "Pottery" }, new[] { "Grain", "Skins" },
+                "Une ville d'artisans au fond de la baie, à l'abri des tempêtes, réputée pour son cuir, sa laine et son miel."),
+            new SampleCity("Riga", "Riga", 0.62f, 0.485f, CityAccess.Coastal, CitySize.Town,
+                new[] { "Fish", "Salt", "Honey", "Skins", "Pitch" }, new[] { "Timber" },
+                "Un royaume côtier à la pointe du désert d'Alharia, où les caravanes déposent peaux, sel et miel sur la mer de Rakmitag."),
+            new SampleCity("Reval", "Reval", 0.737f, 0.454f, CityAccess.Coastal, CitySize.Capital,
+                new[] { "Grain", "Salt", "Skins", "Metal" }, new[] { "Meat", "Leather" },
+                "Une cité du désert posée au bord de la mer de Rakmitag, dont les greniers nourrissent les tribus de l'intérieur."),
+            new SampleCity("Ladoga", "Ladoga", 0.827f, 0.55f, CityAccess.River, CitySize.Village,
+                new[] { "Grain", "Fish", "Skins", "PigIron", "Hemp" }, new[] { "Honey", "Timber", "Wool" },
+                "Un village sur une rivière de l'est, où trappeurs et fondeurs descendent vendre leurs peaux et leur fonte."),
+            new SampleCity("Novgorod", "Novgorod", 0.888f, 0.524f, CityAccess.River, CitySize.Capital,
+                new[] { "Meat", "Beer", "Skins", "Timber", "Leather", "Pitch" }, new[] { "Honey", "PigIron", "Tiles" },
+                "Une capitale de l'est lointain que l'on rejoint en remontant le fleuve, grand marché des peaux, du brai et du bétail."),
         };
 
         [MenuItem("Tools/Dark Fantasy Merchant/Build World Map Scene")]
@@ -398,7 +460,7 @@ namespace DarkFantasyMerchant.Editor
 
         private static CityDefinition CreateCity(SampleCity sample)
         {
-            string path = $"{CitiesFolder}/{sample.Name.Replace(" ", string.Empty)}.asset";
+            string path = $"{CitiesFolder}/{sample.AssetName}.asset";
             var existing = AssetDatabase.LoadAssetAtPath<CityDefinition>(path);
 
             if (existing != null)
@@ -593,7 +655,7 @@ namespace DarkFantasyMerchant.Editor
 
                 foreach (SampleCity sample in SampleCities)
                 {
-                    if (sample.Name == city.DisplayName)
+                    if (sample.AssetName == city.name)
                     {
                         FillCityEconomy(city, sample);
                         break;

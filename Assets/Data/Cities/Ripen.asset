@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d2699d0edf858a47bbb403d53715af2, type: 3}
+  m_Name: Ripen
+  m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
+  displayName: Ripen
+  description: "Une ville fortifi\xE9e au nord de la mer de Sudraqin, dont les salines et les fours \xE0 tuiles fument jour et nuit."
+  mapPosition: {x: 0.159, y: 0.474}
+  access: 0
+  size: 1
+  efficientGoods:
+  - {fileID: 11400000, guid: 6e7e1dd68eea0924888bedf71fa7be72, type: 2}
+  - {fileID: 11400000, guid: 9a6198f3bd4d114488507974129e40ba, type: 2}
+  - {fileID: 11400000, guid: 742f8f0eb153b5340b4793df8bd7b622, type: 2}
+  - {fileID: 11400000, guid: 15fb5c777029f084daf4b709fbc1b570, type: 2}
+  - {fileID: 11400000, guid: 4ca27dedb2f7085448acb00de4c9761a, type: 2}
+  inefficientGoods:
+  - {fileID: 11400000, guid: d9bb6e94b66a421687ef25e233f60109, type: 2}
+  - {fileID: 11400000, guid: c9607b4c46834ebbacb371dea4d9b561, type: 2}
+  - {fileID: 11400000, guid: 610fada3e2af0f94a8f65494caaccba1, type: 2}
+  - {fileID: 11400000, guid: c1aee0a6d45237f4f98a31437e2602e4, type: 2}
+  - {fileID: 11400000, guid: 53df7d2fe4de6aa44a90c88b7759f7fc, type: 2}

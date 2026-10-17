@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d2699d0edf858a47bbb403d53715af2, type: 3}
+  m_Name: Groningen
+  m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
+  displayName: Groningen
+  description: "Un village de p\xEAcheurs abrit\xE9 par les bois du sud, connu pour sa morue sal\xE9e et ses contrebandiers discrets."
+  mapPosition: {x: 0.17747942, y: 0.6037801}
+  access: 0
+  size: 0
+  efficientGoods:
+  - {fileID: 11400000, guid: d9bb6e94b66a421687ef25e233f60109, type: 2}
+  - {fileID: 11400000, guid: c1aee0a6d45237f4f98a31437e2602e4, type: 2}
+  - {fileID: 11400000, guid: 00e756b06ca491c4ab15fc26b44160a0, type: 2}
+  - {fileID: 11400000, guid: 4ca27dedb2f7085448acb00de4c9761a, type: 2}
+  inefficientGoods:
+  - {fileID: 11400000, guid: 6e7e1dd68eea0924888bedf71fa7be72, type: 2}
+  - {fileID: 11400000, guid: a553f4c2b71594a4993bd42d249791f5, type: 2}
+  - {fileID: 11400000, guid: 15fb5c777029f084daf4b709fbc1b570, type: 2}

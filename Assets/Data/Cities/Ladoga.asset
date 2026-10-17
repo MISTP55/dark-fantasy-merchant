@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d2699d0edf858a47bbb403d53715af2, type: 3}
+  m_Name: Ladoga
+  m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityDefinition
+  displayName: Ladoga
+  description: "Un village sur une rivi\xE8re de l'est, o\xF9 trappeurs et fondeurs descendent vendre leurs peaux et leur fonte."
+  mapPosition: {x: 0.827, y: 0.55}
+  access: 1
+  size: 0
+  efficientGoods:
+  - {fileID: 11400000, guid: d9bb6e94b66a421687ef25e233f60109, type: 2}
+  - {fileID: 11400000, guid: 610fada3e2af0f94a8f65494caaccba1, type: 2}
+  - {fileID: 11400000, guid: 3a65d2812ceb57d40b5f455f5cad9518, type: 2}
+  - {fileID: 11400000, guid: 742f8f0eb153b5340b4793df8bd7b622, type: 2}
+  - {fileID: 11400000, guid: 00e756b06ca491c4ab15fc26b44160a0, type: 2}
+  inefficientGoods:
+  - {fileID: 11400000, guid: bce1ec221f911fe4fbb8d73be43de51b, type: 2}
+  - {fileID: 11400000, guid: c1aee0a6d45237f4f98a31437e2602e4, type: 2}
+  - {fileID: 11400000, guid: 162c9bd0d68bff0479a6d68a5b63b40d, type: 2}
