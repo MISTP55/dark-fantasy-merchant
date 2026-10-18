@@ -315,6 +315,21 @@
     min-height: 0;
 }
 
+.buildings__title {
+    margin: 12px 0 4px 0;
+    padding-bottom: 2px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(110, 84, 52);
+    color: rgb(240, 226, 196);
+    font-size: 16px;
+    -unity-font-style: bold;
+}
+
+/* The first title is at the top of the tab. */
+.buildings__title:first-child {
+    margin-top: 0;
+}
+
 .buildings__row {
     flex-direction: row;
     justify-content: space-between;

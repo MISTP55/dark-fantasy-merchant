@@ -6,8 +6,9 @@ using UnityEngine.UIElements;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The "Vos bâtiments" section of the city panel: a row for the player's houses, one row per
-    /// good the city produces with the player's workshops of it, and the buttons that build, each
+    /// The "Bâtiments" tab of the city panel: under "Logements", a row for the player's houses;
+    /// under "Ateliers", one row per good the city produces with the player's workshops of it;
+    /// and the buttons that build, each
     /// showing what the building would cost now. A building without a cost is unavailable: its
     /// rows stay, their buttons disabled. Follows the market, the hold and the treasury while it
     /// is shown.
@@ -29,7 +30,8 @@ namespace DarkFantasyMerchant.Game
         }
 
         private readonly VisualElement section;
-        private readonly VisualElement rowContainer;
+        private readonly VisualElement houseRowContainer;
+        private readonly VisualElement workshopRowContainer;
         private readonly Label costsLabel;
         private readonly IReadOnlyList<string> goodNames;
         private readonly BuildingCost houseCost;
@@ -44,14 +46,16 @@ namespace DarkFantasyMerchant.Game
         private CargoHold hold;
 
         /// <param name="section">The whole section, shown and hidden with the market.</param>
-        /// <param name="rowContainer">Where the rows are built.</param>
+        /// <param name="houseRowContainer">Where the row of the houses is built.</param>
+        /// <param name="workshopRowContainer">Where the rows of the workshops are built.</param>
         /// <param name="goodNames">The names of the goods, in the catalogue's order.</param>
         /// <param name="houseCost">Null: a house is unavailable, its button stays disabled.</param>
         /// <param name="workshopCost">Null: a workshop is unavailable, its buttons stay disabled.</param>
         /// <param name="treasury">What pays. Null: the buttons stay disabled.</param>
         public CityBuildingsSection(
             VisualElement section,
-            VisualElement rowContainer,
+            VisualElement houseRowContainer,
+            VisualElement workshopRowContainer,
             Label costsLabel,
             IReadOnlyList<string> goodNames,
             BuildingCost houseCost,
@@ -62,7 +66,8 @@ namespace DarkFantasyMerchant.Game
             Treasury treasury)
         {
             this.section = section ?? throw new ArgumentNullException(nameof(section));
-            this.rowContainer = rowContainer ?? throw new ArgumentNullException(nameof(rowContainer));
+            this.houseRowContainer = houseRowContainer ?? throw new ArgumentNullException(nameof(houseRowContainer));
+            this.workshopRowContainer = workshopRowContainer ?? throw new ArgumentNullException(nameof(workshopRowContainer));
             this.costsLabel = costsLabel ?? throw new ArgumentNullException(nameof(costsLabel));
             this.goodNames = goodNames ?? throw new ArgumentNullException(nameof(goodNames));
             this.houseCost = houseCost;
@@ -180,22 +185,23 @@ namespace DarkFantasyMerchant.Game
 
         private void BuildRows()
         {
-            rowContainer.Clear();
+            houseRowContainer.Clear();
+            workshopRowContainer.Clear();
             rows.Clear();
 
-            AddRow(HouseRow, () => BuildHouse());
+            AddRow(houseRowContainer, HouseRow, () => BuildHouse());
 
             for (int good = 0; good < market.GoodCount && good < goodNames.Count; good++)
             {
                 if (market.MaxWorkersOf(good) > 0)
                 {
                     int captured = good;
-                    AddRow(good, () => BuildWorkshop(captured));
+                    AddRow(workshopRowContainer, good, () => BuildWorkshop(captured));
                 }
             }
         }
 
-        private void AddRow(int good, Action build)
+        private void AddRow(VisualElement container, int good, Action build)
         {
             var element = new VisualElement();
             element.AddToClassList(RowClass);
@@ -211,7 +217,7 @@ namespace DarkFantasyMerchant.Game
             button.AddToClassList(ButtonClass);
             element.Add(button);
 
-            rowContainer.Add(element);
+            container.Add(element);
             rows.Add(new Row { Good = good, Text = text, Button = button });
         }
 

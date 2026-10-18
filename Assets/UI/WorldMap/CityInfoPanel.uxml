@@ -48,7 +48,10 @@
                     <ui:VisualElement name="buildings-page" class="city-panel__page">
                         <ui:VisualElement name="buildings-section" class="buildings">
                             <ui:ScrollView class="buildings__scroll">
-                                <ui:VisualElement name="buildings-rows" />
+                                <ui:Label text="Logements" class="buildings__title" />
+                                <ui:VisualElement name="house-rows" />
+                                <ui:Label text="Ateliers" class="buildings__title" />
+                                <ui:VisualElement name="workshop-rows" />
                             </ui:ScrollView>
                             <ui:Label name="buildings-costs" class="buildings__costs" />
                         </ui:VisualElement>

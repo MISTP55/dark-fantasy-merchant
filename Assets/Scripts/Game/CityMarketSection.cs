@@ -7,10 +7,10 @@ using UnityEngine.UIElements;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The market rows of the city panel: one row per good with its icon, the city's stock and its
-    /// prices, and, when it is given the hold of a ship in port, the units aboard. The
-    /// prices are the buttons that trade: a click on the buy price buys, one on the sell
-    /// price sells. Follows the market, the hold and the treasury.
+    /// The market rows of the city panel: one row per good, in the alphabetical order of their
+    /// names, with its icon, the city's stock and its prices, and, when it is given the hold of a
+    /// ship in port, the units aboard. The prices are the buttons that trade: a click on the buy
+    /// price buys, one on the sell price sells. Follows the market, the hold and the treasury.
     /// </summary>
     public sealed class CityMarketSection
     {
@@ -75,10 +75,18 @@ namespace DarkFantasyMerchant.Game
 
             rowContainer.Clear();
 
+            // Rows are kept by good, and laid out in the alphabetical order of their names.
+            var elements = new VisualElement[goodNames.Count];
+
             for (int i = 0; i < goodNames.Count; i++)
             {
                 Sprite icon = goodIcons != null && i < goodIcons.Count ? goodIcons[i] : null;
-                rowContainer.Add(BuildRow(i, goodNames[i], icon));
+                elements[i] = BuildRow(i, goodNames[i], icon);
+            }
+
+            foreach (int good in DebugCitiesTable.AlphabeticalOrder(goodNames))
+            {
+                rowContainer.Add(elements[good]);
             }
 
             Hide();

@@ -63,7 +63,8 @@ namespace DarkFantasyMerchant.Game
         private VisualElement marketRows;
         private Label marketHoldLabel;
         private VisualElement buildingsElement;
-        private VisualElement buildingsRows;
+        private VisualElement houseRows;
+        private VisualElement workshopRows;
         private Label buildingsCostsLabel;
         private Button marketTabButton;
         private Button buildingsTabButton;
@@ -124,7 +125,8 @@ namespace DarkFantasyMerchant.Game
             marketRows = root.Q<VisualElement>("market-rows");
             marketHoldLabel = root.Q<Label>("market-hold");
             buildingsElement = root.Q<VisualElement>("buildings-section");
-            buildingsRows = root.Q<VisualElement>("buildings-rows");
+            houseRows = root.Q<VisualElement>("house-rows");
+            workshopRows = root.Q<VisualElement>("workshop-rows");
             buildingsCostsLabel = root.Q<Label>("buildings-costs");
             marketTabButton = root.Q<Button>("tab-market");
             buildingsTabButton = root.Q<Button>("tab-buildings");
@@ -143,7 +145,7 @@ namespace DarkFantasyMerchant.Game
                 || efficientGoodsLabel == null || inefficientGoodsLabel == null
                 || shipList == null || closeButton == null || populationLabel == null
                 || marketElement == null || marketRows == null || marketHoldLabel == null
-                || buildingsElement == null || buildingsRows == null || buildingsCostsLabel == null
+                || buildingsElement == null || houseRows == null || workshopRows == null || buildingsCostsLabel == null
                 || marketTabButton == null || buildingsTabButton == null || shipsTabButton == null
                 || marketPage == null || buildingsPage == null || shipsPage == null
                 || tradingShipField == null)
@@ -547,7 +549,7 @@ namespace DarkFantasyMerchant.Game
                 // buttons stay disabled. WorldEconomy has warned about it once.
                 Treasury treasury = playerTreasury != null && playerTreasury.IsReady ? playerTreasury.Treasury : null;
                 buildingsSection = new CityBuildingsSection(
-                    buildingsElement, buildingsRows, buildingsCostsLabel, goodNames,
+                    buildingsElement, houseRows, workshopRows, buildingsCostsLabel, goodNames,
                     worldEconomy.HouseCost, buildings.HouseRoom, worldEconomy.WorkshopCost, buildings.WorkshopJobs,
                     buildings.CostsText(economy), treasury);
                 buildingsSection.HouseBuilt += OnHouseBuilt;

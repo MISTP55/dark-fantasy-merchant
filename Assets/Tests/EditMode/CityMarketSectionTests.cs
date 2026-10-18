@@ -258,6 +258,31 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void Rows_AreInTheAlphabeticalOrderOfTheGoods_AndShowTheirOwnGood()
+        {
+            // Wine is good 0 here, wheat good 1: the rows list wheat first all the same.
+            var container = new VisualElement();
+            var sorted = new CityMarketSection(new VisualElement(), container, new Label(), new[] { "Vin", "Blé" }, treasury);
+            var swapped = new CityMarket(
+                new[] { new MarketGood(60, 0, 0, 0), new MarketGood(10, 2, 0, 0) },
+                TestMarkets.Thresholds,
+                TestMarkets.Workforce,
+                30,
+                TestMarkets.Pricing,
+                7,
+                new CityPopulation(1000));
+
+            sorted.Show(swapped, null);
+
+            Assert.AreEqual("Blé", ((TextElement)container[0][NameCell]).text);
+            Assert.AreEqual("Vin", ((TextElement)container[1][NameCell]).text);
+            Assert.AreEqual(
+                TreasuryHudController.FormatNumber(swapped.AvailableOf(1)), ((TextElement)container[0][StockCell]).text);
+            Assert.AreEqual(
+                TreasuryHudController.FormatNumber(swapped.AvailableOf(0)), ((TextElement)container[1][StockCell]).text);
+        }
+
+        [Test]
         public void WithoutATreasury_TheMarketIsReadOnly()
         {
             var readOnly = new CityMarketSection(

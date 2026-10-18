@@ -12,7 +12,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Produced = 1;
 
         private VisualElement sectionElement;
-        private VisualElement rows;
+        private VisualElement houses;
+        private VisualElement workshops;
         private Label costsLabel;
         private CityMarket market;
         private Treasury treasury;
@@ -30,7 +31,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private CityBuildingsSection NewSection(Treasury forTreasury)
         {
             return new CityBuildingsSection(
-                sectionElement, rows, costsLabel, new[] { "Blé", "Vin", "Sel" },
+                sectionElement, houses, workshops, costsLabel, new[] { "Blé", "Vin", "Sel" },
                 houseCost, 100, workshopCost, 30, "Coûts", forTreasury);
         }
 
@@ -38,7 +39,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void SetUp()
         {
             sectionElement = new VisualElement();
-            rows = new VisualElement();
+            houses = new VisualElement();
+            workshops = new VisualElement();
             costsLabel = new Label();
             market = NewMarket();
             treasury = new Treasury(100000);
@@ -96,9 +98,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             section.Show(market, null);
 
-            Assert.AreEqual(2, rows.childCount);
-            StringAssert.StartsWith("Logements : 0", Text(rows[0]));
-            StringAssert.StartsWith("Vin : 0 atelier", Text(rows[1]));
+            Assert.AreEqual(1, houses.childCount);
+            Assert.AreEqual(1, workshops.childCount);
+            StringAssert.StartsWith("Logements : 0", Text(houses[0]));
+            StringAssert.StartsWith("Vin : 0 atelier", Text(workshops[0]));
             Assert.AreEqual("Coûts", costsLabel.text);
         }
 
@@ -108,17 +111,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
             section.Show(market, null);
             ConstructionQuote quote = Construction.QuoteHouse(market, null, treasury, houseCost);
 
-            Assert.AreEqual(CityBuildingsSection.BuildButtonText(quote.Gold), ButtonOf(rows[0]).text);
-            Assert.IsTrue(ButtonOf(rows[0]).enabledSelf);
-            Assert.IsTrue(ButtonOf(rows[1]).enabledSelf);
+            Assert.AreEqual(CityBuildingsSection.BuildButtonText(quote.Gold), ButtonOf(houses[0]).text);
+            Assert.IsTrue(ButtonOf(houses[0]).enabledSelf);
+            Assert.IsTrue(ButtonOf(workshops[0]).enabledSelf);
 
             section = NewSection(new Treasury(0));
             section.Show(market, null);
 
-            Assert.IsFalse(ButtonOf(rows[0]).enabledSelf);
-            Assert.IsFalse(ButtonOf(rows[1]).enabledSelf);
-            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(rows[0]).text);
-            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(rows[1]).text);
+            Assert.IsFalse(ButtonOf(houses[0]).enabledSelf);
+            Assert.IsFalse(ButtonOf(workshops[0]).enabledSelf);
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(houses[0]).text);
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(workshops[0]).text);
         }
 
         [Test]
@@ -127,9 +130,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             section.Show(market, null);
             market.Take(Material, market.AvailableOf(Material));
 
-            Assert.IsFalse(ButtonOf(rows[0]).enabledSelf);
-            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(rows[0]).text);
-            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(rows[1]).text);
+            Assert.IsFalse(ButtonOf(houses[0]).enabledSelf);
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(houses[0]).text);
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(workshops[0]).text);
         }
 
         [Test]
@@ -138,8 +141,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             section = NewSection(null);
             section.Show(market, null);
 
-            Assert.IsFalse(ButtonOf(rows[0]).enabledSelf);
-            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(rows[0]).text);
+            Assert.IsFalse(ButtonOf(houses[0]).enabledSelf);
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(houses[0]).text);
             Assert.IsFalse(section.BuildHouse());
             Assert.AreEqual(0, market.PlayerHouses);
         }
@@ -155,7 +158,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(1, built);
             Assert.AreEqual(1, market.PlayerHouses);
-            StringAssert.StartsWith("Logements : 1", Text(rows[0]));
+            StringAssert.StartsWith("Logements : 1", Text(houses[0]));
         }
 
         [Test]
@@ -183,7 +186,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(Produced, good);
             Assert.AreEqual(1, market.PlayerWorkshopsOf(Produced));
-            StringAssert.StartsWith("Vin : 1 atelier", Text(rows[1]));
+            StringAssert.StartsWith("Vin : 1 atelier", Text(workshops[0]));
         }
 
         [Test]
@@ -199,13 +202,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AfterHide_ATreasuryChangeRewritesNothing()
         {
             section.Show(market, null);
-            string before = ButtonOf(rows[0]).text;
+            string before = ButtonOf(houses[0]).text;
 
             section.Hide();
             treasury.Deposit(1000000);
             market.Take(Material, 5);
 
-            Assert.AreEqual(before, ButtonOf(rows[0]).text);
+            Assert.AreEqual(before, ButtonOf(houses[0]).text);
         }
 
         [Test]
@@ -215,16 +218,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
             section = NewSection(treasury);
             section.Show(market, null);
 
-            Assert.AreEqual(2, rows.childCount);
-            StringAssert.StartsWith("Logements : 0", Text(rows[0]));
-            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(rows[0]).text);
-            Assert.IsFalse(ButtonOf(rows[0]).enabledSelf);
+            Assert.AreEqual(1, houses.childCount);
+            Assert.AreEqual(1, workshops.childCount);
+            StringAssert.StartsWith("Logements : 0", Text(houses[0]));
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(houses[0]).text);
+            Assert.IsFalse(ButtonOf(houses[0]).enabledSelf);
             Assert.IsFalse(section.BuildHouse());
             Assert.AreEqual(0, market.PlayerHouses);
             Assert.AreEqual(100000, treasury.Gold);
 
             // The other building is still available.
-            Assert.IsTrue(ButtonOf(rows[1]).enabledSelf);
+            Assert.IsTrue(ButtonOf(workshops[0]).enabledSelf);
             Assert.IsTrue(section.BuildWorkshop(Produced));
         }
 
@@ -235,22 +239,22 @@ namespace DarkFantasyMerchant.Tests.EditMode
             section = NewSection(treasury);
             section.Show(market, null);
 
-            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(rows[1]).text);
-            Assert.IsFalse(ButtonOf(rows[1]).enabledSelf);
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(workshops[0]).text);
+            Assert.IsFalse(ButtonOf(workshops[0]).enabledSelf);
             Assert.IsFalse(section.BuildWorkshop(Produced));
             Assert.AreEqual(0, market.PlayerWorkshopsOf(Produced));
-            Assert.IsTrue(ButtonOf(rows[0]).enabledSelf);
+            Assert.IsTrue(ButtonOf(houses[0]).enabledSelf);
         }
 
         [Test]
         public void ATreasuryChange_RewritesTheButtons()
         {
             section.Show(market, null);
-            Assert.IsTrue(ButtonOf(rows[0]).enabledSelf);
+            Assert.IsTrue(ButtonOf(houses[0]).enabledSelf);
 
             treasury.Withdraw(100000);
 
-            Assert.IsFalse(ButtonOf(rows[0]).enabledSelf);
+            Assert.IsFalse(ButtonOf(houses[0]).enabledSelf);
         }
     }
 }
