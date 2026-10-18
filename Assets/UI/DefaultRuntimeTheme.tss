@@ -1,1 +1,51 @@
 @import url("unity-theme://default");
+
+/* Scroll bars in the colors of the panels: a dark track, a thumb in the frames' brown, arrows in the light brown of the legends. */
+.unity-scroller {
+    background-color: rgb(36, 26, 18);
+    border-color: rgb(110, 84, 52);
+}
+
+/* The default theme's hover, focus and active rules add :enabled, more specific than a pseudo-class alone: these repeat it to override them. */
+.unity-scroller > .unity-scroller__slider .unity-base-slider__tracker,
+.unity-scroller > .unity-scroller__slider .unity-base-slider__tracker:hover:enabled,
+.unity-scroller > .unity-scroller__slider .unity-base-slider__tracker:focus:enabled {
+    background-color: rgb(36, 26, 18);
+    border-color: rgb(36, 26, 18);
+}
+
+.unity-scroller > .unity-scroller__slider .unity-base-slider__dragger {
+    background-color: rgb(110, 84, 52);
+    border-color: rgb(140, 108, 68);
+}
+
+.unity-scroller > .unity-scroller__slider .unity-base-slider__dragger:hover:enabled {
+    background-color: rgb(150, 116, 74);
+}
+
+.unity-scroller > .unity-scroller__slider .unity-base-slider__dragger:active:enabled {
+    background-color: rgb(190, 164, 120);
+}
+
+.unity-scroller > .unity-scroller__low-button,
+.unity-scroller > .unity-scroller__high-button {
+    background-color: rgb(48, 35, 24);
+    border-color: rgb(110, 84, 52);
+    -unity-background-image-tint-color: rgb(190, 164, 120);
+}
+
+.unity-scroller > .unity-scroller__low-button:hover:enabled,
+.unity-scroller > .unity-scroller__high-button:hover:enabled {
+    background-color: rgb(84, 62, 40);
+    border-color: rgb(110, 84, 52);
+}
+
+.unity-scroller > .unity-scroller__low-button:focus:enabled,
+.unity-scroller > .unity-scroller__high-button:focus:enabled {
+    border-color: rgb(110, 84, 52);
+}
+
+.unity-scroller > .unity-scroller__low-button:active:enabled,
+.unity-scroller > .unity-scroller__high-button:active:enabled {
+    background-color: rgb(110, 84, 52);
+}
