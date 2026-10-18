@@ -88,6 +88,51 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void CityHouseMaterials_MapsTheHousesMaterialsToTheirIndices()
+        {
+            IReadOnlyList<MaterialCost> materials = buildings.CityHouseMaterials(economy);
+
+            Assert.AreEqual(2, materials.Count);
+            Assert.AreEqual(1, materials[0].Good);
+            Assert.AreEqual(10, materials[0].Units);
+            Assert.AreEqual(2, materials[1].Good);
+            Assert.AreEqual(10, materials[1].Units);
+        }
+
+        [Test]
+        public void CityHouseMaterials_LeaveOutAnInactiveMaterial_AndAnEmptyOne()
+        {
+            SetBuilding("house", 5000, (timber, 10), (null, 5), (metal, 10));
+            TestEconomy.SetActive(economy, metal, false);
+
+            IReadOnlyList<MaterialCost> materials = buildings.CityHouseMaterials(economy);
+
+            Assert.AreEqual(1, materials.Count);
+            Assert.AreEqual(economy.IndexOf(timber), materials[0].Good);
+            Assert.AreEqual(10, materials[0].Units);
+        }
+
+        [Test]
+        public void CityHouseMaterials_AddUpAGoodListedTwice()
+        {
+            SetBuilding("house", 5000, (timber, 10), (timber, 4));
+
+            IReadOnlyList<MaterialCost> materials = buildings.CityHouseMaterials(economy);
+
+            Assert.AreEqual(1, materials.Count);
+            Assert.AreEqual(14, materials[0].Units);
+        }
+
+        [Test]
+        public void CityHouseMaterials_WithEveryMaterialInactive_AreNone()
+        {
+            TestEconomy.SetActive(economy, timber, false);
+            TestEconomy.SetActive(economy, metal, false);
+
+            Assert.AreEqual(0, buildings.CityHouseMaterials(economy).Count);
+        }
+
+        [Test]
         public void TryCreateCost_AnInactiveMaterial_IsAProblemNamingIt()
         {
             TestEconomy.SetActive(economy, metal, false);

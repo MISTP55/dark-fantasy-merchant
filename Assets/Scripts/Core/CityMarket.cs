@@ -13,7 +13,8 @@ namespace DarkFantasyMerchant.Core
     /// from their reserves and the beggars within the free room of the houses, lay off into a
     /// reserve that leaks back to the beggars, the player's workshops fill their vacancies from
     /// the beggars, and the beggars come or go; without one, hiring is immediate, layoffs
-    /// vanish and the population stays as it is.
+    /// vanish and the population stays as it is. Given a <see cref="CityHousingRule"/> as well,
+    /// a crowded city builds a house of its own from its stock.
     /// </summary>
     public sealed class CityMarket
     {
@@ -37,6 +38,7 @@ namespace DarkFantasyMerchant.Core
         /// <param name="daysPerWeek">Days of the calendar's week, over which the weekly figures are given.</param>
         /// <param name="population">The inhabitants of the city, who set what it consumes.</param>
         /// <param name="labour">How the workshops take their workers from the population; null for immediate hiring and a population that stays.</param>
+        /// <param name="housing">When the city builds a house of its own, only with labour; null for a city that never does.</param>
         public CityMarket(
             IReadOnlyList<MarketGood> goods,
             ThresholdRule thresholdRule,
@@ -45,7 +47,8 @@ namespace DarkFantasyMerchant.Core
             MarketPricing pricing,
             int daysPerWeek,
             CityPopulation population,
-            LabourRule labour = null)
+            LabourRule labour = null,
+            CityHousingRule housing = null)
         {
             if (goods == null)
             {
@@ -69,6 +72,7 @@ namespace DarkFantasyMerchant.Core
             this.pricing = pricing ?? throw new ArgumentNullException(nameof(pricing));
             Population = population ?? throw new ArgumentNullException(nameof(population));
             Labour = labour;
+            Housing = housing;
             this.daysPerWeek = daysPerWeek;
             weekLog = new MarketWeekLog(goods.Count, daysPerWeek);
             this.goods = new MarketGood[goods.Count];
@@ -84,6 +88,14 @@ namespace DarkFantasyMerchant.Core
                 // The same for every good, produced or not: producers fill up as the days pass.
                 stocks[i] = startingDays * DailyConsumptionOf(i);
             }
+
+            if (housing != null)
+            {
+                foreach (MaterialCost material in housing.Materials)
+                {
+                    RequireGood(material.Good);
+                }
+            }
         }
 
         public int GoodCount => goods.Length;
@@ -96,8 +108,14 @@ namespace DarkFantasyMerchant.Core
         /// <summary>The beggars the city draws towards: 0 without labour.</summary>
         public int BeggarTarget => Labour?.BeggarTargetFor(Population.Inhabitants) ?? 0;
 
+        /// <summary>When the city builds a house of its own; null when it never does.</summary>
+        public CityHousingRule Housing { get; }
+
         /// <summary>Houses the player has built in the city.</summary>
         public int PlayerHouses { get; private set; }
+
+        /// <summary>Houses the city has built of its own since the game started, not the player's.</summary>
+        public int CityHouses { get; private set; }
 
         /// <summary>
         /// Raised once by a day that starts, once when units were taken or put, and once by
@@ -378,8 +396,8 @@ namespace DarkFantasyMerchant.Core
         /// One day of the city, as in Patrician III: the inhabitants consume every good, down
         /// to nothing; then every workshop hires or lays off by where the stock left stands
         /// against the thresholds, and produces, unless that stock is above T3. With labour,
-        /// the player's workshops then fill their vacancies from the beggars, and the beggars
-        /// come or go.
+        /// the player's workshops then fill their vacancies from the beggars, the beggars
+        /// come or go, and a crowded city builds a house.
         /// </summary>
         public void StartDay()
         {
@@ -424,6 +442,7 @@ namespace DarkFantasyMerchant.Core
             {
                 FillVacancies();
                 Population.SetBeggars(Labour.NextBeggars(Population.Beggars, Population.Inhabitants));
+                BuildCityHouse();
             }
 
             Changed?.Invoke();
@@ -522,6 +541,33 @@ namespace DarkFantasyMerchant.Core
                 workshop.Workers += hired;
                 fillable -= hired;
             }
+        }
+
+        // One house a day at most, with every material or none taken. What it takes is not
+        // consumption: the week's log does not count it.
+        private void BuildCityHouse()
+        {
+            if (Housing == null || !Housing.IsCrowded(Population))
+            {
+                return;
+            }
+
+            foreach (MaterialCost material in Housing.Materials)
+            {
+                if (AvailableOf(material.Good) < material.Units)
+                {
+                    return;
+                }
+            }
+
+            foreach (MaterialCost material in Housing.Materials)
+            {
+                // Not below nothing: the last unit can be a hair short.
+                stocks[material.Good] = Math.Max(0d, stocks[material.Good] - material.Units);
+            }
+
+            Population.AddRoom(Housing.Room);
+            CityHouses++;
         }
 
         private void RequireGood(int good)

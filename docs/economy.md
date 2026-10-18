@@ -290,12 +290,12 @@ Oui, mais **le plafond est le logement**. Le code garantit en permanence que :
 
 Comme les logés ne peuvent pas dépasser le nombre de places dans les maisons, une ville a au plus **places ÷ 4** ouvriers, réservistes compris.
 
-- **Sans maison construite par le joueur**, la seule marge vient de l'arrondi des maisons de départ à la centaine. Exemple : une ville de 6 ateliers commence avec 252 ouvriers, soit 1 008 logés dans 1 100 places. Elle peut atteindre 275 ouvriers et réservistes, une vingtaine de plus qu'au départ.
-- **Chaque maison du joueur** ajoute 100 places, donc 25 ouvriers possibles. Les ateliers de la ville en profitent avant ceux du joueur (section 10).
+- **Chaque maison**, du joueur ou de la ville, ajoute 100 places, donc 25 ouvriers possibles. Les ateliers de la ville en profitent avant ceux du joueur (section 10).
+- **Quand ses logements sont presque pleins**, la ville construit elle-même une maison, si son marché a le bois et le métal nécessaires (section 9). Exemple : une ville de 6 ateliers commence avec 252 ouvriers, soit 1 008 logés dans 1 100 places (91,6 %). Dès qu'elle dépasse 1 045 logés, elle construit une maison et passe à 1 200 places.
 - La vitesse de croissance est aussi limitée par les mendiants disponibles : une soixantaine dans une ville d'un millier d'habitants, puis environ 7 nouveaux par jour (section 9).
 - La somme des maximums des ateliers, plus les emplois des ateliers du joueur, forme un plafond absolu.
 
-Dans Patrician III, la ville construit elle-même une maison quand ses logements sont presque pleins, si elle a les matériaux en stock : ses villes grandissent donc toutes seules. Ce n'est pas encore le cas dans Dark Fantasy Merchant (section 14).
+Comme dans Patrician III, une ville grandit donc toute seule, tant qu'elle a les matériaux de ses maisons.
 
 ## 9. La population
 
@@ -326,12 +326,29 @@ La cible grandit comme la racine carrée de la population : une grande ville gar
 
 Le cycle de la croissance :
 
-1. La ville a des **places libres** dans ses maisons (en pratique, parce que le joueur y a construit des maisons).
+1. La ville a des **places libres** dans ses maisons, parce que le joueur ou la ville elle-même y a construit des maisons.
 2. Un atelier veut **embaucher** (son stock est bas), ou un atelier du joueur a des postes vacants.
 3. Des mendiants sont embauchés : ils deviennent des habitants logés.
 4. Le nombre de mendiants retombe sous sa cible : de **nouveaux mendiants arrivent**.
 
 La population a donc grandi du nombre de mendiants arrivés. Sans places libres ou sans emplois, ce cycle s'arrête et la population reste stable autour de « logés + cible des mendiants ».
+
+### La ville construit ses maisons
+
+À la fin de chaque journée, la ville compare ses **logés** à ses **places**. Les mendiants ne comptent pas : ils n'occupent pas de place.
+
+- Si les logés dépassent **95 % des places** (strictement : 95 % pile ne suffit pas), et si le marché de la ville a en stock tous les matériaux d'une maison, la ville en construit une.
+- Sa maison est celle du joueur : mêmes matériaux (10 boisseaux de bois et 10 tonneaux de métal), mêmes 100 places, prête tout de suite. La ville ne paie pas d'or : elle n'en a pas.
+- Les matériaux sont retirés du stock **même si cela le vide**. Le prix du bois et du métal monte donc juste après. Ce retrait n'est pas compté comme une consommation dans les chiffres de la semaine, comme les achats du joueur.
+- Si un des matériaux manque, rien n'est construit ni retiré ce jour-là.
+- **Une maison par jour au plus.**
+- Un matériau désactivé dans le catalogue est simplement ignoré : la maison de la ville ne demande que les matériaux actifs, et rien du tout s'ils sont tous désactivés. La maison du joueur, elle, devient alors indisponible (section 10).
+
+**Exemple.** Une ville a 1 046 logés dans 1 100 places (95,1 %), et 12 boisseaux de bois et 10 tonneaux de métal au marché. Le soir, elle construit une maison : elle a maintenant 1 200 places, 2 boisseaux de bois et plus de métal. Le lendemain, ses logés sont à 87 % : elle ne construira plus avant d'avoir dépassé 1 140 logés.
+
+Pour le joueur, c'est une **course** : ses maisons lui rapporteront plus tard un loyer et de la réputation, celles de la ville ne lui rapportent rien. Pour en profiter, il doit construire avant que la ville ne dépasse 95 %.
+
+Le seuil de 95 % est un réglage de `Economy.asset` (`cityHouseOccupancy`, section « Cities' houses »), entre 0 et 1. Les maisons construites par la ville sont comptées à part de celles du joueur ; l'outil de débogage (F1, onglet « Villes ») les montre entre parenthèses après les logements : « 1 046 / 1 200 (+1) ».
 
 ### Comment une ville diminue
 
@@ -343,6 +360,7 @@ Presque jamais pour l'instant. Seuls les départs de mendiants au-dessus de leur
 2. Pour chaque marchandise, dans l'ordre du catalogue : l'atelier de la ville embauche ou licencie (section 8), puis produit (section 7).
 3. Les ateliers du joueur pourvoient leurs postes vacants parmi les mendiants (section 10).
 4. Les mendiants arrivent ou partent.
+5. Si ses logements sont presque pleins, la ville construit une maison.
 
 ## 10. Les bâtiments du joueur
 
@@ -521,7 +539,7 @@ Toutes les villes ont donc presque la même taille au départ : elles ne diffèr
 | Classes sociales | Riches, aisés, pauvres, avec une satisfaction par classe | Une seule classe moyenne, sans satisfaction |
 | Embauche parmi les mendiants | Si la satisfaction des pauvres est positive, sans regarder les logements ; les pauvres sans logement quittent ensuite la ville | Seulement dans la limite des places libres |
 | Embauche au-delà de 30 ouvriers par atelier | Passe par la liste des postes vacants, pourvue parmi les mendiants après la production, comme pour les ateliers des marchands | Comme en dessous de 30 |
-| Maisons | La ville construit elle-même quand ses logements sont presque pleins | Seul le joueur construit |
+| Maisons | La ville construit elle-même quand ses logements sont presque pleins | La ville construit elle-même au-delà de 95 % de ses places, une maison par jour au plus, avec les matériaux de la maison du joueur |
 | Ouvriers de départ | 250 + 2,5 par année après 1300 (jusqu'à 500), répartis selon un poids par atelier, plus 25 dans des emplacements particuliers | 250, répartis à parts égales |
 | Or des marchands IA | Ils paient 5/6 du prix et touchent 6/5 des ventes | Or illimité, prix normaux, bénéfice seulement compté |
 | Comptoirs et ateliers des marchands IA | Oui | Non |
@@ -531,7 +549,6 @@ Toutes les villes ont donc presque la même taille au départ : elles ne diffèr
 ## 14. Limites actuelles
 
 - Les **ateliers du joueur ne produisent rien** pour l'instant : leur production est calculée (section 10), mais elle n'a pas encore de comptoir où entrer.
-- Les **villes ne construisent pas de maisons** : sans maisons du joueur, leur population reste presque figée.
 - **Aucun manque n'a de conséquence** sur la population : pas de famine, pas de satisfaction, pas de départ d'habitants.
 - Les **ateliers ne consomment aucune matière première**, et le brai, la fonte brute, le chanvre et les tuiles, qui ne servent qu'à ça ou à la construction, sont désactivés.
 - Les marchands IA n'ont ni comptoir, ni atelier, ni or limité.
@@ -550,6 +567,7 @@ Les règles sont dans `Assets/Scripts/Core`, les réglages dans `Assets/Data`.
 | Courbes et calcul des prix | `PriceCurve`, `MarketPricing` | `Economy.asset` |
 | Achats et ventes | `Trade` | |
 | Bâtiments du joueur | `Construction` | `Buildings.asset` |
+| Maisons construites par la ville | `CityHousingRule`, `CityMarket.StartDay` | `Economy.asset` (seuil), `Buildings.asset` (matériaux et places) |
 | Ce que produiraient les ateliers du joueur | `MerchantOutputRule`, `CityMarket.PlayerDailyOutputOf` | `Economy.asset` (bonus), `Goods/*.asset` (production par ouvrier d'un marchand) |
 | Tour des marchands IA | `AiMerchantFleet` | `AI/AiMerchants.asset` |
 | Choix des destinations, des escales et des cargaisons | `SupplyPlanner` | poids dans `Goods/*.asset` |

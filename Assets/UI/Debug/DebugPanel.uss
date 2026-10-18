@@ -85,7 +85,7 @@
 }
 
 .debug-cities__cell--housing {
-    width: 130px;
+    width: 170px;
 }
 
 .debug-cities__cell--growth-since-start {
@@ -108,7 +108,7 @@
 
 /* As wide as the name, the population, the beggars, the housing and the growth. */
 .debug-cities__cell--city-group {
-    width: 580px;
+    width: 620px;
 }
 
 /* As wide as the stock, the three figures and the workers of a good. */

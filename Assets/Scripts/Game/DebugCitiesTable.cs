@@ -194,10 +194,15 @@ namespace DarkFantasyMerchant.Game
             return $"{TreasuryHudController.FormatNumber(beggars)} ({TreasuryHudController.FormatNumber(target)})";
         }
 
-        /// <summary>The housed inhabitants over the room of the houses: "1 008 / 1 100".</summary>
-        public static string FormatHousing(long housed, long room)
+        /// <summary>
+        /// The housed inhabitants over the room of the houses, followed by the houses the city has
+        /// built of its own when it has: "1 008 / 1 100", "1 108 / 1 200 (+1)".
+        /// </summary>
+        public static string FormatHousing(long housed, long room, long cityHouses = 0)
         {
-            return $"{TreasuryHudController.FormatNumber(housed)} / {TreasuryHudController.FormatNumber(room)}";
+            string text = $"{TreasuryHudController.FormatNumber(housed)} / {TreasuryHudController.FormatNumber(room)}";
+
+            return cityHouses > 0 ? $"{text} (+{TreasuryHudController.FormatNumber(cityHouses)})" : text;
         }
 
         /// <summary>A rate as the table writes it: "+2,5 %" or "-10,0 %", coloured, or a plain "0,0 %".</summary>
@@ -320,7 +325,7 @@ namespace DarkFantasyMerchant.Game
 
             row.Population.text = TreasuryHudController.FormatNumber(market.Population.Inhabitants);
             row.Beggars.text = FormatBeggars(market.Population.Beggars, market.BeggarTarget);
-            row.Housing.text = FormatHousing(market.Population.Housed, market.Population.Room);
+            row.Housing.text = FormatHousing(market.Population.Housed, market.Population.Room, market.CityHouses);
             row.GrowthSinceStart.text = FormatRate(market.Population.GrowthSinceStart);
 
             for (int column = 0; column < row.Goods.Length; column++)
@@ -361,6 +366,7 @@ namespace DarkFantasyMerchant.Game
             long beggarTargets = 0;
             long housed = 0;
             long room = 0;
+            long cityHouses = 0;
 
             foreach (Row row in rows)
             {
@@ -368,13 +374,14 @@ namespace DarkFantasyMerchant.Game
                 beggarTargets += row.Market.BeggarTarget;
                 housed += row.Market.Population.Housed;
                 room += row.Market.Population.Room;
+                cityHouses += row.Market.CityHouses;
                 inhabitants += row.Market.Population.Inhabitants;
                 startingInhabitants += row.Market.Population.StartingInhabitants;
             }
 
             totalPopulation.text = TreasuryHudController.FormatNumber(inhabitants);
             totalBeggars.text = FormatBeggars(beggars, beggarTargets);
-            totalHousing.text = FormatHousing(housed, room);
+            totalHousing.text = FormatHousing(housed, room, cityHouses);
 
             // The growth of the world: all its inhabitants together, against all those it started with.
             totalGrowthSinceStart.text = FormatRate(

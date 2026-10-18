@@ -325,6 +325,41 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void TryValidateSettings_SaysWhenTheCityHouseOccupancyIsWrong()
+        {
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty("cityHouseOccupancy").doubleValue = 1.5;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.IsFalse(economy.TryValidateSettings(out string problem));
+            StringAssert.Contains("cities' houses", problem);
+        }
+
+        [Test]
+        public void CreateHousingRule_BuildsAboveTheDefinitionsOccupancy()
+        {
+            EconomyDefinition fresh = Track(ScriptableObject.CreateInstance<EconomyDefinition>());
+
+            CityHousingRule rule = fresh.CreateHousingRule(100, new[] { new MaterialCost(0, 10) });
+
+            Assert.AreEqual(0.95, rule.Occupancy, Tolerance);
+            Assert.AreEqual(100, rule.Room);
+            Assert.AreEqual(1, rule.Materials.Count);
+        }
+
+        [Test]
+        public void CreateMarket_GivesTheMarketItsHousing()
+        {
+            CityDefinition city = City(new[] { wheat }, new[] { fish });
+            CityHousingRule housing = economy.CreateHousingRule(100, System.Array.Empty<MaterialCost>());
+
+            CityMarket market = economy.CreateMarket(
+                city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), 100, housing);
+
+            Assert.AreSame(housing, market.Housing);
+        }
+
+        [Test]
         public void TryValidateSettings_SaysWhenTheLabourIsWrong()
         {
             var serialized = new SerializedObject(economy);

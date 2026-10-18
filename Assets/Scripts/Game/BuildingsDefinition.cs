@@ -130,6 +130,45 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
+        /// The materials of the house as a city takes them from its market to build one of its own,
+        /// by their index among the active goods. Unlike the player's cost, nothing makes it
+        /// unavailable: an empty or inactive material is left out, and a good listed twice is
+        /// added up, so a house with none of its materials active takes nothing.
+        /// </summary>
+        public IReadOnlyList<MaterialCost> CityHouseMaterials(EconomyDefinition economy)
+        {
+            if (economy == null)
+            {
+                throw new ArgumentNullException(nameof(economy));
+            }
+
+            var units = new List<(int good, int units)>();
+
+            foreach (MaterialAmount material in house.Materials)
+            {
+                int index = material == null || material.Good == null ? -1 : economy.IndexOf(material.Good);
+
+                if (index < 0 || material.Units < 1)
+                {
+                    continue;
+                }
+
+                int listed = units.FindIndex(entry => entry.good == index);
+
+                if (listed < 0)
+                {
+                    units.Add((index, material.Units));
+                }
+                else
+                {
+                    units[listed] = (index, units[listed].units + material.Units);
+                }
+            }
+
+            return units.ConvertAll(entry => new MaterialCost(entry.good, entry.units));
+        }
+
+        /// <summary>
         /// Whether the buildings can be used at all: jobs and room of at least 1. The room of a
         /// house also sets the houses of every city at the start. A cost that cannot be worked
         /// out does not count here: it only makes its building unavailable

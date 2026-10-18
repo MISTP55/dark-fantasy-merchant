@@ -101,6 +101,10 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("The reserve leaks only while the workers and the reserve of the workshop stay under this.")]
         [SerializeField, Min(0)] private int reserveLeakCeiling = 30;
 
+        [Header("Cities' houses")]
+        [Tooltip("A city builds a house of its own, with the materials of the player's, once its housed inhabitants are above this share of its room.")]
+        [SerializeField, Range(0f, 1f)] private double cityHouseOccupancy = 0.95d;
+
         [Header("Stock thresholds T0 to T3 of a good in a city, at which its prices are given")]
         [Tooltip("T0: days of the city's consumption.")]
         [SerializeField, Min(0f)] private double t0Days = 7d;
@@ -264,6 +268,7 @@ namespace DarkFantasyMerchant.Game
                 ?? ProblemOf(() => CreateMerchantOutputRule(), "the merchants' workshops")
                 ?? ProblemOf(() => new CityPopulation(StartingPopulation), "the starting population (workforce times inhabitants per worker)")
                 ?? ProblemOf(() => CreateLabourRule(), "the labour")
+                ?? ProblemOf(() => CreateHousingRule(1, Array.Empty<MaterialCost>()), "the cities' houses")
                 ?? ProblemOf(() => CityPopulation.AtStart(0, inhabitantsPerWorker, startingBeggarsPerWorker, 1), "the starting beggars per worker");
 
             return problem == null;
@@ -376,6 +381,17 @@ namespace DarkFantasyMerchant.Game
                 reserveLeakCeiling);
         }
 
+        /// <summary>
+        /// When a city builds a house of its own, from these settings. Throws when the occupancy or
+        /// the room is unusable.
+        /// </summary>
+        /// <param name="room">Places of a house, the player's.</param>
+        /// <param name="materials">What a house takes from the market (<see cref="BuildingsDefinition.CityHouseMaterials"/>).</param>
+        public CityHousingRule CreateHousingRule(int room, IReadOnlyList<MaterialCost> materials)
+        {
+            return new CityHousingRule(cityHouseOccupancy, room, materials);
+        }
+
         /// <summary>Barrels of room a unit of a good takes in a hold: one, or the barrels per bushel.</summary>
         public int RoomOf(GoodDefinition good)
         {
@@ -436,12 +452,14 @@ namespace DarkFantasyMerchant.Game
         /// <param name="daysPerWeek">Days of the calendar's week: goods give their consumption per week.</param>
         /// <param name="labour">The labour of the city, or null to keep the immediate hiring.</param>
         /// <param name="roomPerHouse">Places of a house, at least 1 with a labour rule: the city starts with as many houses as its housed inhabitants need.</param>
+        /// <param name="housing">When the city builds a house of its own, only with a labour rule; null for never.</param>
         public CityMarket CreateMarket(
             CityDefinition city,
             MarketPricing pricing,
             int daysPerWeek,
             LabourRule labour = null,
-            int roomPerHouse = 0)
+            int roomPerHouse = 0,
+            CityHousingRule housing = null)
         {
             if (city == null)
             {
@@ -508,7 +526,8 @@ namespace DarkFantasyMerchant.Game
                 pricing,
                 daysPerWeek,
                 population,
-                labour);
+                labour,
+                housing);
         }
     }
 }

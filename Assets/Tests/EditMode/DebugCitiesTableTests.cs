@@ -472,6 +472,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void FormatHousing_AddsTheCityHouses_WhenThereAreSome()
+        {
+            Assert.AreEqual("1\u00A0008 / 1\u00A0100", DebugCitiesTable.FormatHousing(1008, 1100, 0));
+            Assert.AreEqual("1\u00A0108 / 1\u00A0200 (+1)", DebugCitiesTable.FormatHousing(1108, 1200, 1));
+        }
+
+        [Test]
         public void FormatWorkers_AddsTheReserve_WhenThereIsOne()
         {
             Assert.AreEqual("45/60 +10", DebugCitiesTable.FormatWorkers(45, 60, 10));

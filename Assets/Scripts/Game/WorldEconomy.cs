@@ -118,10 +118,13 @@ namespace DarkFantasyMerchant.Game
                 int daysPerWeek = worldClock.Calendar.DaysPerWeek;
                 LabourRule labour = economy.CreateLabourRule();
 
+                // Built even when the player's house is unavailable: the materials switched off are left out.
+                CityHousingRule housing = economy.CreateHousingRule(buildings.HouseRoom, buildings.CityHouseMaterials(economy));
+
                 foreach (CityDefinition city in mapView.Cities)
                 {
                     WarnAbout(city);
-                    markets[city] = economy.CreateMarket(city, pricing, daysPerWeek, labour, buildings.HouseRoom);
+                    markets[city] = economy.CreateMarket(city, pricing, daysPerWeek, labour, buildings.HouseRoom, housing);
                 }
             }
             catch (ArgumentOutOfRangeException exception)
