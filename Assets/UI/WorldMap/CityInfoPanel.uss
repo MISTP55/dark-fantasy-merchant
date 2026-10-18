@@ -84,7 +84,7 @@
    the right. Only the content of a tab, or a long description, scrolls. */
 .city-panel {
     width: 900px;
-    height: 620px;
+    height: 664px;
 }
 
 .city-panel > .info-panel__header {
