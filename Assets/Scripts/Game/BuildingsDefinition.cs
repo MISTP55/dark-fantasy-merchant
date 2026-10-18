@@ -69,12 +69,12 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>
         /// The cost of a building in Core's terms, its materials known by their index among the
-        /// economy's active goods. The house takes only its materials that are active
-        /// (<see cref="HouseMaterials"/>): it is never unavailable for its materials, and costs only
-        /// its gold when none is active. The workshop is unavailable for an empty or inactive one.
+        /// economy's active goods. A building takes only its materials that are active
+        /// (<see cref="MaterialsOf"/>): it is never unavailable for its materials, and costs only
+        /// its gold when none is active.
         /// </summary>
         /// <param name="type">The workshop or the house of this definition.</param>
-        /// <param name="problem">What is wrong, naming the building and the good's asset; null when nothing is.</param>
+        /// <param name="problem">What is wrong, naming the building; null when nothing is.</param>
         public bool TryCreateCost(BuildingType type, EconomyDefinition economy, out BuildingCost cost, out string problem)
         {
             cost = null;
@@ -94,57 +94,24 @@ namespace DarkFantasyMerchant.Game
                 return false;
             }
 
-            if (type == house)
-            {
-                cost = new BuildingCost(type.Gold, HouseMaterials(economy));
-                return true;
-            }
-
-            var materialCosts = new List<MaterialCost>(type.Materials.Count);
-
-            foreach (MaterialAmount material in type.Materials)
-            {
-                if (material == null || material.Good == null)
-                {
-                    problem = $"the {building} has an empty material";
-                    return false;
-                }
-
-                int index = economy.IndexOf(material.Good);
-
-                if (index < 0)
-                {
-                    problem = $"the {building} needs '{material.Good.name}', which is not an active good of the economy";
-                    return false;
-                }
-
-                if (material.Units < 1)
-                {
-                    problem = $"the {building} needs under 1 unit of '{material.Good.name}'";
-                    return false;
-                }
-
-                if (materialCosts.Exists(entry => entry.Good == index))
-                {
-                    problem = $"the {building} lists '{material.Good.name}' twice";
-                    return false;
-                }
-
-                materialCosts.Add(new MaterialCost(index, material.Units));
-            }
-
-            cost = new BuildingCost(type.Gold, materialCosts);
+            cost = new BuildingCost(type.Gold, MaterialsOf(type, economy));
             return true;
         }
 
         /// <summary>
-        /// The materials of the house, the player's and those a city builds of its own, by their
+        /// The materials of a building, the player's or one a city builds of its own, by their
         /// index among the active goods. Nothing makes them unavailable: an empty or inactive
-        /// material is left out, and a good listed twice is added up, so a house with none of its
-        /// materials active takes nothing.
+        /// material, or one under 1 unit, is left out, and a good listed twice is added up, so a
+        /// building with none of its materials active takes nothing.
         /// </summary>
-        public IReadOnlyList<MaterialCost> HouseMaterials(EconomyDefinition economy)
+        /// <param name="type">The workshop or the house of this definition.</param>
+        public IReadOnlyList<MaterialCost> MaterialsOf(BuildingType type, EconomyDefinition economy)
         {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             if (economy == null)
             {
                 throw new ArgumentNullException(nameof(economy));
@@ -152,7 +119,7 @@ namespace DarkFantasyMerchant.Game
 
             var units = new List<(int good, int units)>();
 
-            foreach (MaterialAmount material in house.Materials)
+            foreach (MaterialAmount material in type.Materials)
             {
                 int index = material == null || material.Good == null ? -1 : economy.IndexOf(material.Good);
 
@@ -180,7 +147,7 @@ namespace DarkFantasyMerchant.Game
         /// Whether the buildings can be used at all: jobs and room of at least 1. The room of a
         /// house also sets the houses of every city at the start. A cost that cannot be worked
         /// out does not count here: it only makes its building unavailable
-        /// (<see cref="TryCreateCost"/>), since a material of the workshop can be switched off.
+        /// (<see cref="TryCreateCost"/>).
         /// </summary>
         /// <param name="problem">What is wrong, for the console; null when nothing is.</param>
         public bool TryValidate(out string problem)
@@ -205,7 +172,7 @@ namespace DarkFantasyMerchant.Game
         /// <summary>
         /// What the buildings cost, for the player: "Logement : 5 000 or, 10 bois, 10 métal ·
         /// Atelier : 10 000 or, 10 bois, 30 métal", or "indisponible" for a building whose cost
-        /// cannot be worked out. Only the materials the building takes are named: a house whose
+        /// cannot be worked out. Only the materials the building takes are named: a building whose
         /// materials are all switched off reads "Logement : 5 000 or".
         /// </summary>
         public string CostsText(EconomyDefinition economy)

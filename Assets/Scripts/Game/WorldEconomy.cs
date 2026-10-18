@@ -27,7 +27,7 @@ namespace DarkFantasyMerchant.Game
         /// <summary>What a house costs, or null when it cannot be built (a negative gold): a material that is not an active good is left out.</summary>
         public BuildingCost HouseCost { get; private set; }
 
-        /// <summary>What a workshop costs, or null when it cannot be built (a material that is not an active good, among others).</summary>
+        /// <summary>What a workshop costs, or null when it cannot be built (a negative gold): a material that is not an active good is left out.</summary>
         public BuildingCost WorkshopCost { get; private set; }
 
         /// <summary>False until the markets exist, which is in Start, and for good when they could not be made.</summary>
@@ -119,7 +119,7 @@ namespace DarkFantasyMerchant.Game
                 LabourRule labour = economy.CreateLabourRule();
 
                 // The player's house: the materials switched off are left out.
-                CityHousingRule housing = economy.CreateHousingRule(buildings.HouseRoom, buildings.HouseMaterials(economy));
+                CityHousingRule housing = economy.CreateHousingRule(buildings.HouseRoom, buildings.MaterialsOf(buildings.House, economy));
 
                 foreach (CityDefinition city in mapView.Cities)
                 {
