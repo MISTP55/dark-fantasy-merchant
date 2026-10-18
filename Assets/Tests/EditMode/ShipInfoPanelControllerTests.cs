@@ -40,5 +40,34 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("Sel : 1 tonneau", ShipInfoPanelController.FormatCargoLine("Sel", 1, GoodUnit.Barrel));
             Assert.AreEqual("Céréales : 1 200 boisseaux", ShipInfoPanelController.FormatCargoLine("Céréales", 1200, GoodUnit.Bushel));
         }
+
+        [Test]
+        public void CargoLines_NameTheGoodsAboard_InAlphabeticalOrder()
+        {
+            var goods = new[]
+            {
+                TestEconomy.CreateGood("Vin", 220, 7),
+                TestEconomy.CreateGood("Poisson", 440, 7),
+                TestEconomy.CreateGood("Céréales", 110, 7),
+            };
+
+            try
+            {
+                var hold = new CargoHold(200);
+                hold.TryAdd(0, 20);
+                hold.TryAdd(2, 3);
+
+                CollectionAssert.AreEqual(
+                    new[] { "Céréales : 3 tonneaux", "Vin : 20 tonneaux" },
+                    ShipInfoPanelController.CargoLines(goods, hold));
+            }
+            finally
+            {
+                foreach (GoodDefinition good in goods)
+                {
+                    UnityEngine.Object.DestroyImmediate(good);
+                }
+            }
+        }
     }
 }

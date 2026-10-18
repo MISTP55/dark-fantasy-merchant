@@ -212,6 +212,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void TheWorkshops_AreInTheAlphabeticalOrderOfTheirGoods()
+        {
+            // Wine (good 1) and salt (good 2) are both produced: salt comes first.
+            market = new CityMarket(
+                new[] { new MarketGood(10, 2, 0, 0), new MarketGood(10, 2, 30, 0.1), new MarketGood(10, 2, 30, 0.1) },
+                TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7, new CityPopulation(1000));
+
+            section.Show(market, null);
+
+            Assert.AreEqual(2, workshops.childCount);
+            StringAssert.StartsWith("Sel : 0 atelier", Text(workshops[0]));
+            StringAssert.StartsWith("Vin : 0 atelier", Text(workshops[1]));
+            Assert.IsTrue(section.BuildWorkshop(2));
+            StringAssert.StartsWith("Sel : 1 atelier", Text(workshops[0]));
+        }
+
+        [Test]
         public void AnUnavailableBuilding_HasADisabledButtonWithoutAPrice_AndBuildsNothing()
         {
             houseCost = null;

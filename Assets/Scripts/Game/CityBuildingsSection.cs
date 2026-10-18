@@ -7,7 +7,8 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// The "Bâtiments" tab of the city panel: under "Logements", a row for the player's houses;
-    /// under "Ateliers", one row per good the city produces with the player's workshops of it;
+    /// under "Ateliers", one row per good the city produces with the player's workshops of it, in
+    /// the alphabetical order of the goods;
     /// and the buttons that build, each
     /// showing what the building would cost now. A building without a cost is unavailable: its
     /// rows stay, their buttons disabled. Follows the market, the hold and the treasury while it
@@ -191,13 +192,21 @@ namespace DarkFantasyMerchant.Game
 
             AddRow(houseRowContainer, HouseRow, () => BuildHouse());
 
+            var produced = new List<int>();
+
             for (int good = 0; good < market.GoodCount && good < goodNames.Count; good++)
             {
                 if (market.MaxWorkersOf(good) > 0)
                 {
-                    int captured = good;
-                    AddRow(workshopRowContainer, good, () => BuildWorkshop(captured));
+                    produced.Add(good);
                 }
+            }
+
+            NameOrder.Sort(produced, good => goodNames[good]);
+
+            foreach (int good in produced)
+            {
+                AddRow(workshopRowContainer, good, () => BuildWorkshop(good));
             }
         }
 

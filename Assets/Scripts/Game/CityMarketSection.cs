@@ -84,7 +84,7 @@ namespace DarkFantasyMerchant.Game
                 elements[i] = BuildRow(i, goodNames[i], icon);
             }
 
-            foreach (int good in DebugCitiesTable.AlphabeticalOrder(goodNames))
+            foreach (int good in NameOrder.Of(goodNames))
             {
                 rowContainer.Add(elements[good]);
             }

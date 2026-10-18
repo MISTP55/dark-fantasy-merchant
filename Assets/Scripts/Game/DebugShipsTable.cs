@@ -134,7 +134,7 @@ namespace DarkFantasyMerchant.Game
             this.rowContainer = rowContainer ?? throw new ArgumentNullException(nameof(rowContainer));
             this.removeShip = removeShip;
             goodCount = goodNames.Count;
-            goodOrder = DebugCitiesTable.AlphabeticalOrder(goodNames);
+            goodOrder = NameOrder.Of(goodNames);
 
             header.Clear();
             rowContainer.Clear();

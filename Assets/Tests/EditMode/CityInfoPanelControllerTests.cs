@@ -41,13 +41,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void ProducedGoodsText_NamesTheGoodsOfAProduction_InTheOrderOfTheGoods()
+        public void ProducedGoodsText_NamesTheGoodsOfAProduction()
         {
             CityDefinition city = Track(TestEconomy.CreateCity(new[] { salt, grain }, new[] { wine }));
             var goods = new[] { grain, fish, salt, wine };
 
             Assert.AreEqual("Céréales, Sel", CityInfoPanelController.ProducedGoodsText(city, goods, GoodProduction.Efficient));
             Assert.AreEqual("Vin", CityInfoPanelController.ProducedGoodsText(city, goods, GoodProduction.Inefficient));
+        }
+
+        [Test]
+        public void ProducedGoodsText_NamesTheGoodsInAlphabeticalOrder()
+        {
+            CityDefinition city = Track(TestEconomy.CreateCity(new[] { wine, salt, grain }, new GoodDefinition[0]));
+
+            Assert.AreEqual(
+                "Céréales, Sel, Vin",
+                CityInfoPanelController.ProducedGoodsText(city, new[] { wine, salt, grain }, GoodProduction.Efficient));
         }
 
         [Test]

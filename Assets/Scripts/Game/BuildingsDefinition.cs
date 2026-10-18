@@ -174,7 +174,11 @@ namespace DarkFantasyMerchant.Game
 
             var text = new StringBuilder(TreasuryHudController.FormatGold(type.Gold));
 
-            foreach (MaterialAmount material in type.Materials)
+            // In the alphabetical order of the materials, as every list the player reads.
+            var materials = new List<MaterialAmount>(type.Materials);
+            NameOrder.Sort(materials, material => material.Good.DisplayName);
+
+            foreach (MaterialAmount material in materials)
             {
                 text.Append(", ").Append(material.Units).Append(' ').Append(material.Good.DisplayName.ToLowerInvariant());
             }

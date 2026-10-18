@@ -42,7 +42,6 @@ namespace DarkFantasyMerchant.Game
         private const string GoodGroupClass = "debug-cities__cell--good-group";
 
         // Accents and case aside, as a French reader sorts: "Édimbourg" between "Cologne" and "Gdansk".
-        private const CompareOptions NameComparison = CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace;
 
         // Not the French culture: its separators and its minus sign depend on the platform.
         private static readonly NumberFormatInfo QuantityFormat = new NumberFormatInfo
@@ -131,7 +130,7 @@ namespace DarkFantasyMerchant.Game
             this.rowContainer = rowContainer ?? throw new ArgumentNullException(nameof(rowContainer));
             this.goodRowContainer = goodRowContainer ?? throw new ArgumentNullException(nameof(goodRowContainer));
             goodCount = goodNames.Count;
-            goodOrder = AlphabeticalOrder(goodNames);
+            goodOrder = NameOrder.Of(goodNames);
 
             header.Clear();
             rowContainer.Clear();
@@ -153,37 +152,6 @@ namespace DarkFantasyMerchant.Game
             totalGoods = AddGoodCells(goodTotalRow, goodCount);
             goodTotalContainer.Add(goodTotalRow);
             WriteTotals();
-        }
-
-        /// <summary>Compares two names in alphabetical order, accents and case aside.</summary>
-        public static int CompareNames(string first, string second)
-        {
-            return CultureInfo.InvariantCulture.CompareInfo.Compare(first, second, NameComparison);
-        }
-
-        /// <summary>The indices of the names, in the alphabetical order of the names (<see cref="CompareNames"/>).</summary>
-        public static int[] AlphabeticalOrder(IReadOnlyList<string> names)
-        {
-            if (names == null)
-            {
-                throw new ArgumentNullException(nameof(names));
-            }
-
-            var order = new int[names.Count];
-
-            for (int i = 0; i < order.Length; i++)
-            {
-                order[i] = i;
-            }
-
-            // Array.Sort is not stable: names that compare equal keep their order.
-            Array.Sort(order, (first, second) =>
-            {
-                int byName = CompareNames(names[first], names[second]);
-                return byName != 0 ? byName : first.CompareTo(second);
-            });
-
-            return order;
         }
 
         /// <summary>A quantity as the table writes it, in the unit of its good: "1 234,6", one decimal, the French way.</summary>
@@ -282,7 +250,7 @@ namespace DarkFantasyMerchant.Game
             };
 
             // After the cities of the same name, before the first that comes after it.
-            int index = rows.FindIndex(other => CompareNames(other.Name, cityName) > 0);
+            int index = rows.FindIndex(other => NameOrder.Compare(other.Name, cityName) > 0);
 
             if (index < 0)
             {

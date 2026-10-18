@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using DarkFantasyMerchant.Core;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -108,6 +109,32 @@ namespace DarkFantasyMerchant.Game
                 + $"{TreasuryHudController.FormatNumber(hold.Capacity)} tonneaux";
         }
 
+        /// <summary>A line per good aboard (<see cref="FormatCargoLine"/>), in the alphabetical order of the goods.</summary>
+        /// <param name="goods">The goods of the economy, by the hold's indices.</param>
+        public static List<string> CargoLines(IReadOnlyList<GoodDefinition> goods, CargoHold hold)
+        {
+            var aboard = new List<int>();
+
+            for (int i = 0; i < goods.Count; i++)
+            {
+                if (goods[i] != null && hold.UnitsOf(i) >= 1)
+                {
+                    aboard.Add(i);
+                }
+            }
+
+            NameOrder.Sort(aboard, good => goods[good].DisplayName);
+
+            var lines = new List<string>();
+
+            foreach (int good in aboard)
+            {
+                lines.Add(FormatCargoLine(goods[good].DisplayName, hold.UnitsOf(good), goods[good].Unit));
+            }
+
+            return lines;
+        }
+
         /// <summary>One good of the hold as the panel writes it: "Vin : 20 tonneaux", "Céréales : 3 boisseaux".</summary>
         public static string FormatCargoLine(string goodName, int quantity, GoodUnit unit)
         {
@@ -157,16 +184,9 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            for (int i = 0; i < economy.Goods.Count; i++)
+            foreach (string text in CargoLines(economy.Goods, shownCargo))
             {
-                int quantity = shownCargo.UnitsOf(i);
-
-                if (quantity < 1 || economy.Goods[i] == null)
-                {
-                    continue;
-                }
-
-                var line = new Label(FormatCargoLine(economy.Goods[i].DisplayName, quantity, economy.Goods[i].Unit));
+                var line = new Label(text);
                 line.AddToClassList(CargoLineClass);
                 cargoList.Add(line);
             }

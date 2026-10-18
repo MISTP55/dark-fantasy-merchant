@@ -163,6 +163,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void CostsText_NamesTheMaterialsInAlphabeticalOrder()
+        {
+            SetBuilding("house", 5000, (metal, 10), (timber, 20));
+
+            StringAssert.StartsWith("Logement : 5 000 or, 20 bois, 10 métal ·", buildings.CostsText(economy));
+        }
+
+        [Test]
         public void CostsText_WritesABuildingWhoseCostCannotBeCreatedAsUnavailable()
         {
             SetBuilding("house", 5000, (null, 10));

@@ -404,6 +404,7 @@ namespace DarkFantasyMerchant.Game
             if (shipsView != null)
             {
                 shipsView.Docking.GetShipsIn(city, listedShips);
+                NameOrder.Sort(listedShips, shipsView.DisplayNameOf);
             }
 
             foreach (Ship ship in listedShips)
@@ -637,7 +638,7 @@ namespace DarkFantasyMerchant.Game
         public const string NoProducedGoods = "Aucune";
 
         /// <summary>
-        /// The goods the city produces in this way, named in the order of the goods given and
+        /// The goods the city produces in this way, named in alphabetical order and
         /// separated by commas, or <see cref="NoProducedGoods"/>. A good that is not given (an
         /// inactive good, which is not among the economy's goods) is left out.
         /// </summary>
@@ -652,6 +653,8 @@ namespace DarkFantasyMerchant.Game
                     names.Add(good.DisplayName);
                 }
             }
+
+            NameOrder.Sort(names, name => name);
 
             return names.Count > 0 ? string.Join(", ", names) : NoProducedGoods;
         }

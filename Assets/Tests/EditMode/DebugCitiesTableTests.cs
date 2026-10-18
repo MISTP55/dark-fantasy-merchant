@@ -170,14 +170,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void AlphabeticalOrder_SortsTheNames_AccentsAndCaseAside()
-        {
-            CollectionAssert.AreEqual(
-                new[] { 3, 1, 2, 0 },
-                DebugCitiesTable.AlphabeticalOrder(new[] { "Vin", "Étoffe", "Fer", "céréales" }));
-        }
-
-        [Test]
         public void WhileShown_ADayThatStarts_RewritesThePopulation_AndTheTotals()
         {
             CityMarket city = FedMarket(startingDays: 0, new CityPopulation(900, 100, 1000));
