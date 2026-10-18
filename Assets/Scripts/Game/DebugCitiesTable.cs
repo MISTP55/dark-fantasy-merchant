@@ -12,6 +12,8 @@ namespace DarkFantasyMerchant.Game
     /// gains in a week, the nominal figure first and the one of the last days in brackets,
     /// the workers of its workshop over their maximum and its reserve,
     /// and a last row with the total of every column. Follows the markets while it is shown.
+    /// The cities and the goods are in alphabetical order.
+    /// The city's columns and the goods' are in two containers, so that only the goods' scroll sideways.
     /// </summary>
     public sealed class DebugCitiesTable
     {
@@ -39,6 +41,9 @@ namespace DarkFantasyMerchant.Game
         private const string CityGroupClass = "debug-cities__cell--city-group";
         private const string GoodGroupClass = "debug-cities__cell--good-group";
 
+        // Accents and case aside, as a French reader sorts: "Édimbourg" between "Cologne" and "Gdansk".
+        private const CompareOptions NameComparison = CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace;
+
         // Not the French culture: its separators and its minus sign depend on the platform.
         private static readonly NumberFormatInfo QuantityFormat = new NumberFormatInfo
         {
@@ -57,6 +62,7 @@ namespace DarkFantasyMerchant.Game
 
         private sealed class Row
         {
+            public string Name;
             public Label Population;
             public Label Beggars;
             public Label Housing;
@@ -67,7 +73,11 @@ namespace DarkFantasyMerchant.Game
         }
 
         private readonly VisualElement rowContainer;
+        private readonly VisualElement goodRowContainer;
         private readonly int goodCount;
+
+        // The good of every column of goods: their indices in the catalogue's order, sorted by name.
+        private readonly int[] goodOrder;
         private readonly List<Row> rows = new List<Row>();
         private readonly Label totalPopulation;
         private readonly Label totalBeggars;
@@ -77,14 +87,20 @@ namespace DarkFantasyMerchant.Game
 
         private bool isShown;
 
-        /// <param name="header">Where the two header rows are built.</param>
-        /// <param name="rowContainer">Where the rows are built, one per city added.</param>
-        /// <param name="totalContainer">Where the row of the totals is built.</param>
-        /// <param name="goodNames">The names of the goods, in the catalogue's order.</param>
+        /// <param name="header">Where the two header rows of the city's columns are built.</param>
+        /// <param name="rowContainer">Where the city's columns of the rows are built, one row per city added.</param>
+        /// <param name="totalContainer">Where the city's columns of the row of the totals are built.</param>
+        /// <param name="goodHeader">Where the two header rows of the goods' columns are built.</param>
+        /// <param name="goodRowContainer">Where the goods' columns of the rows are built, one row per city added.</param>
+        /// <param name="goodTotalContainer">Where the goods' columns of the row of the totals are built.</param>
+        /// <param name="goodNames">The names of the goods, in the catalogue's order; their columns are in alphabetical order.</param>
         public DebugCitiesTable(
             VisualElement header,
             VisualElement rowContainer,
             VisualElement totalContainer,
+            VisualElement goodHeader,
+            VisualElement goodRowContainer,
+            VisualElement goodTotalContainer,
             IReadOnlyList<string> goodNames)
         {
             if (header == null)
@@ -97,30 +113,77 @@ namespace DarkFantasyMerchant.Game
                 throw new ArgumentNullException(nameof(totalContainer));
             }
 
+            if (goodHeader == null)
+            {
+                throw new ArgumentNullException(nameof(goodHeader));
+            }
+
+            if (goodTotalContainer == null)
+            {
+                throw new ArgumentNullException(nameof(goodTotalContainer));
+            }
+
             if (goodNames == null)
             {
                 throw new ArgumentNullException(nameof(goodNames));
             }
 
             this.rowContainer = rowContainer ?? throw new ArgumentNullException(nameof(rowContainer));
+            this.goodRowContainer = goodRowContainer ?? throw new ArgumentNullException(nameof(goodRowContainer));
             goodCount = goodNames.Count;
+            goodOrder = AlphabeticalOrder(goodNames);
 
             header.Clear();
             rowContainer.Clear();
             totalContainer.Clear();
-            BuildHeader(header, goodNames);
+            goodHeader.Clear();
+            goodRowContainer.Clear();
+            goodTotalContainer.Clear();
+            BuildHeader(header, goodHeader, goodNames, goodOrder);
 
-            var totalRow = new VisualElement();
-            totalRow.AddToClassList(RowClass);
-            totalRow.AddToClassList(TotalRowClass);
+            VisualElement totalRow = NewRow(TotalRowClass);
             AddLabel(totalRow, NameCellClass).text = "Total";
             totalPopulation = AddLabel(totalRow, PopulationCellClass);
             totalBeggars = AddLabel(totalRow, BeggarsCellClass);
             totalHousing = AddLabel(totalRow, HousingCellClass);
             totalGrowthSinceStart = AddLabel(totalRow, GrowthSinceStartCellClass);
-            totalGoods = AddGoodCells(totalRow, goodCount);
             totalContainer.Add(totalRow);
+
+            VisualElement goodTotalRow = NewRow(TotalRowClass);
+            totalGoods = AddGoodCells(goodTotalRow, goodCount);
+            goodTotalContainer.Add(goodTotalRow);
             WriteTotals();
+        }
+
+        /// <summary>Compares two names in alphabetical order, accents and case aside.</summary>
+        public static int CompareNames(string first, string second)
+        {
+            return CultureInfo.InvariantCulture.CompareInfo.Compare(first, second, NameComparison);
+        }
+
+        /// <summary>The indices of the names, in the alphabetical order of the names (<see cref="CompareNames"/>).</summary>
+        public static int[] AlphabeticalOrder(IReadOnlyList<string> names)
+        {
+            if (names == null)
+            {
+                throw new ArgumentNullException(nameof(names));
+            }
+
+            var order = new int[names.Count];
+
+            for (int i = 0; i < order.Length; i++)
+            {
+                order[i] = i;
+            }
+
+            // Array.Sort is not stable: names that compare equal keep their order.
+            Array.Sort(order, (first, second) =>
+            {
+                int byName = CompareNames(names[first], names[second]);
+                return byName != 0 ? byName : first.CompareTo(second);
+            });
+
+            return order;
         }
 
         /// <summary>A quantity as the table writes it, in the unit of its good: "1 234,6", one decimal, the French way.</summary>
@@ -184,7 +247,10 @@ namespace DarkFantasyMerchant.Game
             return rounded < 0d ? $"<color={NegativeColor}>{text}</color>" : text;
         }
 
-        /// <summary>Adds the row of a city. It is written at once, and then follows the market while the table is shown.</summary>
+        /// <summary>
+        /// Adds the row of a city, among the others in alphabetical order. It is written at once,
+        /// and then follows the market while the table is shown.
+        /// </summary>
         public void AddCity(string cityName, CityMarket market)
         {
             if (market == null)
@@ -192,19 +258,20 @@ namespace DarkFantasyMerchant.Game
                 throw new ArgumentNullException(nameof(market));
             }
 
-            var element = new VisualElement();
-            element.AddToClassList(RowClass);
+            VisualElement element = NewRow();
+            VisualElement goodElement = NewRow();
 
             AddLabel(element, NameCellClass).text = cityName;
 
             var row = new Row
             {
+                Name = cityName,
                 Population = AddLabel(element, PopulationCellClass),
                 Beggars = AddLabel(element, BeggarsCellClass),
                 Housing = AddLabel(element, HousingCellClass),
                 GrowthSinceStart = AddLabel(element, GrowthSinceStartCellClass),
                 Market = market,
-                Goods = AddGoodCells(element, goodCount),
+                Goods = AddGoodCells(goodElement, goodCount),
             };
 
             // A market that changes changes the totals too.
@@ -214,8 +281,17 @@ namespace DarkFantasyMerchant.Game
                 WriteTotals();
             };
 
-            rows.Add(row);
-            rowContainer.Add(element);
+            // After the cities of the same name, before the first that comes after it.
+            int index = rows.FindIndex(other => CompareNames(other.Name, cityName) > 0);
+
+            if (index < 0)
+            {
+                index = rows.Count;
+            }
+
+            rows.Insert(index, row);
+            rowContainer.Insert(index, element);
+            goodRowContainer.Insert(index, goodElement);
             row.Refresh();
 
             if (isShown)
@@ -279,9 +355,10 @@ namespace DarkFantasyMerchant.Game
             row.Housing.text = FormatHousing(market.Population.Housed, market.Population.Room);
             row.GrowthSinceStart.text = FormatRate(market.Population.GrowthSinceStart);
 
-            for (int i = 0; i < row.Goods.Length; i++)
+            for (int column = 0; column < row.Goods.Length; column++)
             {
-                GoodCells cells = row.Goods[i];
+                GoodCells cells = row.Goods[column];
+                int i = goodOrder[column];
 
                 // A market made from another catalogue than the columns: nothing to show there.
                 if (i >= market.GoodCount)
@@ -335,8 +412,9 @@ namespace DarkFantasyMerchant.Game
             totalGrowthSinceStart.text = FormatRate(
                 startingInhabitants > 0 ? (double)inhabitants / startingInhabitants - 1d : 0d);
 
-            for (int i = 0; i < totalGoods.Length; i++)
+            for (int column = 0; column < totalGoods.Length; column++)
             {
+                int i = goodOrder[column];
                 long stock = 0;
                 double nominalProduction = 0d;
                 double nominalConsumption = 0d;
@@ -368,7 +446,7 @@ namespace DarkFantasyMerchant.Game
                 }
 
                 Write(
-                    totalGoods[i],
+                    totalGoods[column],
                     stock,
                     nominalProduction,
                     nominalConsumption,
@@ -418,35 +496,50 @@ namespace DarkFantasyMerchant.Game
             return goods;
         }
 
-        // Two rows: the goods over their columns, then the name of every column.
-        private static void BuildHeader(VisualElement header, IReadOnlyList<string> goodNames)
+        private static VisualElement NewRow(string rowClass = null)
         {
-            var groups = new VisualElement();
-            groups.AddToClassList(RowClass);
-            groups.AddToClassList(HeaderRowClass);
+            var row = new VisualElement();
+            row.AddToClassList(RowClass);
+
+            if (rowClass != null)
+            {
+                row.AddToClassList(rowClass);
+            }
+
+            return row;
+        }
+
+        // Two rows on each side: the goods over their columns (a blank over the city's), then the name of every column.
+        private static void BuildHeader(
+            VisualElement header, VisualElement goodHeader, IReadOnlyList<string> goodNames, int[] goodOrder)
+        {
+            VisualElement groups = NewRow(HeaderRowClass);
             AddLabel(groups, CityGroupClass);
 
-            var columns = new VisualElement();
-            columns.AddToClassList(RowClass);
-            columns.AddToClassList(HeaderRowClass);
+            VisualElement columns = NewRow(HeaderRowClass);
             AddLabel(columns, NameCellClass).text = "Ville";
             AddLabel(columns, PopulationCellClass).text = "Population";
             AddLabel(columns, BeggarsCellClass).text = "Mendiants";
             AddLabel(columns, HousingCellClass).text = "Logements";
             AddLabel(columns, GrowthSinceStartCellClass).text = "Croiss. totale";
 
-            foreach (string goodName in goodNames)
+            VisualElement goodGroups = NewRow(HeaderRowClass);
+            VisualElement goodColumns = NewRow(HeaderRowClass);
+
+            foreach (int good in goodOrder)
             {
-                AddLabel(groups, GoodGroupClass).text = goodName;
-                AddLabel(columns, StockCellClass).text = "Stock";
-                AddLabel(columns, FigureCellClass).text = "Prod.";
-                AddLabel(columns, FigureCellClass).text = "Conso.";
-                AddLabel(columns, FigureCellClass).text = "Net";
-                AddLabel(columns, WorkersCellClass).text = "Ouv.";
+                AddLabel(goodGroups, GoodGroupClass).text = goodNames[good];
+                AddLabel(goodColumns, StockCellClass).text = "Stock";
+                AddLabel(goodColumns, FigureCellClass).text = "Prod.";
+                AddLabel(goodColumns, FigureCellClass).text = "Conso.";
+                AddLabel(goodColumns, FigureCellClass).text = "Net";
+                AddLabel(goodColumns, WorkersCellClass).text = "Ouv.";
             }
 
             header.Add(groups);
             header.Add(columns);
+            goodHeader.Add(goodGroups);
+            goodHeader.Add(goodColumns);
         }
 
         private static Label AddLabel(VisualElement parent, string cellClass)

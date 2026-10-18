@@ -20,7 +20,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int CrewCell = 7;
         private const int SpeedCell = 8;
         private const int HoldCell = 9;
-        private const int FirstGoodCell = 10;
+        // The goods in alphabetical order: "Fer" before "Poisson".
+        private const int IronCell = 10;
+        private const int FishCell = 11;
         private const int ProfitCell = 12;
 
         private VisualElement header;
@@ -63,8 +65,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("Équipage", ((Label)header[0][CrewCell]).text);
             Assert.AreEqual("Vitesse", ((Label)header[0][SpeedCell]).text);
             Assert.AreEqual("Cale", ((Label)header[0][HoldCell]).text);
-            Assert.AreEqual("Poisson", ((Label)header[0][FirstGoodCell]).text);
-            Assert.AreEqual("Fer", ((Label)header[0][FirstGoodCell + 1]).text);
+            Assert.AreEqual("Fer", ((Label)header[0][IronCell]).text);
+            Assert.AreEqual("Poisson", ((Label)header[0][FishCell]).text);
             Assert.AreEqual("Profit", ((Label)header[0][ProfitCell]).text);
         }
 
@@ -84,7 +86,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("14 / 28", Text(0, CrewCell));
             Assert.AreEqual("100\u00A0%", Text(0, SpeedCell));
             Assert.AreEqual("0 / 200", Text(0, HoldCell));
-            Assert.AreEqual("0", Text(0, FirstGoodCell));
+            Assert.AreEqual("0", Text(0, FishCell));
             Assert.AreEqual(DebugShipsTable.NoValue, Text(0, ProfitCell));
         }
 
@@ -102,8 +104,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("En mer", Text(0, StateCell));
             Assert.AreEqual("0,750 ; 0,500", Text(0, DestinationCell));
             Assert.AreEqual("60 / 200", Text(0, HoldCell));
-            Assert.AreEqual("0", Text(0, FirstGoodCell));
-            Assert.AreEqual("60", Text(0, FirstGoodCell + 1));
+            Assert.AreEqual("0", Text(0, FishCell));
+            Assert.AreEqual("60", Text(0, IronCell));
             Assert.AreEqual("-1\u00A0250 or", Text(0, ProfitCell));
         }
 
@@ -153,7 +155,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             table.Refresh(ships);
 
             Assert.AreEqual(1, rows.childCount);
-            Assert.AreEqual("5", Text(0, FirstGoodCell));
+            Assert.AreEqual("5", Text(0, FishCell));
 
             ships.Add(new DebugShipInfo("C", false, CreateShip(), null, null, 0));
             table.Refresh(ships);

@@ -10,15 +10,19 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Fish = 0;
         private const int Iron = 1;
 
-        // Children of a row, in order: the city, its population, its beggars, its housing, its growth since the start,
-        // then five cells per good.
+        // Children of a row of the city's columns, in order: the city, its population, its beggars, its housing,
+        // its growth since the start. A row of the goods' columns has five cells per good.
         private const int NameCell = 0;
         private const int PopulationCell = 1;
         private const int BeggarsCell = 2;
         private const int HousingCell = 3;
         private const int GrowthSinceStartCell = 4;
-        private const int FirstGoodCell = 5;
+        private const int CityCells = 5;
         private const int CellsPerGood = 5;
+
+        // The goods' columns in alphabetical order: "Fer" before "Poisson".
+        private const int IronColumn = 0;
+        private const int FishColumn = 1;
         private const int Stock = 0;
         private const int Production = 1;
         private const int Consumption = 2;
@@ -28,6 +32,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private VisualElement header;
         private VisualElement rows;
         private VisualElement totals;
+        private VisualElement goodHeader;
+        private VisualElement goodRows;
+        private VisualElement goodTotals;
         private CityMarket market;
         private CityMarket village;
         private DebugCitiesTable table;
@@ -38,6 +45,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             header = new VisualElement();
             rows = new VisualElement();
             totals = new VisualElement();
+            goodHeader = new VisualElement();
+            goodRows = new VisualElement();
+            goodTotals = new VisualElement();
 
             // A thousand inhabitants. Fish: 2 barrels a day, not produced, 60 in stock.
             // Iron: 2 barrels a day, and a full workshop of 30 workers making 3; 60 in stock.
@@ -59,7 +69,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 TestMarkets.Pricing,
                 7,
                 new CityPopulation(500));
-            table = new DebugCitiesTable(header, rows, totals, new[] { "Poisson", "Fer" });
+            table = new DebugCitiesTable(header, rows, totals, goodHeader, goodRows, goodTotals, new[] { "Poisson", "Fer" });
         }
 
         private string Total(int cell)
@@ -69,7 +79,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
         private string Total(int good, int figure)
         {
-            return Total(FirstGoodCell + good * CellsPerGood + figure);
+            return ((Label)goodTotals[0][ColumnOf(good) * CellsPerGood + figure]).text;
         }
 
         private string Text(int city, int cell)
@@ -79,7 +89,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
         private string Text(int city, int good, int figure)
         {
-            return Text(city, FirstGoodCell + good * CellsPerGood + figure);
+            return ((Label)goodRows[city][ColumnOf(good) * CellsPerGood + figure]).text;
+        }
+
+        private static int ColumnOf(int good)
+        {
+            return good == Iron ? IronColumn : FishColumn;
         }
 
         private static string Positive(string text)
@@ -96,36 +111,70 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TheHeader_NamesTheGoods_AndTheirFigures()
         {
             Assert.AreEqual(2, header.childCount);
+            Assert.AreEqual(2, goodHeader.childCount);
 
-            // A blank over the city's columns, then one name per good.
-            Assert.AreEqual(3, header[0].childCount);
-            Assert.AreEqual("Poisson", ((Label)header[0][1]).text);
-            Assert.AreEqual("Fer", ((Label)header[0][2]).text);
+            // A blank over the city's columns, one name per good over theirs.
+            Assert.AreEqual(1, header[0].childCount);
+            Assert.AreEqual(2, goodHeader[0].childCount);
+            Assert.AreEqual("Fer", ((Label)goodHeader[0][IronColumn]).text);
+            Assert.AreEqual("Poisson", ((Label)goodHeader[0][FishColumn]).text);
 
-            Assert.AreEqual(FirstGoodCell + 2 * CellsPerGood, header[1].childCount);
+            Assert.AreEqual(CityCells, header[1].childCount);
             Assert.AreEqual("Ville", ((Label)header[1][NameCell]).text);
             Assert.AreEqual("Population", ((Label)header[1][PopulationCell]).text);
             Assert.AreEqual("Mendiants", ((Label)header[1][BeggarsCell]).text);
             Assert.AreEqual("Logements", ((Label)header[1][HousingCell]).text);
             Assert.AreEqual("Croiss. totale", ((Label)header[1][GrowthSinceStartCell]).text);
-            Assert.AreEqual("Stock", ((Label)header[1][FirstGoodCell + Stock]).text);
-            Assert.AreEqual("Prod.", ((Label)header[1][FirstGoodCell + Production]).text);
-            Assert.AreEqual("Conso.", ((Label)header[1][FirstGoodCell + Consumption]).text);
-            Assert.AreEqual("Net", ((Label)header[1][FirstGoodCell + CellsPerGood + Net]).text);
-            Assert.AreEqual("Ouv.", ((Label)header[1][FirstGoodCell + Workers]).text);
+
+            Assert.AreEqual(2 * CellsPerGood, goodHeader[1].childCount);
+            Assert.AreEqual("Stock", ((Label)goodHeader[1][Stock]).text);
+            Assert.AreEqual("Prod.", ((Label)goodHeader[1][Production]).text);
+            Assert.AreEqual("Conso.", ((Label)goodHeader[1][Consumption]).text);
+            Assert.AreEqual("Net", ((Label)goodHeader[1][FishColumn * CellsPerGood + Net]).text);
+            Assert.AreEqual("Ouv.", ((Label)goodHeader[1][Workers]).text);
         }
 
         [Test]
         public void AddCity_AddsARow_WithItsNameAndPopulation()
         {
-            table.AddCity("Sparia", market);
             table.AddCity("Elforth", village);
+            table.AddCity("Sparia", market);
 
             Assert.AreEqual(2, rows.childCount);
-            Assert.AreEqual("Sparia", Text(0, NameCell));
-            Assert.AreEqual("1\u00A0000", Text(0, PopulationCell));
-            Assert.AreEqual("Elforth", Text(1, NameCell));
-            Assert.AreEqual("500", Text(1, PopulationCell));
+            Assert.AreEqual(2, goodRows.childCount);
+            Assert.AreEqual(CityCells, rows[0].childCount);
+            Assert.AreEqual(2 * CellsPerGood, goodRows[0].childCount);
+            Assert.AreEqual("Elforth", Text(0, NameCell));
+            Assert.AreEqual("500", Text(0, PopulationCell));
+            Assert.AreEqual("Sparia", Text(1, NameCell));
+            Assert.AreEqual("1\u00A0000", Text(1, PopulationCell));
+        }
+
+        [Test]
+        public void TheCities_AreInAlphabeticalOrder_AccentsAndCaseAside()
+        {
+            CityMarket edimbourg = FedMarket(startingDays: 0, new CityPopulation(700));
+            table.AddCity("Sparia", market);
+            table.AddCity("elforth", village);
+            table.AddCity("Édimbourg", edimbourg);
+
+            Assert.AreEqual("Édimbourg", Text(0, NameCell));
+            Assert.AreEqual("elforth", Text(1, NameCell));
+            Assert.AreEqual("Sparia", Text(2, NameCell));
+
+            // The goods' columns of a row are the same city's.
+            Assert.AreEqual("700", Text(0, PopulationCell));
+            Assert.AreEqual("0", Text(0, Fish, Stock));
+            Assert.AreEqual("30", Text(1, Fish, Stock));
+            Assert.AreEqual("60", Text(2, Fish, Stock));
+        }
+
+        [Test]
+        public void AlphabeticalOrder_SortsTheNames_AccentsAndCaseAside()
+        {
+            CollectionAssert.AreEqual(
+                new[] { 3, 1, 2, 0 },
+                DebugCitiesTable.AlphabeticalOrder(new[] { "Vin", "Étoffe", "Fer", "céréales" }));
         }
 
         [Test]
@@ -301,6 +350,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TheTotalsOfAnEmptyTable_AreZero()
         {
             Assert.AreEqual(1, totals.childCount);
+            Assert.AreEqual(1, goodTotals.childCount);
             Assert.AreEqual("Total", Total(NameCell));
             Assert.AreEqual("0", Total(PopulationCell));
             Assert.AreEqual("0,0\u00A0%", Total(GrowthSinceStartCell));

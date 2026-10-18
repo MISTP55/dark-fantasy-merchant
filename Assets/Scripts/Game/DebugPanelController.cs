@@ -34,6 +34,9 @@ namespace DarkFantasyMerchant.Game
         private VisualElement citiesHeader;
         private VisualElement citiesRows;
         private VisualElement citiesTotals;
+        private VisualElement goodsHeader;
+        private VisualElement goodsRows;
+        private VisualElement goodsTotals;
         private VisualElement shipsHeader;
         private VisualElement shipsRows;
         private Button citiesTab;
@@ -95,6 +98,9 @@ namespace DarkFantasyMerchant.Game
             citiesHeader = root.Q<VisualElement>("debug-cities-header");
             citiesRows = root.Q<VisualElement>("debug-cities-rows");
             citiesTotals = root.Q<VisualElement>("debug-cities-totals");
+            goodsHeader = root.Q<VisualElement>("debug-goods-header");
+            goodsRows = root.Q<VisualElement>("debug-goods-rows");
+            goodsTotals = root.Q<VisualElement>("debug-goods-totals");
             shipsHeader = root.Q<VisualElement>("debug-ships-header");
             shipsRows = root.Q<VisualElement>("debug-ships-rows");
             citiesTab = root.Q<Button>("cities-tab");
@@ -103,7 +109,8 @@ namespace DarkFantasyMerchant.Game
             addShipButton = root.Q<Button>("add-ship-button");
 
             if (panel == null || citiesPage == null || shipsPage == null || citiesHeader == null || citiesRows == null
-                || citiesTotals == null || shipsHeader == null || shipsRows == null || citiesTab == null
+                || citiesTotals == null || goodsHeader == null || goodsRows == null || goodsTotals == null
+                || shipsHeader == null || shipsRows == null || citiesTab == null
                 || shipsTab == null || closeButton == null || addShipButton == null)
             {
                 Debug.LogError("DebugPanel.uxml is missing an expected element.", this);
@@ -300,7 +307,8 @@ namespace DarkFantasyMerchant.Game
                 goodNames.Add(GoodUnitText.NameWithUnit(good.DisplayName, good.Unit));
             }
 
-            citiesTable = new DebugCitiesTable(citiesHeader, citiesRows, citiesTotals, goodNames);
+            citiesTable = new DebugCitiesTable(
+                citiesHeader, citiesRows, citiesTotals, goodsHeader, goodsRows, goodsTotals, goodNames);
 
             foreach (CityDefinition city in mapView.Cities)
             {

@@ -13,10 +13,22 @@
             </ui:VisualElement>
             <ui:VisualElement name="cities-page" class="debug-panel__page">
                 <ui:Label text="Tonneaux par semaine : valeur théorique, puis valeur réelle de la dernière semaine entre parenthèses." class="debug-cities__legend" />
-                <ui:ScrollView mode="VerticalAndHorizontal" class="debug-cities__scroll">
-                    <ui:VisualElement name="debug-cities-header" />
-                    <ui:VisualElement name="debug-cities-rows" />
-                    <ui:VisualElement name="debug-cities-totals" />
+                <ui:ScrollView mode="Vertical" class="debug-cities__scroll">
+                    <ui:VisualElement class="debug-cities__table">
+                        <ui:VisualElement class="debug-cities__fixed-columns">
+                            <ui:VisualElement name="debug-cities-header" />
+                            <ui:VisualElement name="debug-cities-rows" />
+                            <ui:VisualElement name="debug-cities-totals" />
+                        </ui:VisualElement>
+                        <ui:ScrollView mode="Horizontal" class="debug-cities__good-columns">
+                            <!-- A horizontal scroll view lays its children out in a row: one child keeps them in a column. -->
+                            <ui:VisualElement>
+                                <ui:VisualElement name="debug-goods-header" />
+                                <ui:VisualElement name="debug-goods-rows" />
+                                <ui:VisualElement name="debug-goods-totals" />
+                            </ui:VisualElement>
+                        </ui:ScrollView>
+                    </ui:VisualElement>
                 </ui:ScrollView>
             </ui:VisualElement>
             <ui:VisualElement name="ships-page" class="debug-panel__page">

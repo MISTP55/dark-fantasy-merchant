@@ -55,7 +55,8 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// The table of the ships debug tab: one row per ship, the player's and the others,
     /// with its owner, what it is doing, where it is and goes, its home and final destination,
-    /// its crew, its hold and, for a merchant that trades on its own, its profit. Rewritten by every refresh.
+    /// its crew, its hold, with the goods in alphabetical order, and, for a merchant that trades on its own,
+    /// its profit. Rewritten by every refresh.
     /// When it is given a way to remove a ship, the rows of the ships that are not the
     /// player's end with a button that does.
     /// </summary>
@@ -102,12 +103,15 @@ namespace DarkFantasyMerchant.Game
 
         private readonly VisualElement rowContainer;
         private readonly int goodCount;
+
+        // The good of every column of goods, as in the cities table.
+        private readonly int[] goodOrder;
         private readonly List<Row> rows = new List<Row>();
         private readonly Action<Ship> removeShip;
 
         /// <param name="header">Where the header row is built.</param>
         /// <param name="rowContainer">Where the rows are built, one per ship.</param>
-        /// <param name="goodNames">The names of the goods, in the catalogue's order.</param>
+        /// <param name="goodNames">The names of the goods, in the catalogue's order; their columns are in alphabetical order.</param>
         /// <param name="removeShip">
         /// Removes a ship from the world, for the button of its row. Null for a table without buttons.
         /// </param>
@@ -130,6 +134,7 @@ namespace DarkFantasyMerchant.Game
             this.rowContainer = rowContainer ?? throw new ArgumentNullException(nameof(rowContainer));
             this.removeShip = removeShip;
             goodCount = goodNames.Count;
+            goodOrder = DebugCitiesTable.AlphabeticalOrder(goodNames);
 
             header.Clear();
             rowContainer.Clear();
@@ -148,9 +153,9 @@ namespace DarkFantasyMerchant.Game
             titles.Hold.text = "Cale";
             titles.Profit.text = "Profit";
 
-            for (int i = 0; i < goodCount; i++)
+            for (int column = 0; column < goodCount; column++)
             {
-                titles.Goods[i].text = goodNames[i];
+                titles.Goods[column].text = goodNames[goodOrder[column]];
             }
 
             header.Add(titles.Element);
@@ -276,9 +281,9 @@ namespace DarkFantasyMerchant.Game
             row.Hold.text = FormatHold(ship.Cargo);
             row.Profit.text = FormatProfit(info.Profit);
 
-            for (int i = 0; i < goodCount; i++)
+            for (int column = 0; column < goodCount; column++)
             {
-                row.Goods[i].text = TreasuryHudController.FormatNumber(ship.Cargo.UnitsOf(i));
+                row.Goods[column].text = TreasuryHudController.FormatNumber(ship.Cargo.UnitsOf(goodOrder[column]));
             }
         }
 

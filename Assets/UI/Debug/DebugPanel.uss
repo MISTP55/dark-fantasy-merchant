@@ -5,13 +5,14 @@
     flex-grow: 1;
     align-items: center;
     padding-top: 110px;
+    padding-bottom: 16px;
 }
 
-/* A panel as wide as its table, scrolled when it does not fit. */
+/* A panel as wide and as tall as its table, down to the bottom of the screen, scrolled when it does not fit. */
 .debug-panel {
     width: auto;
     max-width: 96%;
-    max-height: 70%;
+    max-height: 100%;
 }
 
 .debug-cities__legend {
@@ -21,6 +22,20 @@
 }
 
 .debug-cities__scroll {
+    flex-shrink: 1;
+}
+
+/* The city's columns, which stay in place, beside the goods', which scroll sideways. Rows have one height, so they line up. */
+.debug-cities__table {
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+.debug-cities__fixed-columns {
+    flex-shrink: 0;
+}
+
+.debug-cities__good-columns {
     flex-shrink: 1;
 }
 
