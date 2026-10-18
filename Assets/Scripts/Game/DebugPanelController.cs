@@ -300,11 +300,14 @@ namespace DarkFantasyMerchant.Game
                 return false;
             }
 
+            // The cities tab names the goods with their unit, the ships tab without it.
             var goodNames = new List<string>();
+            var shipGoodNames = new List<string>();
 
             foreach (GoodDefinition good in worldEconomy.Economy.Goods)
             {
                 goodNames.Add(GoodUnitText.NameWithUnit(good.DisplayName, good.Unit));
+                shipGoodNames.Add(good.DisplayName);
             }
 
             citiesTable = new DebugCitiesTable(
@@ -322,8 +325,8 @@ namespace DarkFantasyMerchant.Game
 
             // Without the AI merchants, no ship can be removed: the rows have no button.
             shipsTable = aiMerchants != null
-                ? new DebugShipsTable(shipsHeader, shipsRows, goodNames, RemoveShip)
-                : new DebugShipsTable(shipsHeader, shipsRows, goodNames);
+                ? new DebugShipsTable(shipsHeader, shipsRows, shipGoodNames, RemoveShip)
+                : new DebugShipsTable(shipsHeader, shipsRows, shipGoodNames);
             return true;
         }
     }
