@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Spices
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: "\xC9pices"
+  icon: {fileID: 21300000, guid: b4b0da0e8a5ac5a4296739f353f081dc, type: 3}
   category: 0
   unit: 0
   basePrice: 280

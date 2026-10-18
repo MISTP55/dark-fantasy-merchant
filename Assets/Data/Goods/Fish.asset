@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Fish
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Poisson
+  icon: {fileID: 21300000, guid: 250dcb03ded0282428473c5dfa8046e1, type: 3}
   category: 1
   unit: 1
   basePrice: 440

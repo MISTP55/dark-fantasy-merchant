@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Hemp
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Chanvre
+  icon: {fileID: 21300000, guid: e8cffc79889a6a946941aa1ecbcb677f, type: 3}
   category: 0
   unit: 1
   basePrice: 440

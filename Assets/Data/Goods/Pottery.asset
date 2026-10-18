@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Pottery
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Poterie
+  icon: {fileID: 21300000, guid: f4b77b5416628ad48b8cefe9e12259d2, type: 3}
   category: 0
   unit: 0
   basePrice: 171

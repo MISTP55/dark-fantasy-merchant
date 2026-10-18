@@ -1,6 +1,7 @@
 using DarkFantasyMerchant.Core;
 using DarkFantasyMerchant.Game;
 using NUnit.Framework;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace DarkFantasyMerchant.Tests.EditMode
@@ -11,11 +12,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Wine = 1;
 
         // Children of a row, in order. The two prices are the buttons that trade.
-        private const int NameCell = 0;
-        private const int StockCell = 1;
-        private const int BuyCell = 2;
-        private const int SellCell = 3;
-        private const int HoldCell = 4;
+        private const int IconCell = 0;
+        private const int NameCell = 1;
+        private const int StockCell = 2;
+        private const int BuyCell = 3;
+        private const int SellCell = 4;
+        private const int HoldCell = 5;
 
         private VisualElement sectionElement;
         private VisualElement rows;
@@ -111,9 +113,36 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void ThePrices_AreTheButtonsThatTrade()
         {
-            Assert.AreEqual(5, rows[Wheat].childCount);
+            Assert.AreEqual(6, rows[Wheat].childCount);
             Assert.IsInstanceOf<Button>(rows[Wheat][BuyCell]);
             Assert.IsInstanceOf<Button>(rows[Wheat][SellCell]);
+        }
+
+        [Test]
+        public void EveryRow_HasTheIconOfItsGood_OrAnEmptyPlace()
+        {
+            var wheatIcon = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), Vector2.zero);
+
+            try
+            {
+                new CityMarketSection(
+                    sectionElement, rows, holdLabel, new[] { "Blé", "Vin" }, treasury, new[] { wheatIcon, null });
+
+                Assert.AreEqual(wheatIcon, rows[Wheat][IconCell].style.backgroundImage.value.sprite);
+                Assert.AreEqual("Vin", Text(Wine, NameCell));
+                Assert.IsNull(rows[Wine][IconCell].style.backgroundImage.value.sprite);
+            }
+            finally
+            {
+                Object.DestroyImmediate(wheatIcon);
+            }
+        }
+
+        [Test]
+        public void WithoutIcons_EveryRowKeepsAnEmptyPlaceForOne()
+        {
+            Assert.IsInstanceOf<Label>(rows[Wheat][NameCell]);
+            Assert.IsNull(rows[Wheat][IconCell].style.backgroundImage.value.sprite);
         }
 
         [Test]

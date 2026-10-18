@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Beer
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: "Bi\xE8re"
+  icon: {fileID: 21300000, guid: 77dd3312c58dca5448e6361752319421, type: 3}
   category: 1
   unit: 0
   basePrice: 34.8

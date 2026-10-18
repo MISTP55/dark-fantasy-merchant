@@ -9,6 +9,9 @@ namespace DarkFantasyMerchant.Game
     {
         [SerializeField] private string displayName;
 
+        [Tooltip("Shown before the good's name in the city's market. None: an empty place.")]
+        [SerializeField] private Sprite icon;
+
         [Tooltip("What the good is for. Only the stock of food makes the population of a city grow or decline.")]
         [SerializeField] private GoodCategory category;
 
@@ -32,6 +35,8 @@ namespace DarkFantasyMerchant.Game
         [SerializeField, Min(0)] private int aiWeight = 9;
 
         public string DisplayName => displayName;
+
+        public Sprite Icon => icon;
 
         public GoodCategory Category => category;
 

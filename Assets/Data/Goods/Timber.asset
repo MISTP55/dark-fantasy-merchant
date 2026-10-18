@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Timber
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Bois
+  icon: {fileID: 21300000, guid: 297d84d8df171354f8b7824d97c99e93, type: 3}
   category: 0
   unit: 1
   basePrice: 55

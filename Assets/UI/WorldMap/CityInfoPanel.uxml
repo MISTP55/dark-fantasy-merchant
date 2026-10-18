@@ -32,6 +32,7 @@
                     <ui:Label name="market-hold" class="market__hold" />
                 </ui:VisualElement>
                 <ui:VisualElement class="market__row market__row--header">
+                    <ui:VisualElement class="market__icon" />
                     <ui:Label text="Marchandise" class="market__cell market__cell--name" />
                     <ui:Label text="Stock" class="market__cell market__cell--number" />
                     <ui:Label text="Achat" class="market__cell market__cell--price" />

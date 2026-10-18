@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using DarkFantasyMerchant.Core;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The market rows of the city panel: one row per good with the city's stock and its
+    /// The market rows of the city panel: one row per good with its icon, the city's stock and its
     /// prices, and, when it is given the hold of a ship in port, the units aboard. The
     /// prices are the buttons that trade: a click on the buy price buys, one on the sell
     /// price sells. Follows the market, the hold and the treasury.
@@ -20,6 +21,7 @@ namespace DarkFantasyMerchant.Game
         public const string NoPrice = "—";
 
         private const string RowClass = "market__row";
+        private const string IconClass = "market__icon";
         private const string CellClass = "market__cell";
         private const string NameCellClass = "market__cell--name";
         private const string NumberCellClass = "market__cell--number";
@@ -47,12 +49,15 @@ namespace DarkFantasyMerchant.Game
         /// <param name="rowContainer">Where the rows are built, one per name.</param>
         /// <param name="goodNames">The names of the goods, in the catalogue's order.</param>
         /// <param name="treasury">What pays and is paid. Null for a market that is only read.</param>
+        /// <param name="goodIcons">The icons of the goods, by the same index as the names. Null, or a
+        /// null icon, leaves the icon's place empty.</param>
         public CityMarketSection(
             VisualElement section,
             VisualElement rowContainer,
             Label holdLabel,
             IReadOnlyList<string> goodNames,
-            Treasury treasury)
+            Treasury treasury,
+            IReadOnlyList<Sprite> goodIcons = null)
         {
             this.section = section ?? throw new ArgumentNullException(nameof(section));
             this.holdLabel = holdLabel ?? throw new ArgumentNullException(nameof(holdLabel));
@@ -72,7 +77,8 @@ namespace DarkFantasyMerchant.Game
 
             for (int i = 0; i < goodNames.Count; i++)
             {
-                rowContainer.Add(BuildRow(i, goodNames[i]));
+                Sprite icon = goodIcons != null && i < goodIcons.Count ? goodIcons[i] : null;
+                rowContainer.Add(BuildRow(i, goodNames[i], icon));
             }
 
             Hide();
@@ -138,10 +144,21 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        private VisualElement BuildRow(int good, string goodName)
+        private VisualElement BuildRow(int good, string goodName, Sprite goodIcon)
         {
             var element = new VisualElement();
             element.AddToClassList(RowClass);
+
+            // Always there, so that the names line up whether a good has an icon or not.
+            var icon = new VisualElement();
+            icon.AddToClassList(IconClass);
+
+            if (goodIcon != null)
+            {
+                icon.style.backgroundImage = new StyleBackground(goodIcon);
+            }
+
+            element.Add(icon);
 
             Label name = AddLabel(element, NameCellClass);
             name.text = goodName;

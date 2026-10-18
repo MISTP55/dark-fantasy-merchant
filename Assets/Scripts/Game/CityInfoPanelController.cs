@@ -441,14 +441,17 @@ namespace DarkFantasyMerchant.Game
             if (marketSection == null && worldEconomy != null && worldEconomy.IsReady)
             {
                 var goodNames = new List<string>();
+                var goodIcons = new List<Sprite>();
 
                 foreach (GoodDefinition good in worldEconomy.Economy.Goods)
                 {
                     goodNames.Add(GoodUnitText.NameWithUnit(good.DisplayName, good.Unit));
+                    goodIcons.Add(good.Icon);
                 }
 
                 Treasury treasury = playerTreasury != null && playerTreasury.IsReady ? playerTreasury.Treasury : null;
-                marketSection = new CityMarketSection(marketElement, marketRows, marketHoldLabel, goodNames, treasury);
+                marketSection = new CityMarketSection(
+                    marketElement, marketRows, marketHoldLabel, goodNames, treasury, goodIcons);
             }
 
             section = marketSection;

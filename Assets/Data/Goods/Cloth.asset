@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Cloth
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: "\xC9toffe"
+  icon: {fileID: 21300000, guid: af4ca9b867758ec4199a09f89727a3b3, type: 3}
   category: 0
   unit: 0
   basePrice: 206.8

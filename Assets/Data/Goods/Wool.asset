@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Wool
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Laine
+  icon: {fileID: 21300000, guid: 98d0a803446f48043a08b289d06d952f, type: 3}
   category: 0
   unit: 1
   basePrice: 880

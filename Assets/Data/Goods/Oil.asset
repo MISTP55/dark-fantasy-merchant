@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Oil
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Huile
+  icon: {fileID: 21300000, guid: 693d68d3cdb85ef4baa037ccfa743dcb, type: 3}
   category: 0
   unit: 0
   basePrice: 82.5

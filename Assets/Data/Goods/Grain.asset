@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Grain
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: "C\xE9r\xE9ales"
+  icon: {fileID: 21300000, guid: 0e94081f35fe58c48b3dac6d270de54b, type: 3}
   category: 1
   unit: 1
   basePrice: 110

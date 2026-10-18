@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Pitch
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Brai
+  icon: {fileID: 21300000, guid: d67357fc9dc87394babced50b791468e, type: 3}
   category: 0
   unit: 0
   basePrice: 55.6

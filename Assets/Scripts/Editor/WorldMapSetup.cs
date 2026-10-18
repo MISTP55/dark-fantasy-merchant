@@ -50,6 +50,7 @@ namespace DarkFantasyMerchant.Editor
         private const string EconomyPath = EconomyFolder + "/Economy.asset";
         private const string BuildingsPath = EconomyFolder + "/Buildings.asset";
         private const string GoodsFolder = "Assets/Data/Goods";
+        private const string GoodIconsFolder = "Assets/Art/Goods/Icons";
 
         private const string AiFolder = "Assets/Data/AI";
         private const string AiMerchantsPath = AiFolder + "/AiMerchants.asset";
@@ -668,6 +669,7 @@ namespace DarkFantasyMerchant.Editor
             var good = ScriptableObject.CreateInstance<GoodDefinition>();
             var serialized = new SerializedObject(good);
             serialized.FindProperty("displayName").stringValue = sample.DisplayName;
+            serialized.FindProperty("icon").objectReferenceValue = AssetDatabase.LoadAssetAtPath<Sprite>(GoodIconPath(sample.AssetName));
             serialized.FindProperty("category").enumValueIndex = (int)sample.Category;
             serialized.FindProperty("unit").enumValueIndex = (int)sample.Unit;
             serialized.FindProperty("basePrice").doubleValue = sample.BasePrice;
@@ -683,6 +685,12 @@ namespace DarkFantasyMerchant.Editor
         private static string GoodPath(string assetName)
         {
             return $"{GoodsFolder}/{assetName}.asset";
+        }
+
+        // Named like the good's asset. A missing icon leaves the good without one.
+        private static string GoodIconPath(string assetName)
+        {
+            return $"{GoodIconsFolder}/{assetName}.png";
         }
 
         // A city that produces nothing has no economy yet: one made before the economy existed, or

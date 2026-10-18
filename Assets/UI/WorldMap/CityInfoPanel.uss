@@ -118,7 +118,17 @@
 .market__row {
     flex-direction: row;
     align-items: center;
-    height: 26px;
+    height: 32px;
+}
+
+/* The good's icon, before its name, in the proportions of the icons (224 × 232). The header
+   has an empty one, so that its title lines up with the names. */
+.market__icon {
+    width: 27px;
+    height: 28px;
+    margin-right: 6px;
+    flex-shrink: 0;
+    -unity-background-scale-mode: scale-to-fit;
 }
 
 .market__row--header {
@@ -128,8 +138,8 @@
 /* Twenty goods do not fit on a screen: the rows scroll under their header, in less height
    when the panel must shrink, but never under five rows. */
 .market > .market__scroll {
-    max-height: 340px;
-    min-height: 130px;
+    max-height: 352px;
+    min-height: 160px;
     flex-shrink: 1;
 }
 

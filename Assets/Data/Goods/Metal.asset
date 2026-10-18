@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Metal
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: "M\xE9tal"
+  icon: {fileID: 21300000, guid: b6f3e8d9be6b18c44996de6b6175bbd6, type: 3}
   category: 0
   unit: 0
   basePrice: 255.6

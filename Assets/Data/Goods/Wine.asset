@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Wine
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.GoodDefinition
   displayName: Vin
+  icon: {fileID: 21300000, guid: 62e5229e439c99045af5a5f351cbcbb5, type: 3}
   category: 0
   unit: 0
   basePrice: 220
