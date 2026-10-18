@@ -177,6 +177,23 @@ namespace DarkFantasyMerchant.Core
             return sum;
         }
 
+        /// <summary>
+        /// Units the player's workshops for a good would make in a day with their workers of
+        /// the moment, by the rule of a merchant's workshops. They produce nothing yet: this is
+        /// only what they are worth.
+        /// </summary>
+        public double PlayerDailyOutputOf(int good, MerchantOutputRule rule)
+        {
+            RequireGood(good);
+
+            if (rule == null)
+            {
+                throw new ArgumentNullException(nameof(rule));
+            }
+
+            return rule.DailyOutputOf(PlayerWorkersOf(good), goods[good].MerchantDailyOutputPerWorker, PlayerWorkshopsOf(good));
+        }
+
         /// <summary>Jobs of all the player's workshops for a good in the city.</summary>
         public int PlayerJobsOf(int good)
         {

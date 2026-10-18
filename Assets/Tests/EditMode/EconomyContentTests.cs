@@ -65,6 +65,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.GreaterOrEqual(good.WeeklyConsumptionPerThousand, 0d);
             Assert.Greater(good.MaxWorkers, 0);
             Assert.Greater(good.DailyOutputPerWorker, 0d);
+            Assert.Greater(good.MerchantDailyOutputPerWorker, 0d);
         }
 
         [Test]

@@ -20,4 +20,5 @@ MonoBehaviour:
   weeklyConsumptionPerThousand: 5.25
   maxWorkers: 72
   dailyOutputPerWorker: 0.06667
+  merchantDailyOutputPerWorker: 0.03333
   aiWeight: 9

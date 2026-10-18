@@ -62,7 +62,8 @@ Les 6 autres (sel, épices, brai, fonte brute, chanvre, tuiles) sont désactivé
 | Prix de base | Le prix « normal », que les facteurs de prix multiplient (section 6) | 110 or le boisseau |
 | Consommation | Ce que 1 000 habitants consomment par semaine | 4,725 boisseaux |
 | Maximum d'ouvriers | La taille maximale de l'atelier qui la produit, la même dans toutes les villes | 68 |
-| Production par ouvrier | Ce qu'un ouvrier produit par jour dans une ville qui la produit efficacement | 0,04333 boisseau |
+| Production par ouvrier | Ce qu'un ouvrier de l'atelier de la ville produit par jour dans une ville qui la produit efficacement | 0,04333 boisseau |
+| Production par ouvrier d'un marchand | Ce qu'un ouvrier d'un atelier du joueur produirait par jour dans la même ville, avant le bonus du nombre d'ateliers (section 10) | 0,03333 boisseau |
 | Poids pour l'IA | L'importance que les marchands IA lui donnent (section 11) | 16 |
 
 Les prix de base et les consommations sont ceux de Patrician III. Sa consommation, donnée par classe sociale (riches, aisés, pauvres), est ici moyennée sur sa répartition de départ : 10 % de riches, 30 % d'aisés, 60 % de pauvres.
@@ -364,7 +365,40 @@ Les matériaux sont pris d'abord dans la cale du navire du joueur au port, puis 
 
 Comme les ateliers de la ville embauchent en premier, ceux du joueur ne trouvent des ouvriers que s'il reste des mendiants et des places après eux. Construire des maisons en même temps que des ateliers est donc indispensable.
 
-⚠️ **Les ateliers du joueur ne produisent encore rien** : ils emploient des ouvriers, mais leur production n'est pas encore programmée.
+### Ce que vaut un atelier du joueur
+
+Comme dans Patrician III, un ouvrier d'un atelier du joueur ne produit pas autant qu'un ouvrier de l'atelier de la ville. Patrician III donne à chaque atelier de ville un **coefficient** propre à la marchandise (4 pour le vin, 2 pour les peaux et le métal, 1,3 pour les céréales…), que les ateliers des marchands n'ont pas. À la place, un marchand qui a plusieurs ateliers de la même marchandise dans une ville reçoit un **bonus** :
+
+| Ateliers de la marchandise dans la ville | Bonus |
+|---|---|
+| 1 ou 2 | aucun |
+| 3 à 5 | + 3 % |
+| 6 à 8 | + 6 % |
+| 9 ou plus | + 10 % |
+
+Production d'un jour = ouvriers de tous ses ateliers de la marchandise × production par ouvrier d'un marchand × bonus. Comme pour la ville, une ville qui produit la marchandise inefficacement donne les trois quarts.
+
+| Marchandise | Ouvrier de la ville | Ouvrier d'un marchand | Rapport |
+|---|---|---|---|
+| Vin | 0,268 tonneau | 0,067 tonneau | ÷ 4 |
+| Peaux | 0,06667 tonneau | 0,03333 tonneau | ÷ 2 |
+| Métal | 0,2 tonneau | 0,1 tonneau | ÷ 2 |
+| Bière | 0,37591 tonneau | 0,235 tonneau | ÷ 1,6 |
+| Viande | 0,01333 boisseau | 0,00833 boisseau | ÷ 1,6 |
+| Cuir | 0,05332 tonneau | 0,03333 tonneau | ÷ 1,6 |
+| Étoffe | 0,15 tonneau | 0,1 tonneau | ÷ 1,5 |
+| Céréales | 0,04333 boisseau | 0,03333 boisseau | ÷ 1,3 |
+| Miel | 0,08 tonneau | 0,06667 tonneau | ÷ 1,2 |
+| Bois | 0,08 boisseau | 0,06667 boisseau | ÷ 1,2 |
+| Laine | 0,02004 boisseau | 0,0167 boisseau | ÷ 1,2 |
+| Poisson | 0,03066 boisseau | 0,03333 boisseau | × 1,09 |
+| Huile, poterie (et sel, brai, fonte brute, chanvre, tuiles, inactifs) | — | la même | identique |
+
+*Exemple* : trois ateliers de céréales du joueur, 90 ouvriers en tout, dans une ville qui produit les céréales efficacement : 90 × 0,03333 × 1,03 ≈ 3,09 boisseaux par jour. L'atelier de la ville, à ses 68 ouvriers, en fait 2,95.
+
+Les épices, produites nulle part dans Patrician III, ont la même valeur pour les deux.
+
+⚠️ **Les ateliers du joueur ne produisent encore rien** : ils emploient des ouvriers, et le jeu sait calculer ce qu'ils produiraient (`CityMarket.PlayerDailyOutputOf`), mais cette production n'entre encore dans aucun stock. Dans Patrician III, elle va dans le comptoir du marchand, que Dark Fantasy Merchant n'a pas encore.
 
 ## 11. Les marchands IA
 
@@ -486,7 +520,7 @@ Toutes les villes ont donc presque la même taille au départ : elles ne diffèr
 | Consommation des mendiants | Ils ne consomment pas | Ils consomment comme les autres |
 | Classes sociales | Riches, aisés, pauvres, avec une satisfaction par classe | Une seule classe moyenne, sans satisfaction |
 | Embauche parmi les mendiants | Si la satisfaction des pauvres est positive, sans regarder les logements ; les pauvres sans logement quittent ensuite la ville | Seulement dans la limite des places libres |
-| Embauche au-delà de 30 ouvriers par atelier | Passe par une file d'attente dont le fonctionnement n'est pas connu | Comme en dessous de 30 |
+| Embauche au-delà de 30 ouvriers par atelier | Passe par la liste des postes vacants, pourvue parmi les mendiants après la production, comme pour les ateliers des marchands | Comme en dessous de 30 |
 | Maisons | La ville construit elle-même quand ses logements sont presque pleins | Seul le joueur construit |
 | Ouvriers de départ | 250 + 2,5 par année après 1300 (jusqu'à 500), répartis selon un poids par atelier, plus 25 dans des emplacements particuliers | 250, répartis à parts égales |
 | Or des marchands IA | Ils paient 5/6 du prix et touchent 6/5 des ventes | Or illimité, prix normaux, bénéfice seulement compté |
@@ -496,7 +530,7 @@ Toutes les villes ont donc presque la même taille au départ : elles ne diffèr
 
 ## 14. Limites actuelles
 
-- Les **ateliers du joueur ne produisent rien** pour l'instant.
+- Les **ateliers du joueur ne produisent rien** pour l'instant : leur production est calculée (section 10), mais elle n'a pas encore de comptoir où entrer.
 - Les **villes ne construisent pas de maisons** : sans maisons du joueur, leur population reste presque figée.
 - **Aucun manque n'a de conséquence** sur la population : pas de famine, pas de satisfaction, pas de départ d'habitants.
 - Les **ateliers ne consomment aucune matière première**, et le brai, la fonte brute, le chanvre et les tuiles, qui ne servent qu'à ça ou à la construction, sont désactivés.
@@ -516,6 +550,7 @@ Les règles sont dans `Assets/Scripts/Core`, les réglages dans `Assets/Data`.
 | Courbes et calcul des prix | `PriceCurve`, `MarketPricing` | `Economy.asset` |
 | Achats et ventes | `Trade` | |
 | Bâtiments du joueur | `Construction` | `Buildings.asset` |
+| Ce que produiraient les ateliers du joueur | `MerchantOutputRule`, `CityMarket.PlayerDailyOutputOf` | `Economy.asset` (bonus), `Goods/*.asset` (production par ouvrier d'un marchand) |
 | Tour des marchands IA | `AiMerchantFleet` | `AI/AiMerchants.asset` |
 | Choix des destinations, des escales et des cargaisons | `SupplyPlanner` | poids dans `Goods/*.asset` |
 | Quantité à transporter | `ShipmentQuantity` | |

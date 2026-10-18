@@ -65,6 +65,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(1, fresh.HiredUpToT3);
             Assert.AreEqual(1, fresh.WorkersAboveT3);
             Assert.AreEqual(250, fresh.StartingWorkforce);
+            Assert.AreEqual(3, fresh.MerchantFirstStep);
+            Assert.AreEqual(1.03, fresh.MerchantFirstBonus);
+            Assert.AreEqual(6, fresh.MerchantSecondStep);
+            Assert.AreEqual(1.06, fresh.MerchantSecondBonus);
+            Assert.AreEqual(9, fresh.MerchantThirdStep);
+            Assert.AreEqual(1.1, fresh.MerchantThirdBonus);
             Assert.AreEqual(10, fresh.BarrelsPerBushel);
             Assert.AreEqual(4, fresh.InhabitantsPerWorker);
             Assert.AreEqual(7, fresh.T0Days);
@@ -97,6 +103,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.Greater(good.MaxWorkers, 0);
             Assert.AreEqual(GoodUnit.Barrel, good.Unit);
             Assert.Greater(good.DailyOutputPerWorker, 0d);
+            Assert.Greater(good.MerchantDailyOutputPerWorker, 0d);
             Assert.AreEqual(GoodCategory.RawMaterial, good.Category);
             Assert.AreEqual(0, city.EfficientGoods.Count);
             Assert.AreEqual(0, city.InefficientGoods.Count);
@@ -197,6 +204,37 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void CreateMarket_GivesThePlayersWorkshopsTheMerchantOutput_TimesTheEfficiency()
+        {
+            GoodDefinition wine = Track(TestEconomy.CreateGood("Vin", 60, 4.2, merchantDailyOutputPerWorker: 0.067));
+            GoodDefinition oil = Track(TestEconomy.CreateGood("Huile", 20, 4.2, merchantDailyOutputPerWorker: 0.2));
+            EconomyDefinition both = Track(TestEconomy.CreateEconomy(wine, oil, salt));
+            CityDefinition city = City(new[] { wine }, new[] { oil });
+
+            Assert.AreEqual(0.067, MerchantOutputOf(both, city, 0), Tolerance);
+            Assert.AreEqual(0.15, MerchantOutputOf(both, city, 1), Tolerance);
+        }
+
+        // What a worker of the player's workshop for the good makes in a day: one workshop, no bonus.
+        private double MerchantOutputOf(EconomyDefinition definition, CityDefinition city, int good)
+        {
+            CityMarket market = definition.CreateMarket(city, definition.CreatePricing(), DaysPerWeek, definition.CreateLabourRule(), 100);
+            market.AddPlayerHouse(1000);
+            market.AddPlayerWorkshop(good, 30);
+
+            // Full stocks: the city's workshops hire nobody and leave the beggars to the player.
+            for (int i = 0; i < market.GoodCount; i++)
+            {
+                market.Put(i, 100000);
+            }
+
+            market.StartDay();
+            Assert.Greater(market.PlayerWorkersOf(good), 0);
+
+            return market.PlayerDailyOutputOf(good, definition.CreateMerchantOutputRule()) / market.PlayerWorkersOf(good);
+        }
+
+        [Test]
         public void CreateMarket_WithoutStartingWorkforce_StartsEmpty()
         {
             TestEconomy.SetStartingPopulation(economy, 0);
@@ -233,6 +271,18 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(0, idle.WorkersOf(0));
             Assert.AreEqual(producer.Population.Inhabitants, idle.Population.Inhabitants);
+        }
+
+        [Test]
+        public void TryValidateSettings_SaysWhenTheMerchantStepsAreOutOfOrder()
+        {
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty("merchantThirdStep").intValue = 6;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.IsFalse(economy.TryValidateSettings(out string problem));
+            StringAssert.Contains("merchants' workshops", problem);
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => economy.CreateMerchantOutputRule());
         }
 
         [Test]
@@ -338,6 +388,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase("sellFactors.empty", 0, "sell factors", "above 0")]
         [TestCase("sellFactors.atT1", 1.2, "sell factors", "At T1")]
         [TestCase("t2Floor", 8, "stock thresholds", "t2Floor")]
+        [TestCase("merchantSecondBonus", -1, "merchants' workshops", "bonus")]
         public void TryValidateSettings_SaysWhichSettingIsWrong_AndWhy(string property, double value, string setting, string detail)
         {
             var serialized = new SerializedObject(economy);

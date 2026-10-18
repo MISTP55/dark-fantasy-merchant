@@ -16,7 +16,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int maxWorkers = 60,
             double dailyOutputPerWorker = 0.1,
             GoodUnit unit = GoodUnit.Barrel,
-            int aiWeight = 9)
+            int aiWeight = 9,
+            double merchantDailyOutputPerWorker = 0.1)
         {
             var good = ScriptableObject.CreateInstance<GoodDefinition>();
             good.name = displayName;
@@ -28,6 +29,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             serialized.FindProperty("weeklyConsumptionPerThousand").doubleValue = weeklyConsumptionPerThousand;
             serialized.FindProperty("maxWorkers").intValue = maxWorkers;
             serialized.FindProperty("dailyOutputPerWorker").doubleValue = dailyOutputPerWorker;
+            serialized.FindProperty("merchantDailyOutputPerWorker").doubleValue = merchantDailyOutputPerWorker;
             serialized.FindProperty("unit").enumValueIndex = (int)unit;
             serialized.FindProperty("aiWeight").intValue = aiWeight;
             serialized.ApplyModifiedPropertiesWithoutUndo();

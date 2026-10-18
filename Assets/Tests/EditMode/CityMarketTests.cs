@@ -385,6 +385,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(10, 2, -1, 0.1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(10, 2, 30, -0.1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(10, 2, 30, double.NaN));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(10, 2, 30, 0.1, -0.1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(10, 2, 30, 0.1, double.NaN));
         }
 
         [Test]

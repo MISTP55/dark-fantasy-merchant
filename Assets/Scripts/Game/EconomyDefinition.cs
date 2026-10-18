@@ -44,6 +44,25 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Workers a workshop keeps above T3, where it produces nothing.")]
         [SerializeField, Min(0)] private int workersAboveT3 = 1;
 
+        [Header("Merchants' workshops (the player's), as in Patrician III")]
+        [Tooltip("Workshops of a good in a city from which a merchant's workers make more: 3 is Patrician III's.")]
+        [SerializeField, Min(1)] private int merchantFirstStep = 3;
+
+        [Tooltip("Factor of their output from the first step: 1.03 is Patrician III's.")]
+        [SerializeField, Min(0f)] private double merchantFirstBonus = 1.03d;
+
+        [Tooltip("Workshops from which the second bonus applies: 6 is Patrician III's.")]
+        [SerializeField, Min(1)] private int merchantSecondStep = 6;
+
+        [Tooltip("Factor of their output from the second step: 1.06 is Patrician III's.")]
+        [SerializeField, Min(0f)] private double merchantSecondBonus = 1.06d;
+
+        [Tooltip("Workshops from which the third bonus applies: 9 is Patrician III's.")]
+        [SerializeField, Min(1)] private int merchantThirdStep = 9;
+
+        [Tooltip("Factor of their output from the third step: 1.1 is Patrician III's.")]
+        [SerializeField, Min(0f)] private double merchantThirdBonus = 1.1d;
+
         [Header("Start of a game")]
         [Tooltip("Workers every city starts with, spread evenly over its workshops: 250 is Patrician III's.")]
         [SerializeField, Min(0)] private int startingWorkforce = 250;
@@ -132,6 +151,18 @@ namespace DarkFantasyMerchant.Game
         public int HiredUpToT3 => hiredUpToT3;
 
         public int WorkersAboveT3 => workersAboveT3;
+
+        public int MerchantFirstStep => merchantFirstStep;
+
+        public double MerchantFirstBonus => merchantFirstBonus;
+
+        public int MerchantSecondStep => merchantSecondStep;
+
+        public double MerchantSecondBonus => merchantSecondBonus;
+
+        public int MerchantThirdStep => merchantThirdStep;
+
+        public double MerchantThirdBonus => merchantThirdBonus;
 
         public int StartingWorkforce => startingWorkforce;
 
@@ -230,6 +261,7 @@ namespace DarkFantasyMerchant.Game
                 ?? ProblemOf(() => CreatePricing(), "the sell factors against the buy factors")
                 ?? ProblemOf(() => CreateThresholdRule(), "the stock thresholds")
                 ?? ProblemOf(() => CreateWorkforceRule(), "the workforce")
+                ?? ProblemOf(() => CreateMerchantOutputRule(), "the merchants' workshops")
                 ?? ProblemOf(() => new CityPopulation(StartingPopulation), "the starting population (workforce times inhabitants per worker)")
                 ?? ProblemOf(() => CreateLabourRule(), "the labour")
                 ?? ProblemOf(() => CityPopulation.AtStart(0, inhabitantsPerWorker, startingBeggarsPerWorker, 1), "the starting beggars per worker");
@@ -314,6 +346,18 @@ namespace DarkFantasyMerchant.Game
         public WorkforceRule CreateWorkforceRule()
         {
             return new WorkforceRule(hiredUpToT0, hiredUpToT1, hiredUpToT2, hiredUpToT3, workersAboveT3, startingWorkforce);
+        }
+
+        /// <summary>What the merchants' workshops make, from these settings. Throws when one of them is unusable.</summary>
+        public MerchantOutputRule CreateMerchantOutputRule()
+        {
+            return new MerchantOutputRule(
+                merchantFirstStep,
+                merchantFirstBonus,
+                merchantSecondStep,
+                merchantSecondBonus,
+                merchantThirdStep,
+                merchantThirdBonus);
         }
 
         /// <summary>How the workers are hired and the beggars come and go, from these settings. Throws when one of them is unusable.</summary>
@@ -421,16 +465,19 @@ namespace DarkFantasyMerchant.Game
                 GoodDefinition good = Goods[i];
                 int maxWorkers = 0;
                 double outputPerWorker = 0d;
+                double merchantOutputPerWorker = 0d;
 
                 switch (city.ProductionOf(good))
                 {
                     case GoodProduction.Efficient:
                         maxWorkers = good.MaxWorkers;
                         outputPerWorker = good.DailyOutputPerWorker;
+                        merchantOutputPerWorker = good.MerchantDailyOutputPerWorker;
                         break;
                     case GoodProduction.Inefficient:
                         maxWorkers = good.MaxWorkers;
                         outputPerWorker = good.DailyOutputPerWorker * inefficientEfficiency;
+                        merchantOutputPerWorker = good.MerchantDailyOutputPerWorker * inefficientEfficiency;
                         break;
                 }
 
@@ -438,7 +485,8 @@ namespace DarkFantasyMerchant.Game
                     good.BasePrice,
                     good.WeeklyConsumptionPerThousand / daysPerWeek,
                     maxWorkers,
-                    outputPerWorker);
+                    outputPerWorker,
+                    merchantOutputPerWorker);
             }
 
             WorkforceRule workforce = CreateWorkforceRule();

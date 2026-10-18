@@ -293,6 +293,28 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void ThePlayersWorkshops_AreWorthTheirWorkers_TimesTheMerchantOutput_AndTheBonus()
+        {
+            // A merchant's worker makes a twentieth. Three workshops of 10 jobs: 3 % more.
+            var good = new MarketGood(10, 2, 60, 0.1, 0.05);
+            var market = new CityMarket(new[] { good }, TestMarkets.Thresholds, Workforce, 100,
+                TestMarkets.Pricing, 7, new CityPopulation(1000, 200, 1200), TestMarkets.Labour);
+            var rule = new MerchantOutputRule(3, 1.03, 6, 1.06, 9, 1.1);
+
+            Assert.AreEqual(0, market.PlayerDailyOutputOf(0, rule));
+
+            market.AddPlayerWorkshop(0, 10);
+            market.AddPlayerWorkshop(0, 10);
+            market.AddPlayerWorkshop(0, 10);
+            market.StartDay();
+
+            Assert.AreEqual(30, market.PlayerWorkersOf(0));
+            Assert.AreEqual(30 * 0.05 * 1.03, market.PlayerDailyOutputOf(0, rule), 1e-9);
+            Assert.Throws<ArgumentNullException>(() => market.PlayerDailyOutputOf(0, null));
+            Assert.Throws<ArgumentOutOfRangeException>(() => market.PlayerDailyOutputOf(1, rule));
+        }
+
+        [Test]
         public void Vacancies_NeedFiveBeggars()
         {
             CityMarket market = Market(100, new CityPopulation(1000, 4, 1100));
