@@ -62,7 +62,7 @@ Les 6 autres (sel, épices, brai, fonte brute, chanvre, tuiles) sont désactivé
 | Prix de base | Le prix « normal », que les facteurs de prix multiplient (section 6) | 110 or le boisseau |
 | Consommation | Ce que 1 000 habitants consomment par semaine | 4,725 boisseaux |
 | Maximum d'ouvriers | La taille maximale de l'atelier qui la produit, la même dans toutes les villes | 68 |
-| Production par ouvrier | Ce qu'un ouvrier produit par jour dans une ville qui la produit efficacement | 0,02911 boisseau |
+| Production par ouvrier | Ce qu'un ouvrier produit par jour dans une ville qui la produit efficacement | 0,04333 boisseau |
 | Poids pour l'IA | L'importance que les marchands IA lui donnent (section 11) | 16 |
 
 Les prix de base et les consommations sont ceux de Patrician III. Sa consommation, donnée par classe sociale (riches, aisés, pauvres), est ici moyennée sur sa répartition de départ : 10 % de riches, 30 % d'aisés, 60 % de pauvres.
@@ -189,17 +189,42 @@ Chaque ville produit entre 6 et 10 marchandises, celles que Patrician III lui do
 - en production **efficace** (3 à 6 marchandises par ville), chaque ouvrier produit la quantité de la marchandise ;
 - en production **inefficace**, il en produit les trois quarts.
 
-La **capacité** d'un atelier est maximum d'ouvriers × production par ouvrier. **Elle ne dépend pas de la taille de la ville** : un atelier de céréales efficace peut produire au plus 68 × 0,02911 ≈ 1,98 boisseau par jour, dans une petite ville comme dans une grande.
+La **capacité** d'un atelier est maximum d'ouvriers × production par ouvrier. **Elle ne dépend pas de la taille de la ville** : un atelier de céréales efficace peut produire au plus 68 × 0,04333 ≈ 2,95 boisseaux par jour, dans une petite ville comme dans une grande.
 
 Les marchandises qu'une ville ne produit pas, elle doit les recevoir des navires du joueur ou des marchands IA. En attendant, elle les paie cher.
 
 ### Le réglage de la production
 
-La production par ouvrier de chaque marchandise est réglée pour que le monde entier, tous ses ateliers au maximum, puisse produire **1,5 fois ce que consomment les villes au début de la partie**. La régulation par le stock (ci-dessous) empêche ce surplus de s'accumuler.
+La production par ouvrier de chaque marchandise est **celle de Patrician III** (`patrician3-re\resultats\Production et consommation des villes.md`). Patrician III compte en unités internes (200 pour un tonneau, 2 000 pour un boisseau) : un ouvrier de ses céréales en produit 86,7 par jour, soit 0,04333 boisseau.
 
-Le **bois** fait exception : il garde le rendement de Patrician III (0,08 boisseau par ouvrier et par jour), soit environ 7,5 fois ce que consomment les habitants. Patrician III le dimensionne pour ses ateliers et ses constructions, qui en utilisent beaucoup. Ses producteurs se stabilisent donc sur de gros stocks, à bas prix.
+| Marchandise | Production par ouvrier et par jour | Capacité mondiale ÷ consommation de départ |
+|---|---|---|
+| Céréales | 0,04333 boisseau | 2,2 |
+| Viande | 0,01333 boisseau | 1,7 |
+| Poisson | 0,03066 boisseau | 1,7 |
+| Bière | 0,37591 tonneau | 1,65 |
+| Miel | 0,08 tonneau | 1,9 |
+| Vin | 0,268 tonneau | 2,95 |
+| Étoffe | 0,15 tonneau | 1,7 |
+| Peaux | 0,06667 tonneau | 1,75 |
+| Huile | 0,135 tonneau | 1,5 |
+| Bois | 0,08 boisseau | 7,8 |
+| Métal | 0,2 tonneau | 1,8 |
+| Cuir | 0,05332 tonneau | 1,7 |
+| Laine | 0,02004 boisseau | 3,05 |
+| Poterie | 0,067 tonneau | 1,75 |
+| *Sel (inactif)* | 0,167 tonneau | 58 |
+| *Chanvre (inactif)* | 0,00833 boisseau | 13,5 |
+| *Tuiles (inactives)* | 0,067 boisseau | 317 |
+| *Brai, fonte brute (inactifs)* | 0,067 tonneau, 0,01667 boisseau | personne n'en consomme |
 
-Ce réglage à 1,5 n'existe pas dans Patrician III. Chacun de ses ateliers y a son propre rendement, et le rapport entre capacité et demande des habitants varie beaucoup : 1,6 pour la bière, 2,2 pour les céréales, 3 pour la laine, 41 pour le sel, 351 pour les tuiles. Il y dimensionne les matières premières sur la demande totale, ateliers et construction compris. Dark Fantasy Merchant n'a encore ni ateliers qui consomment des matières premières, ni construction par les villes : reprendre ces rendements tels quels aurait créé d'énormes surplus.
+La dernière colonne compare ce que le monde peut produire, tous ses ateliers au maximum (une production inefficace comptant 0,75), à ce que consomment ses habitants au début de la partie. Quelques cas particuliers :
+
+- Le **cuir** n'a pas d'atelier à lui dans Patrician III : l'élevage fait de la viande et, en plus, du cuir à 40 % de la viande en unités internes. Son ouvrier fait donc 40 % de 26,7 unités, soit 0,05332 tonneau.
+- L'**huile** de baleine sort de la pêcherie de Patrician III, à 27 unités par ouvrier dans une ville qui a la baleine en production efficace, soit 0,135 tonneau.
+- Les **épices** ne sont produites nulle part dans Patrician III : leur valeur (0,02038 tonneau) n'a pas de modèle, et elles sont inactives.
+
+Patrician III dimensionne ses matières premières et ses matériaux de construction sur la demande totale : celle des habitants, mais aussi celle des ateliers qui les transforment (la bière prend des céréales et du bois, l'étoffe de la laine, le métal du bois et de la fonte brute…) et celle de la construction. Dark Fantasy Merchant n'a encore ni ateliers qui consomment des matières premières, ni construction par les villes : ces marchandises sont donc **en gros surplus** (le bois à 7,8, la laine à 3, le sel à 58, les tuiles à 317). Ce surplus est voulu pour l'instant : il se résorbera quand les intrants et les chaînes de production seront en place. En attendant, la régulation par le stock (ci-dessous) l'empêche de s'accumuler : les producteurs se stabilisent sur de gros stocks, à bas prix.
 
 ### La régulation par le stock
 
@@ -455,7 +480,7 @@ Toutes les villes ont donc presque la même taille au départ : elles ne diffèr
 
 | Sujet | Patrician III | Dark Fantasy Merchant |
 |---|---|---|
-| Production par ouvrier | Propre à chaque atelier, aucun équilibre global | Réglée pour couvrir 1,5 fois la demande mondiale de départ (sauf le bois) |
+| Production par ouvrier | Propre à chaque atelier, aucun équilibre global | La même ; les matières premières sont en surplus tant que les ateliers n'en consomment pas |
 | Ateliers qui consomment des matières premières | Oui (bière : céréales et bois, métal : bois et fonte…) | Pas encore |
 | Hiver, récoltes, approvisionnement caché | Oui | Non |
 | Consommation des mendiants | Ils ne consomment pas | Ils consomment comme les autres |
