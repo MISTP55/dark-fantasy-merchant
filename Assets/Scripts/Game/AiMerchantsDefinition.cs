@@ -14,7 +14,7 @@ namespace DarkFantasyMerchant.Game
         private const string DefaultShipNameFormat = "Marchand indépendant {0}";
 
         [Tooltip("AI ships whose home is each city that reaches another by water. Each starts in the port of its home.")]
-        [SerializeField, Min(0)] private int shipsPerCity = 1;
+        [SerializeField, Min(0)] private int shipsPerCity = 2;
 
         [SerializeField] private ShipDefinition shipDefinition;
 

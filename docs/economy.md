@@ -404,7 +404,7 @@ Les épices, produites nulle part dans Patrician III, ont la même valeur pour l
 
 ### Qui ils sont
 
-- Un navire par ville, soit **24 navires**, nommés « Marchand indépendant 1 », « Marchand indépendant 2 », etc.
+- Deux navires par ville, soit **48 navires**, nommés « Marchand indépendant 1 », « Marchand indépendant 2 », etc., numérotés dans l'ordre des villes : les deux de Bruges sont les numéros 1 et 2.
 - Chacun a une **ville d'attache**, celle où il est apparu. Elle **ne change jamais** : le navire y revient toujours.
 - Leur or est **illimité** : ils n'ont pas de trésor, ne paient pas de salaires, et seul leur bénéfice cumulé est compté (visible dans l'outil de débogage, touche F1).
 - Ils achètent et vendent aux mêmes prix que le joueur (section 6) : leurs achats font monter les prix là où ils chargent, leurs ventes les font baisser là où ils livrent.
