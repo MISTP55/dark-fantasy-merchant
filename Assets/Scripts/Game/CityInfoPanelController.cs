@@ -584,7 +584,7 @@ namespace DarkFantasyMerchant.Game
 
                 foreach (GoodDefinition good in worldEconomy.Economy.Goods)
                 {
-                    goodNames.Add(GoodUnitText.NameWithUnit(good.DisplayName, good.Unit));
+                    goodNames.Add(good.DisplayName);
                     goodIcons.Add(good.Icon);
                 }
 
