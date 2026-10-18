@@ -265,6 +265,10 @@ namespace DarkFantasyMerchant.Game
             rows.Insert(index, row);
             rowContainer.Insert(index, element);
             goodRowContainer.Insert(index, goodElement);
+
+            // The two sides of a row take the same stripe.
+            ListStripes.Apply(rowContainer);
+            ListStripes.Apply(goodRowContainer);
             row.Refresh();
 
             if (isShown)

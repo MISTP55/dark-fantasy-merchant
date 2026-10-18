@@ -208,6 +208,9 @@ namespace DarkFantasyMerchant.Game
             {
                 AddRow(workshopRowContainer, good, () => BuildWorkshop(good));
             }
+
+            ListStripes.Apply(houseRowContainer);
+            ListStripes.Apply(workshopRowContainer);
         }
 
         private void AddRow(VisualElement container, int good, Action build)

@@ -89,6 +89,8 @@ namespace DarkFantasyMerchant.Game
                 rowContainer.Add(elements[good]);
             }
 
+            ListStripes.Apply(rowContainer);
+
             Hide();
         }
 

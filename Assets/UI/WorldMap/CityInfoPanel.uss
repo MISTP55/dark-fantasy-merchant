@@ -65,6 +65,11 @@
     -unity-text-align: middle-left;
 }
 
+/* Before the hover and the press, which win over it. */
+.city-panel__ship.list-row--alternate {
+    background-color: rgba(72, 53, 36, 0.9);
+}
+
 .city-panel__ship:hover {
     background-color: rgb(84, 62, 40);
 }
@@ -74,6 +79,7 @@
 }
 
 .city-panel__ship--selected,
+.city-panel__ship--selected.list-row--alternate,
 .city-panel__ship--selected:hover {
     color: rgb(24, 17, 12);
     background-color: rgb(255, 140, 51);
@@ -207,10 +213,12 @@
     -unity-font-style: normal;
 }
 
+/* The header has the padding of the rows, so that its titles line up with them. */
 .market__row {
     flex-direction: row;
     align-items: center;
     height: 32px;
+    padding: 0 4px;
 }
 
 /* The good's icon, before its name, in the proportions of the icons (224 × 232). The header
@@ -330,11 +338,12 @@
     margin-top: 0;
 }
 
+/* Padded rather than spaced, so that the stripes of the rows touch. */
 .buildings__row {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    margin: 2px 0;
+    padding: 2px 4px;
 }
 
 .buildings__text {

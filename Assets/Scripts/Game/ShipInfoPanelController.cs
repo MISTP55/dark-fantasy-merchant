@@ -190,6 +190,8 @@ namespace DarkFantasyMerchant.Game
                 line.AddToClassList(CargoLineClass);
                 cargoList.Add(line);
             }
+
+            ListStripes.Apply(cargoList);
         }
 
         private void OnCloseClicked()

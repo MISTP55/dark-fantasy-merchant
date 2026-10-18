@@ -16,6 +16,7 @@
 }
 
 .ship-panel__cargo-line {
+    padding: 1px 4px;
     color: rgb(190, 164, 120);
     font-size: 14px;
 }

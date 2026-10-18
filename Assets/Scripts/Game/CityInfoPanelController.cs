@@ -420,6 +420,8 @@ namespace DarkFantasyMerchant.Game
                 shipList.Add(row);
             }
 
+            ListStripes.Apply(shipList);
+
             noShipLabel.style.display = listedShips.Count > 0 ? DisplayStyle.None : DisplayStyle.Flex;
             shipsTabButton.text = ShipsTabText(listedShips.Count);
             HighlightSelectedShip();

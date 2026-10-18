@@ -151,6 +151,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void ACityInsertedBetweenOthers_RestripesBothSidesOfTheRows()
+        {
+            table.AddCity("Sparia", market);
+            table.AddCity("Elforth", village);
+            table.AddCity("Kivar", FedMarket(startingDays: 0, new CityPopulation(700)));
+
+            for (int i = 0; i < 3; i++)
+            {
+                bool isAlternate = i % 2 == 1;
+                Assert.AreEqual(isAlternate, rows[i].ClassListContains(ListStripes.AlternateClass), $"row {i}");
+                Assert.AreEqual(isAlternate, goodRows[i].ClassListContains(ListStripes.AlternateClass), $"goods of row {i}");
+            }
+        }
+
+        [Test]
         public void TheCities_AreInAlphabeticalOrder_AccentsAndCaseAside()
         {
             CityMarket edimbourg = FedMarket(startingDays: 0, new CityPopulation(700));

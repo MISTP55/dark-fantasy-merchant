@@ -229,6 +229,8 @@ namespace DarkFantasyMerchant.Game
                 rows.RemoveAt(rows.Count - 1);
             }
 
+            ListStripes.Apply(rowContainer);
+
             for (int i = 0; i < ships.Count; i++)
             {
                 Write(rows[i], ships[i]);
