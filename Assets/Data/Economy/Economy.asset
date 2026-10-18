@@ -79,6 +79,7 @@ MonoBehaviour:
   vacancyMinimumFreeRoom: 3
   reserveLeakShare: 0.02
   reserveLeakCeiling: 30
+  cityHouseOccupancy: 0.95
   t0Days: 7
   t1AddedDays: 14
   t2ProductionDays: 10
