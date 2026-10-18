@@ -165,6 +165,42 @@
     flex-shrink: 0;
 }
 
+.market__ship-label {
+    margin: 0 6px 0 0;
+    padding: 0;
+    color: rgb(222, 210, 188);
+    font-size: 14px;
+}
+
+/* The player's ship that buys and sells, chosen among those in port. */
+.market__ship-choice {
+    width: 220px;
+    margin: 0;
+}
+
+.market__ship-choice > .unity-base-field__input {
+    color: rgb(222, 210, 188);
+    background-color: rgba(60, 44, 30, 0.9);
+    border-width: 1px;
+    border-radius: 0;
+    border-color: rgb(110, 84, 52);
+    font-size: 14px;
+}
+
+.market__ship-choice:hover > .unity-base-field__input {
+    background-color: rgb(84, 62, 40);
+}
+
+.market__ship-choice:disabled > .unity-base-field__input {
+    color: rgb(140, 124, 100);
+    background-color: rgba(60, 44, 30, 0.5);
+}
+
+/* The hold of the chosen ship, at the end of the line. */
+.market__ship-line > .market__hold {
+    margin-left: auto;
+}
+
 .market__hold {
     color: rgb(190, 164, 120);
     font-size: 14px;

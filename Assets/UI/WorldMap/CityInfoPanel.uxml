@@ -28,6 +28,8 @@
                     <ui:VisualElement name="market-page" class="city-panel__page">
                         <ui:VisualElement name="market-section" class="market">
                             <ui:VisualElement name="ship-line" class="market__ship-line">
+                                <ui:Label text="Navire :" class="market__ship-label" />
+                                <ui:DropdownField name="trading-ship" class="market__ship-choice" />
                                 <ui:Label name="market-hold" class="market__hold" />
                             </ui:VisualElement>
                             <ui:VisualElement class="market__row market__row--header">

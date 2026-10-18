@@ -8,7 +8,8 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// Presents the hovered city's name and the selected city's information panel: the city
     /// on the left, and on the right its market, the player's buildings and the ships in its
-    /// port in three tabs. Clicking a ship selects it, so that it can trade or be ordered out.
+    /// port in three tabs. The market trades with the player's ship chosen in its drop-down
+    /// list; clicking a ship in the ships tab selects it, so that it can be ordered out.
     /// Reads the map's selection state; knows nothing about markers.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
@@ -70,6 +71,7 @@ namespace DarkFantasyMerchant.Game
         private VisualElement marketPage;
         private VisualElement buildingsPage;
         private VisualElement shipsPage;
+        private DropdownField tradingShipField;
 
 
         // The city the panel shows, or null while it is closed.
@@ -89,6 +91,12 @@ namespace DarkFantasyMerchant.Game
 
         // Ship of each row of the ship list, in the same order.
         private readonly List<Ship> listedShips = new List<Ship>();
+
+        // The player's ships in the shown port, in the order of the drop-down list.
+        private readonly List<Ship> tradingShips = new List<Ship>();
+
+        // The player's ship whose hold trades in the shown port, or null.
+        private Ship tradingShip;
 
         private void OnEnable()
         {
@@ -124,6 +132,7 @@ namespace DarkFantasyMerchant.Game
             marketPage = root.Q<VisualElement>("market-page");
             buildingsPage = root.Q<VisualElement>("buildings-page");
             shipsPage = root.Q<VisualElement>("ships-page");
+            tradingShipField = root.Q<DropdownField>("trading-ship");
 
             // A document that is enabled again has a new tree: the sections are rebuilt in it.
             marketSection = null;
@@ -136,7 +145,8 @@ namespace DarkFantasyMerchant.Game
                 || marketElement == null || marketRows == null || marketHoldLabel == null
                 || buildingsElement == null || buildingsRows == null || buildingsCostsLabel == null
                 || marketTabButton == null || buildingsTabButton == null || shipsTabButton == null
-                || marketPage == null || buildingsPage == null || shipsPage == null)
+                || marketPage == null || buildingsPage == null || shipsPage == null
+                || tradingShipField == null)
             {
                 Debug.LogError("CityInfoPanel.uxml is missing an expected element.", this);
                 return;
@@ -150,11 +160,13 @@ namespace DarkFantasyMerchant.Game
             marketTabButton.focusable = false;
             buildingsTabButton.focusable = false;
             shipsTabButton.focusable = false;
+            tradingShipField.focusable = false;
 
             closeButton.clicked += OnCloseClicked;
             marketTabButton.clicked += OnMarketTabClicked;
             buildingsTabButton.clicked += OnBuildingsTabClicked;
             shipsTabButton.clicked += OnShipsTabClicked;
+            tradingShipField.RegisterValueChangedCallback(OnTradingShipPicked);
             mapView.Selection.HoveredChanged += ShowHovered;
             mapView.Selection.SelectedChanged += ShowSelected;
 
@@ -186,6 +198,7 @@ namespace DarkFantasyMerchant.Game
             marketTabButton.clicked -= OnMarketTabClicked;
             buildingsTabButton.clicked -= OnBuildingsTabClicked;
             shipsTabButton.clicked -= OnShipsTabClicked;
+            tradingShipField.UnregisterValueChangedCallback(OnTradingShipPicked);
             mapView.Selection.HoveredChanged -= ShowHovered;
             mapView.Selection.SelectedChanged -= ShowSelected;
 
@@ -255,6 +268,9 @@ namespace DarkFantasyMerchant.Game
             return $"Atelier construit à {city} : {good.ToLowerInvariant()}.";
         }
 
+        /// <summary>What the market's drop-down list reads when no ship of the player lies in the port.</summary>
+        public const string NoTradingShip = "Aucun navire";
+
         /// <summary>The title of the ships tab: "Navires au port (3)".</summary>
         public static string ShipsTabText(int shipCount)
         {
@@ -304,7 +320,8 @@ namespace DarkFantasyMerchant.Game
             ShowPopulationOf(city);
             descriptionLabel.text = city.Description;
             ShowProducedGoodsOf(city);
-            ShowShipsIn(city);
+            // A new city: its first ship of the player trades.
+            ShowShipsIn(city, null);
             ShowMarketOf(city);
             cityPanel.style.display = DisplayStyle.Flex;
         }
@@ -356,7 +373,8 @@ namespace DarkFantasyMerchant.Game
             populationLabel.text = FormatPopulation(populationMarket.Population.Housed, populationMarket.Population.Beggars);
         }
 
-        private void ShowShipsIn(CityDefinition city)
+        /// <param name="keptTradingShip">The ship that trades, kept while it is still in port and the player's.</param>
+        private void ShowShipsIn(CityDefinition city, Ship keptTradingShip)
         {
             shipList.Clear();
             listedShips.Clear();
@@ -382,6 +400,51 @@ namespace DarkFantasyMerchant.Game
             noShipLabel.style.display = listedShips.Count > 0 ? DisplayStyle.None : DisplayStyle.Flex;
             shipsTabButton.text = ShipsTabText(listedShips.Count);
             HighlightSelectedShip();
+            ChooseTradingShip(keptTradingShip);
+        }
+
+        // After the ship list: the ships that can trade are among the ships listed.
+        private void ChooseTradingShip(Ship current)
+        {
+            if (shipsView != null)
+            {
+                TradingShipChoice.PlayerShipsAmong(listedShips, shipsView.IsPlayerShip, tradingShips);
+                tradingShip = TradingShipChoice.Choose(listedShips, shipsView.IsPlayerShip, current);
+            }
+            else
+            {
+                tradingShips.Clear();
+                tradingShip = null;
+            }
+
+            var names = new List<string>();
+
+            foreach (Ship ship in tradingShips)
+            {
+                names.Add(shipsView.DisplayNameOf(ship));
+            }
+
+            if (names.Count == 0)
+            {
+                names.Add(NoTradingShip);
+            }
+
+            tradingShipField.choices = names;
+            tradingShipField.SetValueWithoutNotify(names[Mathf.Max(0, tradingShips.IndexOf(tradingShip))]);
+            tradingShipField.SetEnabled(tradingShips.Count > 0);
+        }
+
+        private void OnTradingShipPicked(ChangeEvent<string> change)
+        {
+            int index = tradingShipField.index;
+
+            if (index < 0 || index >= tradingShips.Count || mapView.Selection.Selected == null)
+            {
+                return;
+            }
+
+            tradingShip = tradingShips[index];
+            ShowMarketOf(mapView.Selection.Selected);
         }
 
         // Rows are restyled, not rebuilt: a selection comes from a click on one of them.
@@ -399,7 +462,7 @@ namespace DarkFantasyMerchant.Game
         {
             if (ReferenceEquals(city, mapView.Selection.Selected))
             {
-                ShowShipsIn(city);
+                ShowShipsIn(city, tradingShip);
                 ShowMarketOf(city);
             }
         }
@@ -408,9 +471,11 @@ namespace DarkFantasyMerchant.Game
         {
             HighlightSelectedShip();
 
-            // The hold that trades is the selected ship's.
-            if (mapView.Selection.Selected != null)
+            // A ship of the player picked in the ships tab also becomes the one that trades;
+            // any other selection leaves the market as it is.
+            if (mapView.Selection.Selected != null && shipsView.IsPlayerShip(ship) && listedShips.Contains(ship))
             {
+                ChooseTradingShip(ship);
                 ShowMarketOf(mapView.Selection.Selected);
             }
         }
@@ -432,7 +497,7 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            CargoHold hold = HoldOfSelectedShipInPort();
+            CargoHold hold = tradingShip?.Cargo;
             section.Show(market, hold);
 
             buildingsCity = city;
@@ -508,17 +573,6 @@ namespace DarkFantasyMerchant.Game
 
             section = marketSection;
             return section != null;
-        }
-
-        /// <returns>The hold of the selected ship when it is the player's and lies in the shown city's port, otherwise null.</returns>
-        private CargoHold HoldOfSelectedShipInPort()
-        {
-            Ship selected = shipsView != null ? shipsView.Selection.Selected : null;
-
-            // Only the player's ships trade here: another merchant's is only looked at.
-            return selected != null && shipsView.IsPlayerShip(selected) && listedShips.Contains(selected)
-                ? selected.Cargo
-                : null;
         }
 
         private void OnCloseClicked()
