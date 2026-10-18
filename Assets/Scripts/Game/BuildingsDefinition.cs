@@ -69,7 +69,9 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>
         /// The cost of a building in Core's terms, its materials known by their index among the
-        /// economy's active goods.
+        /// economy's active goods. The house takes only its materials that are active
+        /// (<see cref="HouseMaterials"/>): it is never unavailable for its materials, and costs only
+        /// its gold when none is active. The workshop is unavailable for an empty or inactive one.
         /// </summary>
         /// <param name="type">The workshop or the house of this definition.</param>
         /// <param name="problem">What is wrong, naming the building and the good's asset; null when nothing is.</param>
@@ -90,6 +92,12 @@ namespace DarkFantasyMerchant.Game
             {
                 problem = $"the {building} costs a negative gold";
                 return false;
+            }
+
+            if (type == house)
+            {
+                cost = new BuildingCost(type.Gold, HouseMaterials(economy));
+                return true;
             }
 
             var materialCosts = new List<MaterialCost>(type.Materials.Count);
@@ -130,12 +138,12 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// The materials of the house as a city takes them from its market to build one of its own,
-        /// by their index among the active goods. Unlike the player's cost, nothing makes it
-        /// unavailable: an empty or inactive material is left out, and a good listed twice is
-        /// added up, so a house with none of its materials active takes nothing.
+        /// The materials of the house, the player's and those a city builds of its own, by their
+        /// index among the active goods. Nothing makes them unavailable: an empty or inactive
+        /// material is left out, and a good listed twice is added up, so a house with none of its
+        /// materials active takes nothing.
         /// </summary>
-        public IReadOnlyList<MaterialCost> CityHouseMaterials(EconomyDefinition economy)
+        public IReadOnlyList<MaterialCost> HouseMaterials(EconomyDefinition economy)
         {
             if (economy == null)
             {
@@ -172,7 +180,7 @@ namespace DarkFantasyMerchant.Game
         /// Whether the buildings can be used at all: jobs and room of at least 1. The room of a
         /// house also sets the houses of every city at the start. A cost that cannot be worked
         /// out does not count here: it only makes its building unavailable
-        /// (<see cref="TryCreateCost"/>), since a material can be switched off.
+        /// (<see cref="TryCreateCost"/>), since a material of the workshop can be switched off.
         /// </summary>
         /// <param name="problem">What is wrong, for the console; null when nothing is.</param>
         public bool TryValidate(out string problem)
@@ -197,7 +205,8 @@ namespace DarkFantasyMerchant.Game
         /// <summary>
         /// What the buildings cost, for the player: "Logement : 5 000 or, 10 bois, 10 métal ·
         /// Atelier : 10 000 or, 10 bois, 30 métal", or "indisponible" for a building whose cost
-        /// cannot be worked out.
+        /// cannot be worked out. Only the materials the building takes are named: a house whose
+        /// materials are all switched off reads "Logement : 5 000 or".
         /// </summary>
         public string CostsText(EconomyDefinition economy)
         {
@@ -206,20 +215,20 @@ namespace DarkFantasyMerchant.Game
 
         private string CostText(BuildingType type, EconomyDefinition economy)
         {
-            if (!TryCreateCost(type, economy, out _, out _))
+            if (!TryCreateCost(type, economy, out BuildingCost cost, out _))
             {
                 return UnavailableText;
             }
 
-            var text = new StringBuilder(TreasuryHudController.FormatGold(type.Gold));
+            var text = new StringBuilder(TreasuryHudController.FormatGold(cost.Gold));
 
             // In the alphabetical order of the materials, as every list the player reads.
-            var materials = new List<MaterialAmount>(type.Materials);
-            NameOrder.Sort(materials, material => material.Good.DisplayName);
+            var materials = new List<MaterialCost>(cost.Materials);
+            NameOrder.Sort(materials, material => economy.Goods[material.Good].DisplayName);
 
-            foreach (MaterialAmount material in materials)
+            foreach (MaterialCost material in materials)
             {
-                text.Append(", ").Append(material.Units).Append(' ').Append(material.Good.DisplayName.ToLowerInvariant());
+                text.Append(", ").Append(material.Units).Append(' ').Append(economy.Goods[material.Good].DisplayName.ToLowerInvariant());
             }
 
             return text.ToString();

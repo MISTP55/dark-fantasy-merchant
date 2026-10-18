@@ -88,9 +88,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void CityHouseMaterials_MapsTheHousesMaterialsToTheirIndices()
+        public void HouseMaterials_MapsTheHousesMaterialsToTheirIndices()
         {
-            IReadOnlyList<MaterialCost> materials = buildings.CityHouseMaterials(economy);
+            IReadOnlyList<MaterialCost> materials = buildings.HouseMaterials(economy);
 
             Assert.AreEqual(2, materials.Count);
             Assert.AreEqual(1, materials[0].Good);
@@ -100,12 +100,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void CityHouseMaterials_LeaveOutAnInactiveMaterial_AndAnEmptyOne()
+        public void HouseMaterials_LeaveOutAnInactiveMaterial_AndAnEmptyOne()
         {
             SetBuilding("house", 5000, (timber, 10), (null, 5), (metal, 10));
             TestEconomy.SetActive(economy, metal, false);
 
-            IReadOnlyList<MaterialCost> materials = buildings.CityHouseMaterials(economy);
+            IReadOnlyList<MaterialCost> materials = buildings.HouseMaterials(economy);
 
             Assert.AreEqual(1, materials.Count);
             Assert.AreEqual(economy.IndexOf(timber), materials[0].Good);
@@ -113,33 +113,55 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void CityHouseMaterials_AddUpAGoodListedTwice()
+        public void HouseMaterials_AddUpAGoodListedTwice()
         {
             SetBuilding("house", 5000, (timber, 10), (timber, 4));
 
-            IReadOnlyList<MaterialCost> materials = buildings.CityHouseMaterials(economy);
+            IReadOnlyList<MaterialCost> materials = buildings.HouseMaterials(economy);
 
             Assert.AreEqual(1, materials.Count);
             Assert.AreEqual(14, materials[0].Units);
         }
 
         [Test]
-        public void CityHouseMaterials_WithEveryMaterialInactive_AreNone()
+        public void HouseMaterials_WithEveryMaterialInactive_AreNone()
         {
             TestEconomy.SetActive(economy, timber, false);
             TestEconomy.SetActive(economy, metal, false);
 
-            Assert.AreEqual(0, buildings.CityHouseMaterials(economy).Count);
+            Assert.AreEqual(0, buildings.HouseMaterials(economy).Count);
         }
 
         [Test]
-        public void TryCreateCost_AnInactiveMaterial_IsAProblemNamingIt()
+        public void TryCreateCost_AnInactiveMaterialOfTheWorkshop_IsAProblemNamingIt()
         {
             TestEconomy.SetActive(economy, metal, false);
 
-            Assert.IsFalse(buildings.TryCreateCost(buildings.House, economy, out _, out string problem));
+            Assert.IsFalse(buildings.TryCreateCost(buildings.Workshop, economy, out _, out string problem));
             StringAssert.Contains("Métal", problem);
-            StringAssert.Contains("house", problem);
+            StringAssert.Contains("workshop", problem);
+        }
+
+        [Test]
+        public void TryCreateCost_TheHouse_LeavesOutAnInactiveMaterial()
+        {
+            TestEconomy.SetActive(economy, metal, false);
+
+            Assert.IsTrue(buildings.TryCreateCost(buildings.House, economy, out BuildingCost cost, out string problem), problem);
+            Assert.AreEqual(5000, cost.Gold);
+            Assert.AreEqual(1, cost.Materials.Count);
+            Assert.AreEqual(economy.IndexOf(timber), cost.Materials[0].Good);
+        }
+
+        [Test]
+        public void TryCreateCost_TheHouseWithEveryMaterialInactive_CostsOnlyItsGold()
+        {
+            TestEconomy.SetActive(economy, timber, false);
+            TestEconomy.SetActive(economy, metal, false);
+
+            Assert.IsTrue(buildings.TryCreateCost(buildings.House, economy, out BuildingCost cost, out string problem), problem);
+            Assert.AreEqual(5000, cost.Gold);
+            Assert.AreEqual(0, cost.Materials.Count);
         }
 
         [Test]
@@ -192,7 +214,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TryValidate_IgnoresTheCosts_AMaterialSwitchedOffOnlyMakesItsBuildingUnavailable()
         {
             TestEconomy.SetActive(economy, metal, false);
-            SetBuilding("house", 5000, (null, 10));
+            SetBuilding("house", -1, (timber, 10));
 
             Assert.IsTrue(buildings.TryValidate(out string problem), problem);
             Assert.IsFalse(buildings.TryCreateCost(buildings.House, economy, out _, out _));
@@ -218,7 +240,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void CostsText_WritesABuildingWhoseCostCannotBeCreatedAsUnavailable()
         {
-            SetBuilding("house", 5000, (null, 10));
+            SetBuilding("house", -1, (timber, 10));
 
             Assert.AreEqual(
                 "Logement : indisponible · Atelier : 10 000 or, 10 bois, 30 métal",
@@ -227,6 +249,19 @@ namespace DarkFantasyMerchant.Tests.EditMode
             TestEconomy.SetActive(economy, metal, false);
 
             Assert.AreEqual("Logement : indisponible · Atelier : indisponible", buildings.CostsText(economy));
+        }
+
+        [Test]
+        public void CostsText_NamesOnlyTheActiveMaterialsOfTheHouse()
+        {
+            string gold = TreasuryHudController.FormatGold(5000);
+            TestEconomy.SetActive(economy, metal, false);
+
+            StringAssert.StartsWith($"Logement : {gold}, 10 bois ·", buildings.CostsText(economy));
+
+            TestEconomy.SetActive(economy, timber, false);
+
+            StringAssert.StartsWith($"Logement : {gold} ·", buildings.CostsText(economy));
         }
     }
 }

@@ -24,7 +24,7 @@ namespace DarkFantasyMerchant.Game
 
         public BuildingsDefinition Buildings => buildings;
 
-        /// <summary>What a house costs, or null when it cannot be built (a material that is not an active good, among others).</summary>
+        /// <summary>What a house costs, or null when it cannot be built (a negative gold): a material that is not an active good is left out.</summary>
         public BuildingCost HouseCost { get; private set; }
 
         /// <summary>What a workshop costs, or null when it cannot be built (a material that is not an active good, among others).</summary>
@@ -118,8 +118,8 @@ namespace DarkFantasyMerchant.Game
                 int daysPerWeek = worldClock.Calendar.DaysPerWeek;
                 LabourRule labour = economy.CreateLabourRule();
 
-                // Built even when the player's house is unavailable: the materials switched off are left out.
-                CityHousingRule housing = economy.CreateHousingRule(buildings.HouseRoom, buildings.CityHouseMaterials(economy));
+                // The player's house: the materials switched off are left out.
+                CityHousingRule housing = economy.CreateHousingRule(buildings.HouseRoom, buildings.HouseMaterials(economy));
 
                 foreach (CityDefinition city in mapView.Cities)
                 {

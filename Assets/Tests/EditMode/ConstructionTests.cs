@@ -120,6 +120,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void AHouseWithoutMaterials_CostsOnlyItsGold()
+        {
+            CityMarket market = Market();
+            var treasury = new Treasury(10000);
+            int stock = market.AvailableOf(0);
+            var cost = new BuildingCost(5000, Array.Empty<MaterialCost>());
+
+            Assert.AreEqual(5000, Construction.QuoteHouse(market, null, treasury, cost).Gold);
+            Assert.IsTrue(Construction.TryBuildHouse(market, null, treasury, cost, 100));
+            Assert.AreEqual(5000, treasury.Gold);
+            Assert.AreEqual(stock, market.AvailableOf(0));
+            Assert.AreEqual(1, market.PlayerHouses);
+        }
+
+        [Test]
         public void ATreasuryInDebt_BuildsNothing()
         {
             CityMarket market = Market();

@@ -342,7 +342,7 @@ La population a donc grandi du nombre de mendiants arrivés. Sans places libres 
 - Les matériaux sont retirés du stock **même si cela le vide**. Le prix du bois et du métal monte donc juste après. Ce retrait n'est pas compté comme une consommation dans les chiffres de la semaine, comme les achats du joueur.
 - Si un des matériaux manque, rien n'est construit ni retiré ce jour-là.
 - **Une maison par jour au plus.**
-- Un matériau désactivé dans le catalogue est simplement ignoré : la maison de la ville ne demande que les matériaux actifs, et rien du tout s'ils sont tous désactivés. La maison du joueur, elle, devient alors indisponible (section 10).
+- Un matériau désactivé dans le catalogue est simplement ignoré : la maison ne demande que les matériaux actifs, et rien du tout s'ils sont tous désactivés. C'est la même règle que pour la maison du joueur (section 10).
 
 **Exemple.** Une ville a 1 046 logés dans 1 100 places (95,1 %), et 12 boisseaux de bois et 10 tonneaux de métal au marché. Le soir, elle construit une maison : elle a maintenant 1 200 places, 2 boisseaux de bois et plus de métal. Le lendemain, ses logés sont à 87 % : elle ne construira plus avant d'avoir dépassé 1 140 logés.
 
@@ -372,6 +372,8 @@ Le joueur peut construire deux bâtiments dans une ville, depuis le panneau de c
 | Atelier | 10 000 | 10 boisseaux | 30 tonneaux | 30 emplois, pour une marchandise que la ville produit |
 
 Les matériaux sont pris d'abord dans la cale du navire du joueur au port, puis achetés au marché de la ville. La construction se fait en entier ou pas du tout.
+
+Un matériau désactivé dans le catalogue n'est pas demandé pour une **maison** : si le métal est désactivé, elle coûte 5 000 or et 10 boisseaux de bois ; si le bois et le métal le sont tous les deux, elle ne coûte que ses 5 000 or. Le panneau n'affiche que les matériaux demandés. Un **atelier** dont un matériau est désactivé devient, lui, indisponible.
 
 **Les maisons** ajoutent leurs places à celles de la ville, pour n'importe quel habitant : ce sont elles qui permettent à la ville de grandir (section 9).
 

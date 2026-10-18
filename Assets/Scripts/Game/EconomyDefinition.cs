@@ -386,7 +386,7 @@ namespace DarkFantasyMerchant.Game
         /// the room is unusable.
         /// </summary>
         /// <param name="room">Places of a house, the player's.</param>
-        /// <param name="materials">What a house takes from the market (<see cref="BuildingsDefinition.CityHouseMaterials"/>).</param>
+        /// <param name="materials">What a house takes from the market (<see cref="BuildingsDefinition.HouseMaterials"/>).</param>
         public CityHousingRule CreateHousingRule(int room, IReadOnlyList<MaterialCost> materials)
         {
             return new CityHousingRule(cityHouseOccupancy, room, materials);
