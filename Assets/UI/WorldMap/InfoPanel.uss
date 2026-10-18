@@ -32,5 +32,5 @@
 /* Every other row of a list, from the second, is slightly lighter (set by ListStripes: USS
    has no :nth-child). Shared by the city panel, the ship panel and the debug panel. */
 .list-row--alternate {
-    background-color: rgba(240, 226, 196, 0.06);
+    background-color: rgba(240, 226, 196, 0.01);
 }

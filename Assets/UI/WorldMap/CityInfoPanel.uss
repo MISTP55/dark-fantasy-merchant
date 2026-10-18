@@ -67,7 +67,7 @@
 
 /* Before the hover and the press, which win over it. */
 .city-panel__ship.list-row--alternate {
-    background-color: rgba(72, 53, 36, 0.9);
+    background-color: rgba(66, 48, 33, 0.9);
 }
 
 .city-panel__ship:hover {
