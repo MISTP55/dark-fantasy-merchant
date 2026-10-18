@@ -271,6 +271,26 @@ namespace DarkFantasyMerchant.Game
         /// <summary>What the market's drop-down list reads when no ship of the player lies in the port.</summary>
         public const string NoTradingShip = "Aucun navire";
 
+        /// <summary>
+        /// The names of the drop-down list, one per ship in the order given. A ship that shares
+        /// its name with one before it is numbered, "Navire marchand (2)": the list tells its
+        /// items apart by their text.
+        /// </summary>
+        public static List<string> TradingShipLabels(IReadOnlyList<string> shipNames)
+        {
+            var labels = new List<string>();
+            var counts = new Dictionary<string, int>();
+
+            foreach (string name in shipNames)
+            {
+                counts.TryGetValue(name, out int count);
+                counts[name] = ++count;
+                labels.Add(count > 1 ? $"{name} ({count})" : name);
+            }
+
+            return labels;
+        }
+
         /// <summary>The title of the ships tab: "Navires au port (3)".</summary>
         public static string ShipsTabText(int shipCount)
         {
@@ -423,6 +443,8 @@ namespace DarkFantasyMerchant.Game
             {
                 names.Add(shipsView.DisplayNameOf(ship));
             }
+
+            names = TradingShipLabels(names);
 
             if (names.Count == 0)
             {

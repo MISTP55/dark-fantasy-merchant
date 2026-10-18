@@ -75,5 +75,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("Navires au port (3)", CityInfoPanelController.ShipsTabText(3));
             Assert.AreEqual("Navires au port (0)", CityInfoPanelController.ShipsTabText(0));
         }
+
+        [Test]
+        public void TradingShipLabels_NumbersTheShipsThatShareAName()
+        {
+            var labels = CityInfoPanelController.TradingShipLabels(
+                new[] { "Navire marchand", "La Corneille", "Navire marchand", "Navire marchand" });
+
+            Assert.That(labels, Is.EqualTo(new[]
+            {
+                "Navire marchand", "La Corneille", "Navire marchand (2)", "Navire marchand (3)",
+            }));
+        }
     }
 }
