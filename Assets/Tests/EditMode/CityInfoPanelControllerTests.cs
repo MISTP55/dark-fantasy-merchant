@@ -68,5 +68,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 CityInfoPanelController.NoProducedGoods,
                 CityInfoPanelController.ProducedGoodsText(city, new[] { grain, fish }, GoodProduction.Inefficient));
         }
+
+        [Test]
+        public void ShipsTabText_CountsTheShipsInPort()
+        {
+            Assert.AreEqual("Navires au port (3)", CityInfoPanelController.ShipsTabText(3));
+            Assert.AreEqual("Navires au port (0)", CityInfoPanelController.ShipsTabText(0));
+        }
     }
 }

@@ -6,9 +6,10 @@ using UnityEngine.UIElements;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// Presents the hovered city's name and the selected city's information panel, with
-    /// the ships in its port and its market: clicking a ship selects it, so that it can
-    /// trade or be ordered out. Reads the map's selection state; knows nothing about markers.
+    /// Presents the hovered city's name and the selected city's information panel: the city
+    /// on the left, and on the right its market, the player's buildings and the ships in its
+    /// port in three tabs. Clicking a ship selects it, so that it can trade or be ordered out.
+    /// Reads the map's selection state; knows nothing about markers.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class CityInfoPanelController : MonoBehaviour
@@ -17,6 +18,14 @@ namespace DarkFantasyMerchant.Game
         private const string SelectedShipRowClass = "city-panel__ship--selected";
         private const string ProducedGoodsClass = "city-panel__goods";
         private const string EmptyClass = "city-panel__empty";
+        private const string OpenTabClass = "city-panel__tab--open";
+
+        private enum Tab
+        {
+            Market,
+            Buildings,
+            Ships,
+        }
 
         [SerializeField] private WorldMapView mapView;
         [SerializeField] private Camera mapCamera;
@@ -55,6 +64,16 @@ namespace DarkFantasyMerchant.Game
         private VisualElement buildingsElement;
         private VisualElement buildingsRows;
         private Label buildingsCostsLabel;
+        private Button marketTabButton;
+        private Button buildingsTabButton;
+        private Button shipsTabButton;
+        private VisualElement marketPage;
+        private VisualElement buildingsPage;
+        private VisualElement shipsPage;
+
+
+        // The city the panel shows, or null while it is closed.
+        private CityDefinition shownCity;
 
         // Made on the first city shown: the world's economy starts after this panel is enabled.
         private CityMarketSection marketSection;
@@ -99,6 +118,12 @@ namespace DarkFantasyMerchant.Game
             buildingsElement = root.Q<VisualElement>("buildings-section");
             buildingsRows = root.Q<VisualElement>("buildings-rows");
             buildingsCostsLabel = root.Q<Label>("buildings-costs");
+            marketTabButton = root.Q<Button>("tab-market");
+            buildingsTabButton = root.Q<Button>("tab-buildings");
+            shipsTabButton = root.Q<Button>("tab-ships");
+            marketPage = root.Q<VisualElement>("market-page");
+            buildingsPage = root.Q<VisualElement>("buildings-page");
+            shipsPage = root.Q<VisualElement>("ships-page");
 
             // A document that is enabled again has a new tree: the sections are rebuilt in it.
             marketSection = null;
@@ -109,7 +134,9 @@ namespace DarkFantasyMerchant.Game
                 || efficientGoodsLabel == null || inefficientGoodsLabel == null
                 || shipList == null || closeButton == null || populationLabel == null
                 || marketElement == null || marketRows == null || marketHoldLabel == null
-                || buildingsElement == null || buildingsRows == null || buildingsCostsLabel == null)
+                || buildingsElement == null || buildingsRows == null || buildingsCostsLabel == null
+                || marketTabButton == null || buildingsTabButton == null || shipsTabButton == null
+                || marketPage == null || buildingsPage == null || shipsPage == null)
             {
                 Debug.LogError("CityInfoPanel.uxml is missing an expected element.", this);
                 return;
@@ -118,10 +145,16 @@ namespace DarkFantasyMerchant.Game
             // Only the panel itself should block the pointer, not the full-screen root.
             root.pickingMode = PickingMode.Ignore;
 
-            // The button is clicked, not navigated: the keyboard pans the map.
+            // The buttons are clicked, not navigated: the keyboard pans the map.
             closeButton.focusable = false;
+            marketTabButton.focusable = false;
+            buildingsTabButton.focusable = false;
+            shipsTabButton.focusable = false;
 
             closeButton.clicked += OnCloseClicked;
+            marketTabButton.clicked += OnMarketTabClicked;
+            buildingsTabButton.clicked += OnBuildingsTabClicked;
+            shipsTabButton.clicked += OnShipsTabClicked;
             mapView.Selection.HoveredChanged += ShowHovered;
             mapView.Selection.SelectedChanged += ShowSelected;
 
@@ -150,6 +183,9 @@ namespace DarkFantasyMerchant.Game
             }
 
             closeButton.clicked -= OnCloseClicked;
+            marketTabButton.clicked -= OnMarketTabClicked;
+            buildingsTabButton.clicked -= OnBuildingsTabClicked;
+            shipsTabButton.clicked -= OnShipsTabClicked;
             mapView.Selection.HoveredChanged -= ShowHovered;
             mapView.Selection.SelectedChanged -= ShowSelected;
 
@@ -164,6 +200,7 @@ namespace DarkFantasyMerchant.Game
             marketSection?.Hide();
             buildingsSection?.Hide();
             FollowPopulationOf(null);
+            shownCity = null;
 
             isBound = false;
         }
@@ -218,6 +255,12 @@ namespace DarkFantasyMerchant.Game
             return $"Atelier construit à {city} : {good.ToLowerInvariant()}.";
         }
 
+        /// <summary>The title of the ships tab: "Navires au port (3)".</summary>
+        public static string ShipsTabText(int shipCount)
+        {
+            return $"Navires au port ({TreasuryHudController.FormatNumber(shipCount)})";
+        }
+
         /// <summary>"Logement construit à Lübeck."</summary>
         public static string HouseBuiltText(string city)
         {
@@ -244,9 +287,17 @@ namespace DarkFantasyMerchant.Game
                 marketSection?.Hide();
                 buildingsSection?.Hide();
                 FollowPopulationOf(null);
+                shownCity = null;
                 return;
             }
 
+            // The panel opens on the market; from one city to the next, the open tab stays.
+            if (shownCity == null)
+            {
+                ShowTab(Tab.Market);
+            }
+
+            shownCity = city;
             nameLabel.text = city.DisplayName;
             sizeLabel.text = SizeText(city.Size);
             accessLabel.text = AccessText(city.Access);
@@ -329,6 +380,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             noShipLabel.style.display = listedShips.Count > 0 ? DisplayStyle.None : DisplayStyle.Flex;
+            shipsTabButton.text = ShipsTabText(listedShips.Count);
             HighlightSelectedShip();
         }
 
@@ -472,6 +524,35 @@ namespace DarkFantasyMerchant.Game
         private void OnCloseClicked()
         {
             mapView.Selection.ClearSelection();
+        }
+
+        private void OnMarketTabClicked()
+        {
+            ShowTab(Tab.Market);
+        }
+
+        private void OnBuildingsTabClicked()
+        {
+            ShowTab(Tab.Buildings);
+        }
+
+        private void OnShipsTabClicked()
+        {
+            ShowTab(Tab.Ships);
+        }
+
+        // A page is shown or hidden by its tab; the section in it is shown or hidden by itself.
+        private void ShowTab(Tab tab)
+        {
+            ShowPage(marketPage, marketTabButton, tab == Tab.Market);
+            ShowPage(buildingsPage, buildingsTabButton, tab == Tab.Buildings);
+            ShowPage(shipsPage, shipsTabButton, tab == Tab.Ships);
+        }
+
+        private static void ShowPage(VisualElement page, Button tabButton, bool isOpen)
+        {
+            page.style.display = isOpen ? DisplayStyle.Flex : DisplayStyle.None;
+            tabButton.EnableInClassList(OpenTabClass, isOpen);
         }
 
         /// <summary>What a production section of the panel shows when the city produces nothing that way.</summary>

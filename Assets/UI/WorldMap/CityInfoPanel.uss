@@ -80,33 +80,89 @@
     border-color: rgb(240, 226, 196);
 }
 
-/* Wider than the ship panel: the market is a table. A big city's panel is taller than the
-   screen: it shrinks to the screen less its margins, and only the building rows and the
-   market's rows give up height, each scrolling what no longer fits. */
+/* A fixed size, well under the height of the screen: the city on the left, three tabs on
+   the right. Only the content of a tab, or a long description, scrolls. */
 .city-panel {
-    width: 480px;
-    margin: 16px 0;
-    flex-shrink: 1;
+    width: 900px;
+    height: 620px;
 }
 
-.city-panel > * {
-    flex-shrink: 0;
+.city-panel > .info-panel__header {
+    padding-bottom: 8px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(110, 84, 52);
 }
 
-.city-panel > .buildings,
-.city-panel > .market {
-    flex-shrink: 1;
-}
-
-.buildings > *,
-.market > * {
-    flex-shrink: 0;
-}
-
-.market__title {
+.city-panel__body {
     flex-direction: row;
-    justify-content: space-between;
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.city-panel__city {
+    width: 260px;
+    flex-shrink: 0;
+    padding-right: 12px;
+    border-right-width: 1px;
+    border-right-color: rgb(110, 84, 52);
+}
+
+.city-panel__tabs-side {
+    flex-grow: 1;
+    min-width: 0;
+    padding-left: 12px;
+}
+
+.city-panel__tab-bar {
+    flex-direction: row;
+    flex-shrink: 0;
+}
+
+.city-panel__tab {
+    margin: 0 4px 0 0;
+    padding: 6px 12px;
+    color: rgb(222, 210, 188);
+    background-color: rgba(60, 44, 30, 0.9);
+    border-width: 1px;
+    border-radius: 0;
+    border-color: rgb(110, 84, 52);
+    font-size: 15px;
+}
+
+.city-panel__tab:hover {
+    background-color: rgb(84, 62, 40);
+}
+
+.city-panel__tab--open,
+.city-panel__tab--open:hover {
+    color: rgb(240, 226, 196);
+    background-color: rgb(110, 84, 52);
+    -unity-font-style: bold;
+}
+
+/* A tab's page: what does not fit in it scrolls inside it. */
+.city-panel__page {
+    flex-grow: 1;
+    min-height: 0;
+    margin-top: 8px;
+}
+
+.market,
+.buildings,
+.city-panel__ships-scroll {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.market__ship-line {
+    flex-direction: row;
     align-items: center;
+    flex-shrink: 0;
+    margin-bottom: 6px;
+}
+
+.market__row--header {
+    flex-shrink: 0;
 }
 
 .market__hold {
@@ -135,12 +191,11 @@
     color: rgb(190, 164, 120);
 }
 
-/* Twenty goods do not fit on a screen: the rows scroll under their header, in less height
-   when the panel must shrink, but never under five rows. */
+/* Twenty goods do not fit in the tab: the rows scroll under their header. */
 .market > .market__scroll {
-    max-height: 352px;
-    min-height: 160px;
+    flex-grow: 1;
     flex-shrink: 1;
+    min-height: 0;
 }
 
 .market__cell {
@@ -217,10 +272,11 @@
 }
 
 /* The player's buildings: a text and the button that builds, one row each. The rows scroll
-   when the panel must shrink, never under three rows. */
+   above the costs when they do not fit in the tab. */
 .buildings > .buildings__scroll {
-    min-height: 72px;
+    flex-grow: 1;
     flex-shrink: 1;
+    min-height: 0;
 }
 
 .buildings__row {
@@ -266,6 +322,7 @@
 }
 
 .buildings__costs {
+    flex-shrink: 0;
     margin-top: 4px;
     color: rgb(190, 164, 120);
     font-size: 13px;

@@ -8,40 +8,56 @@
                 <ui:Label name="city-name" class="info-panel__name" />
                 <ui:Button name="close-button" text="X" class="info-panel__close" />
             </ui:VisualElement>
-            <ui:Label name="city-size" class="city-panel__tag" />
-            <ui:Label name="city-access" class="city-panel__tag" />
-            <ui:Label name="city-population" class="city-panel__tag" />
-            <ui:Label name="city-description" class="city-panel__description" />
-            <ui:Label text="Production efficace" class="city-panel__section" />
-            <ui:Label name="efficient-goods" class="city-panel__goods" />
-            <ui:Label text="Production inefficace" class="city-panel__section" />
-            <ui:Label name="inefficient-goods" class="city-panel__goods" />
-            <ui:Label text="Navires au port" class="city-panel__section" />
-            <ui:Label name="no-ship-label" text="Aucun navire au port" class="city-panel__empty" />
-            <ui:VisualElement name="ship-list" />
-            <ui:VisualElement name="buildings-section" class="buildings">
-                <ui:Label text="Vos bâtiments" class="city-panel__section" />
-                <ui:ScrollView class="buildings__scroll">
-                    <ui:VisualElement name="buildings-rows" />
+            <ui:VisualElement class="city-panel__body">
+                <ui:ScrollView name="city-scroll" class="city-panel__city">
+                    <ui:Label name="city-size" class="city-panel__tag" />
+                    <ui:Label name="city-access" class="city-panel__tag" />
+                    <ui:Label name="city-population" class="city-panel__tag" />
+                    <ui:Label name="city-description" class="city-panel__description" />
+                    <ui:Label text="Production efficace" class="city-panel__section" />
+                    <ui:Label name="efficient-goods" class="city-panel__goods" />
+                    <ui:Label text="Production inefficace" class="city-panel__section" />
+                    <ui:Label name="inefficient-goods" class="city-panel__goods" />
                 </ui:ScrollView>
-                <ui:Label name="buildings-costs" class="buildings__costs" />
-            </ui:VisualElement>
-            <ui:VisualElement name="market-section" class="market">
-                <ui:VisualElement class="city-panel__section market__title">
-                    <ui:Label text="Marché" />
-                    <ui:Label name="market-hold" class="market__hold" />
+                <ui:VisualElement class="city-panel__tabs-side">
+                    <ui:VisualElement class="city-panel__tab-bar">
+                        <ui:Button name="tab-market" text="Marché" class="city-panel__tab" />
+                        <ui:Button name="tab-buildings" text="Bâtiments" class="city-panel__tab" />
+                        <ui:Button name="tab-ships" class="city-panel__tab" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="market-page" class="city-panel__page">
+                        <ui:VisualElement name="market-section" class="market">
+                            <ui:VisualElement name="ship-line" class="market__ship-line">
+                                <ui:Label name="market-hold" class="market__hold" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="market__row market__row--header">
+                                <ui:VisualElement class="market__icon" />
+                                <ui:Label text="Marchandise" class="market__cell market__cell--name" />
+                                <ui:Label text="Stock" class="market__cell market__cell--number" />
+                                <ui:Label text="Achat" class="market__cell market__cell--price" />
+                                <ui:Label text="Vente" class="market__cell market__cell--price" />
+                                <ui:Label text="Cale" class="market__cell market__cell--number market__cell--trade" />
+                            </ui:VisualElement>
+                            <ui:ScrollView class="market__scroll">
+                                <ui:VisualElement name="market-rows" />
+                            </ui:ScrollView>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="buildings-page" class="city-panel__page">
+                        <ui:VisualElement name="buildings-section" class="buildings">
+                            <ui:ScrollView class="buildings__scroll">
+                                <ui:VisualElement name="buildings-rows" />
+                            </ui:ScrollView>
+                            <ui:Label name="buildings-costs" class="buildings__costs" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="ships-page" class="city-panel__page">
+                        <ui:ScrollView class="city-panel__ships-scroll">
+                            <ui:Label name="no-ship-label" text="Aucun navire au port" class="city-panel__empty" />
+                            <ui:VisualElement name="ship-list" />
+                        </ui:ScrollView>
+                    </ui:VisualElement>
                 </ui:VisualElement>
-                <ui:VisualElement class="market__row market__row--header">
-                    <ui:VisualElement class="market__icon" />
-                    <ui:Label text="Marchandise" class="market__cell market__cell--name" />
-                    <ui:Label text="Stock" class="market__cell market__cell--number" />
-                    <ui:Label text="Achat" class="market__cell market__cell--price" />
-                    <ui:Label text="Vente" class="market__cell market__cell--price" />
-                    <ui:Label text="Cale" class="market__cell market__cell--number market__cell--trade" />
-                </ui:VisualElement>
-                <ui:ScrollView class="market__scroll">
-                    <ui:VisualElement name="market-rows" />
-                </ui:ScrollView>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
