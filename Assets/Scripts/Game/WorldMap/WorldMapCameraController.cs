@@ -7,7 +7,9 @@ namespace DarkFantasyMerchant.Game
     /// Feeds input to a <see cref="MapCameraModel"/> and shows its state on the camera,
     /// eased by a <see cref="MapCameraSmoother"/>. Holds no clamping, zoom or easing math of its own.
     /// During fast forward it shows the whole map and ignores the input. It can also cut
-    /// to a close-up of a point.
+    /// to a close-up of a point. These changes of view, into and out of fast forward and
+    /// to a close-up, are instant (<see cref="MapCameraSmoother.SnapTo"/>), unlike every
+    /// other move of the camera.
     /// </summary>
     [RequireComponent(typeof(Camera))]
     public sealed class WorldMapCameraController : MonoBehaviour

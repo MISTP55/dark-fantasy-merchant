@@ -13,7 +13,8 @@ namespace DarkFantasyMerchant.Game
     /// the workers of its workshop over their maximum and its reserve,
     /// and a last row with the total of every column. Follows the markets while it is shown.
     /// The cities and the goods are in alphabetical order.
-    /// The city's columns and the goods' are in two containers, so that only the goods' scroll sideways.
+    /// The city's columns and the goods' are in two containers, so that only the goods' scroll sideways:
+    /// UI Toolkit has no sticky position. The rows have one height, so that the two sides line up.
     /// </summary>
     public sealed class DebugCitiesTable
     {

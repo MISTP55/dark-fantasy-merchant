@@ -6,7 +6,8 @@ namespace DarkFantasyMerchant.Core
     /// Buying and selling between a city's market, a ship's hold and, for the player,
     /// a treasury, in units of the good, barrels or bushels. Units are priced one by one,
     /// each at the stock it leaves or joins, and a trade stops at the first unit that
-    /// cannot be traded; a unit is never split.
+    /// cannot be traded; a unit is never split. The units of a trade are moved at once, so
+    /// the market and the hold raise Changed once per trade.
     /// </summary>
     public static class Trade
     {

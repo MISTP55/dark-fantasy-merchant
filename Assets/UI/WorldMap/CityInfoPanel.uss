@@ -87,7 +87,8 @@
 }
 
 /* A fixed size, well under the height of the screen: the city on the left, three tabs on
-   the right. Only the content of a tab, or a long description, scrolls. */
+   the right. Only the content of a tab, or a long description, scrolls. The height lets
+   the market's active goods show without scrolling. */
 .city-panel {
     width: 900px;
     height: 664px;

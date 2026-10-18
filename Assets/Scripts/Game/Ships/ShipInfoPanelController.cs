@@ -151,7 +151,8 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            // Written on selection: nothing changes a crew yet.
+            // Written on selection: nothing changes a crew yet. A crew that changes will
+            // need an event to refresh this label.
             nameLabel.text = shipsView.DisplayNameOf(ship);
             crewLabel.text = FormatCrew(ship.Crew);
             ShowCargo();

@@ -46,8 +46,10 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// To call for every day that starts. Weeks are counted from the first day of the
-        /// game, so a day that is not reported shifts none of them: the week it ended is
-        /// only left unpaid.
+        /// game, not within a month, and read from the elapsed days rather than counted here,
+        /// so a day that is not reported shifts none of them: the week it ended is only left
+        /// unpaid. A clock step that crosses several weeks reports each of their days, so
+        /// each week is paid.
         /// </summary>
         /// <param name="elapsedDays">Whole days since the start of the game, at least one.</param>
         public void StartDay(int elapsedDays)

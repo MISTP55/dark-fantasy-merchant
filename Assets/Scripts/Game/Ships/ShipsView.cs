@@ -41,6 +41,7 @@ namespace DarkFantasyMerchant.Game
 
         private GoodUnits goodUnits;
 
+        // Parallel lists, by index: a ship is added to and removed from all of them at once (RemoveShip).
         private readonly List<Ship> ships = new List<Ship>();
         private readonly List<Vector2> shipWorldPositions = new List<Vector2>();
         private readonly List<ShipView> views = new List<ShipView>();

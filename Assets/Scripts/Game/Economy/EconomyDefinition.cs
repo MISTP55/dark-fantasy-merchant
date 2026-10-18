@@ -172,7 +172,12 @@ namespace DarkFantasyMerchant.Game
 
         public int InhabitantsPerWorker => inhabitantsPerWorker;
 
-        /// <summary>The inhabitants of every city when the game starts: the starting workforce, times the inhabitants per worker.</summary>
+        /// <summary>
+        /// The starting workforce times the inhabitants per worker: the population of a market
+        /// made without labour only. It is not that of the game's cities, whose markets have
+        /// labour and start with <see cref="CityPopulation.AtStart"/>, from the workers they
+        /// actually start with.
+        /// </summary>
         public int StartingPopulation => startingWorkforce * inhabitantsPerWorker;
 
         public double StartingBeggarsPerWorker => startingBeggarsPerWorker;
