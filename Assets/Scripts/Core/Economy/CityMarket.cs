@@ -123,12 +123,16 @@ namespace DarkFantasyMerchant.Core
         /// </summary>
         public event Action Changed;
 
-        /// <summary>Units the inhabitants consume in a day while the city has them.</summary>
+        /// <summary>Units the housed inhabitants consume in a day while the city has them, each class at its rate; the beggars consume nothing.</summary>
         public double DailyConsumptionOf(int good)
         {
             RequireGood(good);
 
-            return goods[good].DailyConsumptionPerThousand * Population.Inhabitants / 1000d;
+            PerClass<double> rates = goods[good].DailyConsumptionPerThousand;
+
+            return (rates.Rich * Population.CountOf(SocialClass.Rich)
+                + rates.Wealthy * Population.CountOf(SocialClass.Wealthy)
+                + rates.Poor * Population.CountOf(SocialClass.Poor)) / 1000d;
         }
 
         /// <summary>Units in stock; a city consumes fractions of a unit, so it is not whole.</summary>

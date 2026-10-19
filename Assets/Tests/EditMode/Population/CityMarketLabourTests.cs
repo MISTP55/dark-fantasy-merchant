@@ -205,7 +205,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.Greater(leaks, 0);
             Assert.Greater(market.PlayerWorkersOf(0), 0);
             Assert.AreNotEqual(population.StartingInhabitants, market.Population.Inhabitants);
-            Assert.AreEqual(2d * market.Population.Inhabitants / 1000d, market.DailyConsumptionOf(0), 1e-12);
+            // The beggars consume nothing.
+            Assert.AreEqual(2d * market.Population.Housed / 1000d, market.DailyConsumptionOf(0), 1e-12);
         }
 
         private static int CityWorkersAndReserves(CityMarket market)

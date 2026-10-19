@@ -390,6 +390,38 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void MarketGood_RefusesANegativeConsumptionOrWeight()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new MarketGood(10, new PerClass<double>(1, -1, 1), 0, 0, 0, PerClass<int>.All(0)));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new MarketGood(10, PerClass<double>.All(1), 0, 0, 0, new PerClass<int>(0, 0, -1)));
+            Assert.DoesNotThrow(() => new MarketGood(10, PerClass<double>.All(1), 0, 0, 0, new PerClass<int>(5, 4, 8)));
+        }
+
+        [Test]
+        public void AUniformRate_IsTheSameForEveryClass_WithNoWeight()
+        {
+            var good = new MarketGood(10, 2, 0, 0);
+
+            Assert.AreEqual(2, good.DailyConsumptionPerThousand.Rich);
+            Assert.AreEqual(2, good.DailyConsumptionPerThousand.Wealthy);
+            Assert.AreEqual(2, good.DailyConsumptionPerThousand.Poor);
+            Assert.AreEqual(0, good.SatisfactionWeights.Poor);
+        }
+
+        [Test]
+        public void DailyConsumptionOf_AddsUpTheClasses_AndLeavesOutTheBeggars()
+        {
+            // Wine, per thousand and per day: rich 7.5, wealthy 1.9, poor 0.
+            var good = new MarketGood(220, new PerClass<double>(7.5, 1.9, 0), 0, 0, 0, PerClass<int>.All(0));
+            var population = new CityPopulation(new PerClass<int>(110, 330, 660), 64, new PerClass<int>(120, 350, 700));
+            var market = new CityMarket(new[] { good }, Thresholds, Workforce, StartingDays, Pricing, DaysPerWeek, population);
+
+            Assert.AreEqual(1.452, market.DailyConsumptionOf(0), Tolerance);
+        }
+
+        [Test]
         public void NominalWeeklyFigures_AreTheDailyOnesOverAWeek()
         {
             // Two barrels a day consumed, and three produced by the efficient good.
