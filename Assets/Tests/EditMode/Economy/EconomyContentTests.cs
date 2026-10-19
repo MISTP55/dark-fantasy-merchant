@@ -62,7 +62,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(unit, good.Unit);
             Assert.AreEqual(basePrice, good.BasePrice, 1e-9);
             Assert.AreEqual(aiWeight, good.AiWeight);
-            Assert.GreaterOrEqual(good.WeeklyConsumptionPerThousand, 0d);
+            Assert.GreaterOrEqual(good.WeeklyConsumptionPerThousand.Rich, 0d);
+            Assert.GreaterOrEqual(good.WeeklyConsumptionPerThousand.Wealthy, 0d);
+            Assert.GreaterOrEqual(good.WeeklyConsumptionPerThousand.Poor, 0d);
             Assert.Greater(good.MaxWorkers, 0);
             Assert.Greater(good.DailyOutputPerWorker, 0d);
             Assert.Greater(good.MerchantDailyOutputPerWorker, 0d);
@@ -140,6 +142,37 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void TheEconomy_HasPatricianIIIsSatisfaction_AtIntermediaire()
+        {
+            SocialRule rule = LoadEconomy().CreateSocialRule();
+
+            Assert.AreEqual(50, rule.StartingSatisfaction);
+            Assert.AreEqual(-13, rule.SatisfactionBases.Rich);
+            Assert.AreEqual(-18, rule.SatisfactionBases.Wealthy);
+            Assert.AreEqual(-27, rule.SatisfactionBases.Poor);
+            Assert.AreEqual(2, rule.SatisfactionRise);
+            Assert.AreEqual(1, rule.SatisfactionFall);
+            Assert.AreEqual(9, rule.CommonSatisfaction);
+            Assert.AreEqual(0.97, LoadEconomy().CreateHousingRule(SocialClass.Rich, 40, new MaterialCost[0]).Occupancy, 1e-9);
+        }
+
+        [TestCase(0, 3.15, 4.2, 5.25, 2, 4, 8)]   // Céréales
+        [TestCase(7, 52.5, 13.3, 0, 5, 2, 0)]     // Vin
+        [TestCase(17, 0.175, 0.105, 0.07, 0, 0, 0)] // Chanvre
+        public void AGood_ConsumesAndWeighsAsInPatricianIII(
+            int index, double rich, double wealthy, double poor, int richWeight, int wealthyWeight, int poorWeight)
+        {
+            GoodDefinition good = LoadEconomy().Catalogue[index].Good;
+
+            Assert.AreEqual(rich, good.WeeklyConsumptionPerThousand.Rich, 1e-9);
+            Assert.AreEqual(wealthy, good.WeeklyConsumptionPerThousand.Wealthy, 1e-9);
+            Assert.AreEqual(poor, good.WeeklyConsumptionPerThousand.Poor, 1e-9);
+            Assert.AreEqual(richWeight, good.SatisfactionWeights.Rich);
+            Assert.AreEqual(wealthyWeight, good.SatisfactionWeights.Wealthy);
+            Assert.AreEqual(poorWeight, good.SatisfactionWeights.Poor);
+        }
+
+        [Test]
         public void TheEconomy_HasPatricianIIIsLabour()
         {
             EconomyDefinition economy = LoadEconomy();
@@ -168,10 +201,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             AssertBuilding(buildings.Workshop, 10000, 10, 30);
             Assert.AreEqual(30, buildings.WorkshopJobs);
-            AssertBuilding(buildings.House, 5000, 10, 10);
-            Assert.AreEqual(100, buildings.HouseRoom);
+            AssertBuilding(buildings.HouseOf(SocialClass.Poor), 5000, 10, 10);
+            AssertBuilding(buildings.HouseOf(SocialClass.Wealthy), 10000, 15, 20);
+            AssertBuilding(buildings.HouseOf(SocialClass.Rich), 25000, 25, 30);
+            Assert.AreEqual(140, buildings.HouseRooms.Poor);
+            Assert.AreEqual(70, buildings.HouseRooms.Wealthy);
+            Assert.AreEqual(40, buildings.HouseRooms.Rich);
             Assert.IsTrue(buildings.TryValidate(out string problem), problem);
-            Assert.IsTrue(buildings.TryCreateCost(buildings.House, LoadEconomy(), out _, out problem), problem);
+            Assert.IsTrue(buildings.TryCreateCost(buildings.HouseOf(SocialClass.Rich), LoadEconomy(), out _, out problem), problem);
             Assert.IsTrue(buildings.TryCreateCost(buildings.Workshop, LoadEconomy(), out _, out problem), problem);
         }
 

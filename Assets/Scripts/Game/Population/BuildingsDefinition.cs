@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using DarkFantasyMerchant.Core;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace DarkFantasyMerchant.Game
 {
@@ -50,11 +51,23 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Workers a workshop employs at most.")]
         [SerializeField, Min(1)] private int workshopJobs = 30;
 
-        [Header("House")]
-        [SerializeField] private BuildingType house = new BuildingType();
+        [Header("Houses, one per class")]
+        [FormerlySerializedAs("house")]
+        [SerializeField] private BuildingType poorHouse = new BuildingType();
 
-        [Tooltip("Inhabitants a house shelters.")]
-        [SerializeField, Min(1)] private int houseRoom = 100;
+        [Tooltip("Poor a poor house shelters: 140 is Patrician III's.")]
+        [FormerlySerializedAs("houseRoom")]
+        [SerializeField, Min(1)] private int poorHouseRoom = 140;
+
+        [SerializeField] private BuildingType wealthyHouse = new BuildingType();
+
+        [Tooltip("Wealthy a wealthy house shelters: 70 is Patrician III's.")]
+        [SerializeField, Min(1)] private int wealthyHouseRoom = 70;
+
+        [SerializeField] private BuildingType richHouse = new BuildingType();
+
+        [Tooltip("Rich a rich house shelters: 40 is Patrician III's.")]
+        [SerializeField, Min(1)] private int richHouseRoom = 40;
 
         /// <summary>What the costs line writes for a building that cannot be built.</summary>
         public const string UnavailableText = "indisponible";
@@ -63,9 +76,24 @@ namespace DarkFantasyMerchant.Game
 
         public int WorkshopJobs => workshopJobs;
 
-        public BuildingType House => house;
+        /// <summary>The house of a class.</summary>
+        public BuildingType HouseOf(SocialClass housedClass)
+        {
+            switch (housedClass)
+            {
+                case SocialClass.Rich:
+                    return richHouse;
+                case SocialClass.Wealthy:
+                    return wealthyHouse;
+                case SocialClass.Poor:
+                    return poorHouse;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(housedClass));
+            }
+        }
 
-        public int HouseRoom => houseRoom;
+        /// <summary>The places of a house of each class.</summary>
+        public PerClass<int> HouseRooms => new PerClass<int>(richHouseRoom, wealthyHouseRoom, poorHouseRoom);
 
         /// <summary>
         /// The cost of a building in Core's terms, its materials known by their index among the
@@ -73,7 +101,7 @@ namespace DarkFantasyMerchant.Game
         /// (<see cref="MaterialsOf"/>): it is never unavailable for its materials, and costs only
         /// its gold when none is active.
         /// </summary>
-        /// <param name="type">The workshop or the house of this definition.</param>
+        /// <param name="type">The workshop or a house of this definition.</param>
         /// <param name="problem">What is wrong, naming the building; null when nothing is.</param>
         public bool TryCreateCost(BuildingType type, EconomyDefinition economy, out BuildingCost cost, out string problem)
         {
@@ -86,7 +114,10 @@ namespace DarkFantasyMerchant.Game
                 return false;
             }
 
-            string building = type == house ? "house" : "workshop";
+            string building = type == richHouse ? "rich house"
+                : type == wealthyHouse ? "wealthy house"
+                : type == poorHouse ? "poor house"
+                : "workshop";
 
             if (type.Gold < 0)
             {
@@ -104,7 +135,7 @@ namespace DarkFantasyMerchant.Game
         /// material, or one under 1 unit, is left out, and a good listed twice is added up, so a
         /// building with none of its materials active takes nothing.
         /// </summary>
-        /// <param name="type">The workshop or the house of this definition.</param>
+        /// <param name="type">The workshop or a house of this definition.</param>
         public IReadOnlyList<MaterialCost> MaterialsOf(BuildingType type, EconomyDefinition economy)
         {
             if (type == null)
@@ -144,8 +175,8 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// Whether the buildings can be used at all: jobs and room of at least 1. The room of a
-        /// house also sets the houses of every city at the start. A cost that cannot be worked
+        /// Whether the buildings can be used at all: jobs and rooms of at least 1. The room of the
+        /// house of each class also sets the houses of every city at the start. A cost that cannot be worked
         /// out does not count here: it only makes its building unavailable
         /// (<see cref="TryCreateCost"/>).
         /// </summary>
@@ -160,9 +191,9 @@ namespace DarkFantasyMerchant.Game
                 return false;
             }
 
-            if (houseRoom < 1)
+            if (richHouseRoom < 1 || wealthyHouseRoom < 1 || poorHouseRoom < 1)
             {
-                problem = "the house has no room";
+                problem = "a house has no room";
                 return false;
             }
 
@@ -177,7 +208,7 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         public string CostsText(EconomyDefinition economy)
         {
-            return $"Logement : {CostText(house, economy)} · Atelier : {CostText(workshop, economy)}";
+            return $"Logement : {CostText(poorHouse, economy)} · Atelier : {CostText(workshop, economy)}";
         }
 
         private string CostText(BuildingType type, EconomyDefinition economy)

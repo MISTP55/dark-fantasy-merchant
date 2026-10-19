@@ -91,6 +91,51 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(0.7, fresh.SellFactors.AtT2);
             Assert.AreEqual(0.5, fresh.SellFactors.AtT3);
             Assert.AreEqual(0, fresh.Goods.Count);
+
+            SocialRule social = fresh.CreateSocialRule();
+            Assert.AreEqual(50, social.StartingSatisfaction);
+            Assert.AreEqual(-13, social.SatisfactionBases.Rich);
+            Assert.AreEqual(-18, social.SatisfactionBases.Wealthy);
+            Assert.AreEqual(-27, social.SatisfactionBases.Poor);
+            Assert.AreEqual(2, social.SatisfactionRise);
+            Assert.AreEqual(1, social.SatisfactionFall);
+            Assert.AreEqual(9, social.CommonSatisfaction);
+            Assert.AreEqual(-40, social.LowestSatisfaction);
+            Assert.AreEqual(80, social.HighestSatisfaction);
+            Assert.AreEqual(40, social.ClassTargetOffset);
+            Assert.AreEqual(320, social.RichTargetDivisor);
+            Assert.AreEqual(160, social.WealthyTargetDivisor);
+            Assert.AreEqual(10, social.ClassRoomFloor);
+            Assert.AreEqual(100, social.PoorLeavingDivisor);
+            Assert.AreEqual(30, social.ProtectedWorkers);
+            Assert.AreEqual(0.97, fresh.CreateHousingRule(SocialClass.Rich, 40, System.Array.Empty<MaterialCost>()).Occupancy, Tolerance);
+            Assert.AreEqual(0.96, fresh.CreateHousingRule(SocialClass.Wealthy, 70, System.Array.Empty<MaterialCost>()).Occupancy, Tolerance);
+            Assert.AreEqual(0.95, fresh.CreateHousingRule(SocialClass.Poor, 140, System.Array.Empty<MaterialCost>()).Occupancy, Tolerance);
+        }
+
+        [Test]
+        public void CreateMarket_ConvertsTheWeeklyConsumptionOfEachClass()
+        {
+            GoodDefinition wine = Track(TestEconomy.CreateGood("Vin", 220, 0));
+            TestEconomy.SetConsumption(wine, new PerClass<double>(52.5, 13.3, 0), new PerClass<int>(5, 2, 0));
+            EconomyDefinition definition = Track(TestEconomy.CreateEconomy(wine));
+            CityMarket market = definition.CreateMarket(City(new GoodDefinition[0], new GoodDefinition[0]), definition.CreatePricing(), 7);
+
+            // 6 000 poor drink no wine: a city of rich and wealthy would.
+            Assert.AreEqual(0, market.DailyConsumptionOf(0), Tolerance);
+            Assert.AreEqual(52.5, wine.WeeklyConsumptionPerThousand.Rich, Tolerance);
+            Assert.AreEqual(5, wine.SatisfactionWeights.Rich);
+        }
+
+        [Test]
+        public void TryValidateSettings_RefusesAStartingSatisfactionAboveTheHighest()
+        {
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty("startingSatisfaction").intValue = 90;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.IsFalse(economy.TryValidateSettings(out string problem));
+            StringAssert.Contains("satisfaction", problem);
         }
 
         [Test]
@@ -218,7 +263,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         // What a worker of the player's workshop for the good makes in a day: one workshop, no bonus.
         private double MerchantOutputOf(EconomyDefinition definition, CityDefinition city, int good)
         {
-            CityMarket market = definition.CreateMarket(city, definition.CreatePricing(), DaysPerWeek, definition.CreateLabourRule(), 100);
+            CityMarket market = definition.CreateMarket(city, definition.CreatePricing(), DaysPerWeek, definition.CreateLabourRule(), PerClass<int>.All(100));
             market.AddPlayerHouse(SocialClass.Poor, 1000);
             market.AddPlayerWorkshop(good, 30);
 
@@ -307,12 +352,16 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             // 125 workers a workshop, cut to the 60 of each: 120 workers.
             CityMarket market = economy.CreateMarket(
-                city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), 100);
+                city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), new PerClass<int>(40, 70, 140));
 
             Assert.AreEqual(480, market.Population.Housed);
+            Assert.AreEqual(48, market.Population.CountOf(SocialClass.Rich));
+            Assert.AreEqual(144, market.Population.CountOf(SocialClass.Wealthy));
+            Assert.AreEqual(288, market.Population.CountOf(SocialClass.Poor));
             Assert.AreEqual(28, market.Population.Beggars);
-            // 48 rich, 144 wealthy, 288 poor, each class in houses of 100.
-            Assert.AreEqual(600, market.Population.Room);
+            Assert.AreEqual(80, market.Population.RoomOf(SocialClass.Rich));
+            Assert.AreEqual(210, market.Population.RoomOf(SocialClass.Wealthy));
+            Assert.AreEqual(420, market.Population.RoomOf(SocialClass.Poor));
             Assert.IsNotNull(market.Labour);
         }
 
@@ -322,14 +371,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityDefinition city = City(new[] { wheat }, new[] { fish });
 
             Assert.Throws<System.ArgumentOutOfRangeException>(
-                () => economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), 0));
+                () => economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), new PerClass<int>(40, 0, 140)));
         }
 
         [Test]
         public void TryValidateSettings_SaysWhenTheCityHouseOccupancyIsWrong()
         {
             var serialized = new SerializedObject(economy);
-            serialized.FindProperty("cityHouseOccupancy").doubleValue = 1.5;
+            serialized.FindProperty("cityWealthyHouseOccupancy").doubleValue = 1.5;
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             Assert.IsFalse(economy.TryValidateSettings(out string problem));
@@ -341,8 +390,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             EconomyDefinition fresh = Track(ScriptableObject.CreateInstance<EconomyDefinition>());
 
-            CityHousingRule rule = fresh.CreateHousingRule(100, new[] { new MaterialCost(0, 10) });
+            CityHousingRule rule = fresh.CreateHousingRule(SocialClass.Poor, 100, new[] { new MaterialCost(0, 10) });
 
+            Assert.AreEqual(SocialClass.Poor, rule.HousedClass);
             Assert.AreEqual(0.95, rule.Occupancy, Tolerance);
             Assert.AreEqual(100, rule.Room);
             Assert.AreEqual(1, rule.Materials.Count);
@@ -352,12 +402,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void CreateMarket_GivesTheMarketItsHousing()
         {
             CityDefinition city = City(new[] { wheat }, new[] { fish });
-            CityHousingRule housing = economy.CreateHousingRule(100, System.Array.Empty<MaterialCost>());
+            CityHousingRule housing = economy.CreateHousingRule(SocialClass.Rich, 40, System.Array.Empty<MaterialCost>());
+            SocialRule social = economy.CreateSocialRule();
 
             CityMarket market = economy.CreateMarket(
-                city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), 100, housing);
+                city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), PerClass<int>.All(100), new[] { housing }, social);
 
             Assert.AreSame(housing, market.Housing[0]);
+            Assert.AreSame(social, market.Social);
+            Assert.AreEqual(50, market.Population.SatisfactionOf(SocialClass.Poor));
         }
 
         [Test]

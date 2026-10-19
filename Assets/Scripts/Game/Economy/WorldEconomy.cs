@@ -25,7 +25,8 @@ namespace DarkFantasyMerchant.Game
         public BuildingsDefinition Buildings => buildings;
 
         /// <summary>What a house costs, or null when it cannot be built (a negative gold): a material that is not an active good is left out.</summary>
-        public BuildingCost HouseCost { get; private set; }
+        /// <summary>What the player's house of each class costs; null for a house the player cannot build.</summary>
+        public PerClass<BuildingCost> HouseCosts { get; private set; }
 
         /// <summary>What a workshop costs, or null when it cannot be built (a negative gold): a material that is not an active good is left out.</summary>
         public BuildingCost WorkshopCost { get; private set; }
@@ -73,7 +74,10 @@ namespace DarkFantasyMerchant.Game
             }
 
             // A cost that cannot be worked out only takes that building away from the player.
-            HouseCost = CostOf(buildings.House, "house");
+            HouseCosts = new PerClass<BuildingCost>(
+                CostOf(buildings.HouseOf(SocialClass.Rich), "rich house"),
+                CostOf(buildings.HouseOf(SocialClass.Wealthy), "wealthy house"),
+                CostOf(buildings.HouseOf(SocialClass.Poor), "poor house"));
             WorkshopCost = CostOf(buildings.Workshop, "workshop");
 
             if (!TryCreateMarkets())
@@ -118,13 +122,22 @@ namespace DarkFantasyMerchant.Game
                 int daysPerWeek = worldClock.Calendar.DaysPerWeek;
                 LabourRule labour = economy.CreateLabourRule();
 
-                // The player's house: the materials switched off are left out.
-                CityHousingRule housing = economy.CreateHousingRule(buildings.HouseRoom, buildings.MaterialsOf(buildings.House, economy));
+                SocialRule social = economy.CreateSocialRule();
+                PerClass<int> rooms = buildings.HouseRooms;
+
+                // A city's house is the player's of its class: the materials switched off are left out.
+                var housing = new List<CityHousingRule>();
+
+                foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
+                {
+                    housing.Add(economy.CreateHousingRule(
+                        housedClass, rooms[housedClass], buildings.MaterialsOf(buildings.HouseOf(housedClass), economy)));
+                }
 
                 foreach (CityDefinition city in mapView.Cities)
                 {
                     WarnAbout(city);
-                    markets[city] = economy.CreateMarket(city, pricing, daysPerWeek, labour, buildings.HouseRoom, housing);
+                    markets[city] = economy.CreateMarket(city, pricing, daysPerWeek, labour, rooms, housing, social);
                 }
             }
             catch (ArgumentOutOfRangeException exception)

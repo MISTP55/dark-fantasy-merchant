@@ -92,7 +92,8 @@ namespace DarkFantasyMerchant.Editor
                 GoodCategory category,
                 GoodUnit unit,
                 double basePrice,
-                double weeklyConsumptionPerThousand,
+                PerClass<double> weeklyConsumptionPerThousand,
+                PerClass<int> satisfactionWeights,
                 int maxWorkers,
                 double dailyOutputPerWorker,
                 double merchantDailyOutputPerWorker,
@@ -104,6 +105,7 @@ namespace DarkFantasyMerchant.Editor
                 Unit = unit;
                 BasePrice = basePrice;
                 WeeklyConsumptionPerThousand = weeklyConsumptionPerThousand;
+                SatisfactionWeights = satisfactionWeights;
                 MaxWorkers = maxWorkers;
                 DailyOutputPerWorker = dailyOutputPerWorker;
                 MerchantDailyOutputPerWorker = merchantDailyOutputPerWorker;
@@ -115,7 +117,8 @@ namespace DarkFantasyMerchant.Editor
             public GoodCategory Category { get; }
             public GoodUnit Unit { get; }
             public double BasePrice { get; }
-            public double WeeklyConsumptionPerThousand { get; }
+            public PerClass<double> WeeklyConsumptionPerThousand { get; }
+            public PerClass<int> SatisfactionWeights { get; }
             public int MaxWorkers { get; }
             public double DailyOutputPerWorker { get; }
             public double MerchantDailyOutputPerWorker { get; }
@@ -123,32 +126,37 @@ namespace DarkFantasyMerchant.Editor
         }
 
         // Patrician III's goods, in the order of the catalogue, which is their order on screen.
-        // Category, unit, base price, what 1 000 inhabitants consume in a week, then the
+        // Category, unit, base price, what 1 000 rich, wealthy and poor consume in a week and how
+        // much the stock weighs in their satisfaction (Patrician III's tables), then the
         // workshop's maximum of workers, a worker's daily output in the city's workshop and in a
         // merchant's (Patrician III's, without the city's coefficient): the values a good that is
         // missing is created with, which are then balanced by hand in the asset.
+        private static PerClass<double> Weekly(double rich, double wealthy, double poor) => new PerClass<double>(rich, wealthy, poor);
+
+        private static PerClass<int> Weights(int rich, int wealthy, int poor) => new PerClass<int>(rich, wealthy, poor);
+
         private static readonly SampleGood[] SampleGoods =
         {
-            new SampleGood("Grain", "Céréales", GoodCategory.Food, GoodUnit.Bushel, 110, 4.725, 68, 0.04333, 0.03333, 16),
-            new SampleGood("Meat", "Viande", GoodCategory.Food, GoodUnit.Bushel, 957, 1.552, 60, 0.01333, 0.00833, 9),
-            new SampleGood("Fish", "Poisson", GoodCategory.Food, GoodUnit.Bushel, 440, 3.08, 65, 0.03066, 0.03333, 9),
-            new SampleGood("Beer", "Bière", GoodCategory.Food, GoodUnit.Barrel, 34.8, 29.575, 68, 0.37591, 0.235, 9),
-            new SampleGood("Salt", "Sel", GoodCategory.RawMaterial, GoodUnit.Barrel, 28.5, 0.35, 54, 0.167, 0.167, 16),
-            new SampleGood("Honey", "Miel", GoodCategory.RawMaterial, GoodUnit.Barrel, 110, 5.425, 60, 0.08, 0.06667, 9),
-            new SampleGood("Spices", "Épices", GoodCategory.RawMaterial, GoodUnit.Barrel, 280, 0.77, 60, 0.02038, 0.02038, 9),
-            new SampleGood("Wine", "Vin", GoodCategory.RawMaterial, GoodUnit.Barrel, 220, 9.24, 93, 0.268, 0.067, 9),
-            new SampleGood("Cloth", "Étoffe", GoodCategory.RawMaterial, GoodUnit.Barrel, 206.8, 8.575, 60, 0.15, 0.1, 9),
-            new SampleGood("Skins", "Peaux", GoodCategory.RawMaterial, GoodUnit.Barrel, 676.5, 5.25, 72, 0.06667, 0.03333, 9),
-            new SampleGood("Oil", "Huile", GoodCategory.RawMaterial, GoodUnit.Barrel, 82.5, 7.525, 60, 0.135, 0.135, 9),
-            new SampleGood("Timber", "Bois", GoodCategory.RawMaterial, GoodUnit.Bushel, 55, 1.96, 48, 0.08, 0.06667, 11),
-            new SampleGood("Metal", "Métal", GoodCategory.RawMaterial, GoodUnit.Barrel, 255.6, 16.625, 78, 0.2, 0.1, 11),
-            new SampleGood("Leather", "Cuir", GoodCategory.RawMaterial, GoodUnit.Barrel, 224, 6.265, 60, 0.05332, 0.03333, 9),
-            new SampleGood("Wool", "Laine", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, 0.875, 50, 0.02004, 0.0167, 11),
-            new SampleGood("Pitch", "Brai", GoodCategory.RawMaterial, GoodUnit.Barrel, 55.6, 0, 26, 0.067, 0.067, 8),
-            new SampleGood("PigIron", "Fonte brute", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, 0, 70, 0.01667, 0.01667, 8),
-            new SampleGood("Hemp", "Chanvre", GoodCategory.RawMaterial, GoodUnit.Bushel, 440, 0.089, 62, 0.00833, 0.00833, 9),
-            new SampleGood("Pottery", "Poterie", GoodCategory.RawMaterial, GoodUnit.Barrel, 171, 5.46, 58, 0.067, 0.067, 9),
-            new SampleGood("Tiles", "Tuiles", GoodCategory.RawMaterial, GoodUnit.Bushel, 79.8, 0.016, 27, 0.067, 0.067, 8),
+            new SampleGood("Grain", "Céréales", GoodCategory.Food, GoodUnit.Bushel, 110, Weekly(3.15, 4.2, 5.25), Weights(2, 4, 8), 68, 0.04333, 0.03333, 16),
+            new SampleGood("Meat", "Viande", GoodCategory.Food, GoodUnit.Bushel, 957, Weekly(3.85, 3.045, 0.42), Weights(5, 4, 4), 60, 0.01333, 0.00833, 9),
+            new SampleGood("Fish", "Poisson", GoodCategory.Food, GoodUnit.Bushel, 440, Weekly(1.4, 2.8, 3.5), Weights(2, 6, 6), 65, 0.03066, 0.03333, 9),
+            new SampleGood("Beer", "Bière", GoodCategory.Food, GoodUnit.Barrel, 34.8, Weekly(22.75, 45.5, 22.75), Weights(2, 6, 6), 68, 0.37591, 0.235, 9),
+            new SampleGood("Salt", "Sel", GoodCategory.RawMaterial, GoodUnit.Barrel, 28.5, Weekly(0.35, 0.35, 0.35), Weights(2, 2, 4), 54, 0.167, 0.167, 16),
+            new SampleGood("Honey", "Miel", GoodCategory.RawMaterial, GoodUnit.Barrel, 110, Weekly(17.5, 8.75, 1.75), Weights(3, 2, 0), 60, 0.08, 0.06667, 9),
+            new SampleGood("Spices", "Épices", GoodCategory.RawMaterial, GoodUnit.Barrel, 280, Weekly(1.4, 0.7, 0.7), Weights(3, 0, 0), 60, 0.02038, 0.02038, 9),
+            new SampleGood("Wine", "Vin", GoodCategory.RawMaterial, GoodUnit.Barrel, 220, Weekly(52.5, 13.3, 0), Weights(5, 2, 0), 93, 0.268, 0.067, 9),
+            new SampleGood("Cloth", "Étoffe", GoodCategory.RawMaterial, GoodUnit.Barrel, 206.8, Weekly(17.5, 12.25, 5.25), Weights(5, 4, 0), 60, 0.15, 0.1, 9),
+            new SampleGood("Skins", "Peaux", GoodCategory.RawMaterial, GoodUnit.Barrel, 676.5, Weekly(21, 10.5, 0), Weights(3, 2, 0), 72, 0.06667, 0.03333, 9),
+            new SampleGood("Oil", "Huile", GoodCategory.RawMaterial, GoodUnit.Barrel, 82.5, Weekly(17.5, 12.25, 3.5), Weights(3, 4, 4), 60, 0.135, 0.135, 9),
+            new SampleGood("Timber", "Bois", GoodCategory.RawMaterial, GoodUnit.Bushel, 55, Weekly(2.8, 2.8, 1.4), Weights(3, 4, 6), 48, 0.08, 0.06667, 11),
+            new SampleGood("Metal", "Métal", GoodCategory.RawMaterial, GoodUnit.Barrel, 255.6, Weekly(35, 26.25, 8.75), Weights(2, 2, 0), 78, 0.2, 0.1, 11),
+            new SampleGood("Leather", "Cuir", GoodCategory.RawMaterial, GoodUnit.Barrel, 224, Weekly(15.4, 12.25, 1.75), Weights(2, 2, 4), 60, 0.05332, 0.03333, 9),
+            new SampleGood("Wool", "Laine", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, Weekly(0.35, 1.4, 0.7), Weights(2, 6, 4), 50, 0.02004, 0.0167, 11),
+            new SampleGood("Pitch", "Brai", GoodCategory.RawMaterial, GoodUnit.Barrel, 55.6, Weekly(0, 0, 0), Weights(0, 0, 0), 26, 0.067, 0.067, 8),
+            new SampleGood("PigIron", "Fonte brute", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, Weekly(0, 0, 0), Weights(0, 0, 0), 70, 0.01667, 0.01667, 8),
+            new SampleGood("Hemp", "Chanvre", GoodCategory.RawMaterial, GoodUnit.Bushel, 440, Weekly(0.175, 0.105, 0.07), Weights(0, 0, 0), 62, 0.00833, 0.00833, 9),
+            new SampleGood("Pottery", "Poterie", GoodCategory.RawMaterial, GoodUnit.Barrel, 171, Weekly(10.5, 6.3, 4.2), Weights(3, 2, 4), 58, 0.067, 0.067, 9),
+            new SampleGood("Tiles", "Tuiles", GoodCategory.RawMaterial, GoodUnit.Bushel, 79.8, Weekly(0.035, 0.035, 0), Weights(0, 0, 0), 27, 0.067, 0.067, 8),
         };
 
         private readonly struct SampleCity
@@ -613,7 +621,7 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <summary>
-        /// Creates the buildings of the player when missing: a house and a workshop, whose materials
+        /// Creates the buildings of the player when missing: a house per class and a workshop, whose materials
         /// are the timber and the metal of the goods. Like the expenses, new buildings are the game's:
         /// their defaults are the content. The goods are made by <see cref="CreateEconomy"/>, called first.
         /// </summary>
@@ -637,7 +645,9 @@ namespace DarkFantasyMerchant.Editor
             // Filled in before the asset is created, so the file is written complete.
             var buildings = ScriptableObject.CreateInstance<BuildingsDefinition>();
             var serialized = new SerializedObject(buildings);
-            FillBuilding(serialized.FindProperty("house"), 5000, timber, 10, metal, 10);
+            FillBuilding(serialized.FindProperty("poorHouse"), 5000, timber, 10, metal, 10);
+            FillBuilding(serialized.FindProperty("wealthyHouse"), 10000, timber, 15, metal, 20);
+            FillBuilding(serialized.FindProperty("richHouse"), 25000, timber, 25, metal, 30);
             FillBuilding(serialized.FindProperty("workshop"), 10000, timber, 10, metal, 30);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             AssetDatabase.CreateAsset(buildings, BuildingsPath);
@@ -677,7 +687,12 @@ namespace DarkFantasyMerchant.Editor
             serialized.FindProperty("category").enumValueIndex = (int)sample.Category;
             serialized.FindProperty("unit").enumValueIndex = (int)sample.Unit;
             serialized.FindProperty("basePrice").doubleValue = sample.BasePrice;
-            serialized.FindProperty("weeklyConsumptionPerThousand").doubleValue = sample.WeeklyConsumptionPerThousand;
+            serialized.FindProperty("richWeeklyConsumptionPerThousand").doubleValue = sample.WeeklyConsumptionPerThousand.Rich;
+            serialized.FindProperty("wealthyWeeklyConsumptionPerThousand").doubleValue = sample.WeeklyConsumptionPerThousand.Wealthy;
+            serialized.FindProperty("poorWeeklyConsumptionPerThousand").doubleValue = sample.WeeklyConsumptionPerThousand.Poor;
+            serialized.FindProperty("richSatisfactionWeight").intValue = sample.SatisfactionWeights.Rich;
+            serialized.FindProperty("wealthySatisfactionWeight").intValue = sample.SatisfactionWeights.Wealthy;
+            serialized.FindProperty("poorSatisfactionWeight").intValue = sample.SatisfactionWeights.Poor;
             serialized.FindProperty("maxWorkers").intValue = sample.MaxWorkers;
             serialized.FindProperty("dailyOutputPerWorker").doubleValue = sample.DailyOutputPerWorker;
             serialized.FindProperty("merchantDailyOutputPerWorker").doubleValue = sample.MerchantDailyOutputPerWorker;

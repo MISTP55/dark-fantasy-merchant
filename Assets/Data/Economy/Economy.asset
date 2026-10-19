@@ -79,7 +79,24 @@ MonoBehaviour:
   vacancyMinimumFreeRoom: 3
   reserveLeakShare: 0.02
   reserveLeakCeiling: 30
-  cityHouseOccupancy: 0.95
+  startingSatisfaction: 50
+  richSatisfactionBase: -13
+  wealthySatisfactionBase: -18
+  poorSatisfactionBase: -27
+  satisfactionRise: 2
+  satisfactionFall: 1
+  commonSatisfaction: 9
+  lowestSatisfaction: -40
+  highestSatisfaction: 80
+  classTargetOffset: 40
+  richTargetDivisor: 320
+  wealthyTargetDivisor: 160
+  classRoomFloor: 10
+  poorLeavingDivisor: 100
+  protectedWorkers: 30
+  cityRichHouseOccupancy: 0.97
+  cityWealthyHouseOccupancy: 0.96
+  cityPoorHouseOccupancy: 0.95
   t0Days: 7
   t1AddedDays: 14
   t2ProductionDays: 10

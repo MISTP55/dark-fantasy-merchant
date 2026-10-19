@@ -20,11 +20,27 @@ MonoBehaviour:
     - good: {fileID: 11400000, guid: 4aa4ecf3894e5d34b8ade5228cde2e48, type: 2}
       units: 30
   workshopJobs: 30
-  house:
+  poorHouse:
     gold: 5000
     materials:
     - good: {fileID: 11400000, guid: c1aee0a6d45237f4f98a31437e2602e4, type: 2}
       units: 10
     - good: {fileID: 11400000, guid: 4aa4ecf3894e5d34b8ade5228cde2e48, type: 2}
       units: 10
-  houseRoom: 100
+  poorHouseRoom: 140
+  wealthyHouse:
+    gold: 10000
+    materials:
+    - good: {fileID: 11400000, guid: c1aee0a6d45237f4f98a31437e2602e4, type: 2}
+      units: 15
+    - good: {fileID: 11400000, guid: 4aa4ecf3894e5d34b8ade5228cde2e48, type: 2}
+      units: 20
+  wealthyHouseRoom: 70
+  richHouse:
+    gold: 25000
+    materials:
+    - good: {fileID: 11400000, guid: c1aee0a6d45237f4f98a31437e2602e4, type: 2}
+      units: 25
+    - good: {fileID: 11400000, guid: 4aa4ecf3894e5d34b8ade5228cde2e48, type: 2}
+      units: 30
+  richHouseRoom: 40

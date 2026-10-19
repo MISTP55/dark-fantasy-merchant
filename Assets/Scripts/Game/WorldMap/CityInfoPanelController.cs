@@ -553,7 +553,7 @@ namespace DarkFantasyMerchant.Game
                 Treasury treasury = playerTreasury != null && playerTreasury.IsReady ? playerTreasury.Treasury : null;
                 buildingsSection = new CityBuildingsSection(
                     buildingsElement, houseRows, workshopRows, buildingsCostsLabel, goodNames,
-                    worldEconomy.HouseCost, buildings.HouseRoom, worldEconomy.WorkshopCost, buildings.WorkshopJobs,
+                    worldEconomy.HouseCosts.Poor, buildings.HouseRooms.Poor, worldEconomy.WorkshopCost, buildings.WorkshopJobs,
                     buildings.CostsText(economy), treasury);
                 buildingsSection.HouseBuilt += OnHouseBuilt;
                 buildingsSection.WorkshopBuilt += OnWorkshopBuilt;

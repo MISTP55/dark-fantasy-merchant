@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DarkFantasyMerchant.Core;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace DarkFantasyMerchant.Game
 {
@@ -101,9 +102,62 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("The reserve leaks only while the workers and the reserve of the workshop stay under this.")]
         [SerializeField, Min(0)] private int reserveLeakCeiling = 30;
 
-        [Header("Cities' houses")]
-        [Tooltip("A city builds a house of its own, with the materials of the player's, once its housed inhabitants are above this share of its room.")]
-        [SerializeField, Range(0f, 1f)] private double cityHouseOccupancy = 0.95d;
+        [Header("Satisfaction and classes, as in Patrician III (« Besoins des citoyens » : Intermédiaire)")]
+        [Tooltip("Satisfaction of every class when the game starts: 50 is Patrician III's.")]
+        [SerializeField] private int startingSatisfaction = 50;
+
+        [Tooltip("Base of the rich's target satisfaction: -13 at Intermédiaire.")]
+        [SerializeField] private int richSatisfactionBase = -13;
+
+        [Tooltip("Base of the wealthy's target satisfaction: -18 at Intermédiaire.")]
+        [SerializeField] private int wealthySatisfactionBase = -18;
+
+        [Tooltip("Base of the poor's target satisfaction: -27 at Intermédiaire.")]
+        [SerializeField] private int poorSatisfactionBase = -27;
+
+        [Tooltip("Points a satisfaction rises in a day towards twice its target: 2 at Intermédiaire.")]
+        [SerializeField, Min(0)] private int satisfactionRise = 2;
+
+        [Tooltip("Points a satisfaction falls in a day towards twice its target: 1 at Intermédiaire.")]
+        [SerializeField, Min(0)] private int satisfactionFall = 1;
+
+        [Tooltip("The term every class's target shares: 9, Patrician III's without its public buildings and events.")]
+        [SerializeField] private int commonSatisfaction = 9;
+
+        [Tooltip("The lowest a satisfaction falls: -40.")]
+        [SerializeField] private int lowestSatisfaction = -40;
+
+        [Tooltip("The highest a satisfaction rises: 80.")]
+        [SerializeField] private int highestSatisfaction = 80;
+
+        [Tooltip("Added to a class's satisfaction for its share of the poor: 40.")]
+        [SerializeField] private int classTargetOffset = 40;
+
+        [Tooltip("The rich a city tends to are (satisfaction + offset) x poor / this: 320.")]
+        [SerializeField, Min(1)] private int richTargetDivisor = 320;
+
+        [Tooltip("The wealthy a city tends to are (satisfaction + offset) x poor / this: 160.")]
+        [SerializeField, Min(1)] private int wealthyTargetDivisor = 160;
+
+        [Tooltip("A class short of room still takes up to this many: 10.")]
+        [SerializeField, Min(0)] private int classRoomFloor = 10;
+
+        [Tooltip("Unhappy poor leave each day at their number divided by this: 100, a hundredth.")]
+        [SerializeField, Min(1)] private int poorLeavingDivisor = 100;
+
+        [Tooltip("Workers of a city's workshop the leaving poor spare while other jobs can be taken: 30.")]
+        [SerializeField, Min(0)] private int protectedWorkers = 30;
+
+        [Header("Cities' houses, as in Patrician III")]
+        [Tooltip("A city builds a rich house of its own, with the materials of the player's, once its rich are above this share of their room.")]
+        [SerializeField, Range(0f, 1f)] private double cityRichHouseOccupancy = 0.97d;
+
+        [Tooltip("A city builds a wealthy house once its wealthy are above this share of their room.")]
+        [SerializeField, Range(0f, 1f)] private double cityWealthyHouseOccupancy = 0.96d;
+
+        [Tooltip("A city builds a poor house once its poor are above this share of their room.")]
+        [FormerlySerializedAs("cityHouseOccupancy")]
+        [SerializeField, Range(0f, 1f)] private double cityPoorHouseOccupancy = 0.95d;
 
         [Header("Stock thresholds T0 to T3 of a good in a city, at which its prices are given")]
         [Tooltip("T0: days of the city's consumption.")]
@@ -273,7 +327,10 @@ namespace DarkFantasyMerchant.Game
                 ?? ProblemOf(() => CreateMerchantOutputRule(), "the merchants' workshops")
                 ?? ProblemOf(() => new CityPopulation(StartingPopulation), "the starting population (workforce times inhabitants per worker)")
                 ?? ProblemOf(() => CreateLabourRule(), "the labour")
-                ?? ProblemOf(() => CreateHousingRule(1, Array.Empty<MaterialCost>()), "the cities' houses")
+                ?? ProblemOf(() => CreateSocialRule(), "the satisfaction and classes")
+                ?? ProblemOf(() => CreateHousingRule(SocialClass.Rich, 1, Array.Empty<MaterialCost>()), "the cities' houses")
+                ?? ProblemOf(() => CreateHousingRule(SocialClass.Wealthy, 1, Array.Empty<MaterialCost>()), "the cities' houses")
+                ?? ProblemOf(() => CreateHousingRule(SocialClass.Poor, 1, Array.Empty<MaterialCost>()), "the cities' houses")
                 ?? ProblemOf(() => CityPopulation.AtStart(0, inhabitantsPerWorker, startingBeggarsPerWorker, PerClass<int>.All(1)), "the starting beggars per worker");
 
             return problem == null;
@@ -386,15 +443,38 @@ namespace DarkFantasyMerchant.Game
                 reserveLeakCeiling);
         }
 
-        /// <summary>
-        /// When a city builds a house of its own, from these settings. Throws when the occupancy or
-        /// the room is unusable.
-        /// </summary>
-        /// <param name="room">Places of a house, the player's.</param>
-        /// <param name="materials">What a house takes from the market (<see cref="BuildingsDefinition.MaterialsOf"/>).</param>
-        public CityHousingRule CreateHousingRule(int room, IReadOnlyList<MaterialCost> materials)
+        /// <summary>How the classes are satisfied and move, from these settings. Throws when one of them is unusable.</summary>
+        public SocialRule CreateSocialRule()
         {
-            return new CityHousingRule(SocialClass.Poor, cityHouseOccupancy, room, materials);
+            return new SocialRule(
+                startingSatisfaction,
+                new PerClass<int>(richSatisfactionBase, wealthySatisfactionBase, poorSatisfactionBase),
+                satisfactionRise,
+                satisfactionFall,
+                commonSatisfaction,
+                lowestSatisfaction,
+                highestSatisfaction,
+                classTargetOffset,
+                richTargetDivisor,
+                wealthyTargetDivisor,
+                classRoomFloor,
+                poorLeavingDivisor,
+                protectedWorkers);
+        }
+
+        /// <summary>
+        /// When a city builds a house of its own for a class, from these settings. Throws when the
+        /// occupancy or the room is unusable.
+        /// </summary>
+        /// <param name="room">Places of a house of the class, the player's.</param>
+        /// <param name="materials">What a house takes from the market (<see cref="BuildingsDefinition.MaterialsOf"/>).</param>
+        public CityHousingRule CreateHousingRule(SocialClass housedClass, int room, IReadOnlyList<MaterialCost> materials)
+        {
+            double occupancy = housedClass == SocialClass.Rich
+                ? cityRichHouseOccupancy
+                : housedClass == SocialClass.Wealthy ? cityWealthyHouseOccupancy : cityPoorHouseOccupancy;
+
+            return new CityHousingRule(housedClass, occupancy, room, materials);
         }
 
         /// <summary>Barrels of room a unit of a good takes in a hold: one, or the barrels per bushel.</summary>
@@ -456,15 +536,17 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         /// <param name="daysPerWeek">Days of the calendar's week: goods give their consumption per week.</param>
         /// <param name="labour">The labour of the city, or null to keep the immediate hiring.</param>
-        /// <param name="roomPerHouse">Places of a house, at least 1 with a labour rule: the city starts with as many houses as its housed inhabitants need.</param>
-        /// <param name="housing">When the city builds a house of its own, only with a labour rule; null for never.</param>
+        /// <param name="roomPerHouse">Places of a house of each class, each at least 1 with a labour rule: the city starts with as many houses as each class needs.</param>
+        /// <param name="housing">When the city builds a house of its own for each class, only with a labour rule; null for never.</param>
+        /// <param name="social">The satisfaction and moves of the classes, only with a labour rule; null for classes that never move.</param>
         public CityMarket CreateMarket(
             CityDefinition city,
             MarketPricing pricing,
             int daysPerWeek,
             LabourRule labour = null,
-            int roomPerHouse = 0,
-            CityHousingRule housing = null)
+            PerClass<int> roomPerHouse = default,
+            IReadOnlyList<CityHousingRule> housing = null,
+            SocialRule social = null)
         {
             if (city == null)
             {
@@ -476,7 +558,7 @@ namespace DarkFantasyMerchant.Game
                 throw new ArgumentOutOfRangeException(nameof(daysPerWeek));
             }
 
-            if (labour != null && roomPerHouse < 1)
+            if (labour != null && (roomPerHouse.Rich < 1 || roomPerHouse.Wealthy < 1 || roomPerHouse.Poor < 1))
             {
                 throw new ArgumentOutOfRangeException(nameof(roomPerHouse), "A house shelters at least one inhabitant.");
             }
@@ -504,12 +586,15 @@ namespace DarkFantasyMerchant.Game
                         break;
                 }
 
+                PerClass<double> weekly = good.WeeklyConsumptionPerThousand;
+
                 marketGoods[i] = new MarketGood(
                     good.BasePrice,
-                    good.WeeklyConsumptionPerThousand / daysPerWeek,
+                    new PerClass<double>(weekly.Rich / daysPerWeek, weekly.Wealthy / daysPerWeek, weekly.Poor / daysPerWeek),
                     maxWorkers,
                     outputPerWorker,
-                    merchantOutputPerWorker);
+                    merchantOutputPerWorker,
+                    good.SatisfactionWeights);
             }
 
             WorkforceRule workforce = CreateWorkforceRule();
@@ -521,7 +606,7 @@ namespace DarkFantasyMerchant.Game
                     CityMarket.StartingWorkforceOf(marketGoods, workforce),
                     inhabitantsPerWorker,
                     startingBeggarsPerWorker,
-                    PerClass<int>.All(roomPerHouse));
+                    roomPerHouse);
 
             return new CityMarket(
                 marketGoods,
@@ -532,7 +617,8 @@ namespace DarkFantasyMerchant.Game
                 daysPerWeek,
                 population,
                 labour,
-                housing == null ? null : new[] { housing });
+                housing,
+                social);
         }
     }
 }

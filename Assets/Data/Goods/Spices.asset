@@ -17,7 +17,12 @@ MonoBehaviour:
   category: 0
   unit: 0
   basePrice: 280
-  weeklyConsumptionPerThousand: 0.77
+  richWeeklyConsumptionPerThousand: 1.4
+  wealthyWeeklyConsumptionPerThousand: 0.7
+  poorWeeklyConsumptionPerThousand: 0.7
+  richSatisfactionWeight: 3
+  wealthySatisfactionWeight: 0
+  poorSatisfactionWeight: 0
   maxWorkers: 60
   dailyOutputPerWorker: 0.02038
   merchantDailyOutputPerWorker: 0.02038

@@ -1,3 +1,4 @@
+using DarkFantasyMerchant.Core;
 using DarkFantasyMerchant.Game;
 using UnityEditor;
 using UnityEngine;
@@ -26,7 +27,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             serialized.FindProperty("displayName").stringValue = displayName;
             serialized.FindProperty("category").enumValueIndex = (int)category;
             serialized.FindProperty("basePrice").doubleValue = basePrice;
-            serialized.FindProperty("weeklyConsumptionPerThousand").doubleValue = weeklyConsumptionPerThousand;
+            serialized.FindProperty("richWeeklyConsumptionPerThousand").doubleValue = weeklyConsumptionPerThousand;
+            serialized.FindProperty("wealthyWeeklyConsumptionPerThousand").doubleValue = weeklyConsumptionPerThousand;
+            serialized.FindProperty("poorWeeklyConsumptionPerThousand").doubleValue = weeklyConsumptionPerThousand;
             serialized.FindProperty("maxWorkers").intValue = maxWorkers;
             serialized.FindProperty("dailyOutputPerWorker").doubleValue = dailyOutputPerWorker;
             serialized.FindProperty("merchantDailyOutputPerWorker").doubleValue = merchantDailyOutputPerWorker;
@@ -34,6 +37,19 @@ namespace DarkFantasyMerchant.Tests.EditMode
             serialized.FindProperty("aiWeight").intValue = aiWeight;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return good;
+        }
+
+        /// <summary>Gives a good a weekly consumption per thousand and a satisfaction weight for each class.</summary>
+        public static void SetConsumption(GoodDefinition good, PerClass<double> weekly, PerClass<int> weights)
+        {
+            var serialized = new SerializedObject(good);
+            serialized.FindProperty("richWeeklyConsumptionPerThousand").doubleValue = weekly.Rich;
+            serialized.FindProperty("wealthyWeeklyConsumptionPerThousand").doubleValue = weekly.Wealthy;
+            serialized.FindProperty("poorWeeklyConsumptionPerThousand").doubleValue = weekly.Poor;
+            serialized.FindProperty("richSatisfactionWeight").intValue = weights.Rich;
+            serialized.FindProperty("wealthySatisfactionWeight").intValue = weights.Wealthy;
+            serialized.FindProperty("poorSatisfactionWeight").intValue = weights.Poor;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         public static CityDefinition CreateCity(GoodDefinition[] efficient, GoodDefinition[] inefficient)
