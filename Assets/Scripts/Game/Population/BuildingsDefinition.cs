@@ -201,14 +201,24 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// What the buildings cost, for the player: "Logement : 5 000 or, 10 bois, 10 métal ·
-        /// Atelier : 10 000 or, 10 bois, 30 métal", or "indisponible" for a building whose cost
-        /// cannot be worked out. Only the materials the building takes are named: a building whose
-        /// materials are all switched off reads "Logement : 5 000 or".
+        /// What the buildings cost, for the player: the houses in the alphabetical order of their
+        /// names, then the workshop, "Maison d'aisés : 10 000 or, 15 bois, 20 métal · … · Atelier :
+        /// 10 000 or, 10 bois, 30 métal", or "indisponible" for a building whose cost cannot be
+        /// worked out. Only the materials the building takes are named: a building whose materials
+        /// are all switched off reads "Maison de pauvres : 5 000 or".
         /// </summary>
         public string CostsText(EconomyDefinition economy)
         {
-            return $"Logement : {CostText(poorHouse, economy)} · Atelier : {CostText(workshop, economy)}";
+            var housedClasses = new List<SocialClass> { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
+            NameOrder.Sort(housedClasses, SocialClassNames.HouseOf);
+            var text = new StringBuilder();
+
+            foreach (SocialClass housedClass in housedClasses)
+            {
+                text.Append(SocialClassNames.HouseOf(housedClass)).Append(" : ").Append(CostText(HouseOf(housedClass), economy)).Append(" · ");
+            }
+
+            return text.Append("Atelier : ").Append(CostText(workshop, economy)).ToString();
         }
 
         private string CostText(BuildingType type, EconomyDefinition economy)

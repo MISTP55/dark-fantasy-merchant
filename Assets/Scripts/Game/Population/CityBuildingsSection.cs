@@ -6,7 +6,8 @@ using UnityEngine.UIElements;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The "Bâtiments" tab of the city panel: under "Logements", a row for the player's houses;
+    /// The "Bâtiments" tab of the city panel: under "Logements", a row for the player's houses of
+    /// each class, in the alphabetical order of their names;
     /// under "Ateliers", one row per good the city produces with the player's workshops of it, in
     /// the alphabetical order of the goods;
     /// and the buttons that build, each
@@ -20,11 +21,14 @@ namespace DarkFantasyMerchant.Game
         private const string TextClass = "buildings__text";
         private const string ButtonClass = "buildings__button";
 
-        private const int HouseRow = -1;
+        private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
 
         private sealed class Row
         {
-            // The good of a workshop row, or HouseRow.
+            // The class of a house row, or null for a workshop row.
+            public SocialClass? HousedClass;
+
+            // The good of a workshop row.
             public int Good;
             public Label Text;
             public Button Button;
@@ -35,8 +39,8 @@ namespace DarkFantasyMerchant.Game
         private readonly VisualElement workshopRowContainer;
         private readonly Label costsLabel;
         private readonly IReadOnlyList<string> goodNames;
-        private readonly BuildingCost houseCost;
-        private readonly int houseRoom;
+        private readonly PerClass<BuildingCost> houseCosts;
+        private readonly PerClass<int> houseRooms;
         private readonly BuildingCost workshopCost;
         private readonly int workshopJobs;
         private readonly string costsText;
@@ -47,10 +51,11 @@ namespace DarkFantasyMerchant.Game
         private CargoHold hold;
 
         /// <param name="section">The whole section, shown and hidden with the market.</param>
-        /// <param name="houseRowContainer">Where the row of the houses is built.</param>
+        /// <param name="houseRowContainer">Where the rows of the houses are built.</param>
         /// <param name="workshopRowContainer">Where the rows of the workshops are built.</param>
         /// <param name="goodNames">The names of the goods, in the catalogue's order.</param>
-        /// <param name="houseCost">Null: a house is unavailable, its button stays disabled.</param>
+        /// <param name="houseCosts">What the house of each class costs; null: that house is unavailable, its button stays disabled.</param>
+        /// <param name="houseRooms">Places of the house of each class.</param>
         /// <param name="workshopCost">Null: a workshop is unavailable, its buttons stay disabled.</param>
         /// <param name="treasury">What pays. Null: the buttons stay disabled.</param>
         public CityBuildingsSection(
@@ -59,8 +64,8 @@ namespace DarkFantasyMerchant.Game
             VisualElement workshopRowContainer,
             Label costsLabel,
             IReadOnlyList<string> goodNames,
-            BuildingCost houseCost,
-            int houseRoom,
+            PerClass<BuildingCost> houseCosts,
+            PerClass<int> houseRooms,
             BuildingCost workshopCost,
             int workshopJobs,
             string costsText,
@@ -71,9 +76,9 @@ namespace DarkFantasyMerchant.Game
             this.workshopRowContainer = workshopRowContainer ?? throw new ArgumentNullException(nameof(workshopRowContainer));
             this.costsLabel = costsLabel ?? throw new ArgumentNullException(nameof(costsLabel));
             this.goodNames = goodNames ?? throw new ArgumentNullException(nameof(goodNames));
-            this.houseCost = houseCost;
+            this.houseCosts = houseCosts;
             this.workshopCost = workshopCost;
-            this.houseRoom = houseRoom;
+            this.houseRooms = houseRooms;
             this.workshopJobs = workshopJobs;
             this.costsText = costsText ?? string.Empty;
             this.treasury = treasury;
@@ -81,17 +86,17 @@ namespace DarkFantasyMerchant.Game
             Hide();
         }
 
-        /// <summary>Raised once a house is built.</summary>
-        public event Action HouseBuilt;
+        /// <summary>Raised once a house is built, with its class.</summary>
+        public event Action<SocialClass> HouseBuilt;
 
         /// <summary>Raised once a workshop is built, with its good.</summary>
         public event Action<int> WorkshopBuilt;
 
-        /// <summary>"Logements : 2 (ville : 1 008 / 1 300 places)".</summary>
-        public static string HousesText(int playerHouses, int housed, int room)
+        /// <summary>"Maisons de pauvres : 2 (ville : 1 008 / 1 300 places)": the player's houses, then the class's inhabitants and room.</summary>
+        public static string HousesText(SocialClass housedClass, int playerHouses, int inhabitants, int room)
         {
-            return $"Logements : {TreasuryHudController.FormatNumber(playerHouses)} "
-                + $"(ville : {TreasuryHudController.FormatNumber(housed)} / {TreasuryHudController.FormatNumber(room)} places)";
+            return $"{SocialClassNames.HousesOf(housedClass)} : {TreasuryHudController.FormatNumber(playerHouses)} "
+                + $"(ville : {TreasuryHudController.FormatNumber(inhabitants)} / {TreasuryHudController.FormatNumber(room)} places)";
         }
 
         /// <summary>"Céréales : 2 ateliers (45 / 60 ouvriers)", or "Bière : 0 atelier".</summary>
@@ -150,20 +155,22 @@ namespace DarkFantasyMerchant.Game
             section.style.display = DisplayStyle.None;
         }
 
-        /// <returns>True when a house was built in the shown city.</returns>
-        public bool BuildHouse()
+        /// <returns>True when a house of the class was built in the shown city.</returns>
+        public bool BuildHouse(SocialClass housedClass)
         {
-            if (market == null || treasury == null || houseCost == null)
+            BuildingCost cost = houseCosts[housedClass];
+
+            if (market == null || treasury == null || cost == null)
             {
                 return false;
             }
 
-            if (!Construction.TryBuildHouse(market, hold, treasury, houseCost, SocialClass.Poor, houseRoom))
+            if (!Construction.TryBuildHouse(market, hold, treasury, cost, housedClass, houseRooms[housedClass]))
             {
                 return false;
             }
 
-            HouseBuilt?.Invoke();
+            HouseBuilt?.Invoke(housedClass);
             return true;
         }
 
@@ -190,7 +197,13 @@ namespace DarkFantasyMerchant.Game
             workshopRowContainer.Clear();
             rows.Clear();
 
-            AddRow(houseRowContainer, HouseRow, () => BuildHouse());
+            var housedClasses = new List<SocialClass>(Classes);
+            NameOrder.Sort(housedClasses, SocialClassNames.HousesOf);
+
+            foreach (SocialClass housedClass in housedClasses)
+            {
+                AddRow(houseRowContainer, housedClass, 0, () => BuildHouse(housedClass));
+            }
 
             var produced = new List<int>();
 
@@ -206,14 +219,14 @@ namespace DarkFantasyMerchant.Game
 
             foreach (int good in produced)
             {
-                AddRow(workshopRowContainer, good, () => BuildWorkshop(good));
+                AddRow(workshopRowContainer, null, good, () => BuildWorkshop(good));
             }
 
             ListStripes.Apply(houseRowContainer);
             ListStripes.Apply(workshopRowContainer);
         }
 
-        private void AddRow(VisualElement container, int good, Action build)
+        private void AddRow(VisualElement container, SocialClass? housedClass, int good, Action build)
         {
             var element = new VisualElement();
             element.AddToClassList(RowClass);
@@ -230,7 +243,7 @@ namespace DarkFantasyMerchant.Game
             element.Add(button);
 
             container.Add(element);
-            rows.Add(new Row { Good = good, Text = text, Button = button });
+            rows.Add(new Row { HousedClass = housedClass, Good = good, Text = text, Button = button });
         }
 
         private void Unbind()
@@ -272,11 +285,16 @@ namespace DarkFantasyMerchant.Game
             {
                 ConstructionQuote quote;
 
-                if (row.Good == HouseRow)
+                if (row.HousedClass is SocialClass housedClass)
                 {
-                    row.Text.text = HousesText(market.PlayerHousesOf(SocialClass.Poor), market.Population.Housed, market.Population.Room);
-                    quote = treasury != null && houseCost != null
-                        ? Construction.QuoteHouse(market, hold, treasury, houseCost)
+                    BuildingCost cost = houseCosts[housedClass];
+                    row.Text.text = HousesText(
+                        housedClass,
+                        market.PlayerHousesOf(housedClass),
+                        market.Population.CountOf(housedClass),
+                        market.Population.RoomOf(housedClass));
+                    quote = treasury != null && cost != null
+                        ? Construction.QuoteHouse(market, hold, treasury, cost)
                         : default;
                 }
                 else

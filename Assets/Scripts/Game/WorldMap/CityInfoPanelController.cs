@@ -258,10 +258,14 @@ namespace DarkFantasyMerchant.Game
         /// <summary>What the panel shows of a city that has no market: its population is the market's.</summary>
         public const string NoPopulation = "Habitants : —";
 
-        /// <summary>The population as the panel writes it: "Habitants : 1 008 · Mendiants : 59".</summary>
-        public static string FormatPopulation(int housed, int beggars)
+        /// <summary>
+        /// The population as the panel writes it, class by class from the top:
+        /// "Riches : 110 · Aisés : 330 · Pauvres : 660 · Mendiants : 64".
+        /// </summary>
+        public static string FormatPopulation(int rich, int wealthy, int poor, int beggars)
         {
-            return $"Habitants : {TreasuryHudController.FormatNumber(housed)} · Mendiants : {TreasuryHudController.FormatNumber(beggars)}";
+            return $"Riches : {TreasuryHudController.FormatNumber(rich)} · Aisés : {TreasuryHudController.FormatNumber(wealthy)} · "
+                + $"Pauvres : {TreasuryHudController.FormatNumber(poor)} · Mendiants : {TreasuryHudController.FormatNumber(beggars)}";
         }
 
         /// <summary>"Atelier construit à Lübeck : céréales."</summary>
@@ -299,10 +303,10 @@ namespace DarkFantasyMerchant.Game
             return $"Navires au port ({TreasuryHudController.FormatNumber(shipCount)})";
         }
 
-        /// <summary>"Logement construit à Lübeck."</summary>
-        public static string HouseBuiltText(string city)
+        /// <summary>"Maison de pauvres construite à Lübeck."</summary>
+        public static string HouseBuiltText(string city, SocialClass housedClass)
         {
-            return $"Logement construit à {city}.";
+            return $"{SocialClassNames.HouseOf(housedClass)} construite à {city}.";
         }
 
         private void ShowHovered(CityDefinition city)
@@ -392,7 +396,12 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            populationLabel.text = FormatPopulation(populationMarket.Population.Housed, populationMarket.Population.Beggars);
+            CityPopulation population = populationMarket.Population;
+            populationLabel.text = FormatPopulation(
+                population.CountOf(SocialClass.Rich),
+                population.CountOf(SocialClass.Wealthy),
+                population.CountOf(SocialClass.Poor),
+                population.Beggars);
         }
 
         /// <param name="keptTradingShip">The ship that trades, kept while it is still in port and the player's.</param>
@@ -553,7 +562,7 @@ namespace DarkFantasyMerchant.Game
                 Treasury treasury = playerTreasury != null && playerTreasury.IsReady ? playerTreasury.Treasury : null;
                 buildingsSection = new CityBuildingsSection(
                     buildingsElement, houseRows, workshopRows, buildingsCostsLabel, goodNames,
-                    worldEconomy.HouseCosts.Poor, buildings.HouseRooms.Poor, worldEconomy.WorkshopCost, buildings.WorkshopJobs,
+                    worldEconomy.HouseCosts, buildings.HouseRooms, worldEconomy.WorkshopCost, buildings.WorkshopJobs,
                     buildings.CostsText(economy), treasury);
                 buildingsSection.HouseBuilt += OnHouseBuilt;
                 buildingsSection.WorkshopBuilt += OnWorkshopBuilt;
@@ -563,11 +572,11 @@ namespace DarkFantasyMerchant.Game
             return section != null;
         }
 
-        private void OnHouseBuilt()
+        private void OnHouseBuilt(SocialClass housedClass)
         {
             if (buildingsCity != null && playerNotifications != null && playerNotifications.IsReady)
             {
-                playerNotifications.Feed.Post(HouseBuiltText(buildingsCity.DisplayName));
+                playerNotifications.Feed.Post(HouseBuiltText(buildingsCity.DisplayName, housedClass));
             }
         }
 

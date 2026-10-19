@@ -11,6 +11,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Material = 0;
         private const int Produced = 1;
 
+        // The house rows, in the alphabetical order of their names.
+        private const int WealthyRow = 0;
+        private const int PoorRow = 1;
+        private const int RichRow = 2;
+
         private VisualElement sectionElement;
         private VisualElement houses;
         private VisualElement workshops;
@@ -32,7 +37,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             return new CityBuildingsSection(
                 sectionElement, houses, workshops, costsLabel, new[] { "Blé", "Vin", "Sel" },
-                houseCost, 100, workshopCost, 30, "Coûts", forTreasury);
+                PerClass<BuildingCost>.All(houseCost), new PerClass<int>(40, 70, 140), workshopCost, 30, "Coûts", forTreasury);
         }
 
         [SetUp]
@@ -63,8 +68,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void HousesText_WritesTheHousesAndTheCity()
         {
             Assert.AreEqual(
-                "Logements : 2 (ville : 1\u00A0008 / 1\u00A0300 places)",
-                CityBuildingsSection.HousesText(2, 1008, 1300));
+                "Maisons de pauvres : 2 (ville : 1\u00A0008 / 1\u00A0300 places)",
+                CityBuildingsSection.HousesText(SocialClass.Poor, 2, 1008, 1300));
+            Assert.AreEqual(
+                "Maisons d'aisés : 0 (ville : 330 / 350 places)",
+                CityBuildingsSection.HousesText(SocialClass.Wealthy, 0, 330, 350));
         }
 
         [Test]
@@ -94,13 +102,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void Show_BuildsAHousesRow_AndOneRowPerGoodTheCityProduces()
+        public void Show_BuildsARowPerHouse_InAlphabeticalOrder_AndOneRowPerGoodTheCityProduces()
         {
             section.Show(market, null);
 
-            Assert.AreEqual(1, houses.childCount);
+            Assert.AreEqual(3, houses.childCount);
             Assert.AreEqual(1, workshops.childCount);
-            StringAssert.StartsWith("Logements : 0", Text(houses[0]));
+            StringAssert.StartsWith("Maisons d'aisés : 0", Text(houses[WealthyRow]));
+            StringAssert.StartsWith("Maisons de pauvres : 0 (ville : 1\u00A0000 / 1\u00A0000 places)", Text(houses[PoorRow]));
+            StringAssert.StartsWith("Maisons de riches : 0", Text(houses[RichRow]));
             StringAssert.StartsWith("Vin : 0 atelier", Text(workshops[0]));
             Assert.AreEqual("Coûts", costsLabel.text);
         }
@@ -143,22 +153,30 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.IsFalse(ButtonOf(houses[0]).enabledSelf);
             Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(houses[0]).text);
-            Assert.IsFalse(section.BuildHouse());
+            Assert.IsFalse(section.BuildHouse(SocialClass.Poor));
             Assert.AreEqual(0, market.PlayerHousesOf(SocialClass.Poor));
         }
 
         [Test]
-        public void BuildHouse_Builds_RaisesHouseBuilt_AndRewritesTheRows()
+        public void BuildHouse_BuildsAHouseOfThatClass_RaisesHouseBuilt_AndRewritesTheRows()
         {
             section.Show(market, null);
             int built = 0;
-            section.HouseBuilt += () => built++;
+            SocialClass builtClass = SocialClass.Poor;
+            section.HouseBuilt += housedClass =>
+            {
+                built++;
+                builtClass = housedClass;
+            };
 
-            Assert.IsTrue(section.BuildHouse());
+            Assert.IsTrue(section.BuildHouse(SocialClass.Rich));
 
             Assert.AreEqual(1, built);
-            Assert.AreEqual(1, market.PlayerHousesOf(SocialClass.Poor));
-            StringAssert.StartsWith("Logements : 1", Text(houses[0]));
+            Assert.AreEqual(SocialClass.Rich, builtClass);
+            Assert.AreEqual(1, market.PlayerHousesOf(SocialClass.Rich));
+            Assert.AreEqual(40, market.Population.RoomOf(SocialClass.Rich));
+            StringAssert.StartsWith("Maisons de riches : 1 (ville : 0 / 40 places)", Text(houses[RichRow]));
+            StringAssert.StartsWith("Maisons de pauvres : 0", Text(houses[PoorRow]));
         }
 
         [Test]
@@ -167,9 +185,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             section = NewSection(new Treasury(0));
             section.Show(market, null);
             int built = 0;
-            section.HouseBuilt += () => built++;
+            section.HouseBuilt += _ => built++;
 
-            Assert.IsFalse(section.BuildHouse());
+            Assert.IsFalse(section.BuildHouse(SocialClass.Poor));
 
             Assert.AreEqual(0, built);
             Assert.AreEqual(0, market.PlayerHousesOf(SocialClass.Poor));
@@ -235,12 +253,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
             section = NewSection(treasury);
             section.Show(market, null);
 
-            Assert.AreEqual(1, houses.childCount);
+            Assert.AreEqual(3, houses.childCount);
             Assert.AreEqual(1, workshops.childCount);
-            StringAssert.StartsWith("Logements : 0", Text(houses[0]));
-            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(houses[0]).text);
-            Assert.IsFalse(ButtonOf(houses[0]).enabledSelf);
-            Assert.IsFalse(section.BuildHouse());
+            StringAssert.StartsWith("Maisons de pauvres : 0", Text(houses[PoorRow]));
+            Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(houses[PoorRow]).text);
+            Assert.IsFalse(ButtonOf(houses[PoorRow]).enabledSelf);
+            Assert.IsFalse(section.BuildHouse(SocialClass.Poor));
             Assert.AreEqual(0, market.PlayerHousesOf(SocialClass.Poor));
             Assert.AreEqual(100000, treasury.Gold);
 

@@ -25,5 +25,6 @@ paths:
 
 ## Buildings
 
-- `BuildingsDefinition` holds the player's house and workshop. `TryCreateCost` turns a cost into Core's `BuildingCost`. A cost that cannot be created only makes its building unavailable: `WorldEconomy.HouseCost` or `WorkshopCost` is then null and its buttons stay disabled.
+- `BuildingsDefinition` holds the player's house of each class (`HouseOf`, `HouseRooms`) and workshop; a city's own house of a class takes the materials of the player's, without the gold. `TryCreateCost` turns a cost into Core's `BuildingCost`. A cost that cannot be created only makes its building unavailable: its entry of `WorldEconomy.HouseCosts` or `WorkshopCost` is then null and its buttons stay disabled.
+- The house rows of the city panel and the costs line name the houses through `SocialClassNames`, sorted with `NameOrder`.
 - `Construction` (Core) quotes and builds the player's buildings.

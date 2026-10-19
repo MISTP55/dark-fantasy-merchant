@@ -27,8 +27,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
             buildings = Track(ScriptableObject.CreateInstance<BuildingsDefinition>());
 
             SetBuilding("poorHouse", 5000, (timber, 10), (metal, 10));
+            SetBuilding("wealthyHouse", 10000, (timber, 15), (metal, 20));
+            SetBuilding("richHouse", 25000, (timber, 25), (metal, 30));
             SetBuilding("workshop", 10000, (timber, 10), (metal, 30));
         }
+
+        private static string Gold(long gold) => TreasuryHudController.FormatGold(gold);
 
         [TearDown]
         public void TearDown()
@@ -248,10 +252,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void CostsText_WritesTheHouseThenTheWorkshop()
+        public void CostsText_WritesTheThreeHousesInAlphabeticalOrder_ThenTheWorkshop()
         {
             Assert.AreEqual(
-                "Logement : 5 000 or, 10 bois, 10 métal · Atelier : 10 000 or, 10 bois, 30 métal",
+                $"Maison d'aisés : {Gold(10000)}, 15 bois, 20 métal · Maison de pauvres : {Gold(5000)}, 10 bois, 10 métal · "
+                + $"Maison de riches : {Gold(25000)}, 25 bois, 30 métal · Atelier : {Gold(10000)}, 10 bois, 30 métal",
                 buildings.CostsText(economy));
         }
 
@@ -260,7 +265,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             SetBuilding("poorHouse", 5000, (metal, 10), (timber, 20));
 
-            StringAssert.StartsWith("Logement : 5 000 or, 20 bois, 10 métal ·", buildings.CostsText(economy));
+            StringAssert.Contains($"Maison de pauvres : {Gold(5000)}, 20 bois, 10 métal ·", buildings.CostsText(economy));
         }
 
         [Test]
@@ -268,13 +273,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             SetBuilding("poorHouse", -1, (timber, 10));
 
-            Assert.AreEqual(
-                "Logement : indisponible · Atelier : 10 000 or, 10 bois, 30 métal",
-                buildings.CostsText(economy));
+            StringAssert.Contains("Maison de pauvres : indisponible · Maison de riches", buildings.CostsText(economy));
+            StringAssert.EndsWith($"Atelier : {Gold(10000)}, 10 bois, 30 métal", buildings.CostsText(economy));
 
             SetBuilding("workshop", -1, (timber, 10));
 
-            Assert.AreEqual("Logement : indisponible · Atelier : indisponible", buildings.CostsText(economy));
+            StringAssert.EndsWith("Atelier : indisponible", buildings.CostsText(economy));
         }
 
         [Test]
@@ -283,11 +287,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             string gold = TreasuryHudController.FormatGold(5000);
             TestEconomy.SetActive(economy, metal, false);
 
-            StringAssert.StartsWith($"Logement : {gold}, 10 bois ·", buildings.CostsText(economy));
+            StringAssert.Contains($"Maison de pauvres : {gold}, 10 bois ·", buildings.CostsText(economy));
 
             TestEconomy.SetActive(economy, timber, false);
 
-            StringAssert.StartsWith($"Logement : {gold} ·", buildings.CostsText(economy));
+            StringAssert.Contains($"Maison de pauvres : {gold} ·", buildings.CostsText(economy));
         }
 
         [Test]

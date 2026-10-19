@@ -330,15 +330,20 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void FormatPopulation_WritesThousandsSeparators()
         {
-            Assert.AreEqual("Habitants : 1\u00A0008 \u00B7 Mendiants : 59", CityInfoPanelController.FormatPopulation(1008, 59));
-            Assert.AreEqual("Habitants : 0 \u00B7 Mendiants : 0", CityInfoPanelController.FormatPopulation(0, 0));
+            Assert.AreEqual(
+                "Riches : 110 \u00B7 Aisés : 330 \u00B7 Pauvres : 1\u00A0008 \u00B7 Mendiants : 64",
+                CityInfoPanelController.FormatPopulation(110, 330, 1008, 64));
+            Assert.AreEqual(
+                "Riches : 0 \u00B7 Aisés : 0 \u00B7 Pauvres : 0 \u00B7 Mendiants : 0",
+                CityInfoPanelController.FormatPopulation(0, 0, 0, 0));
         }
 
         [Test]
         public void BuiltTexts_NameTheCityAndTheGood()
         {
             Assert.AreEqual("Atelier construit \u00E0 L\u00FCbeck : c\u00E9r\u00E9ales.", CityInfoPanelController.WorkshopBuiltText("L\u00FCbeck", "C\u00E9r\u00E9ales"));
-            Assert.AreEqual("Logement construit \u00E0 L\u00FCbeck.", CityInfoPanelController.HouseBuiltText("L\u00FCbeck"));
+            Assert.AreEqual("Maison de pauvres construite \u00E0 L\u00FCbeck.", CityInfoPanelController.HouseBuiltText("L\u00FCbeck", SocialClass.Poor));
+            Assert.AreEqual("Maison d'aisés construite \u00E0 Riga.", CityInfoPanelController.HouseBuiltText("Riga", SocialClass.Wealthy));
         }
     }
 }
