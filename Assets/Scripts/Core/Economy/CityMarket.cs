@@ -36,6 +36,7 @@ namespace DarkFantasyMerchant.Core
         private readonly int daysPerWeek;
         private readonly MarketWeekLog weekLog;
         private readonly int[] playerHouses = new int[3];
+        private readonly StockThresholds[] thresholds;
 
         private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
 
@@ -95,6 +96,7 @@ namespace DarkFantasyMerchant.Core
             workers = StartingWorkersOf(goods, workforce);
             reserves = new int[goods.Count];
             leakCounters = new double[goods.Count];
+            thresholds = new StockThresholds[goods.Count];
 
             for (int i = 0; i < goods.Count; i++)
             {
@@ -103,6 +105,8 @@ namespace DarkFantasyMerchant.Core
                 // The same for every good, produced or not: producers fill up as the days pass.
                 stocks[i] = startingDays * DailyConsumptionOf(i);
             }
+
+            UpdateThresholds();
 
             foreach (CityHousingRule rule in Housing)
             {
@@ -179,12 +183,25 @@ namespace DarkFantasyMerchant.Core
             return (int)Math.Min(int.MaxValue, Math.Floor(StockOf(good) + WholeUnitMargin));
         }
 
-        /// <summary>The stocks at which the prices of a good are given, for the population of the moment.</summary>
+        /// <summary>
+        /// The stocks at which the prices of a good are given and its workshop hires, as Patrician
+        /// III keeps them: worked out at the start and at the end of every day, for the population
+        /// of that moment, and unchanged in between, so that every workshop of a day decides on the
+        /// same thresholds.
+        /// </summary>
         public StockThresholds ThresholdsOf(int good)
         {
             RequireGood(good);
 
-            return thresholdRule.ThresholdsFor(DailyConsumptionOf(good), goods[good].DailyCapacity);
+            return thresholds[good];
+        }
+
+        private void UpdateThresholds()
+        {
+            for (int i = 0; i < goods.Length; i++)
+            {
+                thresholds[i] = thresholdRule.ThresholdsFor(DailyConsumptionOf(i), goods[i].DailyCapacity);
+            }
         }
 
         /// <summary>Workers of the city's workshop for a good: 0 for a good it does not produce.</summary>
@@ -455,8 +472,8 @@ namespace DarkFantasyMerchant.Core
 
                 if (good.IsProduced)
                 {
-                    StockThresholds thresholds = ThresholdsOf(i);
-                    int target = workforce.NextWorkers(workers[i], good.MaxWorkers, stocks[i], thresholds);
+                    StockThresholds goodThresholds = thresholds[i];
+                    int target = workforce.NextWorkers(workers[i], good.MaxWorkers, stocks[i], goodThresholds);
 
                     if (Labour == null)
                     {
@@ -471,7 +488,7 @@ namespace DarkFantasyMerchant.Core
                         LayOff(i, workers[i] - target);
                     }
 
-                    if (WorkforceRule.ProducesAt(stocks[i], thresholds))
+                    if (WorkforceRule.ProducesAt(stocks[i], goodThresholds))
                     {
                         produced = workers[i] * good.DailyOutputPerWorker;
                         stocks[i] += produced;
@@ -500,6 +517,8 @@ namespace DarkFantasyMerchant.Core
                 BuildCityHouses();
             }
 
+            // Patrician III's last step of a city's day.
+            UpdateThresholds();
             Changed?.Invoke();
         }
 

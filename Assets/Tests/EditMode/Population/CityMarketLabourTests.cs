@@ -71,6 +71,35 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void EveryWorkshop_DecidesOnTheThresholdsOfTheMorning()
+        {
+            // T0 is 10 days of 2 barrels for 1 000: 20. The first workshop hires 16 from the
+            // beggars (64 more poor), which would raise the second good's T0 to 21.28; its stock
+            // of 21 stays above the T0 of the morning, so it hires 8 (up to T1), not 16.
+            CityMarket market = TwoGoodsMarket(0, new CityPopulation(1000, 100, 1100));
+            market.Put(1, 23);
+
+            market.StartDay();
+
+            Assert.AreEqual(26, market.WorkersOf(0));
+            Assert.AreEqual(18, market.WorkersOf(1));
+        }
+
+        [Test]
+        public void TheThresholds_FollowThePopulation_OnlyAtTheEndOfTheDay()
+        {
+            var population = new CityPopulation(1000, 100, 1100);
+            CityMarket market = MarketWithoutLabour(0, population);
+            Assert.AreEqual(20, market.ThresholdsOf(0).T0, 1e-9);
+
+            population.Hire(10, 4);
+            Assert.AreEqual(20, market.ThresholdsOf(0).T0, 1e-9);
+
+            market.StartDay();
+            Assert.AreEqual(20.8, market.ThresholdsOf(0).T0, 1e-9);
+        }
+
+        [Test]
         public void WithoutFreeRoom_NoBeggarIsHired()
         {
             CityMarket market = Market(0, new CityPopulation(1000, 100, 1000));
