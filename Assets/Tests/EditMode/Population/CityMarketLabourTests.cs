@@ -158,11 +158,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void OverManyDays_TheHousedAreFourPerWorkerOrReserve_WithinTheRoom()
         {
             // A workshop under 30 (it leaks), one of 60, and a good the city does not produce.
-            // 60 workers spread over two workshops: 20 (cut) and 30. 200 housed, 11 beggars, 200 places.
+            // 60 workers spread over two workshops: 20 (cut) and 30. 200 housed (20 rich, 60 wealthy, 120 poor), 11 beggars, 200 places.
             MarketGood[] goods = { new MarketGood(10, 2, 20, 0.1), new MarketGood(10, 2, 60, 0.1), new MarketGood(10, 2, 0, 0) };
             var workforce = new WorkforceRule(16, 8, 4, 1, 1, 60);
             int startingWorkers = CityMarket.StartingWorkforceOf(goods, workforce);
-            CityPopulation population = CityPopulation.AtStart(startingWorkers, 4, 4d / 17d, 100);
+            CityPopulation population = CityPopulation.AtStart(startingWorkers, 4, 4d / 17d, new PerClass<int>(20, 60, 120));
             var market = new CityMarket(goods, TestMarkets.Thresholds, workforce, 7, TestMarkets.Pricing, 7,
                 population, TestMarkets.Labour);
             market.AddPlayerHouse(100);

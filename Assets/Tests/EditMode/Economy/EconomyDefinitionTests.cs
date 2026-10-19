@@ -311,7 +311,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(480, market.Population.Housed);
             Assert.AreEqual(28, market.Population.Beggars);
-            Assert.AreEqual(500, market.Population.Room);
+            // 48 rich, 144 wealthy, 288 poor, each class in houses of 100.
+            Assert.AreEqual(600, market.Population.Room);
             Assert.IsNotNull(market.Labour);
         }
 

@@ -271,7 +271,7 @@ namespace DarkFantasyMerchant.Core
         /// <summary>Adds a house of the player: its room is the city's, open to any inhabitant.</summary>
         public void AddPlayerHouse(int room)
         {
-            Population.AddRoom(room);
+            Population.AddRoom(SocialClass.Poor, room);
             PlayerHouses++;
             Changed?.Invoke();
         }
@@ -487,7 +487,7 @@ namespace DarkFantasyMerchant.Core
         {
             wanted -= TakeFromReserve(good, good, wanted);
 
-            int fromBeggars = Math.Min(wanted, Labour.WorkersHireableFrom(Population.Beggars, Population.FreeRoom));
+            int fromBeggars = Math.Min(wanted, Labour.WorkersHireableFrom(Population.Beggars, Population.FreeRoomOf(SocialClass.Poor)));
             Population.Hire(fromBeggars, Labour.InhabitantsPerWorker);
             workers[good] += fromBeggars;
             wanted -= fromBeggars;
@@ -520,14 +520,16 @@ namespace DarkFantasyMerchant.Core
             ReserveLeak leak = Labour.LeakAfterLayoff(leakCounters[good], workers[good], reserves[good]);
             leakCounters[good] = leak.Counter;
             reserves[good] -= leak.Leaving;
-            Population.SendToBeggars(leak.Leaving, Labour.InhabitantsPerWorker);
+
+            // A worker whose family cannot be taken stays in the reserve.
+            reserves[good] += Population.SendToBeggars(leak.Leaving, Labour.InhabitantsPerWorker);
         }
 
         // Patrician III's second hiring: the beggars fill the player's workshops in the order
         // they were built, each up to its jobs.
         private void FillVacancies()
         {
-            int fillable = Labour.VacanciesFillable(Population.Beggars, Population.FreeRoom);
+            int fillable = Labour.VacanciesFillable(Population.Beggars, Population.FreeRoomOf(SocialClass.Poor));
 
             foreach (PlayerWorkshop workshop in playerWorkshops)
             {
@@ -566,7 +568,7 @@ namespace DarkFantasyMerchant.Core
                 stocks[material.Good] = Math.Max(0d, stocks[material.Good] - material.Units);
             }
 
-            Population.AddRoom(Housing.Room);
+            Population.AddRoom(SocialClass.Poor, Housing.Room);
             CityHouses++;
         }
 

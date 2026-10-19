@@ -274,7 +274,7 @@ namespace DarkFantasyMerchant.Game
                 ?? ProblemOf(() => new CityPopulation(StartingPopulation), "the starting population (workforce times inhabitants per worker)")
                 ?? ProblemOf(() => CreateLabourRule(), "the labour")
                 ?? ProblemOf(() => CreateHousingRule(1, Array.Empty<MaterialCost>()), "the cities' houses")
-                ?? ProblemOf(() => CityPopulation.AtStart(0, inhabitantsPerWorker, startingBeggarsPerWorker, 1), "the starting beggars per worker");
+                ?? ProblemOf(() => CityPopulation.AtStart(0, inhabitantsPerWorker, startingBeggarsPerWorker, PerClass<int>.All(1)), "the starting beggars per worker");
 
             return problem == null;
         }
@@ -521,7 +521,7 @@ namespace DarkFantasyMerchant.Game
                     CityMarket.StartingWorkforceOf(marketGoods, workforce),
                     inhabitantsPerWorker,
                     startingBeggarsPerWorker,
-                    roomPerHouse);
+                    PerClass<int>.All(roomPerHouse));
 
             return new CityMarket(
                 marketGoods,
