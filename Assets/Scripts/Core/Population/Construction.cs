@@ -112,7 +112,7 @@ namespace DarkFantasyMerchant.Core
 
         /// <returns>False when the quote is impossible; nothing was taken then.</returns>
         /// <exception cref="ArgumentOutOfRangeException">A room under 1, before anything is taken.</exception>
-        public static bool TryBuildHouse(CityMarket market, CargoHold hold, Treasury treasury, BuildingCost cost, int room)
+        public static bool TryBuildHouse(CityMarket market, CargoHold hold, Treasury treasury, BuildingCost cost, SocialClass housedClass, int room)
         {
             RequireAtLeastOne(room, nameof(room));
 
@@ -124,7 +124,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             Pay(market, hold, treasury, cost, quote);
-            market.AddPlayerHouse(room);
+            market.AddPlayerHouse(housedClass, room);
             return true;
         }
 

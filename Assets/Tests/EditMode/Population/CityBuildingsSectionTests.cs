@@ -144,7 +144,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsFalse(ButtonOf(houses[0]).enabledSelf);
             Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(houses[0]).text);
             Assert.IsFalse(section.BuildHouse());
-            Assert.AreEqual(0, market.PlayerHouses);
+            Assert.AreEqual(0, market.PlayerHousesOf(SocialClass.Poor));
         }
 
         [Test]
@@ -157,7 +157,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsTrue(section.BuildHouse());
 
             Assert.AreEqual(1, built);
-            Assert.AreEqual(1, market.PlayerHouses);
+            Assert.AreEqual(1, market.PlayerHousesOf(SocialClass.Poor));
             StringAssert.StartsWith("Logements : 1", Text(houses[0]));
         }
 
@@ -172,7 +172,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsFalse(section.BuildHouse());
 
             Assert.AreEqual(0, built);
-            Assert.AreEqual(0, market.PlayerHouses);
+            Assert.AreEqual(0, market.PlayerHousesOf(SocialClass.Poor));
         }
 
         [Test]
@@ -241,7 +241,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(CityBuildingsSection.BuildText, ButtonOf(houses[0]).text);
             Assert.IsFalse(ButtonOf(houses[0]).enabledSelf);
             Assert.IsFalse(section.BuildHouse());
-            Assert.AreEqual(0, market.PlayerHouses);
+            Assert.AreEqual(0, market.PlayerHousesOf(SocialClass.Poor));
             Assert.AreEqual(100000, treasury.Gold);
 
             // The other building is still available.

@@ -165,7 +165,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityPopulation population = CityPopulation.AtStart(startingWorkers, 4, 4d / 17d, new PerClass<int>(20, 60, 120));
             var market = new CityMarket(goods, TestMarkets.Thresholds, workforce, 7, TestMarkets.Pricing, 7,
                 population, TestMarkets.Labour);
-            market.AddPlayerHouse(100);
+            market.AddPlayerHouse(SocialClass.Poor, 100);
             market.AddPlayerWorkshop(0, 30);
 
             int leaks = 0;
@@ -333,10 +333,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int changes = 0;
             market.Changed += () => changes++;
 
-            market.AddPlayerHouse(100);
+            market.AddPlayerHouse(SocialClass.Poor, 100);
 
             Assert.AreEqual(1100, market.Population.Room);
-            Assert.AreEqual(1, market.PlayerHouses);
+            Assert.AreEqual(1, market.PlayerHousesOf(SocialClass.Poor));
             Assert.AreEqual(1, changes);
         }
 
@@ -385,7 +385,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityMarket market = MarketWithoutLabour(100, new CityPopulation(1000, 50, 1100));
             market.AddPlayerWorkshop(0, 30);
-            market.AddPlayerHouse(100);
+            market.AddPlayerHouse(SocialClass.Poor, 100);
 
             market.StartDay();
 

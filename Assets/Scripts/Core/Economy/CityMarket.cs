@@ -13,8 +13,12 @@ namespace DarkFantasyMerchant.Core
     /// from their reserves and the beggars within the free room of the houses, lay off into a
     /// reserve that leaks back to the beggars, the player's workshops fill their vacancies from
     /// the beggars, and the beggars come or go; without one, hiring is immediate, layoffs
-    /// vanish and the population stays as it is. Given a <see cref="CityHousingRule"/> as well,
-    /// a crowded city builds a house of its own from its stock.
+    /// vanish and the population stays as it is. Given <see cref="CityHousingRule"/>s as well,
+    /// a city builds a house of its own for each crowded class from its stock. Given a
+    /// <see cref="SocialRule"/> with the labour, its classes have a satisfaction that follows
+    /// the goods, the poor rise into the other classes and fall back, the beggars are hired only
+    /// while the poor are satisfied, and the poor without room or unhappy leave with their jobs;
+    /// without one, the classes never move.
     /// </summary>
     public sealed class CityMarket
     {
@@ -31,6 +35,9 @@ namespace DarkFantasyMerchant.Core
         private readonly MarketPricing pricing;
         private readonly int daysPerWeek;
         private readonly MarketWeekLog weekLog;
+        private readonly int[] playerHouses = new int[3];
+
+        private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
 
         /// <param name="thresholdRule">How the stock thresholds of a good, at which its prices are given, follow what the city consumes and produces of it.</param>
         /// <param name="workforce">How the workshops hire, lay off and start.</param>
@@ -38,7 +45,8 @@ namespace DarkFantasyMerchant.Core
         /// <param name="daysPerWeek">Days of the calendar's week, over which the weekly figures are given.</param>
         /// <param name="population">The inhabitants of the city, who set what it consumes.</param>
         /// <param name="labour">How the workshops take their workers from the population; null for immediate hiring and a population that stays.</param>
-        /// <param name="housing">When the city builds a house of its own, only with labour; null for a city that never does.</param>
+        /// <param name="housing">When the city builds a house of its own for a class, each class once at most, only with labour; null for a city that never does.</param>
+        /// <param name="social">The satisfaction and the moves of the classes, only with labour; null for classes that never move.</param>
         public CityMarket(
             IReadOnlyList<MarketGood> goods,
             ThresholdRule thresholdRule,
@@ -48,7 +56,8 @@ namespace DarkFantasyMerchant.Core
             int daysPerWeek,
             CityPopulation population,
             LabourRule labour = null,
-            CityHousingRule housing = null)
+            IReadOnlyList<CityHousingRule> housing = null,
+            SocialRule social = null)
         {
             if (goods == null)
             {
@@ -71,8 +80,14 @@ namespace DarkFantasyMerchant.Core
 
             this.pricing = pricing ?? throw new ArgumentNullException(nameof(pricing));
             Population = population ?? throw new ArgumentNullException(nameof(population));
+            if (social != null && labour == null)
+            {
+                throw new ArgumentException("The classes move only with labour.", nameof(social));
+            }
+
             Labour = labour;
-            Housing = housing;
+            Housing = CopyOf(housing);
+            Social = social;
             this.daysPerWeek = daysPerWeek;
             weekLog = new MarketWeekLog(goods.Count, daysPerWeek);
             this.goods = new MarketGood[goods.Count];
@@ -89,11 +104,19 @@ namespace DarkFantasyMerchant.Core
                 stocks[i] = startingDays * DailyConsumptionOf(i);
             }
 
-            if (housing != null)
+            foreach (CityHousingRule rule in Housing)
             {
-                foreach (MaterialCost material in housing.Materials)
+                foreach (MaterialCost material in rule.Materials)
                 {
                     RequireGood(material.Good);
+                }
+            }
+
+            if (social != null)
+            {
+                foreach (SocialClass housedClass in Classes)
+                {
+                    Population.SetSatisfaction(housedClass, social.StartingSatisfaction);
                 }
             }
         }
@@ -108,11 +131,17 @@ namespace DarkFantasyMerchant.Core
         /// <summary>The beggars the city draws towards: 0 without labour.</summary>
         public int BeggarTarget => Labour?.BeggarTargetFor(Population.Inhabitants) ?? 0;
 
-        /// <summary>When the city builds a house of its own; null when it never does.</summary>
-        public CityHousingRule Housing { get; }
+        /// <summary>When the city builds a house of its own for each class; empty when it never does.</summary>
+        public IReadOnlyList<CityHousingRule> Housing { get; }
 
-        /// <summary>Houses the player has built in the city.</summary>
-        public int PlayerHouses { get; private set; }
+        /// <summary>How the classes are satisfied and move; null when they never do.</summary>
+        public SocialRule Social { get; }
+
+        /// <summary>Houses of a class the player has built in the city.</summary>
+        public int PlayerHousesOf(SocialClass housedClass)
+        {
+            return playerHouses[(int)housedClass];
+        }
 
         /// <summary>Houses the city has built of its own since the game started, not the player's.</summary>
         public int CityHouses { get; private set; }
@@ -272,11 +301,11 @@ namespace DarkFantasyMerchant.Core
             Changed?.Invoke();
         }
 
-        /// <summary>Adds a house of the player: its room is the city's, open to any inhabitant.</summary>
-        public void AddPlayerHouse(int room)
+        /// <summary>Adds a house of the player for a class: its room is the city's, open to any inhabitant of the class.</summary>
+        public void AddPlayerHouse(SocialClass housedClass, int room)
         {
-            Population.AddRoom(SocialClass.Poor, room);
-            PlayerHouses++;
+            Population.AddRoom(housedClass, room);
+            playerHouses[(int)housedClass]++;
             Changed?.Invoke();
         }
 
@@ -400,8 +429,10 @@ namespace DarkFantasyMerchant.Core
         /// One day of the city, as in Patrician III: the inhabitants consume every good, down
         /// to nothing; then every workshop hires or lays off by where the stock left stands
         /// against the thresholds, and produces, unless that stock is above T3. With labour,
-        /// the player's workshops then fill their vacancies from the beggars, the beggars
-        /// come or go, and a crowded city builds a house.
+        /// the classes' satisfactions follow the stocks (with a social rule), the player's
+        /// workshops fill their vacancies from the beggars, the poor rise and fall between the
+        /// classes and some leave (with a social rule), the beggars come or go, and the city
+        /// builds a house for each crowded class.
         /// </summary>
         public void StartDay()
         {
@@ -444,9 +475,21 @@ namespace DarkFantasyMerchant.Core
 
             if (Labour != null)
             {
+                if (Social != null)
+                {
+                    UpdateSatisfactions();
+                }
+
                 FillVacancies();
+
+                if (Social != null)
+                {
+                    Social.RiseAndFall(Population);
+                    LetThePoorLeave();
+                }
+
                 Population.SetBeggars(Labour.NextBeggars(Population.Beggars, Population.Inhabitants));
-                BuildCityHouse();
+                BuildCityHouses();
             }
 
             Changed?.Invoke();
@@ -491,7 +534,11 @@ namespace DarkFantasyMerchant.Core
         {
             wanted -= TakeFromReserve(good, good, wanted);
 
-            int fromBeggars = Math.Min(wanted, Labour.WorkersHireableFrom(Population.Beggars, Population.FreeRoomOf(SocialClass.Poor)));
+            // Patrician III hires the beggars only while the poor are satisfied (0x510C30).
+            bool poorSatisfied = Social == null || Population.SatisfactionOf(SocialClass.Poor) > 0;
+            int fromBeggars = poorSatisfied
+                ? Math.Min(wanted, Labour.WorkersHireableFrom(Population.Beggars, Population.FreeRoomOf(SocialClass.Poor)))
+                : 0;
             Population.Hire(fromBeggars, Labour.InhabitantsPerWorker);
             workers[good] += fromBeggars;
             wanted -= fromBeggars;
@@ -549,16 +596,22 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
-        // One house a day at most, with every material or none taken. What it takes is not
-        // consumption: the week's log does not count it.
-        private void BuildCityHouse()
+        // One house a day at most for each class, with every material or none taken. What it
+        // takes is not consumption: the week's log does not count it.
+        private void BuildCityHouses()
         {
-            if (Housing == null || !Housing.IsCrowded(Population))
+            foreach (CityHousingRule rule in Housing)
             {
-                return;
+                if (rule.IsCrowded(Population))
+                {
+                    BuildCityHouse(rule);
+                }
             }
+        }
 
-            foreach (MaterialCost material in Housing.Materials)
+        private void BuildCityHouse(CityHousingRule rule)
+        {
+            foreach (MaterialCost material in rule.Materials)
             {
                 if (AvailableOf(material.Good) < material.Units)
                 {
@@ -566,14 +619,164 @@ namespace DarkFantasyMerchant.Core
                 }
             }
 
-            foreach (MaterialCost material in Housing.Materials)
+            foreach (MaterialCost material in rule.Materials)
             {
                 // Not below nothing: the last unit can be a hair short.
                 stocks[material.Good] = Math.Max(0d, stocks[material.Good] - material.Units);
             }
 
-            Population.AddRoom(SocialClass.Poor, Housing.Room);
+            Population.AddRoom(rule.HousedClass, rule.Room);
             CityHouses++;
+        }
+
+        // Each class's satisfaction takes a step towards the target the stocks of the goods it
+        // consumes give, as Patrician III's 0x51CB80.
+        private void UpdateSatisfactions()
+        {
+            foreach (SocialClass housedClass in Classes)
+            {
+                int goodsTerm = 0;
+
+                for (int i = 0; i < goods.Length; i++)
+                {
+                    if (DailyConsumptionOf(i) > 0d && ThresholdsOf(i).T0 > 0d)
+                    {
+                        goodsTerm += Social.GoodTerm(goods[i].SatisfactionWeights[housedClass], stocks[i], ThresholdsOf(i).T0);
+                    }
+                }
+
+                int target = Social.TargetOf(housedClass, goodsTerm);
+                Population.SetSatisfaction(housedClass, Social.NextSatisfaction(Population.SatisfactionOf(housedClass), target));
+            }
+        }
+
+        // The poor who leave take their jobs with them, a worker for every family.
+        private void LetThePoorLeave()
+        {
+            int workers = Social.LeavingPoorOf(Population) / Labour.InhabitantsPerWorker;
+
+            if (workers < 1)
+            {
+                return;
+            }
+
+            int removed = TakeWorkersAway(workers);
+            Population.Leave(SocialClass.Poor, removed * Labour.InhabitantsPerWorker);
+        }
+
+        // Patrician III's 0x51C6B0: the reserves first, in the catalogue's order; then the
+        // workers above the protected ones of the city's workshops, spread by a step over all
+        // that can be taken; then the player's workshops, in the order they were built.
+        private int TakeWorkersAway(int wanted)
+        {
+            int removed = 0;
+
+            for (int good = 0; good < goods.Length && wanted > 0; good++)
+            {
+                int taken = Math.Min(wanted, reserves[good]);
+                reserves[good] -= taken;
+                wanted -= taken;
+                removed += taken;
+            }
+
+            if (wanted == 0)
+            {
+                return removed;
+            }
+
+            int protectedWorkers = Social.ProtectedWorkers;
+            int takeable = 0;
+
+            for (int good = 0; good < goods.Length; good++)
+            {
+                takeable += Math.Max(0, workers[good] - protectedWorkers);
+            }
+
+            foreach (PlayerWorkshop workshop in playerWorkshops)
+            {
+                takeable += workshop.Workers;
+            }
+
+            int step = Math.Max(2, takeable / wanted);
+            int accumulated = 0;
+
+            for (int good = 0; good < goods.Length; good++)
+            {
+                if (workers[good] <= protectedWorkers)
+                {
+                    continue;
+                }
+
+                accumulated += workers[good] - protectedWorkers;
+
+                if (accumulated >= step)
+                {
+                    int taken = Math.Min(accumulated / step, wanted);
+
+                    if (taken >= workers[good])
+                    {
+                        taken = workers[good] - 1;
+                    }
+
+                    workers[good] -= taken;
+                    wanted -= taken;
+                    accumulated -= taken * step;
+                    removed += taken;
+                }
+            }
+
+            foreach (PlayerWorkshop workshop in playerWorkshops)
+            {
+                if (wanted < 1)
+                {
+                    break;
+                }
+
+                if (workshop.Workers == 0)
+                {
+                    continue;
+                }
+
+                accumulated += workshop.Workers;
+
+                if (accumulated >= step)
+                {
+                    int taken = Math.Min(Math.Min(accumulated / step, wanted), workshop.Workers);
+                    workshop.Workers -= taken;
+                    accumulated -= taken * step;
+                    wanted -= taken;
+                    removed += taken;
+                }
+            }
+
+            return removed;
+        }
+
+        private static IReadOnlyList<CityHousingRule> CopyOf(IReadOnlyList<CityHousingRule> housing)
+        {
+            var copy = new List<CityHousingRule>();
+
+            if (housing == null)
+            {
+                return copy;
+            }
+
+            foreach (CityHousingRule rule in housing)
+            {
+                if (rule == null)
+                {
+                    throw new ArgumentNullException(nameof(housing));
+                }
+
+                if (copy.Exists(other => other.HousedClass == rule.HousedClass))
+                {
+                    throw new ArgumentException("A class has two housing rules.", nameof(housing));
+                }
+
+                copy.Add(rule);
+            }
+
+            return copy;
         }
 
         private void RequireGood(int good)

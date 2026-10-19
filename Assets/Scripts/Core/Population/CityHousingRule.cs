@@ -4,17 +4,23 @@ using System.Collections.Generic;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// When a city builds a house of its own: once its housed inhabitants are above a share of
+    /// When a city builds a house of its own for one class: once that class is above a share of
     /// its room, and its market holds the materials of a house, which it takes from its stock
     /// even down to nothing. A city pays no gold. Stateless: the population is passed in.
     /// </summary>
     public sealed class CityHousingRule
     {
-        /// <param name="occupancy">Share of the room above which the city builds, between 0 and 1 (0.95).</param>
+        /// <param name="housedClass">The class the house shelters.</param>
+        /// <param name="occupancy">Share of the class's room above which the city builds, between 0 and 1 (0.95 for the poor).</param>
         /// <param name="room">Places of a house the city builds, at least 1.</param>
         /// <param name="materials">Units of goods a house takes from the market, each good at most once; none is a house built from nothing.</param>
-        public CityHousingRule(double occupancy, int room, IReadOnlyList<MaterialCost> materials)
+        public CityHousingRule(SocialClass housedClass, double occupancy, int room, IReadOnlyList<MaterialCost> materials)
         {
+            if (housedClass < SocialClass.Rich || housedClass > SocialClass.Poor)
+            {
+                throw new ArgumentOutOfRangeException(nameof(housedClass));
+            }
+
             // The negated comparison also rejects NaN.
             if (!(occupancy >= 0d && occupancy <= 1d))
             {
@@ -44,12 +50,16 @@ namespace DarkFantasyMerchant.Core
                 copy.Add(material);
             }
 
+            HousedClass = housedClass;
             Occupancy = occupancy;
             Room = room;
             Materials = copy;
         }
 
-        /// <summary>Share of the room above which the city builds.</summary>
+        /// <summary>The class the house shelters.</summary>
+        public SocialClass HousedClass { get; }
+
+        /// <summary>Share of the class's room above which the city builds.</summary>
         public double Occupancy { get; }
 
         /// <summary>Places of a house the city builds.</summary>
@@ -58,7 +68,7 @@ namespace DarkFantasyMerchant.Core
         /// <summary>Units of goods a house takes from the market.</summary>
         public IReadOnlyList<MaterialCost> Materials { get; }
 
-        /// <summary>Whether the housed inhabitants are above the occupancy of the room; the beggars do not count.</summary>
+        /// <summary>Whether the class is above the occupancy of its room; the beggars and the other classes do not count.</summary>
         public bool IsCrowded(CityPopulation population)
         {
             if (population == null)
@@ -66,7 +76,7 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentNullException(nameof(population));
             }
 
-            return population.Housed > Occupancy * population.Room;
+            return population.CountOf(HousedClass) > Occupancy * population.RoomOf(HousedClass);
         }
     }
 }

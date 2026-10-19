@@ -219,7 +219,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private double MerchantOutputOf(EconomyDefinition definition, CityDefinition city, int good)
         {
             CityMarket market = definition.CreateMarket(city, definition.CreatePricing(), DaysPerWeek, definition.CreateLabourRule(), 100);
-            market.AddPlayerHouse(1000);
+            market.AddPlayerHouse(SocialClass.Poor, 1000);
             market.AddPlayerWorkshop(good, 30);
 
             // Full stocks: the city's workshops hire nobody and leave the beggars to the player.
@@ -357,7 +357,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityMarket market = economy.CreateMarket(
                 city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), 100, housing);
 
-            Assert.AreSame(housing, market.Housing);
+            Assert.AreSame(housing, market.Housing[0]);
         }
 
         [Test]

@@ -394,7 +394,7 @@ namespace DarkFantasyMerchant.Game
         /// <param name="materials">What a house takes from the market (<see cref="BuildingsDefinition.MaterialsOf"/>).</param>
         public CityHousingRule CreateHousingRule(int room, IReadOnlyList<MaterialCost> materials)
         {
-            return new CityHousingRule(cityHouseOccupancy, room, materials);
+            return new CityHousingRule(SocialClass.Poor, cityHouseOccupancy, room, materials);
         }
 
         /// <summary>Barrels of room a unit of a good takes in a hold: one, or the barrels per bushel.</summary>
@@ -532,7 +532,7 @@ namespace DarkFantasyMerchant.Game
                 daysPerWeek,
                 population,
                 labour,
-                housing);
+                housing == null ? null : new[] { housing });
         }
     }
 }

@@ -14,6 +14,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
         // A house of 100 places that takes 10 timber and 10 metal, built above 95 % of the room.
         private static CityHousingRule Housing => new CityHousingRule(
+            SocialClass.Poor,
             0.95,
             100,
             new[] { new MaterialCost(Timber, 10), new MaterialCost(Metal, 10) });
@@ -21,7 +22,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static CityMarket Market(CityPopulation population, CityHousingRule housing, LabourRule labour)
         {
             return new CityMarket(new[] { Material, Material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0,
-                TestMarkets.Pricing, 7, population, labour, housing);
+                TestMarkets.Pricing, 7, population, labour, housing == null ? null : new[] { housing });
         }
 
         private static CityMarket Market(CityPopulation population, CityHousingRule housing = null)
@@ -125,7 +126,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AHouseWithoutMaterials_IsBuiltWhateverTheStock()
         {
-            var housing = new CityHousingRule(0.95, 100, Array.Empty<MaterialCost>());
+            var housing = new CityHousingRule(SocialClass.Poor, 0.95, 100, Array.Empty<MaterialCost>());
             CityMarket market = Market(new CityPopulation(1000, 0, 1000), housing);
 
             market.StartDay();
@@ -153,14 +154,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             market.StartDay();
 
-            Assert.AreEqual(0, market.PlayerHouses);
+            Assert.AreEqual(0, market.PlayerHousesOf(SocialClass.Poor));
         }
 
         [Test]
         public void AMarketWithoutLabour_NeverBuilds()
         {
             CityMarket market = new CityMarket(new[] { Material, Material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0,
-                TestMarkets.Pricing, 7, new CityPopulation(1000), null, Housing);
+                TestMarkets.Pricing, 7, new CityPopulation(1000), null, new[] { Housing });
             Stock(market, 10, 10);
 
             market.StartDay();
@@ -184,7 +185,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AMaterialOutsideTheCatalogue_IsRefused()
         {
-            var housing = new CityHousingRule(0.95, 100, new[] { new MaterialCost(2, 10) });
+            var housing = new CityHousingRule(SocialClass.Poor, 0.95, 100, new[] { new MaterialCost(2, 10) });
 
             Assert.Throws<ArgumentOutOfRangeException>(() => Market(new CityPopulation(1000), housing));
         }
@@ -195,21 +196,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AnOccupancyOutsideZeroToOne_IsRefused(double occupancy)
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new CityHousingRule(occupancy, 100, Array.Empty<MaterialCost>()));
+                () => new CityHousingRule(SocialClass.Poor, occupancy, 100, Array.Empty<MaterialCost>()));
         }
 
         [Test]
         public void ARoomUnderOne_IsRefused()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new CityHousingRule(0.95, 0, Array.Empty<MaterialCost>()));
+                () => new CityHousingRule(SocialClass.Poor, 0.95, 0, Array.Empty<MaterialCost>()));
         }
 
         [Test]
         public void AGoodTwiceAmongTheMaterials_IsRefused()
         {
             Assert.Throws<ArgumentException>(
-                () => new CityHousingRule(0.95, 100, new[] { new MaterialCost(Timber, 1), new MaterialCost(Timber, 2) }));
+                () => new CityHousingRule(SocialClass.Poor, 0.95, 100, new[] { new MaterialCost(Timber, 1), new MaterialCost(Timber, 2) }));
         }
 
         [Test]

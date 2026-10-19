@@ -158,7 +158,7 @@ namespace DarkFantasyMerchant.Game
                 return false;
             }
 
-            if (!Construction.TryBuildHouse(market, hold, treasury, houseCost, houseRoom))
+            if (!Construction.TryBuildHouse(market, hold, treasury, houseCost, SocialClass.Poor, houseRoom))
             {
                 return false;
             }
@@ -274,7 +274,7 @@ namespace DarkFantasyMerchant.Game
 
                 if (row.Good == HouseRow)
                 {
-                    row.Text.text = HousesText(market.PlayerHouses, market.Population.Housed, market.Population.Room);
+                    row.Text.text = HousesText(market.PlayerHousesOf(SocialClass.Poor), market.Population.Housed, market.Population.Room);
                     quote = treasury != null && houseCost != null
                         ? Construction.QuoteHouse(market, hold, treasury, houseCost)
                         : default;

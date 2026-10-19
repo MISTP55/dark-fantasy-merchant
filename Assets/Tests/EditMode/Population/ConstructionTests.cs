@@ -50,13 +50,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int stock = market.AvailableOf(0);
             ConstructionQuote quote = Construction.QuoteHouse(market, hold, treasury, Cost());
 
-            bool built = Construction.TryBuildHouse(market, hold, treasury, Cost(), 100);
+            bool built = Construction.TryBuildHouse(market, hold, treasury, Cost(), SocialClass.Poor, 100);
 
             Assert.IsTrue(built);
             Assert.AreEqual(10000 - quote.Gold, treasury.Gold);
             Assert.AreEqual(0, hold.UnitsOf(0));
             Assert.AreEqual(stock - 2, market.AvailableOf(0));
-            Assert.AreEqual(1, market.PlayerHouses);
+            Assert.AreEqual(1, market.PlayerHousesOf(SocialClass.Poor));
             Assert.AreEqual(1100, market.Population.Room);
         }
 
@@ -69,7 +69,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int stock = market.AvailableOf(0);
 
             Assert.AreEqual(100, Construction.QuoteHouse(market, hold, treasury, Cost()).Gold);
-            Assert.IsTrue(Construction.TryBuildHouse(market, hold, treasury, Cost(), 100));
+            Assert.IsTrue(Construction.TryBuildHouse(market, hold, treasury, Cost(), SocialClass.Poor, 100));
 
             Assert.AreEqual(2, hold.UnitsOf(0));
             Assert.AreEqual(stock, market.AvailableOf(0));
@@ -94,7 +94,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int stock = market.AvailableOf(0);
 
             Assert.IsFalse(Construction.QuoteHouse(market, hold, treasury, Cost(70)).IsPossible);
-            Assert.IsFalse(Construction.TryBuildHouse(market, hold, treasury, Cost(70), 100));
+            Assert.IsFalse(Construction.TryBuildHouse(market, hold, treasury, Cost(70), SocialClass.Poor, 100));
 
             Assert.AreEqual(5, hold.UnitsOf(0));
             Assert.AreEqual(stock, market.AvailableOf(0));
@@ -111,7 +111,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int stock = market.AvailableOf(0);
 
             Assert.IsFalse(Construction.QuoteHouse(market, hold, treasury, Cost()).IsPossible);
-            Assert.IsFalse(Construction.TryBuildHouse(market, hold, treasury, Cost(), 100));
+            Assert.IsFalse(Construction.TryBuildHouse(market, hold, treasury, Cost(), SocialClass.Poor, 100));
 
             Assert.AreEqual(1, hold.UnitsOf(0));
             Assert.AreEqual(stock, market.AvailableOf(0));
@@ -128,10 +128,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var cost = new BuildingCost(5000, Array.Empty<MaterialCost>());
 
             Assert.AreEqual(5000, Construction.QuoteHouse(market, null, treasury, cost).Gold);
-            Assert.IsTrue(Construction.TryBuildHouse(market, null, treasury, cost, 100));
+            Assert.IsTrue(Construction.TryBuildHouse(market, null, treasury, cost, SocialClass.Poor, 100));
             Assert.AreEqual(5000, treasury.Gold);
             Assert.AreEqual(stock, market.AvailableOf(0));
-            Assert.AreEqual(1, market.PlayerHouses);
+            Assert.AreEqual(1, market.PlayerHousesOf(SocialClass.Poor));
         }
 
         [Test]
@@ -141,8 +141,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var free = new BuildingCost(0, new MaterialCost[0]);
 
             Assert.IsFalse(Construction.QuoteHouse(market, null, new Treasury(-10), free).IsPossible);
-            Assert.IsFalse(Construction.TryBuildHouse(market, null, new Treasury(-10), free, 100));
-            Assert.AreEqual(0, market.PlayerHouses);
+            Assert.IsFalse(Construction.TryBuildHouse(market, null, new Treasury(-10), free, SocialClass.Poor, 100));
+            Assert.AreEqual(0, market.PlayerHousesOf(SocialClass.Poor));
         }
 
         [Test]
@@ -179,13 +179,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var treasury = new Treasury(10000);
             int stock = market.AvailableOf(0);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => Construction.TryBuildHouse(market, hold, treasury, Cost(), 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Construction.TryBuildHouse(market, hold, treasury, Cost(), SocialClass.Poor, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => Construction.TryBuildWorkshop(market, hold, treasury, Cost(), 1, 0));
 
             Assert.AreEqual(10000, treasury.Gold);
             Assert.AreEqual(1, hold.UnitsOf(0));
             Assert.AreEqual(stock, market.AvailableOf(0));
-            Assert.AreEqual(0, market.PlayerHouses);
+            Assert.AreEqual(0, market.PlayerHousesOf(SocialClass.Poor));
             Assert.AreEqual(0, market.PlayerWorkshopsOf(1));
         }
 
