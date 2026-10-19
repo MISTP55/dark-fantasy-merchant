@@ -11,16 +11,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Iron = 1;
 
         // Children of a row of the city's columns, in order: the city, its population, its beggars, its rich,
-        // wealthy and poor, its housing, its growth since the start. A row of the goods' columns has five cells per good.
+        // wealthy and poor, its growth since the start. A row of the goods' columns has five cells per good.
         private const int NameCell = 0;
         private const int PopulationCell = 1;
         private const int BeggarsCell = 2;
         private const int RichCell = 3;
         private const int WealthyCell = 4;
         private const int PoorCell = 5;
-        private const int HousingCell = 6;
-        private const int GrowthSinceStartCell = 7;
-        private const int CityCells = 8;
+        private const int GrowthSinceStartCell = 6;
+        private const int CityCells = 7;
         private const int CellsPerGood = 5;
 
         // The goods' columns in alphabetical order: "Fer" before "Poisson".
@@ -129,7 +128,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("Riches", ((Label)header[1][RichCell]).text);
             Assert.AreEqual("Aisés", ((Label)header[1][WealthyCell]).text);
             Assert.AreEqual("Pauvres", ((Label)header[1][PoorCell]).text);
-            Assert.AreEqual("Logements", ((Label)header[1][HousingCell]).text);
             Assert.AreEqual("Croiss. totale", ((Label)header[1][GrowthSinceStartCell]).text);
 
             Assert.AreEqual(2 * CellsPerGood, goodHeader[1].childCount);
@@ -495,19 +493,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void FormatHousing_WritesTheHousedOverTheRoom()
-        {
-            Assert.AreEqual("1\u00A0008 / 1\u00A0100", DebugCitiesTable.FormatHousing(1008, 1100));
-        }
-
-        [Test]
-        public void FormatHousing_AddsTheCityHouses_WhenThereAreSome()
-        {
-            Assert.AreEqual("1\u00A0008 / 1\u00A0100", DebugCitiesTable.FormatHousing(1008, 1100, 0));
-            Assert.AreEqual("1\u00A0108 / 1\u00A0200 (+1)", DebugCitiesTable.FormatHousing(1108, 1200, 1));
-        }
-
-        [Test]
         public void FormatWorkers_AddsTheReserve_WhenThereIsOne()
         {
             Assert.AreEqual("45/60 +10", DebugCitiesTable.FormatWorkers(45, 60, 10));
@@ -530,7 +515,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void ARow_WritesTheBeggarsTheirTarget_TheHousing_AndAReserveAfterALayoff()
+        public void ARow_WritesTheBeggarsTheirTarget_TheClasses_AndAReserveAfterALayoff()
         {
             CityMarket city = LabourMarket();
             table.AddCity("Sparia", city);
@@ -541,8 +526,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.Greater(city.ReserveOf(Iron), 0);
             Assert.AreEqual(
                 DebugCitiesTable.FormatBeggars(city.Population.Beggars, city.BeggarTarget), Text(0, BeggarsCell));
-            Assert.AreEqual(
-                DebugCitiesTable.FormatHousing(city.Population.Housed, city.Population.Room), Text(0, HousingCell));
             Assert.AreEqual(
                 DebugCitiesTable.FormatClass(
                     city.Population.CountOf(SocialClass.Poor),
@@ -556,7 +539,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void TheTotalRow_SumsTheBeggarsAndTheirTargets_TheHousedAndTheRoom_AndTheReserves()
+        public void TheTotalRow_SumsTheBeggarsAndTheirTargets_TheClasses_AndTheReserves()
         {
             CityMarket first = LabourMarket();
             CityMarket second = LabourMarket();
@@ -571,10 +554,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 DebugCitiesTable.FormatBeggars(
                     first.Population.Beggars + second.Population.Beggars, first.BeggarTarget + second.BeggarTarget),
                 Total(BeggarsCell));
-            Assert.AreEqual(
-                DebugCitiesTable.FormatHousing(
-                    first.Population.Housed + second.Population.Housed, first.Population.Room + second.Population.Room),
-                Total(HousingCell));
             Assert.AreEqual(
                 DebugCitiesTable.FormatClass(
                     first.Population.CountOf(SocialClass.Poor) + second.Population.CountOf(SocialClass.Poor),

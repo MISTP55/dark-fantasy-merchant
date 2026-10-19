@@ -8,7 +8,7 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// The table of the cities debug panel: one row per city with its population,
-    /// its beggars over the number they tend to, its housed inhabitants over its room, how much it has grown or declined since the game started and, for every good, its stock and what it produces, consumes and
+    /// its beggars over the number they tend to, its rich, wealthy and poor over the room of their houses, how much it has grown or declined since the game started and, for every good, its stock and what it produces, consumes and
     /// gains in a week, the nominal figure first and the one of the last days in brackets,
     /// the workers of its workshop over their maximum and its reserve,
     /// and a last row with the total of every column. Follows the markets while it is shown.
@@ -34,7 +34,6 @@ namespace DarkFantasyMerchant.Game
         private const string NameCellClass = "debug-cities__cell--name";
         private const string PopulationCellClass = "debug-cities__cell--population";
         private const string BeggarsCellClass = "debug-cities__cell--beggars";
-        private const string HousingCellClass = "debug-cities__cell--housing";
         private const string ClassCellClass = "debug-cities__cell--class";
         private const string GrowthSinceStartCellClass = "debug-cities__cell--growth-since-start";
         private const string StockCellClass = "debug-cities__cell--stock";
@@ -69,7 +68,6 @@ namespace DarkFantasyMerchant.Game
             public Label Rich;
             public Label Wealthy;
             public Label Poor;
-            public Label Housing;
             public Label GrowthSinceStart;
             public CityMarket Market;
             public GoodCells[] Goods;
@@ -88,7 +86,6 @@ namespace DarkFantasyMerchant.Game
         private readonly Label totalRich;
         private readonly Label totalWealthy;
         private readonly Label totalPoor;
-        private readonly Label totalHousing;
         private readonly Label totalGrowthSinceStart;
         private readonly GoodCells[] totalGoods;
 
@@ -155,7 +152,6 @@ namespace DarkFantasyMerchant.Game
             totalRich = AddLabel(totalRow, ClassCellClass);
             totalWealthy = AddLabel(totalRow, ClassCellClass);
             totalPoor = AddLabel(totalRow, ClassCellClass);
-            totalHousing = AddLabel(totalRow, HousingCellClass);
             totalGrowthSinceStart = AddLabel(totalRow, GrowthSinceStartCellClass);
             totalContainer.Add(totalRow);
 
@@ -216,17 +212,6 @@ namespace DarkFantasyMerchant.Game
             return satisfaction.HasValue ? $"{text} ({satisfaction.Value.ToString(CultureInfo.InvariantCulture)})" : text;
         }
 
-        /// <summary>
-        /// The housed inhabitants over the room of the houses, followed by the houses the city has
-        /// built of its own when it has: "1 008 / 1 100", "1 108 / 1 200 (+1)".
-        /// </summary>
-        public static string FormatHousing(long housed, long room, long cityHouses = 0)
-        {
-            string text = $"{TreasuryHudController.FormatNumber(housed)} / {TreasuryHudController.FormatNumber(room)}";
-
-            return cityHouses > 0 ? $"{text} (+{TreasuryHudController.FormatNumber(cityHouses)})" : text;
-        }
-
         /// <summary>A rate as the table writes it: "+2,5 %" or "-10,0 %", coloured, or a plain "0,0 %".</summary>
         /// <param name="rate">A share: 0.05 is +5 %.</param>
         public static string FormatRate(double rate)
@@ -266,7 +251,6 @@ namespace DarkFantasyMerchant.Game
                 Rich = AddLabel(element, ClassCellClass),
                 Wealthy = AddLabel(element, ClassCellClass),
                 Poor = AddLabel(element, ClassCellClass),
-                Housing = AddLabel(element, HousingCellClass),
                 GrowthSinceStart = AddLabel(element, GrowthSinceStartCellClass),
                 Market = market,
                 Goods = AddGoodCells(goodElement, goodCount),
@@ -357,7 +341,6 @@ namespace DarkFantasyMerchant.Game
             row.Rich.text = FormatClassOf(market.Population, SocialClass.Rich);
             row.Wealthy.text = FormatClassOf(market.Population, SocialClass.Wealthy);
             row.Poor.text = FormatClassOf(market.Population, SocialClass.Poor);
-            row.Housing.text = FormatHousing(market.Population.Housed, market.Population.Room, market.CityHouses);
             row.GrowthSinceStart.text = FormatRate(market.Population.GrowthSinceStart);
 
             for (int column = 0; column < row.Goods.Length; column++)
@@ -420,24 +403,17 @@ namespace DarkFantasyMerchant.Game
             long startingInhabitants = 0;
             long beggars = 0;
             long beggarTargets = 0;
-            long housed = 0;
-            long room = 0;
-            long cityHouses = 0;
 
             foreach (Row row in rows)
             {
                 beggars += row.Market.Population.Beggars;
                 beggarTargets += row.Market.BeggarTarget;
-                housed += row.Market.Population.Housed;
-                room += row.Market.Population.Room;
-                cityHouses += row.Market.CityHouses;
                 inhabitants += row.Market.Population.Inhabitants;
                 startingInhabitants += row.Market.Population.StartingInhabitants;
             }
 
             totalPopulation.text = TreasuryHudController.FormatNumber(inhabitants);
             totalBeggars.text = FormatBeggars(beggars, beggarTargets);
-            totalHousing.text = FormatHousing(housed, room, cityHouses);
 
             // The growth of the world: all its inhabitants together, against all those it started with.
             totalGrowthSinceStart.text = FormatRate(
@@ -554,7 +530,6 @@ namespace DarkFantasyMerchant.Game
             AddLabel(columns, ClassCellClass).text = "Riches";
             AddLabel(columns, ClassCellClass).text = "Aisés";
             AddLabel(columns, ClassCellClass).text = "Pauvres";
-            AddLabel(columns, HousingCellClass).text = "Logements";
             AddLabel(columns, GrowthSinceStartCellClass).text = "Croiss. totale";
 
             VisualElement goodGroups = NewRow(HeaderRowClass);

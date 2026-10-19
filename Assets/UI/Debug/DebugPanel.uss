@@ -84,10 +84,6 @@
     width: 90px;
 }
 
-.debug-cities__cell--housing {
-    width: 170px;
-}
-
 .debug-cities__cell--class {
     width: 150px;
 }
@@ -110,9 +106,9 @@
     width: 90px;
 }
 
-/* As wide as the name, the population, the beggars, the three classes, the housing and the growth. */
+/* As wide as the name, the population, the beggars, the three classes and the growth. */
 .debug-cities__cell--city-group {
-    width: 1070px;
+    width: 900px;
 }
 
 /* As wide as the stock, the three figures and the workers of a good. */
