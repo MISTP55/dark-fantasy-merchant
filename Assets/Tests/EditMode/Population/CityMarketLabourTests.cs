@@ -55,6 +55,22 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void EveryGood_IsConsumedBeforeAnyWorkshopHires()
+        {
+            // The first good's workshop hires 16 workers from the beggars: 64 more poor. The
+            // second good, after it in the catalogue, is still consumed by the 1 000 of the morning.
+            var goods = new[] { Good, new MarketGood(10, 2, 0, 0) };
+            var market = new CityMarket(goods, TestMarkets.Thresholds, Workforce, 0, TestMarkets.Pricing, 7,
+                new CityPopulation(1000, 100, 1100), TestMarkets.Labour);
+            market.Put(1, 100);
+
+            market.StartDay();
+
+            Assert.AreEqual(26, market.WorkersOf(0));
+            Assert.AreEqual(2d, market.RecentConsumptionOf(1), 1e-9);
+        }
+
+        [Test]
         public void WithoutFreeRoom_NoBeggarIsHired()
         {
             CityMarket market = Market(0, new CityPopulation(1000, 100, 1000));

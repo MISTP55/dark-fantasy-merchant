@@ -438,12 +438,20 @@ namespace DarkFantasyMerchant.Core
         {
             weekLog.StartDay();
 
+            // Every good first, by the inhabitants of the morning: a workshop that hires
+            // changes the poor, so it must not change what the goods after it consume.
+            var consumed = new double[goods.Length];
+
+            for (int i = 0; i < goods.Length; i++)
+            {
+                consumed[i] = Math.Min(stocks[i], DailyConsumptionOf(i));
+                stocks[i] -= consumed[i];
+            }
+
             for (int i = 0; i < goods.Length; i++)
             {
                 MarketGood good = goods[i];
-                double consumed = Math.Min(stocks[i], DailyConsumptionOf(i));
                 double produced = 0d;
-                stocks[i] -= consumed;
 
                 if (good.IsProduced)
                 {
@@ -470,7 +478,7 @@ namespace DarkFantasyMerchant.Core
                     }
                 }
 
-                weekLog.Record(i, produced, consumed);
+                weekLog.Record(i, produced, consumed[i]);
             }
 
             if (Labour != null)

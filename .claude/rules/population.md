@@ -13,7 +13,7 @@ paths:
 - `CityPopulation` (Core): the rich, the wealthy and the poor (`SocialClass`, values per class in `PerClass<T>`), each with its room and its satisfaction, and the beggars, who have no place; held by `CityMarket.Population`. Hired families become poor; only the poor rise into the other classes. Food acts only through the satisfaction. Beggars are the only source of new inhabitants, and they consume nothing.
 - `SocialRule` (Core) holds Patrician III's satisfaction and class formulas, in integer arithmetic as P3's. A market without one (the tests' default) keeps its classes and satisfactions still; it needs a `LabourRule` to have one.
 - The order of a day in `CityMarket.StartDay`, per city:
-  1. consumption, each class at its rate;
+  1. consumption of every good, each class at its rate, before any workshop hires: a hire turns beggars, who consume nothing, into poor;
   2. the city's workshops, in the catalogue's order: hiring (from the beggars only while the poor's satisfaction is above 0), layoffs into a reserve, production (`WorkforceRule`, `LabourRule`);
   3. the satisfaction of the three classes (`SocialRule`);
   4. the player's workshops, which hire from the beggars after the city, never lay off and produce nothing yet (`PlayerDailyOutputOf` is known, `MerchantOutputRule`; their production will need Patrician III's office, the "comptoir");
