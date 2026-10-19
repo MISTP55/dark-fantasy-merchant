@@ -204,6 +204,55 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void OverManyDays_TheHousedStayFourPerWorker_WhateverTheClassesDo()
+        {
+            // A workshop under 30 (it leaks), one of 60, a player's workshop, and a social rule
+            // whose poor end unhappy: hiring, layoffs, leaks, rises, falls and departures all run.
+            MarketGood[] goods = { new MarketGood(10, 2, 20, 0.1), new MarketGood(10, 2, 60, 0.1), new MarketGood(10, 2, 0, 0) };
+            var workforce = new WorkforceRule(16, 8, 4, 1, 1, 60);
+            CityPopulation population = CityPopulation.AtStart(
+                CityMarket.StartingWorkforceOf(goods, workforce), 4, 4d / 17d, new PerClass<int>(40, 70, 140));
+            var market = new CityMarket(goods, TestMarkets.Thresholds, workforce, 7, TestMarkets.Pricing, 7,
+                population, TestMarkets.Labour, null, TestMarkets.Social);
+            market.AddPlayerHouse(SocialClass.Poor, 140);
+            market.AddPlayerWorkshop(0, 30);
+            AssertFourPerWorker(market, "at the start");
+
+            for (int day = 0; day < 200; day++)
+            {
+                // Three days flooded (the workshops lay off), then three days emptied (they hire again).
+                for (int good = 0; good < 2; good++)
+                {
+                    if (day % 6 == 0)
+                    {
+                        market.Put(good, 10000);
+                    }
+                    else if (day % 6 == 3 && market.AvailableOf(good) > 0)
+                    {
+                        market.Take(good, market.AvailableOf(good));
+                    }
+                }
+
+                market.StartDay();
+                AssertFourPerWorker(market, $"on day {day}");
+            }
+
+            Assert.Less(market.Population.SatisfactionOf(SocialClass.Poor), 0);
+        }
+
+        private static void AssertFourPerWorker(CityMarket market, string when)
+        {
+            int employed = 0;
+
+            for (int good = 0; good < market.GoodCount; good++)
+            {
+                employed += market.WorkersOf(good) + market.ReserveOf(good) + market.PlayerWorkersOf(good);
+            }
+
+            Assert.AreEqual(4 * employed, market.Population.Housed, when);
+        }
+
+        [Test]
         public void TheHousingRules_HaveAClassOnceAtMost()
         {
             var twice = new[]

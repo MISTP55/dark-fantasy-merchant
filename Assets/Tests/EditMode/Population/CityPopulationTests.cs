@@ -132,12 +132,29 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void SendToBeggars_KeepsTheWorkersWhoseFamiliesCannotBeTaken()
         {
-            // No class goes below one inhabitant: one of the four comes, the worker stays.
+            // No class goes below one inhabitant: the four cannot all come, so the worker stays
+            // with his whole family, still four housed per worker.
             var population = new CityPopulation(new PerClass<int>(1, 1, 2), 0, HouseRooms);
 
             Assert.AreEqual(1, population.SendToBeggars(1, 4));
-            Assert.AreEqual(3, population.Housed);
-            Assert.AreEqual(1, population.Beggars);
+            Assert.AreEqual(4, population.Housed);
+            Assert.AreEqual(0, population.Beggars);
+
+            // The same worker can leave later without a throw.
+            Assert.DoesNotThrow(() => population.SendToBeggars(1, 4));
+        }
+
+        [Test]
+        public void SendToBeggars_SendsOnlyWholeFamilies()
+        {
+            // Two workers' families out of three classes near one: whatever is kept, the housed
+            // who are left are whole families.
+            var population = new CityPopulation(new PerClass<int>(2, 3, 4), 0, HouseRooms);
+
+            int kept = population.SendToBeggars(2, 4);
+
+            Assert.AreEqual(9 - 4 * (2 - kept), population.Housed);
+            Assert.AreEqual(4 * (2 - kept), population.Beggars);
         }
 
         [Test]

@@ -237,7 +237,7 @@ namespace DarkFantasyMerchant.Core
 
             // The last few, one at a time from the poor up; Patrician III loops forever when no
             // class has more than one inhabitant, which it never reaches.
-            for (int i = (int)SocialClass.Poor; remaining > 0 && Housed > 3; i = i == 0 ? 2 : i - 1)
+            for (int i = (int)SocialClass.Poor; remaining > 0 && AnyClassAboveOne(); i = i == 0 ? 2 : i - 1)
             {
                 if (counts[i] > 1)
                 {
@@ -247,7 +247,23 @@ namespace DarkFantasyMerchant.Core
                 }
             }
 
-            return remaining > 0 ? kept + 1 : kept;
+            if (remaining == 0)
+            {
+                return kept;
+            }
+
+            // One more worker stays, with the part of his family already taken back among the
+            // poor: the housed stay whole families, four per worker.
+            int givenBack = inhabitantsPerWorker - remaining;
+            Beggars -= givenBack;
+            counts[(int)SocialClass.Poor] += givenBack;
+
+            return kept + 1;
+        }
+
+        private bool AnyClassAboveOne()
+        {
+            return counts[0] > 1 || counts[1] > 1 || counts[2] > 1;
         }
 
         /// <summary>Moves inhabitants from one class to another, in the same houses' count.</summary>
