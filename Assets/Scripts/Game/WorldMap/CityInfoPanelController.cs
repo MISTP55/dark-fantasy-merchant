@@ -264,8 +264,9 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         public static string FormatPopulation(int rich, int wealthy, int poor, int beggars)
         {
-            return $"Riches : {TreasuryHudController.FormatNumber(rich)} · Aisés : {TreasuryHudController.FormatNumber(wealthy)} · "
-                + $"Pauvres : {TreasuryHudController.FormatNumber(poor)} · Mendiants : {TreasuryHudController.FormatNumber(beggars)}";
+            // No-break spaces but after the dots: a line that wraps breaks only there.
+            return $"Riches\u00A0:\u00A0{TreasuryHudController.FormatNumber(rich)}\u00A0· Aisés\u00A0:\u00A0{TreasuryHudController.FormatNumber(wealthy)}\u00A0· "
+                + $"Pauvres\u00A0:\u00A0{TreasuryHudController.FormatNumber(poor)}\u00A0· Mendiants\u00A0:\u00A0{TreasuryHudController.FormatNumber(beggars)}";
         }
 
         /// <summary>"Atelier construit à Lübeck : céréales."</summary>

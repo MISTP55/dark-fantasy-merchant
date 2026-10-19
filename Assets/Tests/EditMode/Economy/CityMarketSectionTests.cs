@@ -330,11 +330,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void FormatPopulation_WritesThousandsSeparators()
         {
+            // A line that wraps breaks only after a dot: a class and its number stay together.
             Assert.AreEqual(
-                "Riches : 110 \u00B7 Aisés : 330 \u00B7 Pauvres : 1\u00A0008 \u00B7 Mendiants : 64",
+                "Riches\u00A0:\u00A0110\u00A0\u00B7 Aisés\u00A0:\u00A0330\u00A0\u00B7 Pauvres\u00A0:\u00A01\u00A0008\u00A0\u00B7 Mendiants\u00A0:\u00A064",
                 CityInfoPanelController.FormatPopulation(110, 330, 1008, 64));
             Assert.AreEqual(
-                "Riches : 0 \u00B7 Aisés : 0 \u00B7 Pauvres : 0 \u00B7 Mendiants : 0",
+                "Riches\u00A0:\u00A00\u00A0\u00B7 Aisés\u00A0:\u00A00\u00A0\u00B7 Pauvres\u00A0:\u00A00\u00A0\u00B7 Mendiants\u00A0:\u00A00",
                 CityInfoPanelController.FormatPopulation(0, 0, 0, 0));
         }
 

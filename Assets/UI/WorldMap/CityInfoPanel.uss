@@ -21,6 +21,9 @@
 .city-panel__tag {
     color: rgb(190, 164, 120);
     font-size: 14px;
+
+    /* The four classes of the population do not fit on one line of the column. */
+    white-space: normal;
 }
 
 .city-panel__description {
