@@ -46,6 +46,9 @@ namespace DarkFantasyMerchant.Core
 
             // Units it loaded for a port and has not delivered there, by port then good.
             public int[,] Records;
+
+            // Gold it paid for the units of each good aboard, for the profit of a sale.
+            public long[] CostAboard;
         }
 
         private readonly ShipDocking<TPort> docking;
@@ -122,6 +125,9 @@ namespace DarkFantasyMerchant.Core
         }
 
         public int Count => merchants.Count;
+
+        /// <summary>Raised after every purchase and sale that moved at least one unit, for the debug tools.</summary>
+        public event Action<FleetTrade> Traded;
 
         public bool Contains(Ship ship)
         {
@@ -207,6 +213,7 @@ namespace DarkFantasyMerchant.Core
                 NextPort = -1,
                 Visited = new bool[planner.PortCount],
                 Records = new int[planner.PortCount, planner.GoodCount],
+                CostAboard = new long[planner.GoodCount],
             };
 
             merchants.Add(merchant);
@@ -383,6 +390,12 @@ namespace DarkFantasyMerchant.Core
                 TradeResult bought = Trade.Buy(markets[from], hold, good, cargo[good]);
                 merchant.Profit -= bought.Gold;
                 Record(merchant, to, good, bought.Units);
+
+                if (bought.Units > 0)
+                {
+                    merchant.CostAboard[good] += bought.Gold;
+                    Traded?.Invoke(new FleetTrade(merchant.Ship, markets[from], good, bought.Units, bought.Gold, false, null));
+                }
             }
         }
 
@@ -398,7 +411,7 @@ namespace DarkFantasyMerchant.Core
 
                 if (units > 0)
                 {
-                    merchant.Profit += Trade.Sell(market, hold, good, units).Gold;
+                    Sell(merchant, port, good, units);
                 }
             }
         }
@@ -425,9 +438,27 @@ namespace DarkFantasyMerchant.Core
 
                 if (units > 0d)
                 {
-                    merchant.Profit += Trade.Sell(market, hold, good, (int)units).Gold;
+                    Sell(merchant, port, good, (int)units);
                 }
             }
+        }
+
+        // A sale costs its share of what the units of its good aboard were bought for.
+        private void Sell(Merchant merchant, int port, int good, int units)
+        {
+            CityMarket market = markets[port];
+            int aboard = merchant.Ship.Cargo.UnitsOf(good);
+            TradeResult sold = Trade.Sell(market, merchant.Ship.Cargo, good, units);
+            merchant.Profit += sold.Gold;
+
+            if (sold.Units <= 0)
+            {
+                return;
+            }
+
+            long cost = aboard > 0 ? merchant.CostAboard[good] * sold.Units / aboard : 0;
+            merchant.CostAboard[good] -= cost;
+            Traded?.Invoke(new FleetTrade(merchant.Ship, market, good, sold.Units, sold.Gold, true, sold.Gold - cost));
         }
 
         private void Record(Merchant merchant, int port, int good, int units)

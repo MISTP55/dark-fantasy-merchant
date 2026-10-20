@@ -86,6 +86,17 @@ namespace DarkFantasyMerchant.Game
             return true;
         }
 
+        /// <summary>Every purchase and sale of these merchants' ships, for the debug tools; none before they have started.</summary>
+        public event Action<FleetTrade> Traded;
+
+        /// <summary>Units of a good the ships carry to a city, for the debug tools: 0 for a city they do not trade with, or before they have started.</summary>
+        public int UnderWayTo(CityDefinition city, int good)
+        {
+            int port = fleet != null ? ports.IndexOf(city) : -1;
+
+            return port >= 0 && good >= 0 && good < markets[port].GoodCount ? fleet.UnderWayTo(port, good) : 0;
+        }
+
         /// <summary>For the debug tools.</summary>
         /// <param name="finalDestination">Null when the ship has none.</param>
         /// <returns>False for a ship that is not one of these merchants'.</returns>
@@ -122,7 +133,13 @@ namespace DarkFantasyMerchant.Game
             if (fleet != null)
             {
                 shipsView.StepStarted -= OnStepStarted;
+                fleet.Traded -= OnTraded;
             }
+        }
+
+        private void OnTraded(FleetTrade trade)
+        {
+            Traded?.Invoke(trade);
         }
 
         // Only to start: once started, the fleet advances with the steps of the world's time.
@@ -236,6 +253,7 @@ namespace DarkFantasyMerchant.Game
                     planner,
                     stopoverDays * worldClock.Calendar.SecondsPerDay,
                     travelTable);
+                fleet.Traded += OnTraded;
             }
             catch (ArgumentException exception)
             {
