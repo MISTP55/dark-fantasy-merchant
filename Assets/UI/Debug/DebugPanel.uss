@@ -429,3 +429,68 @@
 .debug-chart--quarter {
     width: 24.2%;
 }
+
+/* The choices over the charts of a sub-tab. */
+.debug-curves__toolbar {
+    flex-direction: row;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.debug-panel__dropdown--labelled {
+    width: auto;
+    margin-right: 16px;
+}
+
+.debug-panel__dropdown--labelled .unity-base-field__label {
+    min-width: 0;
+    margin-right: 6px;
+    color: rgb(222, 210, 188);
+    font-size: 13px;
+}
+
+.debug-panel__dropdown--labelled .unity-base-popup-field__input {
+    width: 240px;
+}
+
+.debug-panel__toggle {
+    margin-right: 16px;
+}
+
+.debug-panel__toggle .unity-toggle__text,
+.debug-panel__toggle .unity-base-field__label {
+    color: rgb(222, 210, 188);
+    font-size: 13px;
+}
+
+/* The curves of the composed chart, each in its colour, with a button that takes it away. */
+.debug-curves__chips {
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.debug-curves__chip {
+    flex-direction: row;
+    align-items: center;
+    margin: 0 6px 6px 0;
+    padding: 0 0 0 8px;
+    border-width: 1px;
+    border-radius: 10px;
+}
+
+.debug-curves__chip Label {
+    font-size: 12px;
+}
+
+.debug-panel .debug-curves__chip-remove {
+    width: 22px;
+    height: 20px;
+    margin: 0;
+    padding: 0;
+    color: rgb(222, 210, 188);
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+}

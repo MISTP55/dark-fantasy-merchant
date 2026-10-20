@@ -550,8 +550,8 @@ namespace DarkFantasyMerchant.Game
                 views[CurvesTab] = new DebugCurvesView(curvesSubtabs, new IDebugView[]
                 {
                     new DebugCityCurvesView(pages[CurvesTab].Q<VisualElement>("city-curves-page"), recorder, goodTitles),
-                    null,
-                    null,
+                    new DebugIndicatorCurvesView(pages[CurvesTab].Q<VisualElement>("indicator-curves-page"), recorder, goodTitles),
+                    new DebugComposedCurvesView(pages[CurvesTab].Q<VisualElement>("composed-curves-page"), recorder, goodTitles),
                 });
             }
         }
