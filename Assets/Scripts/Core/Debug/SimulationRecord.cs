@@ -12,8 +12,11 @@ namespace DarkFantasyMerchant.Core
     {
         private readonly IReadOnlyList<CityMarket> markets;
         private readonly Dictionary<CityMarket, int> cityIndices = new Dictionary<CityMarket, int>();
-        private readonly List<SimulationEvent> events = new List<SimulationEvent>();
-        private readonly List<TradeRecord> trades = new List<TradeRecord>();
+        private readonly TrimmedList<SimulationEvent> events = new TrimmedList<SimulationEvent>();
+        private readonly TrimmedList<TradeRecord> trades = new TrimmedList<TradeRecord>();
+
+        // The events a day finds, before they join the others.
+        private readonly List<SimulationEvent> dayEvents = new List<SimulationEvent>();
 
         // Each city's row of the last day recorded: the history may reuse its own once it is forgotten.
         private readonly float[][] previousRows;
@@ -61,6 +64,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             float[][] rows = History.BeginDay(day);
+            dayEvents.Clear();
 
             for (int city = 0; city < markets.Count; city++)
             {
@@ -68,8 +72,13 @@ namespace DarkFantasyMerchant.Core
                 int cityIndex = city;
                 CitySnapshot.Capture(market, good => underWay(cityIndex, good), rows[city]);
                 CityEventDetector.Detect(
-                    day, city, market, market.LastDay, hasPrevious ? previousRows[city] : null, rows[city], wasHalted[city], events);
+                    day, city, market, market.LastDay, hasPrevious ? previousRows[city] : null, rows[city], wasHalted[city], dayEvents);
                 Array.Copy(rows[city], previousRows[city], rows[city].Length);
+            }
+
+            foreach (SimulationEvent found in dayEvents)
+            {
+                events.Add(found);
             }
 
             hasPrevious = true;
@@ -140,7 +149,7 @@ namespace DarkFantasyMerchant.Core
                 forgotten++;
             }
 
-            events.RemoveRange(0, forgotten);
+            events.RemoveFirst(forgotten);
             EventsTrimmed += forgotten;
             forgotten = 0;
 
@@ -149,7 +158,7 @@ namespace DarkFantasyMerchant.Core
                 forgotten++;
             }
 
-            trades.RemoveRange(0, forgotten);
+            trades.RemoveFirst(forgotten);
         }
     }
 }

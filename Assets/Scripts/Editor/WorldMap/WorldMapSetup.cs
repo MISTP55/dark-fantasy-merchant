@@ -1685,6 +1685,23 @@ namespace DarkFantasyMerchant.Editor
             // Its button that runs the world much faster than the player's fast forward.
             changed |= FillReference(panel, "worldClock", FindInScene<WorldClock>(scene));
 
+            // What the panel shows of the past: recorded from the start, panel open or not.
+            var recorder = FindInScene<SimulationRecorder>(scene);
+
+            if (recorder == null)
+            {
+                var recorderObject = new GameObject("Simulation Recorder");
+                SceneManager.MoveGameObjectToScene(recorderObject, scene);
+                recorder = recorderObject.AddComponent<SimulationRecorder>();
+                changed = true;
+            }
+
+            changed |= FillReference(recorder, "worldEconomy", worldEconomy);
+            changed |= FillReference(recorder, "mapView", mapView);
+            changed |= FillReference(recorder, "worldClock", FindInScene<WorldClock>(scene));
+            changed |= FillReference(recorder, "aiMerchants", FindInScene<AiMerchants>(scene));
+            changed |= FillReference(recorder, "cityPanel", FindInScene<CityInfoPanelController>(scene));
+
             if (changed)
             {
                 SaveSceneChanges(scene, sceneHadUnsavedChanges, "The debug panel");

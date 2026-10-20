@@ -34,6 +34,9 @@ namespace DarkFantasyMerchant.Game
         /// <summary>False until the markets exist, which is in Start, and for good when they could not be made.</summary>
         public bool IsReady { get; private set; }
 
+        /// <summary>Raised once every city's day has been played, with the date of the day that started.</summary>
+        public event Action<GameDate> DayEnded;
+
         /// <returns>The market of a city of the map, or null for another city or before the markets exist.</returns>
         public CityMarket MarketOf(CityDefinition city)
         {
@@ -213,6 +216,8 @@ namespace DarkFantasyMerchant.Game
             {
                 market.StartDay();
             }
+
+            DayEnded?.Invoke(date);
         }
     }
 }
