@@ -1,21 +1,14 @@
-# CLAUDE.md
+## About the project
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## The game
-
-Dark Fantasy Merchant is a maritime trade management and simulation game. The player is a merchant in a dark fantasy world made of coastal cities that trade with each other by sea and by river. The goals are to build a maritime trading empire and to rise through the social hierarchy.
-
-- **Presentation**: 2D pixel art.
-- **Platform**: PC only (keyboard and mouse).
+Dark Fantasy Merchant is a maritime trade management and simulation game, for PC only. The player is a merchant in a dark fantasy world made of coastal cities that trade with each other by sea and by river. The goals are to build a maritime trading empire and to rise through the social hierarchy.
 
 ## Project state
 
-Unity **6000.6.4f1** project, created from the URP 3D template and converted in place to 2D. What exists: the world map, the player's ship with its crew, ports, the date and fast forward, the treasury and weekly wages, notifications, the cities' economy (stocks, workshops, prices, population, buildings), trade, the AI merchants and the in-game debug tools. Nothing else of the game exists yet. `TutorialInfo/` and `SampleScene` are template leftovers and not part of the game.
+Unity **6000.6.4f1** project. What exists: the world map, the player's ship with its crew, ports, the date and fast forward, the treasury and weekly wages, notifications, the cities' economy (stocks, workshops, prices, population, buildings), trade, the AI merchants and the in-game debug tools. Nothing else of the game exists yet.
 
 ## Maintaining this file
 
-Only record here what cannot be read from the code: invariants, pitfalls, the reasons for a choice, the entry points of a system. Values belong in the assets, formulas in the tests and in `patrician3-re\resultats\`, the texts the player reads in the code. When a feature is added, add the few lines a newcomer would need to work on it safely, not its specification.
+Only record here what cannot be read from the code: invariants, pitfalls, the reasons for a choice, the entry points of a system. Values belong in the assets, formulas in the tests, the texts the player reads in the code.
 
 What concerns one subsystem goes in its rule, `.claude/rules/<subsystem>.md`, which Claude Code loads only when a file of that subsystem is read; this file keeps what concerns the whole project.
 
@@ -29,8 +22,6 @@ Code is split into assemblies, each with its own `.asmdef`:
 | `DarkFantasyMerchant.Game` | `Assets/Scripts/Game` | ScriptableObject definitions and thin MonoBehaviour adapters over `Core`. |
 | `DarkFantasyMerchant.Editor` | `Assets/Scripts/Editor` | Editor-only tools. |
 | `DarkFantasyMerchant.Tests.EditMode` | `Assets/Tests/EditMode` | EditMode tests for `Core`. |
-
-Content lives in `Assets/Data`, runtime UI in `Assets/UI`, art in `Assets/Art`, prefabs in `Assets/Prefabs`.
 
 ### Subsystems
 
@@ -80,7 +71,7 @@ There is no CLI build or lint step; compilation happens in the Unity Editor. The
 
 ## Project configuration
 
-- **Rendering**: URP with the **2D Renderer**: sprites are lit by 2D lights (`Light2D`, a global one in the scene); 3D lights and 3D-only URP features do not apply. No Pixel Perfect Camera is set up yet.
+- **Rendering**: URP with the **2D Renderer**: sprites are lit by 2D lights (`Light2D`, a global one in the scene); 3D lights and 3D-only URP features do not apply.
 - **Input**: the new Input System is the only active handler — the legacy `UnityEngine.Input` API will throw. The game uses the `WorldMap` action map of `Assets/InputSystem_Actions.inputactions`; its `Command` action is the right mouse button, which gives orders and never pans. The `Player` map is the template's and is unused.
 - **Build scenes**: only `Assets/Scenes/WorldMap.unity`.
 
