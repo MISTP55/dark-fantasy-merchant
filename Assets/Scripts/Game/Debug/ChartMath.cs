@@ -8,8 +8,8 @@ namespace DarkFantasyMerchant.Game
     /// <summary>The arithmetic of the debug charts: their vertical range and its steps, where a day is drawn, and the dashes of a line.</summary>
     public static class ChartMath
     {
-        // A dash and its gap, in pixels, about.
-        private const float DashPixels = 7f;
+        // The least room between two anchors of the dashes, in pixels.
+        private const float AnchorPixels = 24f;
 
         // Not the French culture: its separators and its minus sign depend on the platform.
         private static readonly NumberFormatInfo TickFormat = new NumberFormatInfo
@@ -138,43 +138,130 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// The days a dash and its gap last: a power of two near seven pixels. Days are what the
-        /// dashes are anchored to, so that they move with the curve rather than along it.
+        /// The days between two anchors of the dashes of a line: a power of two of at least
+        /// 24 pixels. Anchors fall on days of the game, so that the dashes stay where they are as
+        /// days come and go.
         /// </summary>
-        public static float DashPeriodDays(float pixelsPerDay)
+        public static int AnchorPeriodDays(float pixelsPerDay)
         {
             if (pixelsPerDay <= 0f)
             {
-                return 1f;
+                return 1;
             }
 
-            return Mathf.Pow(2f, Mathf.Ceil(Mathf.Log(DashPixels / pixelsPerDay, 2f) - 1e-4f));
+            int days = 1;
+
+            while (days * pixelsPerDay < AnchorPixels - 1e-4f && days < 1 << 20)
+            {
+                days *= 2;
+            }
+
+            return days;
         }
 
         /// <summary>
-        /// The dashes of a line from one day to another, days counted from the start of the game:
-        /// each period starts with a dash that lasts its share of it, whatever day the line starts.
+        /// The dashes of a line, measured along it: a dash starts at each anchor, and the points
+        /// before the first anchor are dashed backwards from it, starting with a gap. Whatever
+        /// point the line starts at, its dashes from that anchor on stay the same: they do not
+        /// crawl along it when the chart loses its first day. Without an anchor, the dashes start
+        /// at the first point.
         /// </summary>
-        public static void DashSpans(double from, double to, double period, double dashShare, List<(double, double)> into)
+        /// <param name="anchors">One per point: whether the pattern starts again there.</param>
+        /// <param name="into">The dashes are added to it, each from one point to another.</param>
+        public static void DashPath(IReadOnlyList<Vector2> points, IReadOnlyList<bool> anchors, float dash, float gap, List<(Vector2, Vector2)> into)
         {
+            if (points == null)
+            {
+                throw new ArgumentNullException(nameof(points));
+            }
+
+            if (anchors == null || anchors.Count < points.Count)
+            {
+                throw new ArgumentException("One anchor flag per point.", nameof(anchors));
+            }
+
             if (into == null)
             {
                 throw new ArgumentNullException(nameof(into));
             }
 
-            if (period <= 0d || to <= from)
+            if (points.Count < 2 || dash <= 0f || gap < 0f)
             {
                 return;
             }
 
-            for (double start = Math.Floor(from / period) * period; start < to; start += period)
-            {
-                double dashStart = Math.Max(start, from);
-                double dashEnd = Math.Min(start + period * dashShare, to);
+            int first = 0;
 
-                if (dashEnd > dashStart)
+            while (first < points.Count && !anchors[first])
+            {
+                first++;
+            }
+
+            if (first == points.Count)
+            {
+                first = 0;
+            }
+
+            // Backwards from the first anchor, a gap first: the dash after the anchor follows on.
+            var walker = new DashWalker(dash, gap, false);
+
+            for (int i = first; i > 0; i--)
+            {
+                walker.Walk(points[i], points[i - 1], into);
+            }
+
+            walker = new DashWalker(dash, gap, true);
+
+            for (int i = first; i < points.Count - 1; i++)
+            {
+                if (anchors[i])
                 {
-                    into.Add((dashStart, dashEnd));
+                    walker = new DashWalker(dash, gap, true);
+                }
+
+                walker.Walk(points[i], points[i + 1], into);
+            }
+        }
+
+        // Walks segments one after the other, switching between dash and gap along their length.
+        private struct DashWalker
+        {
+            private readonly float dash;
+            private readonly float gap;
+            private bool inDash;
+            private float left;
+
+            public DashWalker(float dash, float gap, bool startsWithDash)
+            {
+                this.dash = dash;
+                this.gap = gap;
+                inDash = startsWithDash;
+                left = startsWithDash ? dash : gap;
+            }
+
+            public void Walk(Vector2 from, Vector2 to, List<(Vector2, Vector2)> into)
+            {
+                float length = Vector2.Distance(from, to);
+
+                while (length > 0f)
+                {
+                    float step = Math.Min(left, length);
+                    Vector2 next = Vector2.MoveTowards(from, to, step);
+
+                    if (inDash && step > 0f)
+                    {
+                        into.Add((from, next));
+                    }
+
+                    from = next;
+                    length -= step;
+                    left -= step;
+
+                    if (left <= 1e-5f)
+                    {
+                        inDash = !inDash;
+                        left = inDash ? dash : gap;
+                    }
                 }
             }
         }

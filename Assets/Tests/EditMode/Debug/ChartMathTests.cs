@@ -1,5 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using DarkFantasyMerchant.Game;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace DarkFantasyMerchant.Tests.EditMode
 {
@@ -120,33 +124,77 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(System.Text.RegularExpressions.Regex.Unescape(expected), ChartMath.FormatTick(value, step));
         }
 
-        [TestCase(1f, 8f)]
-        [TestCase(0.5f, 16f)]
-        [TestCase(7f, 1f)]
-        [TestCase(10f, 1f)]
-        [TestCase(20f, 0.5f)]
-        [TestCase(0f, 1f)]
-        public void DashPeriodDays_IsAPowerOfTwo_OfAboutSevenPixels(float pixelsPerDay, float expected)
+        [TestCase(1f, 32)]
+        [TestCase(0.5f, 64)]
+        [TestCase(0.7f, 64)]
+        [TestCase(24f, 1)]
+        [TestCase(30f, 1)]
+        [TestCase(0f, 1)]
+        public void AnchorPeriodDays_IsAPowerOfTwo_OfAtLeast24Pixels(float pixelsPerDay, int expected)
         {
-            Assert.AreEqual(expected, ChartMath.DashPeriodDays(pixelsPerDay));
+            Assert.AreEqual(expected, ChartMath.AnchorPeriodDays(pixelsPerDay));
+        }
+
+        // The dashes of a line, as spans of x, in the order of x.
+        private static List<(float, float)> SpansOf(Vector2[] points, bool[] anchors)
+        {
+            var dashes = new List<(Vector2, Vector2)>();
+            ChartMath.DashPath(points, anchors, 4f, 3f, dashes);
+            return dashes.Select(dash => ((float)Math.Round(Math.Min(dash.Item1.x, dash.Item2.x), 3), (float)Math.Round(Math.Max(dash.Item1.x, dash.Item2.x), 3)))
+                .OrderBy(span => span.Item1).ToList();
+        }
+
+        private static Vector2[] Flat(params float[] xs)
+        {
+            return xs.Select(x => new Vector2(x, 0f)).ToArray();
         }
 
         [Test]
-        public void DashSpans_AreAnchoredToTheDays_NotToTheStartOfTheLine()
+        public void DashPath_StartsADashAtTheAnchor_AndAGapBeforeIt()
         {
-            var spans = new System.Collections.Generic.List<(double, double)>();
+            List<(float, float)> spans = SpansOf(Flat(0f, 10f, 20f, 30f), new[] { false, false, true, false });
 
-            ChartMath.DashSpans(0d, 3d, 2d, 0.5d, spans);
-            CollectionAssert.AreEqual(new[] { (0d, 1d), (2d, 3d) }, spans);
+            CollectionAssert.AreEqual(new[] { (0f, 3f), (6f, 10f), (13f, 17f), (20f, 24f), (27f, 30f) }, spans);
+        }
 
-            // The same days drawn from another start: the dashes stay where they were.
-            spans.Clear();
-            ChartMath.DashSpans(1.5d, 2.5d, 2d, 0.5d, spans);
-            CollectionAssert.AreEqual(new[] { (2d, 2.5d) }, spans);
+        [Test]
+        public void DashPath_DoesNotMove_WhenTheLineLosesItsFirstPoints()
+        {
+            // The same line from x = 5: the dashes it still has are where they were.
+            List<(float, float)> spans = SpansOf(Flat(5f, 10f, 20f, 30f), new[] { false, false, true, false });
 
-            spans.Clear();
-            ChartMath.DashSpans(3d, 4.6d, 1d, 0.5d, spans);
-            CollectionAssert.AreEqual(new[] { (3d, 3.5d), (4d, 4.5d) }, spans);
+            CollectionAssert.AreEqual(new[] { (6f, 10f), (13f, 17f), (20f, 24f), (27f, 30f) }, spans);
+        }
+
+        [Test]
+        public void DashPath_MeasuresTheDashesAlongTheLine_HoweverSteep()
+        {
+            var dashes = new List<(Vector2, Vector2)>();
+
+            ChartMath.DashPath(new[] { new Vector2(0f, 0f), new Vector2(1f, 20f), new Vector2(2f, 0f) }, new[] { true, false, false }, 4f, 3f, dashes);
+
+            Assert.Greater(dashes.Count, 4);
+
+            // Every dash is 4 pixels long, but the one cut by the end and the one that turns the corner.
+            Assert.AreEqual(4f, Vector2.Distance(dashes[0].Item1, dashes[0].Item2), 1e-3f);
+            Assert.AreEqual(4f, Vector2.Distance(dashes[1].Item1, dashes[1].Item2), 1e-3f);
+            Assert.IsTrue(dashes.All(dash => Vector2.Distance(dash.Item1, dash.Item2) <= 4f + 1e-3f));
+        }
+
+        [Test]
+        public void DashPath_StartsAgainAtEveryAnchor()
+        {
+            List<(float, float)> spans = SpansOf(Flat(0f, 10f, 20f), new[] { true, true, false });
+
+            CollectionAssert.AreEqual(new[] { (0f, 4f), (7f, 10f), (10f, 14f), (17f, 20f) }, spans);
+        }
+
+        [Test]
+        public void DashPath_WithoutAnAnchor_StartsAtTheFirstPoint()
+        {
+            List<(float, float)> spans = SpansOf(Flat(0f, 10f), new[] { false, false });
+
+            CollectionAssert.AreEqual(new[] { (0f, 4f), (7f, 10f) }, spans);
         }
     }
 }

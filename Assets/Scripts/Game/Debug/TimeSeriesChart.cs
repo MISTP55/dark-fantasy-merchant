@@ -61,8 +61,8 @@ namespace DarkFantasyMerchant.Game
         private const string TimeClass = "debug-chart__time";
         private const string TooltipClass = "debug-chart__tooltip";
 
-        // The share of a dash's period that is drawn, the rest being its gap.
-        private const double DashShare = 4d / 7d;
+        private const float DashLength = 4f;
+        private const float GapLength = 3f;
 
         // The room a label of each axis needs, in pixels.
         private const float ValueLabelSpacing = 22f;
@@ -96,7 +96,11 @@ namespace DarkFantasyMerchant.Game
         private readonly List<Scale> scales = new List<Scale>();
         private readonly List<(float Min, float Max)> ownRanges = new List<(float, float)>();
         private readonly List<ChartTick> ticks = new List<ChartTick>();
-        private readonly List<(double, double)> dashes = new List<(double, double)>();
+        private readonly List<(Vector2, Vector2)> dashes = new List<(Vector2, Vector2)>();
+
+        // The points of a dashed line since its last break, and whether each is an anchor of its dashes.
+        private readonly List<Vector2> runPoints = new List<Vector2>();
+        private readonly List<bool> runAnchors = new List<bool>();
         private readonly StringBuilder tooltipText = new StringBuilder();
 
         private int firstDay;
@@ -573,8 +577,9 @@ namespace DarkFantasyMerchant.Game
             painter.Fill();
         }
 
-        // NaN breaks the line. A dashed line is cut on the days of the game, not along its length
-        // from its first point: its dashes move with the curve as days come and go, and do not crawl.
+        // NaN breaks the line. A dashed line is measured along its length, but from anchors on
+        // days of the game rather than from its first point: from there, its dashes crawled along
+        // the curve each time a day came or went, which flickered.
         private void StrokeLine(Painter2D painter, Rect rect, float[] values, Color color, bool dashed, float low, float high)
         {
             painter.strokeColor = color;
@@ -582,53 +587,57 @@ namespace DarkFantasyMerchant.Game
             painter.BeginPath();
 
             int last = Math.Min(count, values.Length);
-            double period = count > 1 ? ChartMath.DashPeriodDays(rect.width / (count - 1)) : 1d;
+            int period = count > 1 ? ChartMath.AnchorPeriodDays(rect.width / (count - 1)) : 1;
             bool drawing = false;
-            Vector2 previous = default;
+            runPoints.Clear();
+            runAnchors.Clear();
 
             for (int day = 0; day < last; day++)
             {
                 if (float.IsNaN(values[day]))
                 {
                     drawing = false;
+                    DashRun(painter);
                     continue;
                 }
 
                 Vector2 point = PointOf(rect, day, values[day], low, high);
 
-                if (!drawing)
+                if (dashed)
                 {
-                    if (!dashed)
-                    {
-                        painter.MoveTo(point);
-                    }
-
-                    drawing = true;
-                    previous = point;
-                    continue;
+                    runPoints.Add(point);
+                    runAnchors.Add((firstDay + day) % period == 0);
                 }
-
-                if (!dashed)
+                else if (drawing)
                 {
                     painter.LineTo(point);
-                    previous = point;
-                    continue;
                 }
-
-                double from = firstDay + day - 1;
-                dashes.Clear();
-                ChartMath.DashSpans(from, from + 1d, period, DashShare, dashes);
-
-                foreach ((double start, double end) in dashes)
+                else
                 {
-                    painter.MoveTo(Vector2.Lerp(previous, point, (float)(start - from)));
-                    painter.LineTo(Vector2.Lerp(previous, point, (float)(end - from)));
+                    painter.MoveTo(point);
                 }
 
-                previous = point;
+                drawing = true;
             }
 
+            DashRun(painter);
             painter.Stroke();
+        }
+
+        // The dashes of the points gathered since the last break of the line.
+        private void DashRun(Painter2D painter)
+        {
+            dashes.Clear();
+            ChartMath.DashPath(runPoints, runAnchors, DashLength, GapLength, dashes);
+
+            foreach ((Vector2 from, Vector2 to) in dashes)
+            {
+                painter.MoveTo(from);
+                painter.LineTo(to);
+            }
+
+            runPoints.Clear();
+            runAnchors.Clear();
         }
 
         private Vector2 PointOf(Rect rect, int day, float value, float low, float high)
