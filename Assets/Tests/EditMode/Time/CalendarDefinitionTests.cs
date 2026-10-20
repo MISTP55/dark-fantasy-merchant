@@ -32,7 +32,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(7, calendar.DaysPerWeek);
             Assert.AreEqual(30f, calendar.SecondsPerDay);
             Assert.AreEqual(60f, calendar.FastForwardMultiplier);
-            Assert.AreEqual(600f, calendar.TurboMultiplier);
         }
 
         [Test]
@@ -70,11 +69,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             clock.SetFastForward(true);
             clock.Advance(0.5f);
             Assert.AreEqual("3 Janvis 932", calendar.Format(clock.Date));
-
-            // 20 days a second.
-            clock.SetSpeed(GameSpeed.Turbo);
-            clock.Advance(1f);
-            Assert.AreEqual("23 Janvis 932", calendar.Format(clock.Date));
         }
 
         [TestCase(0)]

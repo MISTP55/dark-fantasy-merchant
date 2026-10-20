@@ -11,16 +11,13 @@ namespace DarkFantasyMerchant.Game
     /// the player's and the others, with what they are doing and carrying. Opened and
     /// closed with the debug key of the map's input; exists only in the Editor and in
     /// development builds. Reads the simulation and changes nothing, but for the buttons
-    /// of the ships tab, which add and remove the ships of the AI merchants, and the one
-    /// that runs the world much faster than the player's fast forward.
+    /// of the ships tab, which add and remove the ships of the AI merchants, and the slider
+    /// of the header, which speeds the world's normal speed up.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class DebugPanelController : MonoBehaviour
     {
         private const string SelectedTabClass = "debug-panel__tab--selected";
-        private const string ActiveTurboClass = "debug-panel__turbo--active";
-        private const string TurboText = "Avance très rapide";
-        private const string NormalSpeedText = "Vitesse normale";
 
         [SerializeField] private WorldEconomy worldEconomy;
         [SerializeField] private WorldMapView mapView;
@@ -32,7 +29,7 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Optional. Without it, the ships tab shows no profit and has no button to add or remove a ship.")]
         [SerializeField] private AiMerchants aiMerchants;
 
-        [Tooltip("Optional. Without it, the panel has no button to run the world faster.")]
+        [Tooltip("Optional. Without it, the panel has no slider to speed the world up.")]
         [SerializeField] private WorldClock worldClock;
 
         private VisualElement panel;
@@ -50,7 +47,9 @@ namespace DarkFantasyMerchant.Game
         private Button shipsTab;
         private Button closeButton;
         private Button addShipButton;
-        private Button turboButton;
+        private VisualElement speed;
+        private Label speedLabel;
+        private SliderInt speedSlider;
 
         // Null without a usable world clock.
         private GameClock clock;
@@ -118,12 +117,15 @@ namespace DarkFantasyMerchant.Game
             shipsTab = root.Q<Button>("ships-tab");
             closeButton = root.Q<Button>("close-button");
             addShipButton = root.Q<Button>("add-ship-button");
-            turboButton = root.Q<Button>("turbo-button");
+            speed = root.Q<VisualElement>("speed");
+            speedLabel = root.Q<Label>("speed-label");
+            speedSlider = root.Q<SliderInt>("speed-slider");
 
             if (panel == null || citiesPage == null || shipsPage == null || citiesHeader == null || citiesRows == null
                 || citiesTotals == null || goodsHeader == null || goodsRows == null || goodsTotals == null
                 || shipsHeader == null || shipsRows == null || citiesTab == null
-                || shipsTab == null || closeButton == null || addShipButton == null || turboButton == null)
+                || shipsTab == null || closeButton == null || addShipButton == null || speed == null
+                || speedLabel == null || speedSlider == null)
             {
                 Debug.LogError("DebugPanel.uxml is missing an expected element.", this);
                 root.style.display = DisplayStyle.None;
@@ -154,19 +156,19 @@ namespace DarkFantasyMerchant.Game
             closeButton.focusable = false;
             citiesTab.focusable = false;
             shipsTab.focusable = false;
-            turboButton.focusable = false;
+            speedSlider.focusable = false;
 
             clock = worldClock != null && worldClock.IsReady ? worldClock.Clock : null;
 
             if (clock == null)
             {
-                turboButton.style.display = DisplayStyle.None;
+                speed.style.display = DisplayStyle.None;
             }
             else
             {
-                turboButton.clicked += ToggleTurbo;
-                clock.SpeedChanged += ShowSpeed;
-                ShowSpeed(clock.Speed);
+                speedSlider.SetValueWithoutNotify(Mathf.RoundToInt(clock.NormalSpeedMultiplier));
+                speedSlider.RegisterValueChangedCallback(OnSpeedChanged);
+                ShowSpeed();
             }
 
             closeButton.clicked += Close;
@@ -192,8 +194,7 @@ namespace DarkFantasyMerchant.Game
 
             if (clock != null)
             {
-                turboButton.clicked -= ToggleTurbo;
-                clock.SpeedChanged -= ShowSpeed;
+                speedSlider.UnregisterValueChangedCallback(OnSpeedChanged);
             }
 
             // Stops listening to the markets.
@@ -272,17 +273,16 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        // A fast forward like the player's: the map is only watched, and any input ends it.
-        private void ToggleTurbo()
+        // The normal speed, not a fast forward: the map stays playable.
+        private void OnSpeedChanged(ChangeEvent<int> change)
         {
-            clock.SetSpeed(clock.Speed == GameSpeed.Turbo ? GameSpeed.Normal : GameSpeed.Turbo);
+            clock.SetNormalSpeedMultiplier(change.newValue);
+            ShowSpeed();
         }
 
-        private void ShowSpeed(GameSpeed speed)
+        private void ShowSpeed()
         {
-            bool isTurbo = speed == GameSpeed.Turbo;
-            turboButton.text = isTurbo ? NormalSpeedText : TurboText;
-            turboButton.EnableInClassList(ActiveTurboClass, isTurbo);
+            speedLabel.text = $"Vitesse ×{Mathf.RoundToInt(clock.NormalSpeedMultiplier)}";
         }
 
         // In the port of a city with the fewest AI ships homed there, at random among ties.

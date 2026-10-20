@@ -7,10 +7,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
 {
     public class GameClockTests
     {
-        // 30 seconds per day, fast forward x60, turbo x1800, the game's calendar.
+        // 30 seconds per day, fast forward x60, the game's calendar.
         private static GameClock NewClock()
         {
-            return new GameClock(30f, 60f, 1800f, 932, 12, 30);
+            return new GameClock(30f, 60f, 932, 12, 30);
         }
 
         [Test]
@@ -21,8 +21,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(new GameDate(932, 1, 1), clock.Date);
             Assert.AreEqual(0, clock.ElapsedDays);
             Assert.AreEqual(0f, clock.DeltaTime);
-            Assert.AreEqual(GameSpeed.Normal, clock.Speed);
             Assert.IsFalse(clock.IsFastForward);
+            Assert.AreEqual(1f, clock.NormalSpeedMultiplier);
         }
 
         [Test]
@@ -189,26 +189,52 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void Turbo_MultipliesThePaceByItsOwnMultiplier()
+        public void TheNormalSpeedMultiplier_SpeedsTheNormalSpeedUp_WithoutAFastForward()
         {
             GameClock clock = NewClock();
-            clock.SetSpeed(GameSpeed.Turbo);
+            clock.SetNormalSpeedMultiplier(600f);
 
-            // 60 days a second.
+            // 20 days a second.
             clock.Advance(1f);
 
-            Assert.IsTrue(clock.IsFastForward);
-            Assert.AreEqual(60, clock.ElapsedDays);
-            Assert.AreEqual(1800f, clock.DeltaTime, 1e-2f);
+            Assert.IsFalse(clock.IsFastForward);
+            Assert.AreEqual(20, clock.ElapsedDays);
+            Assert.AreEqual(600f, clock.DeltaTime, 1e-2f);
         }
 
-        [TestCase(GameSpeed.Normal, 7f)]
-        [TestCase(GameSpeed.FastForward, 0.5f)]
-        [TestCase(GameSpeed.Turbo, 1f)]
-        public void AnAdvance_IsCutIntoEqualSteps_OfATenthOfADayAtMost(GameSpeed speed, float realSeconds)
+        [Test]
+        public void FastForward_KeepsItsOwnMultiplier_WhateverTheNormalSpeed()
         {
             GameClock clock = NewClock();
-            clock.SetSpeed(speed);
+            clock.SetNormalSpeedMultiplier(600f);
+            clock.SetFastForward(true);
+
+            clock.Advance(0.5f);
+
+            Assert.AreEqual(30f, clock.DeltaTime, 1e-4f);
+        }
+
+        [TestCase(0f)]
+        [TestCase(-1f)]
+        [TestCase(float.NaN)]
+        [TestCase(float.PositiveInfinity)]
+        public void AnInvalidNormalSpeedMultiplier_IsRejected(float multiplier)
+        {
+            GameClock clock = NewClock();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => clock.SetNormalSpeedMultiplier(multiplier));
+            Assert.AreEqual(1f, clock.NormalSpeedMultiplier);
+        }
+
+        [TestCase(1f, false, 7f)]
+        [TestCase(1f, true, 0.5f)]
+        [TestCase(600f, false, 1f)]
+        public void AnAdvance_IsCutIntoEqualSteps_OfATenthOfADayAtMost(
+            float normalSpeedMultiplier, bool isFastForward, float realSeconds)
+        {
+            GameClock clock = NewClock();
+            clock.SetNormalSpeedMultiplier(normalSpeedMultiplier);
+            clock.SetFastForward(isFastForward);
             var steps = new List<float>();
             clock.Stepped += steps.Add;
 
@@ -246,14 +272,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AFastAdvance_HasStepsOnEachOfItsDays()
         {
             GameClock clock = NewClock();
-            clock.SetSpeed(GameSpeed.Turbo);
+            clock.SetNormalSpeedMultiplier(600f);
             var daysSeenByTheSteps = new HashSet<int>();
             clock.Stepped += _ => daysSeenByTheSteps.Add(clock.ElapsedDays);
 
-            // 60 days in one frame: the steps run through each of them, not over them.
+            // 20 days in one frame: the steps run through each of them, not over them.
             clock.Advance(1f);
 
-            for (int day = 1; day <= 60; day++)
+            for (int day = 1; day <= 20; day++)
             {
                 Assert.IsTrue(daysSeenByTheSteps.Contains(day), $"No step on day {day}.");
             }
@@ -263,29 +289,28 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AStepListener_ThatChangesTheSpeed_ChangesItFromTheNextStep()
         {
             GameClock clock = NewClock();
-            clock.SetSpeed(GameSpeed.Turbo);
+            clock.SetNormalSpeedMultiplier(600f);
             int steps = 0;
             clock.Stepped += _ =>
             {
                 if (++steps == 2)
                 {
-                    clock.SetSpeed(GameSpeed.Normal);
+                    clock.SetNormalSpeedMultiplier(1f);
                 }
             };
 
-            // At x1800, a hundredth of a second is 18 seconds, six steps of 3 seconds. Two
-            // pass, then the four sixths of the real time left pass at normal speed.
-            clock.Advance(0.01f);
+            // At x600, three hundredths of a second are 18 seconds, six steps of 3 seconds.
+            // Two pass, then the four sixths of the real time left pass at x1.
+            clock.Advance(0.03f);
 
-            Assert.AreEqual(6f + 0.01f * 4f / 6f, clock.DeltaTime, 1e-4f);
-            Assert.AreEqual(GameSpeed.Normal, clock.Speed);
+            Assert.AreEqual(6f + 0.03f * 4f / 6f, clock.DeltaTime, 1e-4f);
         }
 
         [Test]
         public void AnAdvanceThatNeedsTooManySteps_DropsTheTimeTheyCannotHold()
         {
-            var clock = new GameClock(30f, 60f, float.MaxValue, 932, 12, 30);
-            clock.SetSpeed(GameSpeed.Turbo);
+            GameClock clock = NewClock();
+            clock.SetNormalSpeedMultiplier(float.MaxValue);
             int steps = 0;
             clock.Stepped += _ => steps++;
 
@@ -295,42 +320,20 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(GameClock.MaxStepsPerAdvance * 3f, clock.DeltaTime, 1f);
         }
 
-        [Test]
-        public void SpeedChanged_IsRaisedOnEveryChange_FastForwardChangedWhenItStartsOrEnds()
-        {
-            GameClock clock = NewClock();
-            var speeds = new List<GameSpeed>();
-            var fastForwards = new List<bool>();
-            clock.SpeedChanged += speeds.Add;
-            clock.FastForwardChanged += fastForwards.Add;
-
-            clock.SetSpeed(GameSpeed.FastForward);
-            clock.SetSpeed(GameSpeed.Turbo);
-            clock.SetSpeed(GameSpeed.Turbo);
-            clock.SetSpeed(GameSpeed.Normal);
-
-            CollectionAssert.AreEqual(new[] { GameSpeed.FastForward, GameSpeed.Turbo, GameSpeed.Normal }, speeds);
-            CollectionAssert.AreEqual(new[] { true, false }, fastForwards);
-        }
-
-        [TestCase(0f, 60f, 1800f, 12, 30)]
-        [TestCase(-30f, 60f, 1800f, 12, 30)]
-        [TestCase(float.NaN, 60f, 1800f, 12, 30)]
-        [TestCase(float.PositiveInfinity, 60f, 1800f, 12, 30)]
-        [TestCase(30f, 0f, 1800f, 12, 30)]
-        [TestCase(30f, float.NaN, 1800f, 12, 30)]
-        [TestCase(30f, float.PositiveInfinity, 1800f, 12, 30)]
-        [TestCase(30f, 60f, 0f, 12, 30)]
-        [TestCase(30f, 60f, float.NaN, 12, 30)]
-        [TestCase(30f, 60f, float.PositiveInfinity, 12, 30)]
-        [TestCase(30f, 60f, 1800f, 0, 30)]
-        [TestCase(30f, 60f, 1800f, 12, 0)]
+        [TestCase(0f, 60f, 12, 30)]
+        [TestCase(-30f, 60f, 12, 30)]
+        [TestCase(float.NaN, 60f, 12, 30)]
+        [TestCase(float.PositiveInfinity, 60f, 12, 30)]
+        [TestCase(30f, 0f, 12, 30)]
+        [TestCase(30f, float.NaN, 12, 30)]
+        [TestCase(30f, float.PositiveInfinity, 12, 30)]
+        [TestCase(30f, 60f, 0, 30)]
+        [TestCase(30f, 60f, 12, 0)]
         public void InvalidSettings_AreRejected(
-            float secondsPerDay, float fastForwardMultiplier, float turboMultiplier, int monthsPerYear, int daysPerMonth)
+            float secondsPerDay, float fastForwardMultiplier, int monthsPerYear, int daysPerMonth)
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new GameClock(
-                    secondsPerDay, fastForwardMultiplier, turboMultiplier, 932, monthsPerYear, daysPerMonth));
+                () => new GameClock(secondsPerDay, fastForwardMultiplier, 932, monthsPerYear, daysPerMonth));
         }
     }
 }

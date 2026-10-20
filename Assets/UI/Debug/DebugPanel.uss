@@ -207,17 +207,42 @@
     background-color: rgb(96, 72, 44);
 }
 
-/* In the header, as tall as the tabs and the close button. */
-.debug-panel .debug-panel__turbo {
-    height: 28px;
+/* In the header, between the tabs and the close button. */
+.debug-panel__speed {
+    flex-direction: row;
+    flex-shrink: 0;
+    align-items: center;
     margin-right: 12px;
 }
 
-/* Lit while the world runs at its speed, like the fast forward button of the date. */
-.debug-panel .debug-panel__turbo--active,
-.debug-panel .debug-panel__turbo--active:hover:enabled {
-    color: rgb(24, 17, 12);
-    background-color: rgb(255, 140, 51);
+/* As wide as its longest text, "Vitesse ×600": the slider does not move while it is dragged. */
+.debug-panel__speed-label {
+    width: 96px;
+    margin: 0 8px 0 0;
+    padding: 0;
+    color: rgb(222, 210, 188);
+    font-size: 13px;
+    -unity-text-align: middle-right;
+}
+
+.debug-panel__speed-slider {
+    width: 200px;
+    margin: 0;
+}
+
+/* Without a height, the drag area is flat and the tracker, centered on it, sits above the label. */
+.debug-panel__speed-slider #unity-drag-container {
+    height: 24px;
+}
+
+/* The theme's tracker and dragger, in the panel's colors. */
+.debug-panel__speed-slider #unity-tracker {
+    background-color: rgb(44, 32, 22);
+    border-color: rgb(110, 84, 52);
+}
+
+.debug-panel__speed-slider #unity-dragger {
+    background-color: rgb(190, 164, 120);
     border-color: rgb(240, 226, 196);
 }
 
