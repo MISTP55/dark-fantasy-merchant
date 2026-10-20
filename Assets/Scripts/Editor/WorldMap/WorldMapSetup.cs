@@ -1701,6 +1701,7 @@ namespace DarkFantasyMerchant.Editor
             changed |= FillReference(recorder, "worldClock", FindInScene<WorldClock>(scene));
             changed |= FillReference(recorder, "aiMerchants", FindInScene<AiMerchants>(scene));
             changed |= FillReference(recorder, "cityPanel", FindInScene<CityInfoPanelController>(scene));
+            changed |= FillReference(panel, "recorder", recorder);
 
             if (changed)
             {

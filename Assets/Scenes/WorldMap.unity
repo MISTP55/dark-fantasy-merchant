@@ -1151,6 +1151,7 @@ MonoBehaviour:
   shipsView: {fileID: 948842205}
   aiMerchants: {fileID: 1729984784}
   worldClock: {fileID: 1809179065}
+  recorder: {fileID: 1543484805}
 --- !u!114 &1723824572
 MonoBehaviour:
   m_ObjectHideFlags: 0

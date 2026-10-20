@@ -8,11 +8,10 @@
     padding-bottom: 16px;
 }
 
-/* A panel as wide and as tall as its table, down to the bottom of the screen, scrolled when it does not fit. */
+/* Most of the screen under the date, whatever its tab: the charts need room. Only a page's content scrolls. */
 .debug-panel {
-    width: auto;
-    max-width: 96%;
-    max-height: 100%;
+    width: 90%;
+    height: 100%;
 }
 
 .debug-cities__legend {
@@ -157,9 +156,47 @@
     -unity-font-style: bold;
 }
 
-/* Shrinks with the panel, so that its table scrolls. */
+/* Fills the panel and shrinks with it, so that its content scrolls. */
 .debug-panel__page {
+    flex-grow: 1;
     flex-shrink: 1;
+}
+
+/* The sub-tabs of a tab, over its pages. */
+.debug-panel__subtabs {
+    flex-direction: row;
+    flex-shrink: 0;
+    margin-bottom: 8px;
+}
+
+.debug-panel .debug-panel__subtab {
+    height: 24px;
+    font-size: 13px;
+}
+
+/* In the header, before the speed. */
+.debug-panel__horizon {
+    flex-direction: row;
+    flex-shrink: 0;
+    align-items: center;
+    margin-right: 12px;
+}
+
+.debug-panel__horizon-label {
+    width: auto;
+}
+
+/* A drop-down list of the panel, in its colors. */
+.debug-panel__dropdown {
+    width: 150px;
+    margin: 0;
+}
+
+.debug-panel__dropdown .unity-base-popup-field__input {
+    color: rgb(222, 210, 188);
+    background-color: rgb(44, 32, 22);
+    border-color: rgb(110, 84, 52);
+    border-radius: 0;
 }
 
 .debug-ships__cell--name {

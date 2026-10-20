@@ -6,18 +6,24 @@ using UnityEngine.UIElements;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The debug tools' panel, with one tab per tool: the cities, with their population
-    /// and the weekly production, consumption and net gain of every good, and the ships,
-    /// the player's and the others, with what they are doing and carrying. Opened and
-    /// closed with the debug key of the map's input; exists only in the Editor and in
-    /// development builds. Reads the simulation and changes nothing, but for the buttons
-    /// of the ships tab, which add and remove the ships of the AI merchants, and the slider
-    /// of the header, which speeds the world's normal speed up.
+    /// The debug tools' panel, in five tabs: the cities as they are, the curves of their past, the
+    /// events of their days, the trades in their markets, and the ships, the player's and the
+    /// others, with what they are doing and carrying. The header chooses how far back the record
+    /// goes and speeds the world's normal speed up. Opened and closed with the debug key of the
+    /// map's input; exists only in the Editor and in development builds. Reads the simulation and
+    /// changes nothing, but for the buttons of the ships tab, which add and remove the ships of
+    /// the AI merchants, and the slider of the header.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class DebugPanelController : MonoBehaviour
     {
-        private const string SelectedTabClass = "debug-panel__tab--selected";
+        private const int CitiesTab = 0;
+        private const int CurvesTab = 1;
+        private const int EventsTab = 2;
+        private const int TradesTab = 3;
+        private const int ShipsTab = 4;
+
+        private static readonly string[] TabNames = { "cities", "curves", "events", "trades", "ships" };
 
         [SerializeField] private WorldEconomy worldEconomy;
         [SerializeField] private WorldMapView mapView;
@@ -32,9 +38,12 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Optional. Without it, the panel has no slider to speed the world up.")]
         [SerializeField] private WorldClock worldClock;
 
+        [Tooltip("Optional. Without it, the curves, events and trades tabs have nothing to show.")]
+        [SerializeField] private SimulationRecorder recorder;
+
         private VisualElement panel;
-        private VisualElement citiesPage;
-        private VisualElement shipsPage;
+        private readonly Button[] tabButtons = new Button[TabNames.Length];
+        private readonly VisualElement[] pages = new VisualElement[TabNames.Length];
         private VisualElement citiesHeader;
         private VisualElement citiesRows;
         private VisualElement citiesTotals;
@@ -43,29 +52,37 @@ namespace DarkFantasyMerchant.Game
         private VisualElement goodsTotals;
         private VisualElement shipsHeader;
         private VisualElement shipsRows;
-        private Button citiesTab;
-        private Button shipsTab;
+        private Label unavailable;
         private Button closeButton;
         private Button addShipButton;
         private VisualElement speed;
         private Label speedLabel;
         private SliderInt speedSlider;
+        private VisualElement horizon;
+        private DropdownField horizonField;
 
         // Null without a usable world clock.
         private GameClock clock;
 
         // Made the first time the panel is opened: the world's economy starts after this panel is enabled.
-        private DebugCitiesTable citiesTable;
+        private DebugTabs tabs;
         private DebugShipsTable shipsTable;
+        private readonly IDebugView[] views = new IDebugView[TabNames.Length];
+
+        // The sub-tabs of the tabs whose views come later; each view will own its own.
+        private DebugTabs curvesSubtabs;
+        private DebugTabs tradesSubtabs;
 
         // Reused by every refresh of the ships tab.
         private readonly List<DebugShipInfo> shipInfos = new List<DebugShipInfo>();
 
+        private IDebugView shownView;
         private bool isBound;
         private bool isOpen;
 
-        // Kept while the panel is closed: it opens on the tab it was last on.
-        private bool showsShips;
+        // The record has days the shown view has not drawn.
+        private bool isDirty;
+        private bool followsRecord;
 
         private void OnEnable()
         {
@@ -102,30 +119,7 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            panel = root.Q<VisualElement>("debug-panel");
-            citiesPage = root.Q<VisualElement>("cities-page");
-            shipsPage = root.Q<VisualElement>("ships-page");
-            citiesHeader = root.Q<VisualElement>("debug-cities-header");
-            citiesRows = root.Q<VisualElement>("debug-cities-rows");
-            citiesTotals = root.Q<VisualElement>("debug-cities-totals");
-            goodsHeader = root.Q<VisualElement>("debug-goods-header");
-            goodsRows = root.Q<VisualElement>("debug-goods-rows");
-            goodsTotals = root.Q<VisualElement>("debug-goods-totals");
-            shipsHeader = root.Q<VisualElement>("debug-ships-header");
-            shipsRows = root.Q<VisualElement>("debug-ships-rows");
-            citiesTab = root.Q<Button>("cities-tab");
-            shipsTab = root.Q<Button>("ships-tab");
-            closeButton = root.Q<Button>("close-button");
-            addShipButton = root.Q<Button>("add-ship-button");
-            speed = root.Q<VisualElement>("speed");
-            speedLabel = root.Q<Label>("speed-label");
-            speedSlider = root.Q<SliderInt>("speed-slider");
-
-            if (panel == null || citiesPage == null || shipsPage == null || citiesHeader == null || citiesRows == null
-                || citiesTotals == null || goodsHeader == null || goodsRows == null || goodsTotals == null
-                || shipsHeader == null || shipsRows == null || citiesTab == null
-                || shipsTab == null || closeButton == null || addShipButton == null || speed == null
-                || speedLabel == null || speedSlider == null)
+            if (!TryFindElements(root))
             {
                 Debug.LogError("DebugPanel.uxml is missing an expected element.", this);
                 root.style.display = DisplayStyle.None;
@@ -133,16 +127,18 @@ namespace DarkFantasyMerchant.Game
             }
 
             // A document that is enabled again has a new tree: the tables are rebuilt in it.
-            citiesTable = null;
+            tabs = null;
             shipsTable = null;
+            System.Array.Clear(views, 0, views.Length);
+            shownView = null;
             isOpen = false;
             panel.style.display = DisplayStyle.None;
+            unavailable.style.display = DisplayStyle.None;
 
             // Without ships there is nothing to list.
             if (shipsView == null)
             {
-                showsShips = false;
-                shipsTab.style.display = DisplayStyle.None;
+                tabButtons[ShipsTab].style.display = DisplayStyle.None;
             }
 
             // Only the AI merchants add ships.
@@ -154,9 +150,8 @@ namespace DarkFantasyMerchant.Game
             // The buttons are clicked, not navigated: the keyboard pans the map.
             addShipButton.focusable = false;
             closeButton.focusable = false;
-            citiesTab.focusable = false;
-            shipsTab.focusable = false;
             speedSlider.focusable = false;
+            horizonField.focusable = false;
 
             clock = worldClock != null && worldClock.IsReady ? worldClock.Clock : null;
 
@@ -171,9 +166,20 @@ namespace DarkFantasyMerchant.Game
                 ShowSpeed();
             }
 
+            if (recorder == null)
+            {
+                horizon.style.display = DisplayStyle.None;
+            }
+            else
+            {
+                horizonField.choices = new List<string>(HorizonChoices.Labels);
+                horizonField.index = recorder.HorizonIndex;
+                horizonField.RegisterValueChangedCallback(OnHorizonChanged);
+                recorder.Started += OnRecordStarted;
+                FollowRecord();
+            }
+
             closeButton.clicked += Close;
-            citiesTab.clicked += ShowCities;
-            shipsTab.clicked += ShowShips;
             addShipButton.clicked += AddShip;
             input.DebugToggled += Toggle;
             isBound = true;
@@ -187,8 +193,6 @@ namespace DarkFantasyMerchant.Game
             }
 
             closeButton.clicked -= Close;
-            citiesTab.clicked -= ShowCities;
-            shipsTab.clicked -= ShowShips;
             addShipButton.clicked -= AddShip;
             input.DebugToggled -= Toggle;
 
@@ -197,19 +201,94 @@ namespace DarkFantasyMerchant.Game
                 speedSlider.UnregisterValueChangedCallback(OnSpeedChanged);
             }
 
-            // Stops listening to the markets.
-            citiesTable?.Hide();
+            if (recorder != null)
+            {
+                horizonField.UnregisterValueChangedCallback(OnHorizonChanged);
+                recorder.Started -= OnRecordStarted;
+
+                if (followsRecord)
+                {
+                    recorder.Record.Recorded -= OnRecorded;
+                    followsRecord = false;
+                }
+            }
+
+            // Stops following the markets.
+            shownView?.Hide();
+            shownView = null;
 
             isBound = false;
         }
 
-        // Ships sail every frame: their tab is rewritten as often, while it is shown.
+        // Ships sail every frame: their tab is rewritten as often, while it is shown. The other
+        // views are rewritten at most once a frame, when the record has new days.
         private void Update()
         {
-            if (isBound && isOpen && showsShips)
+            if (!isBound || !isOpen)
+            {
+                return;
+            }
+
+            if (tabs.Selected == ShipsTab)
             {
                 RefreshShips();
             }
+            else if (isDirty)
+            {
+                shownView?.Refresh();
+            }
+
+            isDirty = false;
+        }
+
+        private bool TryFindElements(VisualElement root)
+        {
+            panel = root.Q<VisualElement>("debug-panel");
+
+            for (int i = 0; i < TabNames.Length; i++)
+            {
+                tabButtons[i] = root.Q<Button>(TabNames[i] + "-tab");
+                pages[i] = root.Q<VisualElement>(TabNames[i] + "-page");
+            }
+
+            citiesHeader = root.Q<VisualElement>("debug-cities-header");
+            citiesRows = root.Q<VisualElement>("debug-cities-rows");
+            citiesTotals = root.Q<VisualElement>("debug-cities-totals");
+            goodsHeader = root.Q<VisualElement>("debug-goods-header");
+            goodsRows = root.Q<VisualElement>("debug-goods-rows");
+            goodsTotals = root.Q<VisualElement>("debug-goods-totals");
+            shipsHeader = root.Q<VisualElement>("debug-ships-header");
+            shipsRows = root.Q<VisualElement>("debug-ships-rows");
+            unavailable = root.Q<Label>("recording-unavailable");
+            closeButton = root.Q<Button>("close-button");
+            addShipButton = root.Q<Button>("add-ship-button");
+            speed = root.Q<VisualElement>("speed");
+            speedLabel = root.Q<Label>("speed-label");
+            speedSlider = root.Q<SliderInt>("speed-slider");
+            horizon = root.Q<VisualElement>("horizon");
+            horizonField = root.Q<DropdownField>("horizon-field");
+
+            foreach (VisualElement element in new VisualElement[]
+                     {
+                         panel, citiesHeader, citiesRows, citiesTotals, goodsHeader, goodsRows, goodsTotals, shipsHeader,
+                         shipsRows, unavailable, closeButton, addShipButton, speed, speedLabel, speedSlider, horizon, horizonField,
+                     })
+            {
+                if (element == null)
+                {
+                    return false;
+                }
+            }
+
+            for (int i = 0; i < TabNames.Length; i++)
+            {
+                if (tabButtons[i] == null || pages[i] == null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private void Toggle()
@@ -224,53 +303,94 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
+        // On the tab it was last on.
         private void Open()
         {
-            if (citiesTable == null && !TryBuildTables())
+            if (tabs == null && !TryBuildViews())
             {
                 return;
             }
 
             isOpen = true;
             panel.style.display = DisplayStyle.Flex;
-            ShowTab(showsShips);
+
+            if (tabs.Selected < 0)
+            {
+                tabs.Select(CitiesTab);
+            }
+            else
+            {
+                ShowTab(tabs.Selected);
+            }
         }
 
         private void Close()
         {
-            citiesTable?.Hide();
+            shownView?.Hide();
+            shownView = null;
             panel.style.display = DisplayStyle.None;
             isOpen = false;
         }
 
-        private void ShowCities()
+        private void OnTabChanged(int index)
         {
-            ShowTab(false);
-        }
-
-        private void ShowShips()
-        {
-            ShowTab(true);
-        }
-
-        private void ShowTab(bool ships)
-        {
-            showsShips = ships;
-            citiesPage.style.display = ships ? DisplayStyle.None : DisplayStyle.Flex;
-            shipsPage.style.display = ships ? DisplayStyle.Flex : DisplayStyle.None;
-            citiesTab.EnableInClassList(SelectedTabClass, !ships);
-            shipsTab.EnableInClassList(SelectedTabClass, ships);
-
-            // A table that is not shown costs nothing: the cities' only follows the markets on its tab.
-            if (ships)
+            if (isOpen)
             {
-                citiesTable.Hide();
+                ShowTab(index);
+            }
+        }
+
+        private void ShowTab(int index)
+        {
+            shownView?.Hide();
+            shownView = null;
+
+            // The tabs of the past have nothing to show before the record exists.
+            bool needsRecord = index == CurvesTab || index == EventsTab || index == TradesTab;
+            bool available = !needsRecord || (recorder != null && recorder.IsReady);
+            pages[index].style.display = available ? DisplayStyle.Flex : DisplayStyle.None;
+            unavailable.style.display = available ? DisplayStyle.None : DisplayStyle.Flex;
+
+            if (index == ShipsTab)
+            {
                 RefreshShips();
+                return;
             }
-            else
+
+            if (available)
             {
-                citiesTable.Show();
+                shownView = views[index];
+                shownView?.Show();
             }
+        }
+
+        private void OnRecordStarted()
+        {
+            FollowRecord();
+
+            if (isOpen)
+            {
+                ShowTab(tabs.Selected);
+            }
+        }
+
+        private void FollowRecord()
+        {
+            if (!followsRecord && recorder.IsReady)
+            {
+                recorder.Record.Recorded += OnRecorded;
+                followsRecord = true;
+            }
+        }
+
+        private void OnRecorded()
+        {
+            isDirty = true;
+        }
+
+        private void OnHorizonChanged(ChangeEvent<string> change)
+        {
+            recorder.SetHorizon(horizonField.index);
         }
 
         // The normal speed, not a fast forward: the map stays playable.
@@ -301,6 +421,11 @@ namespace DarkFantasyMerchant.Game
 
         private void RefreshShips()
         {
+            if (shipsTable == null)
+            {
+                return;
+            }
+
             shipInfos.Clear();
 
             // The player's ship is the first of the map's.
@@ -337,7 +462,7 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        private bool TryBuildTables()
+        private bool TryBuildViews()
         {
             if (!worldEconomy.IsReady)
             {
@@ -355,7 +480,7 @@ namespace DarkFantasyMerchant.Game
                 shipGoodNames.Add(good.DisplayName);
             }
 
-            citiesTable = new DebugCitiesTable(
+            var citiesTable = new DebugCitiesTable(
                 citiesHeader, citiesRows, citiesTotals, goodsHeader, goodsRows, goodsTotals, goodNames);
 
             foreach (CityDefinition city in mapView.Cities)
@@ -368,11 +493,37 @@ namespace DarkFantasyMerchant.Game
                 }
             }
 
+            views[CitiesTab] = new DebugCitiesView(SubtabsOf(pages[CitiesTab], "population", "markets"), citiesTable);
+            curvesSubtabs = SubtabsOf(pages[CurvesTab], "city-curves", "indicator-curves", "composed-curves");
+            curvesSubtabs.Select(0);
+            tradesSubtabs = SubtabsOf(pages[TradesTab], "trade-journal", "trade-flows");
+            tradesSubtabs.Select(0);
+
             // Without the AI merchants, no ship can be removed: the rows have no button.
-            shipsTable = aiMerchants != null
-                ? new DebugShipsTable(shipsHeader, shipsRows, shipGoodNames, RemoveShip)
-                : new DebugShipsTable(shipsHeader, shipsRows, shipGoodNames);
+            if (shipsView != null)
+            {
+                shipsTable = aiMerchants != null
+                    ? new DebugShipsTable(shipsHeader, shipsRows, shipGoodNames, RemoveShip)
+                    : new DebugShipsTable(shipsHeader, shipsRows, shipGoodNames);
+            }
+
+            tabs = new DebugTabs(tabButtons, pages);
+            tabs.Changed += OnTabChanged;
             return true;
+        }
+
+        private static DebugTabs SubtabsOf(VisualElement page, params string[] names)
+        {
+            var buttons = new Button[names.Length];
+            var subpages = new VisualElement[names.Length];
+
+            for (int i = 0; i < names.Length; i++)
+            {
+                buttons[i] = page.Q<Button>(names[i] + "-tab");
+                subpages[i] = page.Q<VisualElement>(names[i] + "-page");
+            }
+
+            return new DebugTabs(buttons, subpages);
         }
     }
 }

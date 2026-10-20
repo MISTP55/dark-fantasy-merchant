@@ -7,7 +7,14 @@
                 <ui:Label text="Débogage" class="info-panel__name" />
                 <ui:VisualElement class="debug-panel__tabs">
                     <ui:Button name="cities-tab" text="Villes" class="debug-panel__tab" />
+                    <ui:Button name="curves-tab" text="Courbes" class="debug-panel__tab" />
+                    <ui:Button name="events-tab" text="Événements" class="debug-panel__tab" />
+                    <ui:Button name="trades-tab" text="Échanges" class="debug-panel__tab" />
                     <ui:Button name="ships-tab" text="Navires" class="debug-panel__tab" />
+                </ui:VisualElement>
+                <ui:VisualElement name="horizon" class="debug-panel__horizon">
+                    <ui:Label text="Historique" class="debug-panel__speed-label debug-panel__horizon-label" />
+                    <ui:DropdownField name="horizon-field" class="debug-panel__dropdown" />
                 </ui:VisualElement>
                 <ui:VisualElement name="speed" class="debug-panel__speed">
                     <ui:Label name="speed-label" text="Vitesse ×1" class="debug-panel__speed-label" />
@@ -16,24 +23,50 @@
                 <ui:Button name="close-button" text="X" class="info-panel__close" />
             </ui:VisualElement>
             <ui:VisualElement name="cities-page" class="debug-panel__page">
-                <ui:Label text="Tonneaux par semaine : valeur théorique, puis valeur réelle de la dernière semaine entre parenthèses." class="debug-cities__legend" />
-                <ui:ScrollView mode="Vertical" class="debug-cities__scroll">
-                    <ui:VisualElement class="debug-cities__table">
-                        <ui:VisualElement class="debug-cities__fixed-columns">
-                            <ui:VisualElement name="debug-cities-header" />
-                            <ui:VisualElement name="debug-cities-rows" />
-                            <ui:VisualElement name="debug-cities-totals" />
-                        </ui:VisualElement>
-                        <ui:ScrollView mode="Horizontal" class="debug-cities__good-columns">
-                            <!-- A horizontal scroll view lays its children out in a row: one child keeps them in a column. -->
-                            <ui:VisualElement>
-                                <ui:VisualElement name="debug-goods-header" />
-                                <ui:VisualElement name="debug-goods-rows" />
-                                <ui:VisualElement name="debug-goods-totals" />
+                <ui:VisualElement class="debug-panel__subtabs">
+                    <ui:Button name="population-tab" text="Population" class="debug-panel__tab debug-panel__subtab" />
+                    <ui:Button name="markets-tab" text="Marchés" class="debug-panel__tab debug-panel__subtab" />
+                </ui:VisualElement>
+                <ui:VisualElement name="population-page" class="debug-panel__page" />
+                <ui:VisualElement name="markets-page" class="debug-panel__page">
+                    <ui:Label text="Tonneaux par semaine : valeur théorique, puis valeur réelle de la dernière semaine entre parenthèses." class="debug-cities__legend" />
+                    <ui:ScrollView mode="Vertical" class="debug-cities__scroll">
+                        <ui:VisualElement class="debug-cities__table">
+                            <ui:VisualElement class="debug-cities__fixed-columns">
+                                <ui:VisualElement name="debug-cities-header" />
+                                <ui:VisualElement name="debug-cities-rows" />
+                                <ui:VisualElement name="debug-cities-totals" />
                             </ui:VisualElement>
-                        </ui:ScrollView>
-                    </ui:VisualElement>
-                </ui:ScrollView>
+                            <ui:ScrollView mode="Horizontal" class="debug-cities__good-columns">
+                                <!-- A horizontal scroll view lays its children out in a row: one child keeps them in a column. -->
+                                <ui:VisualElement>
+                                    <ui:VisualElement name="debug-goods-header" />
+                                    <ui:VisualElement name="debug-goods-rows" />
+                                    <ui:VisualElement name="debug-goods-totals" />
+                                </ui:VisualElement>
+                            </ui:ScrollView>
+                        </ui:VisualElement>
+                    </ui:ScrollView>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="curves-page" class="debug-panel__page">
+                <ui:VisualElement class="debug-panel__subtabs">
+                    <ui:Button name="city-curves-tab" text="Par ville" class="debug-panel__tab debug-panel__subtab" />
+                    <ui:Button name="indicator-curves-tab" text="Par indicateur" class="debug-panel__tab debug-panel__subtab" />
+                    <ui:Button name="composed-curves-tab" text="Composer" class="debug-panel__tab debug-panel__subtab" />
+                </ui:VisualElement>
+                <ui:VisualElement name="city-curves-page" class="debug-panel__page" />
+                <ui:VisualElement name="indicator-curves-page" class="debug-panel__page" />
+                <ui:VisualElement name="composed-curves-page" class="debug-panel__page" />
+            </ui:VisualElement>
+            <ui:VisualElement name="events-page" class="debug-panel__page" />
+            <ui:VisualElement name="trades-page" class="debug-panel__page">
+                <ui:VisualElement class="debug-panel__subtabs">
+                    <ui:Button name="trade-journal-tab" text="Journal" class="debug-panel__tab debug-panel__subtab" />
+                    <ui:Button name="trade-flows-tab" text="Flux par marchandise" class="debug-panel__tab debug-panel__subtab" />
+                </ui:VisualElement>
+                <ui:VisualElement name="trade-journal-page" class="debug-panel__page" />
+                <ui:VisualElement name="trade-flows-page" class="debug-panel__page" />
             </ui:VisualElement>
             <ui:VisualElement name="ships-page" class="debug-panel__page">
                 <ui:VisualElement class="debug-panel__toolbar">
@@ -45,6 +78,7 @@
                     <ui:VisualElement name="debug-ships-rows" />
                 </ui:ScrollView>
             </ui:VisualElement>
+            <ui:Label name="recording-unavailable" text="Enregistrement indisponible." class="debug-cities__legend" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
