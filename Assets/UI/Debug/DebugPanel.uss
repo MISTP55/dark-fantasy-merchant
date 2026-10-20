@@ -553,7 +553,7 @@
     width: 24.2%;
 }
 
-/* The goods the city of "Par ville" produces: framed, bright when efficiently, darker when inefficiently. */
+/* What produces a good (in "Par ville" its goods, in "Par indicateur" its cities): framed, bright when efficiently, darker when inefficiently. */
 .debug-chart--produced {
     background-color: rgb(46, 38, 28);
     border-width: 2px;
@@ -583,6 +583,11 @@
     flex-wrap: wrap;
     align-items: center;
     margin-bottom: 6px;
+}
+
+.debug-curves__hint {
+    color: rgb(150, 130, 100);
+    font-size: 12px;
 }
 
 .debug-panel__dropdown--labelled {

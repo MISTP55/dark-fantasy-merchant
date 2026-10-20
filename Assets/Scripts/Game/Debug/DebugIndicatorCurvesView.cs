@@ -8,16 +8,19 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// One figure of every city side by side, chosen in a list with its good when it is a good's:
     /// a small chart per city, on a scale common to all of them if asked, then the world's when
-    /// the figure adds up.
+    /// the figure adds up. With a good's figure, the charts of the cities that produce it are framed.
     /// </summary>
     public sealed class DebugIndicatorCurvesView : IDebugView
     {
         private const string QuarterClass = "debug-chart--quarter";
+        private const string ProducedClass = "debug-chart--produced";
+        private const string InefficientlyProducedClass = "debug-chart--produced-inefficient";
 
         private readonly SimulationRecorder recorder;
         private readonly DropdownField indicatorField;
         private readonly DropdownField goodField;
         private readonly Toggle commonScale;
+        private readonly Label producedHint;
         private readonly int[] goodOrder;
         private readonly int[] cityOrder;
         private readonly TimeSeriesChart[] cityCharts;
@@ -66,6 +69,10 @@ namespace DarkFantasyMerchant.Game
             commonScale = new Toggle { text = "Échelle commune", value = true, focusable = false };
             commonScale.AddToClassList("debug-panel__toggle");
             toolbar.Add(commonScale);
+
+            producedHint = new Label("Encadrées, les villes qui produisent la marchandise (en clair : efficacement, en sombre : peu efficacement)");
+            producedHint.AddToClassList("debug-curves__hint");
+            toolbar.Add(producedHint);
 
             indicatorField.RegisterValueChangedCallback(change => Refresh());
             goodField.RegisterValueChangedCallback(change => Refresh());
@@ -124,6 +131,7 @@ namespace DarkFantasyMerchant.Game
             DebugIndicator indicator = DebugIndicators.All[indicatorField.index];
             int good = goodOrder[goodField.index];
             goodField.SetEnabled(indicator.IsGood);
+            ShowProducers(indicator.IsGood ? good : -1);
             SimulationHistory history = recorder.Record.History;
             int count = history.DayCount;
 
@@ -165,6 +173,21 @@ namespace DarkFantasyMerchant.Game
                 }
 
                 worldChart.SetData(history.FirstDay, count, new[] { SeriesOf(indicator.Name, values, format) }, null);
+            }
+        }
+
+        // Frames the charts of the cities that produce the good; none without a good.
+        private void ShowProducers(int good)
+        {
+            producedHint.style.display = good >= 0 ? DisplayStyle.Flex : DisplayStyle.None;
+
+            for (int city = 0; city < cityCharts.Length; city++)
+            {
+                GoodProduction production = good >= 0 && good < recorder.Goods.Count
+                    ? recorder.Cities[city].ProductionOf(recorder.Goods[good])
+                    : GoodProduction.None;
+                cityCharts[city].EnableInClassList(ProducedClass, production == GoodProduction.Efficient);
+                cityCharts[city].EnableInClassList(InefficientlyProducedClass, production == GoodProduction.Inefficient);
             }
         }
 
