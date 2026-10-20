@@ -27,10 +27,25 @@
                     <ui:Button name="population-tab" text="Population" class="debug-panel__tab debug-panel__subtab" />
                     <ui:Button name="markets-tab" text="Marchés" class="debug-panel__tab debug-panel__subtab" />
                 </ui:VisualElement>
-                <ui:VisualElement name="population-page" class="debug-panel__page" />
+                <ui:VisualElement name="population-page" class="debug-panel__page">
+                    <ui:Label text="Habitants de chaque classe sur la place de leurs maisons, satisfaction entre parenthèses." class="debug-cities__legend" />
+                    <ui:ScrollView mode="VerticalAndHorizontal" class="debug-cities__scroll">
+                        <ui:VisualElement name="population-header" />
+                        <ui:VisualElement name="population-rows" />
+                        <ui:VisualElement name="population-totals" />
+                    </ui:ScrollView>
+                </ui:VisualElement>
                 <ui:VisualElement name="markets-page" class="debug-panel__page">
-                    <ui:Label text="Tonneaux par semaine : valeur théorique, puis valeur réelle de la dernière semaine entre parenthèses." class="debug-cities__legend" />
-                    <ui:ScrollView mode="Vertical" class="debug-cities__scroll">
+                    <ui:VisualElement class="debug-panel__toolbar">
+                        <ui:Label text="Tonneaux par semaine : valeur théorique, puis valeur réelle de la dernière semaine entre parenthèses." class="debug-cities__legend" />
+                        <ui:DropdownField name="market-good-field" class="debug-panel__dropdown debug-panel__dropdown--wide" />
+                    </ui:VisualElement>
+                    <ui:ScrollView name="good-market" mode="VerticalAndHorizontal" class="debug-cities__scroll">
+                        <ui:VisualElement name="good-market-header" />
+                        <ui:VisualElement name="good-market-rows" />
+                        <ui:VisualElement name="good-market-totals" />
+                    </ui:ScrollView>
+                    <ui:ScrollView name="all-goods" mode="Vertical" class="debug-cities__scroll">
                         <ui:VisualElement class="debug-cities__table">
                             <ui:VisualElement class="debug-cities__fixed-columns">
                                 <ui:VisualElement name="debug-cities-header" />

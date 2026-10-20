@@ -327,7 +327,8 @@ namespace DarkFantasyMerchant.Game
             return rounded == 0d ? 0d : rounded;
         }
 
-        private static string FormatFigure(double nominal, double recent)
+        /// <summary>A weekly figure as the table writes it: the nominal one, then that of the last days in brackets.</summary>
+        public static string FormatFigure(double nominal, double recent)
         {
             return $"{FormatQuantity(nominal)} ({FormatQuantity(recent)})";
         }

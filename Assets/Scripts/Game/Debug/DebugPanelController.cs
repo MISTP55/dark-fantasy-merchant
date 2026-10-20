@@ -480,8 +480,17 @@ namespace DarkFantasyMerchant.Game
                 shipGoodNames.Add(good.DisplayName);
             }
 
+            VisualElement citiesPage = pages[CitiesTab];
             var citiesTable = new DebugCitiesTable(
                 citiesHeader, citiesRows, citiesTotals, goodsHeader, goodsRows, goodsTotals, goodNames);
+            var populationTable = new DebugPopulationTable(
+                citiesPage.Q<VisualElement>("population-header"),
+                citiesPage.Q<VisualElement>("population-rows"),
+                citiesPage.Q<VisualElement>("population-totals"));
+            var goodTable = new DebugGoodMarketTable(
+                citiesPage.Q<VisualElement>("good-market-header"),
+                citiesPage.Q<VisualElement>("good-market-rows"),
+                citiesPage.Q<VisualElement>("good-market-totals"));
 
             foreach (CityDefinition city in mapView.Cities)
             {
@@ -490,10 +499,20 @@ namespace DarkFantasyMerchant.Game
                 if (market != null)
                 {
                     citiesTable.AddCity(city.DisplayName, market);
+                    populationTable.AddCity(city.DisplayName, market);
+                    goodTable.AddCity(city.DisplayName, market, good => aiMerchants != null ? aiMerchants.UnderWayTo(city, good) : 0);
                 }
             }
 
-            views[CitiesTab] = new DebugCitiesView(SubtabsOf(pages[CitiesTab], "population", "markets"), citiesTable);
+            views[CitiesTab] = new DebugCitiesView(
+                SubtabsOf(citiesPage, "population", "markets"),
+                populationTable,
+                citiesTable,
+                goodTable,
+                citiesPage.Q<DropdownField>("market-good-field"),
+                citiesPage.Q<VisualElement>("all-goods"),
+                citiesPage.Q<VisualElement>("good-market"),
+                goodNames);
             curvesSubtabs = SubtabsOf(pages[CurvesTab], "city-curves", "indicator-curves", "composed-curves");
             curvesSubtabs.Select(0);
             tradesSubtabs = SubtabsOf(pages[TradesTab], "trade-journal", "trade-flows");

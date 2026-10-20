@@ -76,11 +76,11 @@
 }
 
 .debug-cities__cell--population {
-    width: 100px;
+    width: 110px;
 }
 
 .debug-cities__cell--beggars {
-    width: 90px;
+    width: 120px;
 }
 
 .debug-cities__cell--class {
@@ -101,18 +101,35 @@
     width: 140px;
 }
 
+/* Wide enough for a total: "256/1 020 +185". */
 .debug-cities__cell--workers {
-    width: 90px;
+    width: 130px;
+}
+
+.debug-cities__cell--houses {
+    width: 150px;
+}
+
+.debug-cities__cell--threshold {
+    width: 80px;
+}
+
+.debug-cities__cell--price {
+    width: 70px;
+}
+
+.debug-cities__cell--under-way {
+    width: 110px;
 }
 
 /* As wide as the name, the population, the beggars, the three classes and the growth. */
 .debug-cities__cell--city-group {
-    width: 900px;
+    width: 940px;
 }
 
 /* As wide as the stock, the three figures and the workers of a good. */
 .debug-cities__row--header .debug-cities__cell--good-group {
-    width: 590px;
+    width: 630px;
     border-left-width: 1px;
     border-left-color: rgb(110, 84, 52);
     color: rgb(240, 226, 196);
@@ -190,6 +207,15 @@
 .debug-panel__dropdown {
     width: 150px;
     margin: 0;
+}
+
+.debug-panel__dropdown--wide {
+    width: 240px;
+}
+
+.debug-panel__toolbar .debug-panel__dropdown {
+    margin-left: 16px;
+    margin-bottom: 8px;
 }
 
 .debug-panel__dropdown .unity-base-popup-field__input {
