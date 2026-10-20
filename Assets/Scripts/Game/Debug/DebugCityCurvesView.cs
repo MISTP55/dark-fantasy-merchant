@@ -36,8 +36,8 @@ namespace DarkFantasyMerchant.Game
         private bool isShown;
 
         /// <param name="page">The sub-page the view fills.</param>
-        /// <param name="goodTitles">The title of every good's chart, in the catalogue's order: its name with its unit.</param>
-        public DebugCityCurvesView(VisualElement page, SimulationRecorder recorder, IReadOnlyList<string> goodTitles)
+        /// <param name="goodNames">The names of the goods, in the catalogue's order: their charts' titles.</param>
+        public DebugCityCurvesView(VisualElement page, SimulationRecorder recorder, IReadOnlyList<string> goodNames)
         {
             if (page == null)
             {
@@ -97,12 +97,12 @@ namespace DarkFantasyMerchant.Game
             charts.Add(goodsLegend);
             VisualElement goodsGrid = Grid();
             charts.Add(goodsGrid);
-            goodOrder = NameOrder.Of(goodTitles);
-            goodCharts = new TimeSeriesChart[goodTitles.Count];
+            goodOrder = NameOrder.Of(goodNames);
+            goodCharts = new TimeSeriesChart[goodNames.Count];
 
             foreach (int good in goodOrder)
             {
-                goodCharts[good] = AddChart(goodsGrid, goodTitles[good], QuarterClass, recorder.ChartCalendar);
+                goodCharts[good] = AddChart(goodsGrid, goodNames[good], QuarterClass, recorder.ChartCalendar);
                 goodCharts[good].ShowsLegend = false;
             }
 

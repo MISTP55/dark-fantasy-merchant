@@ -21,7 +21,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void SetUp()
         {
             zoom = new ChartZoom(Calendar);
-            small = new TimeSeriesChart("Bière (tonneaux)", Calendar);
+            small = new TimeSeriesChart("Bière", Calendar);
             small.SetData(10, 3, Series(1f, 2f, 3f), null);
             zoom.Attach(small);
         }
@@ -40,7 +40,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.IsTrue(zoom.IsOpen);
             Assert.AreEqual(DisplayStyle.Flex, zoom.style.display.value);
-            Assert.AreEqual("Bière (tonneaux)", zoom.Chart.Title);
+            Assert.AreEqual("Bière", zoom.Chart.Title);
             Assert.AreEqual(10, zoom.Chart.FirstDay);
             Assert.AreEqual(3, zoom.Chart.DayCount);
         }
@@ -72,7 +72,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AnotherChart_TakesThePlaceOfTheFirst()
         {
-            var other = new TimeSeriesChart("Bois (boisseaux)", Calendar);
+            var other = new TimeSeriesChart("Bois", Calendar);
             other.SetData(10, 2, Series(5f, 6f), null);
             zoom.Attach(other);
             zoom.Show(small);
@@ -80,7 +80,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             zoom.Show(other);
             small.SetData(11, 4, Series(2f, 3f, 4f, 5f), null);
 
-            Assert.AreEqual("Bois (boisseaux)", zoom.Chart.Title);
+            Assert.AreEqual("Bois", zoom.Chart.Title);
             Assert.AreEqual(2, zoom.Chart.DayCount);
         }
 

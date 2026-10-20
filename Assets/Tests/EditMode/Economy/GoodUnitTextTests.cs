@@ -13,12 +13,5 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("0 tonneau", GoodUnitText.FormatQuantity(0, GoodUnit.Barrel));
             Assert.AreEqual("1 200 tonneaux", GoodUnitText.FormatQuantity(1200, GoodUnit.Barrel));
         }
-
-        [Test]
-        public void AName_IsFollowedByItsUnit_InThePlural()
-        {
-            Assert.AreEqual("Céréales (boisseaux)", GoodUnitText.NameWithUnit("Céréales", GoodUnit.Bushel));
-            Assert.AreEqual("Bière (tonneaux)", GoodUnitText.NameWithUnit("Bière", GoodUnit.Barrel));
-        }
     }
 }

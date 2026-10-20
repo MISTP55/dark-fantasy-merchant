@@ -20,11 +20,5 @@ namespace DarkFantasyMerchant.Game
 
             return $"{TreasuryHudController.FormatNumber(quantity)} {name}";
         }
-
-        /// <summary>A good's name and its unit: "Céréales (boisseaux)".</summary>
-        public static string NameWithUnit(string name, GoodUnit unit)
-        {
-            return $"{name} ({PluralOf(unit)})";
-        }
     }
 }

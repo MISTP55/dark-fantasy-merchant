@@ -71,9 +71,8 @@ namespace DarkFantasyMerchant.Game
         // The sub-tabs of the curves, whose view comes later.
         private DebugTabs curvesSubtabs;
 
-        // The goods' names, with and without their unit, in the catalogue's order, for the views made later.
-        private readonly List<string> goodTitles = new List<string>();
-        private readonly List<string> plainGoodNames = new List<string>();
+        // The goods' names, in the catalogue's order, for the views made later.
+        private readonly List<string> goodNames = new List<string>();
 
         // Reused by every refresh of the ships tab.
         private readonly List<DebugShipInfo> shipInfos = new List<DebugShipInfo>();
@@ -477,20 +476,12 @@ namespace DarkFantasyMerchant.Game
                 return false;
             }
 
-            // The cities tab names the goods with their unit, the ships tab without it.
-            var goodNames = new List<string>();
-            var shipGoodNames = new List<string>();
+            goodNames.Clear();
 
             foreach (GoodDefinition good in worldEconomy.Economy.Goods)
             {
-                goodNames.Add(GoodUnitText.NameWithUnit(good.DisplayName, good.Unit));
-                shipGoodNames.Add(good.DisplayName);
+                goodNames.Add(good.DisplayName);
             }
-
-            goodTitles.Clear();
-            goodTitles.AddRange(goodNames);
-            plainGoodNames.Clear();
-            plainGoodNames.AddRange(shipGoodNames);
 
             VisualElement citiesPage = pages[CitiesTab];
             var citiesTable = new DebugCitiesTable(
@@ -532,8 +523,8 @@ namespace DarkFantasyMerchant.Game
             if (shipsView != null)
             {
                 shipsTable = aiMerchants != null
-                    ? new DebugShipsTable(shipsHeader, shipsRows, shipGoodNames, RemoveShip)
-                    : new DebugShipsTable(shipsHeader, shipsRows, shipGoodNames);
+                    ? new DebugShipsTable(shipsHeader, shipsRows, goodNames, RemoveShip)
+                    : new DebugShipsTable(shipsHeader, shipsRows, goodNames);
             }
 
             tabs = new DebugTabs(tabButtons, pages);
@@ -549,9 +540,9 @@ namespace DarkFantasyMerchant.Game
                 VisualElement page = pages[CurvesTab];
                 var curves = new IDebugView[]
                 {
-                    new DebugCityCurvesView(page.Q<VisualElement>("city-curves-page"), recorder, goodTitles),
-                    new DebugIndicatorCurvesView(page.Q<VisualElement>("indicator-curves-page"), recorder, goodTitles),
-                    new DebugComposedCurvesView(page.Q<VisualElement>("composed-curves-page"), recorder, goodTitles),
+                    new DebugCityCurvesView(page.Q<VisualElement>("city-curves-page"), recorder, goodNames),
+                    new DebugIndicatorCurvesView(page.Q<VisualElement>("indicator-curves-page"), recorder, goodNames),
+                    new DebugComposedCurvesView(page.Q<VisualElement>("composed-curves-page"), recorder, goodNames),
                 };
 
                 // Every chart of the sub-tabs is enlarged by a click, over the whole tab.
@@ -562,7 +553,7 @@ namespace DarkFantasyMerchant.Game
             }
             else if (index == TradesTab)
             {
-                views[TradesTab] = new DebugTradesView(pages[TradesTab], recorder, plainGoodNames);
+                views[TradesTab] = new DebugTradesView(pages[TradesTab], recorder, goodNames);
             }
         }
 

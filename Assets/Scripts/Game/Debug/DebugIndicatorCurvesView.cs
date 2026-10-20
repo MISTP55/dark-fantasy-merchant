@@ -27,7 +27,7 @@ namespace DarkFantasyMerchant.Game
         private float[] worldValues = new float[0];
         private bool isShown;
 
-        public DebugIndicatorCurvesView(VisualElement page, SimulationRecorder recorder, IReadOnlyList<string> goodTitles)
+        public DebugIndicatorCurvesView(VisualElement page, SimulationRecorder recorder, IReadOnlyList<string> goodNames)
         {
             if (page == null)
             {
@@ -51,12 +51,12 @@ namespace DarkFantasyMerchant.Game
             indicatorField = Dropdown(toolbar, "Indicateur", indicatorNames);
             indicatorField.index = indicatorNames.IndexOf("Stock");
 
-            goodOrder = NameOrder.Of(goodTitles);
+            goodOrder = NameOrder.Of(goodNames);
             var goodChoices = new List<string>();
 
             foreach (int good in goodOrder)
             {
-                goodChoices.Add(goodTitles[good]);
+                goodChoices.Add(goodNames[good]);
             }
 
             goodField = Dropdown(toolbar, "Marchandise", goodChoices);

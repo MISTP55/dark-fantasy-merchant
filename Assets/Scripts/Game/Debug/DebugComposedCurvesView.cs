@@ -26,7 +26,7 @@ namespace DarkFantasyMerchant.Game
 
         private bool isShown;
 
-        public DebugComposedCurvesView(VisualElement page, SimulationRecorder recorder, IReadOnlyList<string> goodTitles)
+        public DebugComposedCurvesView(VisualElement page, SimulationRecorder recorder, IReadOnlyList<string> goodNames)
         {
             if (page == null)
             {
@@ -34,7 +34,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             this.recorder = recorder ?? throw new ArgumentNullException(nameof(recorder));
-            goodNames = goodTitles ?? throw new ArgumentNullException(nameof(goodTitles));
+            this.goodNames = goodNames ?? throw new ArgumentNullException(nameof(goodNames));
             page.Clear();
 
             foreach (CityDefinition city in recorder.Cities)
@@ -43,14 +43,14 @@ namespace DarkFantasyMerchant.Game
             }
 
             cityOrder = NameOrder.Of(cityNames);
-            goodOrder = NameOrder.Of(goodTitles);
+            goodOrder = NameOrder.Of(goodNames);
 
             var toolbar = new VisualElement();
             toolbar.AddToClassList("debug-curves__toolbar");
             page.Add(toolbar);
 
             cityField = Dropdown(toolbar, "Ville", Ordered(cityNames, cityOrder));
-            goodField = Dropdown(toolbar, "Marchandise", Ordered(goodTitles, goodOrder));
+            goodField = Dropdown(toolbar, "Marchandise", Ordered(goodNames, goodOrder));
 
             var indicatorNames = new List<string>();
 
