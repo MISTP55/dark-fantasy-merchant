@@ -319,3 +319,49 @@
     width: 90px;
     padding-left: 8px;
 }
+
+/* A chart of days: its title over its plot, drawn by TimeSeriesChart. */
+.debug-chart {
+    flex-direction: column;
+    flex-shrink: 0;
+    height: 130px;
+    margin: 0 6px 6px 0;
+    padding: 4px 6px;
+    background-color: rgb(35, 29, 24);
+    border-width: 1px;
+    border-color: rgb(58, 48, 41);
+}
+
+.debug-chart--large {
+    flex-grow: 1;
+    height: auto;
+    min-height: 300px;
+}
+
+.debug-chart__title {
+    flex-shrink: 0;
+    margin: 0 0 2px 0;
+    padding: 0;
+    color: rgb(190, 164, 120);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.debug-chart__plot {
+    flex-grow: 1;
+}
+
+/* Over the plot, at the pointer's height: on the side away from the pointer. */
+.debug-chart__tooltip {
+    position: absolute;
+    top: 0;
+    padding: 4px 6px;
+    color: rgb(240, 226, 196);
+    font-size: 12px;
+    white-space: nowrap;
+    background-color: rgba(24, 17, 12, 0.94);
+    border-width: 1px;
+    border-color: rgb(110, 84, 52);
+}
