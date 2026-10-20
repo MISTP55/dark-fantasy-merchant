@@ -105,6 +105,9 @@ namespace DarkFantasyMerchant.Game
 
         private int firstDay;
         private int count;
+        private float? givenMin;
+        private float? givenMax;
+        private TimeSeriesChart mirror;
         private float rawMin;
         private float rawMax = 1f;
         private Scale scale = new Scale(0f, 1f, 0.25f);
@@ -156,6 +159,7 @@ namespace DarkFantasyMerchant.Game
             plot.RegisterCallback<PointerLeaveEvent>(OnPointerLeave);
             plot.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             column.Add(plot);
+            RegisterCallback<ClickEvent>(click => Clicked?.Invoke(this));
 
             timeAxis = new VisualElement { pickingMode = PickingMode.Ignore };
             timeAxis.AddToClassList(TimeClass);
@@ -177,6 +181,29 @@ namespace DarkFantasyMerchant.Game
         /// <summary>False to leave the legend out, when the page shows one for all its charts. A legend of a single colour is always left out.</summary>
         public bool ShowsLegend { get; set; } = true;
 
+        /// <summary>The day of the first values drawn, counted from the start of the game.</summary>
+        public int FirstDay => firstDay;
+
+        /// <summary>Days drawn.</summary>
+        public int DayCount => count;
+
+        /// <summary>
+        /// Another chart given the same data as this one, now and at every <see cref="SetData"/>:
+        /// the large copy of a chart that was clicked. Null for none.
+        /// </summary>
+        public TimeSeriesChart Mirror
+        {
+            get => mirror;
+            set
+            {
+                mirror = value;
+                mirror?.SetData(firstDay, count, series, bands, givenMin, givenMax);
+            }
+        }
+
+        /// <summary>Raised when the chart is clicked.</summary>
+        public event Action<TimeSeriesChart> Clicked;
+
         /// <param name="first">The day of the first values, counted from the start of the game.</param>
         /// <param name="dayCount">Days drawn, one after the other: the first values of every series and band.</param>
         /// <param name="commonMin">With <paramref name="commonMax"/>, the range of the series without a scale of their own.</param>
@@ -190,6 +217,8 @@ namespace DarkFantasyMerchant.Game
         {
             firstDay = first;
             count = Math.Max(0, dayCount);
+            givenMin = commonMin;
+            givenMax = commonMax;
             series.Clear();
             bands.Clear();
 
@@ -254,6 +283,8 @@ namespace DarkFantasyMerchant.Game
             {
                 WriteTooltip();
             }
+
+            mirror?.SetData(firstDay, count, series, bands, givenMin, givenMax);
         }
 
         private static VisualElement Axis(string side)

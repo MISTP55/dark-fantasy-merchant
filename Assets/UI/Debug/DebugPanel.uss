@@ -338,6 +338,36 @@
     min-height: 300px;
 }
 
+.debug-chart--zoomable:hover {
+    border-color: rgb(110, 84, 52);
+}
+
+/* A chart enlarged by a click, over the whole curves tab. */
+.debug-zoom {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    flex-direction: column;
+    padding: 8px;
+    background-color: rgba(24, 17, 12, 0.96);
+}
+
+.debug-zoom__hint {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    color: rgb(150, 130, 100);
+    font-size: 11px;
+}
+
+.debug-zoom__chart {
+    flex-grow: 1;
+    height: auto;
+    margin: 0;
+}
+
 .debug-chart__title {
     flex-shrink: 0;
     margin: 0 0 2px 0;

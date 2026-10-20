@@ -546,12 +546,19 @@ namespace DarkFantasyMerchant.Game
         {
             if (index == CurvesTab)
             {
-                views[CurvesTab] = new DebugCurvesView(curvesSubtabs, new IDebugView[]
+                VisualElement page = pages[CurvesTab];
+                var curves = new IDebugView[]
                 {
-                    new DebugCityCurvesView(pages[CurvesTab].Q<VisualElement>("city-curves-page"), recorder, goodTitles),
-                    new DebugIndicatorCurvesView(pages[CurvesTab].Q<VisualElement>("indicator-curves-page"), recorder, goodTitles),
-                    new DebugComposedCurvesView(pages[CurvesTab].Q<VisualElement>("composed-curves-page"), recorder, goodTitles),
-                });
+                    new DebugCityCurvesView(page.Q<VisualElement>("city-curves-page"), recorder, goodTitles),
+                    new DebugIndicatorCurvesView(page.Q<VisualElement>("indicator-curves-page"), recorder, goodTitles),
+                    new DebugComposedCurvesView(page.Q<VisualElement>("composed-curves-page"), recorder, goodTitles),
+                };
+
+                // Every chart of the sub-tabs is enlarged by a click, over the whole tab.
+                var zoom = new ChartZoom(recorder.ChartCalendar);
+                page.Query<TimeSeriesChart>().ForEach(zoom.Attach);
+                page.Add(zoom);
+                views[CurvesTab] = new DebugCurvesView(curvesSubtabs, curves, zoom);
             }
             else if (index == TradesTab)
             {
