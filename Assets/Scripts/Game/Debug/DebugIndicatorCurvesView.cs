@@ -62,7 +62,8 @@ namespace DarkFantasyMerchant.Game
             goodField = Dropdown(toolbar, "Marchandise", goodChoices);
             goodField.index = 0;
 
-            commonScale = new Toggle { text = "Échelle commune", focusable = false };
+            // On at first: the cities are compared at a glance.
+            commonScale = new Toggle { text = "Échelle commune", value = true, focusable = false };
             commonScale.AddToClassList("debug-panel__toggle");
             toolbar.Add(commonScale);
 
