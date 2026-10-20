@@ -91,6 +91,7 @@ namespace DarkFantasyMerchant.Core
             Social = social;
             this.daysPerWeek = daysPerWeek;
             weekLog = new MarketWeekLog(goods.Count, daysPerWeek);
+            LastDay = new CityDayReport(goods.Count);
             this.goods = new MarketGood[goods.Count];
             stocks = new double[goods.Count];
             workers = StartingWorkersOf(goods, workforce);
@@ -149,6 +150,9 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>Houses the city has built of its own since the game started, not the player's.</summary>
         public int CityHouses { get; private set; }
+
+        /// <summary>What happened in the last <see cref="StartDay"/>, for the debug tools; the same object every day.</summary>
+        public CityDayReport LastDay { get; }
 
         /// <summary>
         /// Raised once by a day that starts, once when units were taken or put, and once by
@@ -454,6 +458,7 @@ namespace DarkFantasyMerchant.Core
         public void StartDay()
         {
             weekLog.StartDay();
+            LastDay.Clear();
 
             // Every good first, by the inhabitants of the morning: a workshop that hires
             // changes the poor, so it must not change what the goods after it consume.
@@ -461,14 +466,18 @@ namespace DarkFantasyMerchant.Core
 
             for (int i = 0; i < goods.Length; i++)
             {
-                consumed[i] = Math.Min(stocks[i], DailyConsumptionOf(i));
+                double needed = DailyConsumptionOf(i);
+                consumed[i] = Math.Min(stocks[i], needed);
                 stocks[i] -= consumed[i];
+                LastDay.RecordConsumption(i, needed, consumed[i]);
             }
 
             for (int i = 0; i < goods.Length; i++)
             {
                 MarketGood good = goods[i];
                 double produced = 0d;
+                int workersBefore = workers[i];
+                bool halted = false;
 
                 if (good.IsProduced)
                 {
@@ -493,9 +502,14 @@ namespace DarkFantasyMerchant.Core
                         produced = workers[i] * good.DailyOutputPerWorker;
                         stocks[i] += produced;
                     }
+                    else
+                    {
+                        halted = true;
+                    }
                 }
 
                 weekLog.Record(i, produced, consumed[i]);
+                LastDay.RecordWorkshop(i, workersBefore, workers[i], produced, halted);
             }
 
             if (Labour != null)
@@ -509,11 +523,17 @@ namespace DarkFantasyMerchant.Core
 
                 if (Social != null)
                 {
+                    int rich = Population.CountOf(SocialClass.Rich);
+                    int wealthy = Population.CountOf(SocialClass.Wealthy);
                     Social.RiseAndFall(Population);
+                    LastDay.RecordClassChange(SocialClass.Rich, Population.CountOf(SocialClass.Rich) - rich);
+                    LastDay.RecordClassChange(SocialClass.Wealthy, Population.CountOf(SocialClass.Wealthy) - wealthy);
                     LetThePoorLeave();
                 }
 
+                int beggars = Population.Beggars;
                 Population.SetBeggars(Labour.NextBeggars(Population.Beggars, Population.Inhabitants));
+                LastDay.RecordBeggarChange(Population.Beggars - beggars);
                 BuildCityHouses();
             }
 
@@ -654,6 +674,7 @@ namespace DarkFantasyMerchant.Core
 
             Population.AddRoom(rule.HousedClass, rule.Room);
             CityHouses++;
+            LastDay.RecordHouse(rule.HousedClass);
         }
 
         // Each class's satisfaction takes a step towards the target the stocks of the goods it
@@ -689,6 +710,7 @@ namespace DarkFantasyMerchant.Core
 
             int removed = TakeWorkersAway(workers);
             Population.Leave(SocialClass.Poor, removed * Labour.InhabitantsPerWorker);
+            LastDay.RecordLeaving(removed * Labour.InhabitantsPerWorker, removed);
         }
 
         // Patrician III's 0x51C6B0: the reserves first, in the catalogue's order; then the
