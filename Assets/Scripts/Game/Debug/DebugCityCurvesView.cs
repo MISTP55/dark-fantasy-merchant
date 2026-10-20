@@ -8,13 +8,15 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// The curves of one city, chosen in a list: its inhabitants per class and its beggars, its
     /// satisfactions, its workers and their reserve, then, for every good, its stock over the
-    /// bands of its thresholds and its price.
+    /// bands of its thresholds and its price, the charts of the goods it produces framed.
     /// </summary>
     public sealed class DebugCityCurvesView : IDebugView
     {
         private const string CityButtonClass = "debug-curves__city";
         private const string ThirdClass = "debug-chart--third";
         private const string QuarterClass = "debug-chart--quarter";
+        private const string ProducedClass = "debug-chart--produced";
+        private const string InefficientlyProducedClass = "debug-chart--produced-inefficient";
         private const string BelowT0Name = "Sous T0";
         private const string T0ToT1Name = "T0 à T1";
         private const string T1ToT2Name = "T1 à T2";
@@ -82,7 +84,8 @@ namespace DarkFantasyMerchant.Game
             workersChart = AddChart(populationGrid, "Ouvriers et réserve", ThirdClass, recorder.ChartCalendar);
 
             // One legend for every good: their charts are too small for one each.
-            charts.Add(Section("Marchandises : stock sur les bandes des seuils, prix d'achat sur l'échelle de droite"));
+            charts.Add(Section("Marchandises : stock sur les bandes des seuils, prix d'achat sur l'échelle de droite ; "
+                + "encadrées, celles que la ville produit (en clair : efficacement, en sombre : peu efficacement)"));
             var goodsLegend = new ChartLegend();
             goodsLegend.AddToClassList("debug-curves__legend");
             goodsLegend.SetEntries(new[]
@@ -186,6 +189,18 @@ namespace DarkFantasyMerchant.Game
             foreach (Button button in cityButtons)
             {
                 button.EnableInClassList(DebugTabs.SelectedClass, (int)button.userData == index);
+            }
+
+            // The goods the city has a workshop for stand out among the others.
+            CityDefinition definition = city < recorder.Cities.Count ? recorder.Cities[city] : null;
+
+            for (int good = 0; good < goodCharts.Length; good++)
+            {
+                GoodProduction production = definition != null && good < recorder.Goods.Count
+                    ? definition.ProductionOf(recorder.Goods[good])
+                    : GoodProduction.None;
+                goodCharts[good].EnableInClassList(ProducedClass, production == GoodProduction.Efficient);
+                goodCharts[good].EnableInClassList(InefficientlyProducedClass, production == GoodProduction.Inefficient);
             }
 
             Refresh();

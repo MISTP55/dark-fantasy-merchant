@@ -553,6 +553,29 @@
     width: 24.2%;
 }
 
+/* The goods the city of "Par ville" produces: framed, bright when efficiently, darker when inefficiently. */
+.debug-chart--produced {
+    background-color: rgb(46, 38, 28);
+    border-width: 2px;
+    border-color: rgb(214, 170, 86);
+}
+
+.debug-chart--produced .debug-chart__title {
+    color: rgb(240, 208, 140);
+    -unity-font-style: bold;
+}
+
+.debug-chart--produced-inefficient {
+    background-color: rgb(40, 33, 26);
+    border-width: 2px;
+    border-color: rgb(128, 100, 58);
+}
+
+.debug-chart--produced-inefficient .debug-chart__title {
+    color: rgb(214, 186, 134);
+    -unity-font-style: bold;
+}
+
 /* The choices over the charts of a sub-tab. */
 .debug-curves__toolbar {
     flex-direction: row;

@@ -24,6 +24,7 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private CityInfoPanelController cityPanel;
 
         private readonly List<CityDefinition> cities = new List<CityDefinition>();
+        private readonly List<GoodDefinition> goods = new List<GoodDefinition>();
         private readonly List<string> goodNames = new List<string>();
 
         private GameClock clock;
@@ -36,6 +37,9 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>The cities recorded, in the order of their indices in the record.</summary>
         public IReadOnlyList<CityDefinition> Cities => cities;
+
+        /// <summary>The goods, in the catalogue's order, as the record's indices.</summary>
+        public IReadOnlyList<GoodDefinition> Goods => goods;
 
         /// <summary>The names of the goods, in the catalogue's order, as the record's indices.</summary>
         public IReadOnlyList<string> GoodNames => goodNames;
@@ -122,6 +126,7 @@ namespace DarkFantasyMerchant.Game
 
             foreach (GoodDefinition good in worldEconomy.Economy.Goods)
             {
+                goods.Add(good);
                 goodNames.Add(good.DisplayName);
             }
 
