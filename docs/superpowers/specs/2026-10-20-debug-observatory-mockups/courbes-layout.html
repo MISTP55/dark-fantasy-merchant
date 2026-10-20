@@ -1,0 +1,162 @@
+<style>
+  .dp { background:#1b1714; color:#e8dcc8; border:1px solid #5a4a38; border-radius:6px; font:12px/1.35 system-ui, sans-serif; overflow:hidden; }
+  .dp-head { display:flex; align-items:center; gap:10px; padding:6px 10px; background:#2a221c; border-bottom:1px solid #5a4a38; }
+  .dp-title { font-weight:600; margin-right:6px; }
+  .dp-tab { padding:3px 9px; border:1px solid #5a4a38; border-radius:4px; color:#bfae94; }
+  .dp-tab.on { background:#5a4a38; color:#fff; }
+  .dp-sp { flex:1; }
+  .dp-sel { padding:2px 8px; border:1px solid #7a6650; border-radius:4px; background:#231d18; color:#e8dcc8; white-space:nowrap; }
+  .dp-body { display:flex; gap:8px; padding:8px; }
+  .dp-side { width:110px; flex:none; border-right:1px solid #3a3029; padding-right:6px; }
+  .dp-side div { padding:2px 4px; border-radius:3px; color:#bfae94; }
+  .dp-side div.on { background:#5a4a38; color:#fff; }
+  .dp-main { flex:1; min-width:0; }
+  .grid { display:grid; gap:6px; }
+  .g3 { grid-template-columns:repeat(3, 1fr); }
+  .g4 { grid-template-columns:repeat(4, 1fr); }
+  .ch { background:#231d18; border:1px solid #3a3029; border-radius:4px; padding:4px 5px 2px; }
+  .ch-t { font-size:11px; color:#bfae94; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ch svg { width:100%; height:62px; display:block; }
+  .big svg { height:190px; }
+  .sec { font-size:11px; color:#8f7f69; text-transform:uppercase; letter-spacing:.05em; margin:8px 0 4px; }
+  .chip { display:inline-block; padding:1px 7px; margin:0 4px 4px 0; border-radius:10px; font-size:11px; border:1px solid currentColor; }
+  .note { font-size:11px; color:#8f7f69; margin-top:6px; }
+  .tabs-proposal { margin-bottom:1.25rem; }
+</style>
+
+<h2>L'onglet des courbes : comment le parcourir ?</h2>
+<p class="subtitle">Trois façons d'organiser les mêmes données (relevé quotidien de chaque ville). Les chiffres sont inventés. Cliquez celle qui vous parle le plus. Vous pouvez aussi en choisir plusieurs si vous voulez les combiner.</p>
+
+<div class="tabs-proposal">
+  <div class="label">Barre d'onglets proposée pour tout le panneau (à discuter ensuite)</div>
+  <div class="dp"><div class="dp-head">
+    <span class="dp-title">Débogage</span>
+    <span class="dp-tab">Villes</span><span class="dp-tab on">Courbes</span><span class="dp-tab">Événements</span><span class="dp-tab">Échanges IA</span><span class="dp-tab">Navires</span>
+    <span class="dp-sp"></span>
+    <span class="dp-sel">Historique : 12 mois ▾</span>
+    <span class="dp-sel">Vitesse ×120</span>
+    <span class="dp-sel">X</span>
+  </div></div>
+</div>
+
+<div class="options" data-multiselect>
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content" style="width:100%">
+      <h3>Par ville : le tableau de bord d'une ville</h3>
+      <p>On choisit une ville à gauche. On voit toutes ses courbes d'un coup : sa population, sa satisfaction, puis une petite courbe par marchandise (le stock, avec les seuils T0 à T3 en bandes, et le prix). C'est la vue pour comprendre ce qui arrive à une ville.</p>
+      <div class="dp" style="margin-top:8px"><div class="dp-body">
+        <div class="dp-side"><div>Aldenmoor</div><div class="on">Brumefort</div><div>Corvaux</div><div>Drakenhal</div><div>Écume-Noire</div><div>…</div></div>
+        <div class="dp-main">
+          <div class="sec">Population</div>
+          <div class="grid g3">
+            <div class="ch"><div class="ch-t">Habitants par classe + mendiants</div><svg data-kind="stack"></svg></div>
+            <div class="ch"><div class="ch-t">Satisfaction (riches, aisés, pauvres)</div><svg data-kind="lines3" data-seed="4"></svg></div>
+            <div class="ch"><div class="ch-t">Ouvriers / réserve</div><svg data-kind="lines2" data-seed="9"></svg></div>
+          </div>
+          <div class="sec">Marchandises : stock et seuils (bandes), prix (pointillé)</div>
+          <div class="grid g4">
+            <div class="ch"><div class="ch-t">Bière</div><svg data-kind="stock" data-seed="11"></svg></div>
+            <div class="ch"><div class="ch-t">Blé</div><svg data-kind="stock" data-seed="12"></svg></div>
+            <div class="ch"><div class="ch-t">Bois</div><svg data-kind="stock" data-seed="13"></svg></div>
+            <div class="ch"><div class="ch-t">Cuir</div><svg data-kind="stock" data-seed="14"></svg></div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content" style="width:100%">
+      <h3>Par indicateur : toutes les villes côte à côte</h3>
+      <p>On choisit un indicateur (et une marchandise si besoin). On voit une petite courbe par ville, à la même échelle. C'est la vue pour repérer la ville qui décroche par rapport aux autres.</p>
+      <div class="dp" style="margin-top:8px"><div class="dp-body" style="display:block">
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <span class="dp-sel">Indicateur : Stock ▾</span><span class="dp-sel">Marchandise : Blé ▾</span><span class="dp-sel">Échelle commune ☑</span>
+        </div>
+        <div class="grid g4">
+          <div class="ch"><div class="ch-t">Aldenmoor</div><svg data-kind="stock" data-seed="21"></svg></div>
+          <div class="ch"><div class="ch-t">Brumefort</div><svg data-kind="stock" data-seed="22"></svg></div>
+          <div class="ch"><div class="ch-t">Corvaux</div><svg data-kind="crash" data-seed="23"></svg></div>
+          <div class="ch"><div class="ch-t">Drakenhal</div><svg data-kind="stock" data-seed="24"></svg></div>
+          <div class="ch"><div class="ch-t">Écume-Noire</div><svg data-kind="stock" data-seed="25"></svg></div>
+          <div class="ch"><div class="ch-t">Fangeval</div><svg data-kind="stock" data-seed="26"></svg></div>
+          <div class="ch"><div class="ch-t">Grisemarche</div><svg data-kind="stock" data-seed="27"></svg></div>
+          <div class="ch"><div class="ch-t">… 17 autres</div><svg data-kind="stock" data-seed="28"></svg></div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content" style="width:100%">
+      <h3>Composer : un grand graphique, on ajoute les courbes qu'on veut</h3>
+      <p>Un seul grand graphique. On y ajoute des courbes en combinant ville, marchandise et indicateur, par exemple le prix du blé à Corvaux contre le stock du blé à Brumefort. C'est la vue pour vérifier une relation précise entre deux choses.</p>
+      <div class="dp" style="margin-top:8px"><div class="dp-body" style="display:block">
+        <div style="margin-bottom:4px">
+          <span class="chip" style="color:#e0a050">Corvaux · Blé · Prix d'achat ✕</span>
+          <span class="chip" style="color:#7ab0e0">Brumefort · Blé · Stock ✕</span>
+          <span class="chip" style="color:#8fcb7a">Corvaux · Pauvres · Satisfaction ✕</span>
+          <span class="dp-sel">+ Ajouter une courbe</span>
+        </div>
+        <div class="ch big"><svg data-kind="compose"></svg></div>
+      </div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  function rng(seed) { let s = seed * 9301 + 49297; return () => (s = (s * 9301 + 49297) % 233280) / 233280; }
+  function walk(seed, n, start, vol, min, max) {
+    const r = rng(seed); const out = []; let v = start;
+    for (let i = 0; i < n; i++) { v += (r() - 0.5) * vol; v = Math.max(min, Math.min(max, v)); out.push(v); }
+    return out;
+  }
+  const NS = 'http://www.w3.org/2000/svg';
+  function el(svg, name, attrs) { const e = document.createElementNS(NS, name); for (const k in attrs) e.setAttribute(k, attrs[k]); svg.appendChild(e); return e; }
+  function line(svg, data, lo, hi, color, dash, w) {
+    const W = 200, H = 60, n = data.length;
+    const pts = data.map((v, i) => (i / (n - 1) * W).toFixed(1) + ',' + (H - (v - lo) / (hi - lo) * H).toFixed(1)).join(' ');
+    el(svg, 'polyline', { points: pts, fill: 'none', stroke: color, 'stroke-width': w || 1.4, 'stroke-dasharray': dash || '', 'vector-effect': 'non-scaling-stroke' });
+  }
+  function band(svg, y0, y1, color) { el(svg, 'rect', { x: 0, y: 60 - y1 * 60, width: 200, height: (y1 - y0) * 60, fill: color }); }
+  document.querySelectorAll('svg[data-kind]').forEach(svg => {
+    svg.setAttribute('viewBox', '0 0 200 60'); svg.setAttribute('preserveAspectRatio', 'none');
+    const k = svg.dataset.kind, seed = +(svg.dataset.seed || 1);
+    if (k === 'stock' || k === 'crash') {
+      band(svg, 0, 0.15, 'rgba(224,112,90,.18)'); band(svg, 0.15, 0.35, 'rgba(224,180,90,.12)');
+      band(svg, 0.35, 0.7, 'rgba(143,203,122,.10)'); band(svg, 0.7, 1, 'rgba(122,176,224,.10)');
+      let s = walk(seed, 120, 0.5, 0.12, 0.02, 0.98);
+      if (k === 'crash') s = s.map((v, i) => i > 60 ? Math.max(0.02, v - (i - 60) * 0.012) : v);
+      line(svg, s, 0, 1, '#e8dcc8');
+      line(svg, s.map(v => 1 - v * 0.8), 0, 1, '#e0a050', '3,2', 1);
+    } else if (k === 'lines3') {
+      line(svg, walk(seed, 120, 0.7, 0.08, 0.1, 0.95), 0, 1, '#d6b85a');
+      line(svg, walk(seed + 1, 120, 0.5, 0.08, 0.1, 0.95), 0, 1, '#7ab0e0');
+      line(svg, walk(seed + 2, 120, 0.4, 0.1, 0.05, 0.95), 0, 1, '#e0705a');
+    } else if (k === 'lines2') {
+      line(svg, walk(seed, 120, 0.6, 0.06, 0.2, 0.95), 0, 1, '#8fcb7a');
+      line(svg, walk(seed + 1, 120, 0.15, 0.06, 0.0, 0.5), 0, 1, '#bfae94', '3,2');
+    } else if (k === 'stack') {
+      const n = 120, r = walk(5, n, 0.1, 0.01, 0.08, 0.14), w = walk(6, n, 0.25, 0.02, 0.2, 0.32), p = walk(7, n, 0.4, 0.04, 0.3, 0.5), b = walk(8, n, 0.08, 0.03, 0.02, 0.15);
+      const layers = [[r, '#d6b85a'], [w, '#7ab0e0'], [p, '#e0705a'], [b, '#8f7f69']]; let base = new Array(n).fill(0);
+      layers.forEach(([d, c]) => {
+        const top = base.map((v, i) => v + d[i]);
+        const pts = top.map((v, i) => (i / (n - 1) * 200).toFixed(1) + ',' + (60 - v * 60).toFixed(1)).concat(base.slice().reverse().map((v, i) => ((n - 1 - i) / (n - 1) * 200).toFixed(1) + ',' + (60 - v * 60).toFixed(1))).join(' ');
+        el(svg, 'polygon', { points: pts, fill: c, opacity: 0.75 }); base = top;
+      });
+    } else if (k === 'compose') {
+      for (let i = 1; i < 4; i++) el(svg, 'line', { x1: 0, x2: 200, y1: i * 15, y2: i * 15, stroke: '#3a3029', 'stroke-width': 0.3 });
+      const stock = walk(31, 200, 0.6, 0.06, 0.05, 0.95).map((v, i) => i > 110 ? Math.max(0.05, v - (i - 110) * 0.006) : v);
+      line(svg, stock, 0, 1, '#7ab0e0');
+      line(svg, stock.map(v => 0.9 - v * 0.7), 0, 1, '#e0a050');
+      line(svg, walk(33, 200, 0.6, 0.05, 0.1, 0.9).map((v, i) => i > 130 ? Math.max(0.1, v - (i - 130) * 0.005) : v), 0, 1, '#8fcb7a');
+    }
+  });
+})();
+</script>
