@@ -73,8 +73,9 @@ namespace DarkFantasyMerchant.Game
         private DebugTabs curvesSubtabs;
         private DebugTabs tradesSubtabs;
 
-        // The goods' names with their unit, in the catalogue's order, for the views made later.
+        // The goods' names, with and without their unit, in the catalogue's order, for the views made later.
         private readonly List<string> goodTitles = new List<string>();
+        private readonly List<string> plainGoodNames = new List<string>();
 
         // Reused by every refresh of the ships tab.
         private readonly List<DebugShipInfo> shipInfos = new List<DebugShipInfo>();
@@ -490,6 +491,8 @@ namespace DarkFantasyMerchant.Game
 
             goodTitles.Clear();
             goodTitles.AddRange(goodNames);
+            plainGoodNames.Clear();
+            plainGoodNames.AddRange(shipGoodNames);
 
             VisualElement citiesPage = pages[CitiesTab];
             var citiesTable = new DebugCitiesTable(
@@ -553,6 +556,10 @@ namespace DarkFantasyMerchant.Game
                     new DebugIndicatorCurvesView(pages[CurvesTab].Q<VisualElement>("indicator-curves-page"), recorder, goodTitles),
                     new DebugComposedCurvesView(pages[CurvesTab].Q<VisualElement>("composed-curves-page"), recorder, goodTitles),
                 });
+            }
+            else if (index == EventsTab)
+            {
+                views[EventsTab] = new DebugEventsView(pages[EventsTab], recorder, plainGoodNames);
             }
         }
 

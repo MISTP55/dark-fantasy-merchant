@@ -459,8 +459,8 @@
     margin-right: 16px;
 }
 
-.debug-panel__toggle .unity-toggle__text,
-.debug-panel__toggle .unity-base-field__label {
+.debug-panel__toggle .unity-toggle__text {
+    margin-left: 4px;
     color: rgb(222, 210, 188);
     font-size: 13px;
 }
@@ -493,4 +493,40 @@
     color: rgb(222, 210, 188);
     background-color: rgba(0, 0, 0, 0);
     border-width: 0;
+}
+
+/* A long journal, in a virtualised list: its rows are striped by the list, as ListStripes does the others. */
+.debug-journal {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+}
+
+/* The header keeps its height whatever a page holds. */
+.debug-panel > .info-panel__header {
+    flex-shrink: 0;
+}
+
+.debug-journal .unity-collection-view__item--alternative-background {
+    background-color: rgba(240, 226, 196, 0.01);
+}
+
+.debug-events__cell--date {
+    width: 140px;
+    -unity-text-align: middle-left;
+}
+
+.debug-events__cell--city {
+    width: 130px;
+    -unity-text-align: middle-left;
+}
+
+.debug-events__cell--type {
+    width: 110px;
+    -unity-text-align: middle-left;
+}
+
+.debug-events__cell--detail {
+    flex-grow: 1;
+    -unity-text-align: middle-left;
 }

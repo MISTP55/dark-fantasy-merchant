@@ -64,7 +64,7 @@ namespace DarkFantasyMerchant.Game
             goodField = Dropdown(toolbar, "Marchandise", goodChoices);
             goodField.index = 0;
 
-            commonScale = new Toggle("Échelle commune") { focusable = false };
+            commonScale = new Toggle { text = "Échelle commune", focusable = false };
             commonScale.AddToClassList("debug-panel__toggle");
             toolbar.Add(commonScale);
 
