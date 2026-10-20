@@ -51,7 +51,7 @@ A new script goes in the subfolder of its subsystem; a new subsystem gets its su
 
 - Every `UIDocument` of the game (city panel, ship panel, time HUD, treasury HUD, notifications, debug panel) shares one `PanelSettings`: that is what lets `CityInfoPanelController.IsPointerOverUi` see them all and the map take no click or wheel step on them. A new panel goes on the same `PanelSettings`.
 - Labels drawn over the map (treasury, notifications) ignore the pointer, so the map under them stays reachable.
-- Labels are rewritten on the event that changes them (`Changed`, `DayStarted`…), not every frame. The exception is the debug ships table.
+- Labels are rewritten on the event that changes them (`Changed`, `DayStarted`…), not every frame. The exceptions are the debug ships table, rewritten every frame, and the debug views of the past, rewritten at most once a frame.
 - The city and ship panels share their frame, title and close button styles (`InfoPanel.uss`).
 
 ## Conventions
