@@ -136,12 +136,15 @@ namespace DarkFantasyMerchant.Game
             section.style.display = DisplayStyle.None;
         }
 
+        /// <summary>Raised by a purchase or a sale that moved at least one unit, for the debug tools.</summary>
+        public event Action<int, TradeResult, PlayerTradeKind> Traded;
+
         /// <summary>Buys up to that many units of a good into the shown hold; nothing without one.</summary>
         public void Buy(int good, int units)
         {
             if (hold != null && good < market.GoodCount)
             {
-                Trade.Buy(market, hold, treasury, good, units);
+                Report(good, Trade.Buy(market, hold, treasury, good, units), PlayerTradeKind.Buy);
             }
         }
 
@@ -150,7 +153,15 @@ namespace DarkFantasyMerchant.Game
         {
             if (hold != null && good < market.GoodCount)
             {
-                Trade.Sell(market, hold, treasury, good, units);
+                Report(good, Trade.Sell(market, hold, treasury, good, units), PlayerTradeKind.Sell);
+            }
+        }
+
+        private void Report(int good, TradeResult result, PlayerTradeKind kind)
+        {
+            if (result.Units > 0)
+            {
+                Traded?.Invoke(good, result, kind);
             }
         }
 

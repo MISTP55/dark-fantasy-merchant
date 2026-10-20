@@ -92,6 +92,9 @@ namespace DarkFantasyMerchant.Game
         /// <summary>Raised once a workshop is built, with its good.</summary>
         public event Action<int> WorkshopBuilt;
 
+        /// <summary>Raised for each material a building bought from the market: its good, units and gold. For the debug tools.</summary>
+        public event Action<int, int, long> MaterialBought;
+
         /// <summary>"Maisons de pauvres : 2 (ville : 1 008 / 1 300 places)": the player's houses, then the class's inhabitants and room.</summary>
         public static string HousesText(SocialClass housedClass, int playerHouses, int inhabitants, int room)
         {
@@ -165,7 +168,7 @@ namespace DarkFantasyMerchant.Game
                 return false;
             }
 
-            if (!Construction.TryBuildHouse(market, hold, treasury, cost, housedClass, houseRooms[housedClass]))
+            if (!Construction.TryBuildHouse(market, hold, treasury, cost, housedClass, houseRooms[housedClass], OnMaterialBought))
             {
                 return false;
             }
@@ -182,13 +185,18 @@ namespace DarkFantasyMerchant.Game
                 return false;
             }
 
-            if (!Construction.TryBuildWorkshop(market, hold, treasury, workshopCost, good, workshopJobs))
+            if (!Construction.TryBuildWorkshop(market, hold, treasury, workshopCost, good, workshopJobs, OnMaterialBought))
             {
                 return false;
             }
 
             WorkshopBuilt?.Invoke(good);
             return true;
+        }
+
+        private void OnMaterialBought(int good, int units, long gold)
+        {
+            MaterialBought?.Invoke(good, units, gold);
         }
 
         private void BuildRows()

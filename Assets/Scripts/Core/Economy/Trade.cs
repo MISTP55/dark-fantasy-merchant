@@ -2,6 +2,16 @@ using System;
 
 namespace DarkFantasyMerchant.Core
 {
+    /// <summary>What the player did with a market, for the debug tools.</summary>
+    public enum PlayerTradeKind
+    {
+        Buy,
+        Sell,
+
+        /// <summary>Materials of a building bought from the market.</summary>
+        Construction,
+    }
+
     /// <summary>
     /// Buying and selling between a city's market, a ship's hold and, for the player,
     /// a treasury, in units of the good, barrels or bushels. Units are priced one by one,

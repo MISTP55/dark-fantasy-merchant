@@ -178,6 +178,48 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void Buy_RaisesTraded_WithWhatWasBought()
+        {
+            section.Show(market, hold);
+            var reports = new System.Collections.Generic.List<(int good, TradeResult result, PlayerTradeKind kind)>();
+            section.Traded += (good, result, kind) => reports.Add((good, result, kind));
+            long gold = treasury.Gold;
+
+            section.Buy(Wheat, 10);
+
+            Assert.AreEqual(1, reports.Count);
+            Assert.AreEqual(Wheat, reports[0].good);
+            Assert.AreEqual(10, reports[0].result.Units);
+            Assert.AreEqual(gold - treasury.Gold, reports[0].result.Gold);
+            Assert.AreEqual(PlayerTradeKind.Buy, reports[0].kind);
+        }
+
+        [Test]
+        public void Sell_RaisesTraded_AsASale()
+        {
+            hold.TryAdd(Wine, 20);
+            section.Show(market, hold);
+            PlayerTradeKind? kind = null;
+            section.Traded += (good, result, tradeKind) => kind = tradeKind;
+
+            section.Sell(Wine, 100);
+
+            Assert.AreEqual(PlayerTradeKind.Sell, kind);
+        }
+
+        [Test]
+        public void Sell_RaisesNothing_WhenNothingIsAboard()
+        {
+            section.Show(market, hold);
+            int reports = 0;
+            section.Traded += (good, result, kind) => reports++;
+
+            section.Sell(Wine, 100);
+
+            Assert.AreEqual(0, reports);
+        }
+
+        [Test]
         public void Sell_TradesAndRewritesTheRows()
         {
             hold.TryAdd(Wine, 20);

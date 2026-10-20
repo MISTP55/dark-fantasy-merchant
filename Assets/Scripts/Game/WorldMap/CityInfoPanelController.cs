@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DarkFantasyMerchant.Core;
 using UnityEngine;
@@ -74,6 +75,12 @@ namespace DarkFantasyMerchant.Game
         private VisualElement shipsPage;
         private DropdownField tradingShipField;
 
+
+        /// <summary>
+        /// Raised by every purchase and sale of the market tab and every material a building bought
+        /// from the market: the city, the good, the units, the gold and what was done. For the debug tools.
+        /// </summary>
+        public event Action<CityDefinition, int, int, long, PlayerTradeKind> PlayerTraded;
 
         // The city the panel shows, or null while it is closed.
         private CityDefinition shownCity;
@@ -567,10 +574,27 @@ namespace DarkFantasyMerchant.Game
                     buildings.CostsText(economy), treasury);
                 buildingsSection.HouseBuilt += OnHouseBuilt;
                 buildingsSection.WorkshopBuilt += OnWorkshopBuilt;
+                buildingsSection.MaterialBought += OnMaterialBought;
             }
 
             section = buildingsSection;
             return section != null;
+        }
+
+        private void OnTraded(int good, TradeResult result, PlayerTradeKind kind)
+        {
+            if (shownCity != null)
+            {
+                PlayerTraded?.Invoke(shownCity, good, result.Units, result.Gold, kind);
+            }
+        }
+
+        private void OnMaterialBought(int good, int units, long gold)
+        {
+            if (buildingsCity != null)
+            {
+                PlayerTraded?.Invoke(buildingsCity, good, units, gold, PlayerTradeKind.Construction);
+            }
         }
 
         private void OnHouseBuilt(SocialClass housedClass)
@@ -606,6 +630,7 @@ namespace DarkFantasyMerchant.Game
                 Treasury treasury = playerTreasury != null && playerTreasury.IsReady ? playerTreasury.Treasury : null;
                 marketSection = new CityMarketSection(
                     marketElement, marketRows, marketHoldLabel, goodNames, treasury, goodIcons);
+                marketSection.Traded += OnTraded;
             }
 
             section = marketSection;

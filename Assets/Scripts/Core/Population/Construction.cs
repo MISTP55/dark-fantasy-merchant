@@ -110,9 +110,17 @@ namespace DarkFantasyMerchant.Core
             return Quote(market, hold, treasury, cost, market.MaxWorkersOf(good) > 0);
         }
 
+        /// <param name="materialBought">Told, for the debug tools, of each material bought from the market: its good, units and gold.</param>
         /// <returns>False when the quote is impossible; nothing was taken then.</returns>
         /// <exception cref="ArgumentOutOfRangeException">A room under 1, before anything is taken.</exception>
-        public static bool TryBuildHouse(CityMarket market, CargoHold hold, Treasury treasury, BuildingCost cost, SocialClass housedClass, int room)
+        public static bool TryBuildHouse(
+            CityMarket market,
+            CargoHold hold,
+            Treasury treasury,
+            BuildingCost cost,
+            SocialClass housedClass,
+            int room,
+            Action<int, int, long> materialBought = null)
         {
             RequireAtLeastOne(room, nameof(room));
 
@@ -123,14 +131,22 @@ namespace DarkFantasyMerchant.Core
                 return false;
             }
 
-            Pay(market, hold, treasury, cost, quote);
+            Pay(market, hold, treasury, cost, quote, materialBought);
             market.AddPlayerHouse(housedClass, room);
             return true;
         }
 
+        /// <param name="materialBought">Told, for the debug tools, of each material bought from the market: its good, units and gold.</param>
         /// <returns>False when the quote is impossible; nothing was taken then.</returns>
         /// <exception cref="ArgumentOutOfRangeException">Jobs under 1, before anything is taken.</exception>
-        public static bool TryBuildWorkshop(CityMarket market, CargoHold hold, Treasury treasury, BuildingCost cost, int good, int jobs)
+        public static bool TryBuildWorkshop(
+            CityMarket market,
+            CargoHold hold,
+            Treasury treasury,
+            BuildingCost cost,
+            int good,
+            int jobs,
+            Action<int, int, long> materialBought = null)
         {
             RequireAtLeastOne(jobs, nameof(jobs));
 
@@ -141,7 +157,7 @@ namespace DarkFantasyMerchant.Core
                 return false;
             }
 
-            Pay(market, hold, treasury, cost, quote);
+            Pay(market, hold, treasury, cost, quote, materialBought);
             market.AddPlayerWorkshop(good, jobs);
             return true;
         }
@@ -172,7 +188,13 @@ namespace DarkFantasyMerchant.Core
             return new ConstructionQuote(possible, gold);
         }
 
-        private static void Pay(CityMarket market, CargoHold hold, Treasury treasury, BuildingCost cost, ConstructionQuote quote)
+        private static void Pay(
+            CityMarket market,
+            CargoHold hold,
+            Treasury treasury,
+            BuildingCost cost,
+            ConstructionQuote quote,
+            Action<int, int, long> materialBought)
         {
             foreach (MaterialCost material in cost.Materials)
             {
@@ -186,7 +208,16 @@ namespace DarkFantasyMerchant.Core
 
                 if (toBuy > 0)
                 {
+                    // At the prices of the quote, read before the stock goes down.
+                    long gold = 0;
+
+                    for (int i = 0; materialBought != null && i < toBuy; i++)
+                    {
+                        gold += market.BuyPriceOf(material.Good, i);
+                    }
+
                     market.Take(material.Good, toBuy);
+                    materialBought?.Invoke(material.Good, toBuy, gold);
                 }
             }
 

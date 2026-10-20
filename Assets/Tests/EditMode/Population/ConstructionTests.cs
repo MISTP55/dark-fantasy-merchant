@@ -42,6 +42,49 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void TryBuildHouse_ReportsTheMaterialsBoughtFromTheMarket()
+        {
+            CityMarket market = Market();
+            long expected = 0;
+
+            for (int i = 0; i < 6; i++)
+            {
+                expected += market.BuyPriceOf(0, i);
+            }
+
+            var reports = new System.Collections.Generic.List<(int good, int units, long gold)>();
+
+            bool built = Construction.TryBuildHouse(market, HoldWith(4), new Treasury(10000), Cost(10), SocialClass.Poor, 100,
+                (good, units, gold) => reports.Add((good, units, gold)));
+
+            Assert.IsTrue(built);
+            Assert.AreEqual(1, reports.Count);
+            Assert.AreEqual((0, 6, expected), reports[0]);
+        }
+
+        [Test]
+        public void TryBuildHouse_ReportsNothing_WhenTheHoldHoldsEverything()
+        {
+            int reports = 0;
+
+            Construction.TryBuildHouse(Market(), HoldWith(10), new Treasury(10000), Cost(10), SocialClass.Poor, 100,
+                (good, units, gold) => reports++);
+
+            Assert.AreEqual(0, reports);
+        }
+
+        [Test]
+        public void TryBuildWorkshop_ReportsTheMaterialsBoughtFromTheMarket()
+        {
+            int units = 0;
+
+            Construction.TryBuildWorkshop(Market(), null, new Treasury(10000), Cost(3), 1, 10,
+                (good, bought, gold) => units += bought);
+
+            Assert.AreEqual(3, units);
+        }
+
+        [Test]
         public void TryBuild_PaysExactlyTheQuote()
         {
             CityMarket market = Market();
