@@ -530,7 +530,6 @@ namespace DarkFantasyMerchant.Game
             curvesSubtabs = SubtabsOf(pages[CurvesTab], "city-curves", "indicator-curves", "composed-curves");
             curvesSubtabs.Select(0);
             tradesSubtabs = SubtabsOf(pages[TradesTab], "trade-journal", "trade-flows");
-            tradesSubtabs.Select(0);
 
             // Without the AI merchants, no ship can be removed: the rows have no button.
             if (shipsView != null)
@@ -560,6 +559,17 @@ namespace DarkFantasyMerchant.Game
             else if (index == EventsTab)
             {
                 views[EventsTab] = new DebugEventsView(pages[EventsTab], recorder, plainGoodNames);
+            }
+            else if (index == TradesTab)
+            {
+                views[TradesTab] = new DebugTradesView(
+                    tradesSubtabs,
+                    pages[TradesTab].Q<VisualElement>("trade-journal-page"),
+                    pages[TradesTab].Q<VisualElement>("trade-flows-page"),
+                    recorder,
+                    // A ship removed since keeps no name.
+                    ship => (shipsView != null ? shipsView.DisplayNameOf(ship) : null) ?? DebugCitiesTable.NoFigure,
+                    plainGoodNames);
             }
         }
 

@@ -88,6 +88,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(6, record.Events.Count);
             Assert.AreEqual(14, record.EventsTrimmed);
             Assert.AreEqual(3, record.Trades.Count);
+            Assert.AreEqual(7, record.TradesTrimmed);
             Assert.AreEqual(8, record.Trades[0].Day);
             Assert.AreEqual(1, recorded);
         }

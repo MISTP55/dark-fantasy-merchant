@@ -530,3 +530,22 @@
     flex-grow: 1;
     -unity-text-align: middle-left;
 }
+
+.debug-trades__cell--ship {
+    width: 180px;
+    -unity-text-align: middle-left;
+}
+
+.debug-trades__cell--operation {
+    width: 110px;
+    -unity-text-align: middle-left;
+}
+
+.debug-trades__cell--good {
+    width: 110px;
+    -unity-text-align: middle-left;
+}
+
+.debug-trades__cell--number {
+    width: 100px;
+}

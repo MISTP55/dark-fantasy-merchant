@@ -51,6 +51,9 @@ namespace DarkFantasyMerchant.Core
         /// <summary>The trades kept, oldest first.</summary>
         public IReadOnlyList<TradeRecord> Trades => trades;
 
+        /// <summary>Trades forgotten since the start: a trade kept at index i is the (TradesTrimmed + i)th ever recorded.</summary>
+        public long TradesTrimmed { get; private set; }
+
         /// <summary>Raised after a day is recorded and after the horizon changes.</summary>
         public event Action Recorded;
 
@@ -159,6 +162,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             trades.RemoveFirst(forgotten);
+            TradesTrimmed += forgotten;
         }
     }
 }
