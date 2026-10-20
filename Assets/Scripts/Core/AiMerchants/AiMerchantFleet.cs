@@ -54,6 +54,7 @@ namespace DarkFantasyMerchant.Core
         private readonly IReadOnlyList<CityMarket> markets;
         private readonly SupplyPlanner planner;
         private readonly double stopoverSeconds;
+        private readonly PortTravelTable routes;
 
         private readonly Dictionary<TPort, int> portIndices = new Dictionary<TPort, int>();
         private readonly Dictionary<Ship, Merchant> merchantsByShip = new Dictionary<Ship, Merchant>();
@@ -71,13 +72,18 @@ namespace DarkFantasyMerchant.Core
         /// <param name="markets">The market of each port.</param>
         /// <param name="planner">Chooses the destinations, the stopovers and the cargo, over the same ports.</param>
         /// <param name="stopoverSeconds">Seconds of the world a ship stays in a port.</param>
+        /// <param name="routes">
+        /// The routes between the ports' anchorages, over the same ports: a ship that leaves a port
+        /// sails the one to its next port rather than looking for it. Null to look for every route.
+        /// </param>
         public AiMerchantFleet(
             ShipDocking<TPort> docking,
             IReadOnlyList<TPort> ports,
             IReadOnlyList<Vector2> portPositions,
             IReadOnlyList<CityMarket> markets,
             SupplyPlanner planner,
-            double stopoverSeconds)
+            double stopoverSeconds,
+            PortTravelTable routes = null)
         {
             this.docking = docking ?? throw new ArgumentNullException(nameof(docking));
             this.ports = ports ?? throw new ArgumentNullException(nameof(ports));
@@ -91,6 +97,11 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentException("There must be a port, a position and a market per port of the planner.");
             }
 
+            if (routes != null && routes.PortCount != planner.PortCount)
+            {
+                throw new ArgumentException("There must be a route table over the ports of the planner.");
+            }
+
             // The negated comparison also rejects NaN.
             if (!(stopoverSeconds >= 0d) || double.IsInfinity(stopoverSeconds))
             {
@@ -98,6 +109,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             this.stopoverSeconds = stopoverSeconds;
+            this.routes = routes;
             underWay = new int[planner.PortCount, planner.GoodCount];
             cargo = new int[planner.GoodCount];
 
@@ -465,7 +477,12 @@ namespace DarkFantasyMerchant.Core
 
         private bool SendTo(Merchant merchant, int port)
         {
-            return docking.OrderToPort(merchant.Ship, ports[port], portPositions[port]);
+            // Only a ship in port lies on the anchorage the route starts from; at sea, or for a
+            // pair without a route, the pathfinder looks for one.
+            bool inLastPort = ReferenceEquals(docking.PortOf(merchant.Ship), ports[merchant.LastPort]);
+            IReadOnlyList<Vector2> route = routes != null && inLastPort ? routes.RouteBetween(merchant.LastPort, port) : null;
+
+            return docking.OrderToPort(merchant.Ship, ports[port], portPositions[port], route);
         }
     }
 }

@@ -234,7 +234,8 @@ namespace DarkFantasyMerchant.Game
                     portPositions,
                     markets,
                     planner,
-                    stopoverDays * worldClock.Calendar.SecondsPerDay);
+                    stopoverDays * worldClock.Calendar.SecondsPerDay,
+                    travelTable);
             }
             catch (ArgumentException exception)
             {

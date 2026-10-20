@@ -78,6 +78,19 @@ namespace DarkFantasyMerchant.Core
         /// <returns>Whether the ship is in the port or on its way to enter it.</returns>
         public bool OrderToPort(Ship ship, TPort port, Vector2 portPosition)
         {
+            return OrderToPort(ship, port, portPosition, null);
+        }
+
+        /// <summary>
+        /// Orders a ship to a port like <see cref="OrderToPort(Ship, TPort, Vector2)"/>, along
+        /// a route worked out beforehand rather than one the ship's pathfinder looks for.
+        /// </summary>
+        /// <param name="route">
+        /// The route from where the ship is to the port's anchorage, as
+        /// <see cref="Ship.FollowRoute"/> takes it. Null to let the pathfinder find one.
+        /// </param>
+        public bool OrderToPort(Ship ship, TPort port, Vector2 portPosition, IReadOnlyList<Vector2> route)
+        {
             if (ship == null)
             {
                 throw new ArgumentNullException(nameof(ship));
@@ -94,7 +107,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             // An order the ship ignores changes nothing, not even where it is docked.
-            if (!ship.SetDestination(portPosition))
+            if (route != null ? !ship.FollowRoute(route) : !ship.SetDestination(portPosition))
             {
                 return false;
             }

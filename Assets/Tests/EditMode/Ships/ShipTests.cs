@@ -162,6 +162,52 @@ namespace DarkFantasyMerchant.Tests.EditMode
             TestAssert.AreEqual(Center, ship.Position);
         }
 
+        [Test]
+        public void FollowRoute_SailsThroughTheGivenPoints()
+        {
+            Ship ship = CreateShip();
+            var route = new[] { new Vector2(0.5f, 1f), new Vector2(1f, 1f) };
+
+            Assert.IsTrue(ship.FollowRoute(route));
+
+            CollectionAssert.AreEqual(route, ship.RemainingWaypoints);
+            CollectionAssert.AreEqual(new[] { Center }, ship.SailedWaypoints);
+            Assert.AreEqual(CompassDirection.N, ship.Heading);
+
+            // 10 world units north, then 20 east.
+            ship.Advance(8f);
+
+            TestAssert.AreEqual(new Vector2(1f, 1f), ship.Position);
+            Assert.IsFalse(ship.IsMoving);
+        }
+
+        [Test]
+        public void FollowRoute_ClampsThePointsToTheMap()
+        {
+            Ship ship = CreateShip();
+
+            ship.FollowRoute(new[] { new Vector2(2f, -1f) });
+
+            TestAssert.AreEqual(new Vector2(1f, 0f), ship.Destination.Value);
+        }
+
+        [Test]
+        public void FollowRoute_WithANaNPoint_IsIgnored_AndKeepsTheRoute()
+        {
+            Ship ship = CreateShip();
+            ship.SetDestination(new Vector2(1f, 0.5f));
+
+            Assert.IsFalse(ship.FollowRoute(new[] { new Vector2(0.5f, 1f), new Vector2(float.NaN, 1f) }));
+
+            CollectionAssert.AreEqual(new[] { new Vector2(1f, 0.5f) }, ship.RemainingWaypoints);
+        }
+
+        [Test]
+        public void FollowRoute_RejectsANullRoute()
+        {
+            Assert.Throws<ArgumentNullException>(() => CreateShip().FollowRoute(null));
+        }
+
         // East edge is 20 world units away, north edge 10, the north-east corner about 22.4.
         [TestCase(1f, 0.5f)]
         [TestCase(0.5f, 1f)]

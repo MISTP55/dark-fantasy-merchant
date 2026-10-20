@@ -29,6 +29,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private CityMarket[] markets;
         private AiMerchantFleet<Port> fleet;
 
+        // The routes the fleet is given; null to give none.
+        private PortTravelTable routes;
+
         [SetUp]
         public void SetUp()
         {
@@ -40,6 +43,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 "...#..#.");
             navigation = new NavigationPathfinder(grid);
             docking = new ShipDocking<Port>();
+            routes = null;
         }
 
         /// <summary>
@@ -88,7 +92,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 positions[i] = allPositions[i];
             }
 
-            fleet = new AiMerchantFleet<Port>(docking, ports, positions, markets, new SupplyPlanner(markets, days), Stopover);
+            fleet = new AiMerchantFleet<Port>(docking, ports, positions, markets, new SupplyPlanner(markets, days), Stopover, routes);
         }
 
         /// <summary>H with 60 days of fish, D with none, S with 20.</summary>
@@ -179,6 +183,47 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(60, ship.Cargo.UnitsOf(Fish));
             Assert.AreEqual(60, fleet.UnderWayTo(D, Fish));
             Assert.Less(fleet.ProfitOf(ship), 0);
+        }
+
+        [Test]
+        public void FromAPort_ItSailsTheRouteItWasGiven_WithoutLookingForOne()
+        {
+            routes = new PortTravelTable(
+                new[] { GridAssert.CellCenter(grid, 0, 3), GridAssert.CellCenter(grid, 5, 0), GridAssert.CellCenter(grid, 0, 0) },
+                navigation,
+                projection,
+                5d);
+
+            while (!routes.IsComplete)
+            {
+                routes.MeasureNext();
+            }
+
+            CreateOutAndBack();
+
+            // Without a pathfinder, a ship would sail straight through the wall.
+            var ship = new Ship(projection, positions[H], Speed, TestCrew.Full, null, new CargoHold(200));
+            fleet.Add(ship, H);
+            docking.Update();
+            Depart();
+
+            Assert.Greater(routes.RouteBetween(H, D).Count, 1);
+            CollectionAssert.AreEqual(routes.RouteBetween(H, D), ship.RemainingWaypoints);
+            Assert.AreSame(ports[D], docking.DestinationPortOf(ship));
+
+            Arrive(ship);
+            Depart();
+
+            Assert.AreSame(ports[S], docking.DestinationPortOf(ship));
+            CollectionAssert.AreEqual(routes.RouteBetween(D, S), ship.RemainingWaypoints);
+        }
+
+        [Test]
+        public void ItRejectsRoutesOverOtherPorts()
+        {
+            routes = new PortTravelTable(new[] { GridAssert.CellCenter(grid, 0, 3) }, navigation, projection, 5d);
+
+            Assert.Throws<System.ArgumentException>(CreateOutAndBack);
         }
 
         [Test]

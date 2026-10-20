@@ -84,6 +84,36 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void AShipOrderedToAPortAlongARoute_SailsIt_AndEntersThePort()
+        {
+            Ship ship = CreateShip();
+            var route = new[] { Cell(1, 3), Cell(5, 3), Cell(5, 0) };
+
+            bool accepted = docking.OrderToPort(ship, port, Cell(5, 0), route);
+
+            Assert.IsTrue(accepted);
+            CollectionAssert.AreEqual(route, ship.RemainingWaypoints);
+            Assert.AreSame(port, docking.DestinationPortOf(ship));
+
+            ship.Advance(100f);
+            docking.Update();
+
+            Assert.AreSame(port, docking.PortOf(ship));
+        }
+
+        [Test]
+        public void ARouteThatDoesNotEndOnThePort_IsSailed_ButThePortIsNotEntered()
+        {
+            Ship ship = CreateShip();
+
+            bool accepted = docking.OrderToPort(ship, port, Cell(5, 0), new[] { Cell(1, 3) });
+
+            Assert.IsFalse(accepted);
+            Assert.IsTrue(ship.IsMoving);
+            Assert.IsNull(docking.DestinationPortOf(ship));
+        }
+
+        [Test]
         public void AShipThatArrives_EntersThePort()
         {
             Ship ship = CreateShip();

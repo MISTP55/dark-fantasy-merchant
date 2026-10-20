@@ -138,8 +138,44 @@ namespace DarkFantasyMerchant.Core
                 return false;
             }
 
+            Follow(orderedRoute);
+            return true;
+        }
+
+        /// <summary>
+        /// Orders the ship along a route worked out beforehand, replacing any order in
+        /// progress, without asking the pathfinder: the route must start where the ship
+        /// is and go over water. Its points are clamped to the map.
+        /// </summary>
+        /// <param name="route">The points to sail through in order, not including where the ship is.</param>
+        /// <returns>False when a point is NaN: the order is then ignored, which leaves the route as it was.</returns>
+        public bool FollowRoute(IReadOnlyList<Vector2> route)
+        {
+            if (route == null)
+            {
+                throw new ArgumentNullException(nameof(route));
+            }
+
+            orderedRoute.Clear();
+
+            foreach (Vector2 point in route)
+            {
+                if (IsNaN(point))
+                {
+                    return false;
+                }
+
+                orderedRoute.Add(ClampToMap(point));
+            }
+
+            Follow(orderedRoute);
+            return true;
+        }
+
+        private void Follow(List<Vector2> route)
+        {
             waypoints.Clear();
-            waypoints.AddRange(orderedRoute);
+            waypoints.AddRange(route);
             SkipWaypointsAlreadyReached();
             FaceNextWaypoint();
 
@@ -149,8 +185,6 @@ namespace DarkFantasyMerchant.Core
             {
                 sailedWaypoints.Add(Position);
             }
-
-            return true;
         }
 
         /// <summary>

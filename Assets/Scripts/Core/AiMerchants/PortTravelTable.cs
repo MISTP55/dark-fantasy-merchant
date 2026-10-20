@@ -5,8 +5,9 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// The days a ship takes between every pair of ports. Measured one pair at a time,
-    /// so that the searches can be spread over several frames.
+    /// The days a ship takes between every pair of ports, and the routes it sails between
+    /// them, kept so that a ship that leaves a port does not look for its route again.
+    /// Measured one pair at a time, so that the searches can be spread over several frames.
     /// </summary>
     public sealed class PortTravelTable
     {
@@ -17,6 +18,10 @@ namespace DarkFantasyMerchant.Core
 
         // Reused by every measure.
         private readonly List<Vector2> waypoints = new List<Vector2>();
+
+        // The route from a port to another, not including the first port's anchorage. Null
+        // for a port that cannot be reached, a pair not measured yet and a port to itself.
+        private readonly Vector2[,][] routes;
 
         // The next pair to measure: first is below second.
         private int first;
@@ -45,6 +50,7 @@ namespace DarkFantasyMerchant.Core
 
             int count = anchorages.Count;
             Days = new double[count, count];
+            routes = new Vector2[count, count][];
 
             for (int i = 0; i < count; i++)
             {
@@ -78,6 +84,8 @@ namespace DarkFantasyMerchant.Core
                 double days = length / worldUnitsPerDay;
                 Days[first, second] = days;
                 Days[second, first] = days;
+                routes[first, second] = waypoints.ToArray();
+                routes[second, first] = Reversed(waypoints, anchorages[first]);
             }
 
             second++;
@@ -87,6 +95,30 @@ namespace DarkFantasyMerchant.Core
                 first++;
                 second = first + 1;
             }
+        }
+
+        /// <summary>
+        /// The route a ship sails from a port's anchorage to another's, as
+        /// <see cref="Ship.FollowRoute"/> takes it: the points to sail through in order,
+        /// not including the anchorage it leaves. The same route both ways.
+        /// </summary>
+        /// <returns>
+        /// Null for a port that cannot be reached, for a pair that is not measured yet and
+        /// from a port to itself.
+        /// </returns>
+        public IReadOnlyList<Vector2> RouteBetween(int from, int to)
+        {
+            if (from < 0 || from >= PortCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(from));
+            }
+
+            if (to < 0 || to >= PortCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(to));
+            }
+
+            return routes[from, to];
         }
 
         /// <returns>Whether a ship can sail from this port to at least one other, among the pairs measured.</returns>
@@ -106,6 +138,26 @@ namespace DarkFantasyMerchant.Core
             }
 
             return false;
+        }
+
+        // The way back: the waypoints before the last in the other order, then the start.
+        private static Vector2[] Reversed(List<Vector2> route, Vector2 start)
+        {
+            // Two ports on the same anchorage.
+            if (route.Count == 0)
+            {
+                return new Vector2[0];
+            }
+
+            var reversed = new Vector2[route.Count];
+
+            for (int i = 0; i < route.Count - 1; i++)
+            {
+                reversed[i] = route[route.Count - 2 - i];
+            }
+
+            reversed[route.Count - 1] = start;
+            return reversed;
         }
     }
 }
