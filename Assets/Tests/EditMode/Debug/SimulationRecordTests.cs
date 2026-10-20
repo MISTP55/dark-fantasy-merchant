@@ -146,6 +146,24 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void FlowsOf_GivesEveryCityInOnePass_AsFlowOf()
+        {
+            var ship = new Ship(new MapProjection(40f, 2f), UnityEngine.Vector2.zero, 4f, TestCrew.Full,
+                new NavigationPathfinder(GridAssert.FromRows("....")), new CargoHold(200));
+            record.AddTrade(1, second, new FleetTrade(ship, second, Fish, 40, 2640, true, 1480));
+            record.AddTrade(1, first, new FleetTrade(ship, first, Fish, 30, 900, false, null));
+            record.AddPlayerTrade(1, second, Fish, 5, 60, PlayerTradeKind.Sell);
+            record.AddPlayerTrade(1, second, Timber, 6, 60, PlayerTradeKind.Construction);
+            var received = new long[2];
+            var shipped = new long[2];
+
+            record.FlowsOf(Fish, received, shipped);
+
+            CollectionAssert.AreEqual(new long[] { 0, 45 }, received);
+            CollectionAssert.AreEqual(new long[] { 30, 0 }, shipped);
+        }
+
+        [Test]
         public void ATradeInACityNotRecorded_IsIgnored()
         {
             record.AddPlayerTrade(1, Market(), Fish, 5, 60, PlayerTradeKind.Buy);

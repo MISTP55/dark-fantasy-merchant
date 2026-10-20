@@ -36,7 +36,7 @@ namespace DarkFantasyMerchant.Game
 
             this.recorder = recorder ?? throw new ArgumentNullException(nameof(recorder));
             goodNames = goodTitles ?? throw new ArgumentNullException(nameof(goodTitles));
-            dayLabel = index => recorder.FormatDay(recorder.Record.History.DayAt(index));
+            dayLabel = index => DebugDayLabel.Of(recorder.Record.History, index, recorder.FormatDay);
             page.Clear();
 
             foreach (CityDefinition city in recorder.Cities)

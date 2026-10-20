@@ -123,21 +123,55 @@ namespace DarkFantasyMerchant.Core
             received = 0;
             shipped = 0;
 
-            foreach (TradeRecord trade in trades)
+            for (int i = 0; i < trades.Count; i++)
             {
-                if (trade.City != city || trade.Good != good)
-                {
-                    continue;
-                }
+                TradeRecord trade = trades[i];
 
-                if (trade.Kind == PlayerTradeKind.Sell)
+                if (trade.City == city && trade.Good == good)
                 {
-                    received += trade.Units;
+                    AddFlow(trade, ref received, ref shipped);
                 }
-                else
+            }
+        }
+
+        /// <summary><see cref="FlowOf"/> for every city at once, in one pass over the trades kept.</summary>
+        /// <param name="received">One entry per city, overwritten.</param>
+        /// <param name="shipped">One entry per city, overwritten.</param>
+        public void FlowsOf(int good, long[] received, long[] shipped)
+        {
+            if (received == null)
+            {
+                throw new ArgumentNullException(nameof(received));
+            }
+
+            if (shipped == null)
+            {
+                throw new ArgumentNullException(nameof(shipped));
+            }
+
+            Array.Clear(received, 0, received.Length);
+            Array.Clear(shipped, 0, shipped.Length);
+
+            for (int i = 0; i < trades.Count; i++)
+            {
+                TradeRecord trade = trades[i];
+
+                if (trade.Good == good && trade.City < received.Length && trade.City < shipped.Length)
                 {
-                    shipped += trade.Units;
+                    AddFlow(trade, ref received[trade.City], ref shipped[trade.City]);
                 }
+            }
+        }
+
+        private static void AddFlow(TradeRecord trade, ref long received, ref long shipped)
+        {
+            if (trade.Kind == PlayerTradeKind.Sell)
+            {
+                received += trade.Units;
+            }
+            else
+            {
+                shipped += trade.Units;
             }
         }
 

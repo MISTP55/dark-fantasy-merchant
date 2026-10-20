@@ -36,6 +36,10 @@ namespace DarkFantasyMerchant.Game
         private readonly DropdownField flowGoodField;
         private readonly DebugFlowsTable flows;
 
+        // The flows of every city, reused.
+        private readonly long[] received;
+        private readonly long[] shipped;
+
         // The trades shown, oldest first, and the position of the first one not looked at yet.
         private readonly List<TradeRecord> shown = new List<TradeRecord>();
         private long next;
@@ -74,6 +78,8 @@ namespace DarkFantasyMerchant.Game
             }
 
             goodOrder = NameOrder.Of(goodNames);
+            received = new long[cityNames.Count];
+            shipped = new long[cityNames.Count];
 
             journalPage.Clear();
             var legend = new Label("Les achats et ventes des marchands IA et du joueur, et les matériaux des constructions du joueur. Le bénéfice d'une vente IA est son prix moins le coût moyen des unités vendues.");
@@ -164,13 +170,9 @@ namespace DarkFantasyMerchant.Game
             }
             else
             {
-                int good = goodOrder[Math.Max(0, flowGoodField.index)];
-                SimulationRecord record = recorder.Record;
-                flows.Write(cityNames, city =>
-                {
-                    record.FlowOf(city, good, out long received, out long shipped);
-                    return (received, shipped);
-                });
+                // Every city in one pass over the trades: this runs on most frames at x600.
+                recorder.Record.FlowsOf(goodOrder[Math.Max(0, flowGoodField.index)], received, shipped);
+                flows.Write(cityNames, city => (received[city], shipped[city]));
             }
         }
 

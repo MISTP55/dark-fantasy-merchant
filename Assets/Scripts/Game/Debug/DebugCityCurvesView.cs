@@ -42,7 +42,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             this.recorder = recorder ?? throw new ArgumentNullException(nameof(recorder));
-            dayLabel = index => recorder.FormatDay(recorder.Record.History.DayAt(index));
+            dayLabel = index => DebugDayLabel.Of(recorder.Record.History, index, recorder.FormatDay);
             page.Clear();
             page.AddToClassList("debug-curves");
 

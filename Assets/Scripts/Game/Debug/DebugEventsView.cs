@@ -28,11 +28,7 @@ namespace DarkFantasyMerchant.Game
         private readonly Toggle frozen;
         private readonly ListView list;
 
-        // The events shown, oldest first: copies, so that a frozen list keeps them once the record forgets them.
-        private readonly List<SimulationEvent> matched = new List<SimulationEvent>();
-
-        // The position, counted from the start of the game, of the first event not looked at yet.
-        private long next;
+        private readonly DebugEventRows rows;
         private bool isShown;
 
         /// <param name="goodNames">The names of the goods, in the catalogue's order.</param>
@@ -54,6 +50,7 @@ namespace DarkFantasyMerchant.Game
 
             cityOrder = NameOrder.Of(cityNames);
             goodOrder = NameOrder.Of(goodNames);
+            rows = new DebugEventRows(filter);
 
             var toolbar = new VisualElement();
             toolbar.AddToClassList("debug-curves__toolbar");
@@ -75,7 +72,11 @@ namespace DarkFantasyMerchant.Game
 
             frozen = new Toggle { text = "Figer", focusable = false };
             frozen.AddToClassList("debug-panel__toggle");
-            frozen.RegisterValueChangedCallback(change => Refresh());
+            frozen.RegisterValueChangedCallback(change =>
+            {
+                rows.IsFrozen = change.newValue;
+                Refresh();
+            });
             toolbar.Add(frozen);
 
             // One toggle per name of type, in the order of the types: the beggars who come and go share one.
@@ -122,7 +123,7 @@ namespace DarkFantasyMerchant.Game
             header.AddToClassList("debug-cities__row--header");
             page.Add(header);
 
-            list = new ListView(matched, RowHeight, Row, Bind)
+            list = new ListView(rows.Items, RowHeight, Row, Bind)
             {
                 selectionType = SelectionType.None,
                 showAlternatingRowBackgrounds = AlternatingRowBackground.ContentOnly,
@@ -146,51 +147,26 @@ namespace DarkFantasyMerchant.Game
         // Forgets what the record forgot and adds what it has found since, unless frozen.
         public void Refresh()
         {
-            if (!isShown || frozen.value)
+            if (!isShown || rows.IsFrozen)
             {
                 return;
             }
 
-            SimulationRecord record = recorder.Record;
-            int firstDay = record.History.FirstDay;
-            int forgotten = 0;
-
-            while (forgotten < matched.Count && matched[forgotten].Day < firstDay)
-            {
-                forgotten++;
-            }
-
-            matched.RemoveRange(0, forgotten);
-
-            IReadOnlyList<SimulationEvent> events = record.Events;
-            long start = Math.Max(next, record.EventsTrimmed);
-
-            for (long position = start; position < record.EventsTrimmed + events.Count; position++)
-            {
-                SimulationEvent simulationEvent = events[(int)(position - record.EventsTrimmed)];
-
-                if (filter.Matches(simulationEvent))
-                {
-                    matched.Add(simulationEvent);
-                }
-            }
-
-            next = record.EventsTrimmed + events.Count;
+            rows.Refresh(recorder.Record);
             list.RefreshItems();
         }
 
-        // Another filter: every event kept is looked at again.
+        // Another filter: every event kept is looked at again, even while frozen.
         private void Rebuild()
         {
-            matched.Clear();
-            next = 0;
-            Refresh();
+            rows.Rebuild(recorder.Record);
+            list.RefreshItems();
         }
 
-        // Newest first: the last of the list at the top.
+        // Newest first.
         private void Bind(VisualElement element, int index)
         {
-            SimulationEvent simulationEvent = matched[matched.Count - 1 - index];
+            SimulationEvent simulationEvent = rows.NewestAt(index);
             ((Label)element[0]).text = recorder.FormatDay(simulationEvent.Day);
             ((Label)element[1]).text = cityNames[simulationEvent.City];
             ((Label)element[2]).text = DebugEventText.TypeName(simulationEvent.Type);
