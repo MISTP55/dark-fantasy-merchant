@@ -476,8 +476,6 @@ namespace DarkFantasyMerchant.Core
             {
                 MarketGood good = goods[i];
                 double produced = 0d;
-                int workersBefore = workers[i];
-                bool halted = false;
 
                 if (good.IsProduced)
                 {
@@ -502,14 +500,9 @@ namespace DarkFantasyMerchant.Core
                         produced = workers[i] * good.DailyOutputPerWorker;
                         stocks[i] += produced;
                     }
-                    else
-                    {
-                        halted = true;
-                    }
                 }
 
                 weekLog.Record(i, produced, consumed[i]);
-                LastDay.RecordWorkshop(i, workersBefore, workers[i], produced, halted);
             }
 
             if (Labour != null)
@@ -523,17 +516,11 @@ namespace DarkFantasyMerchant.Core
 
                 if (Social != null)
                 {
-                    int rich = Population.CountOf(SocialClass.Rich);
-                    int wealthy = Population.CountOf(SocialClass.Wealthy);
                     Social.RiseAndFall(Population);
-                    LastDay.RecordClassChange(SocialClass.Rich, Population.CountOf(SocialClass.Rich) - rich);
-                    LastDay.RecordClassChange(SocialClass.Wealthy, Population.CountOf(SocialClass.Wealthy) - wealthy);
                     LetThePoorLeave();
                 }
 
-                int beggars = Population.Beggars;
                 Population.SetBeggars(Labour.NextBeggars(Population.Beggars, Population.Inhabitants));
-                LastDay.RecordBeggarChange(Population.Beggars - beggars);
                 BuildCityHouses();
             }
 
@@ -674,7 +661,6 @@ namespace DarkFantasyMerchant.Core
 
             Population.AddRoom(rule.HousedClass, rule.Room);
             CityHouses++;
-            LastDay.RecordHouse(rule.HousedClass);
         }
 
         // Each class's satisfaction takes a step towards the target the stocks of the goods it
@@ -710,7 +696,6 @@ namespace DarkFantasyMerchant.Core
 
             int removed = TakeWorkersAway(workers);
             Population.Leave(SocialClass.Poor, removed * Labour.InhabitantsPerWorker);
-            LastDay.RecordLeaving(removed * Labour.InhabitantsPerWorker, removed);
         }
 
         // Patrician III's 0x51C6B0: the reserves first, in the catalogue's order; then the

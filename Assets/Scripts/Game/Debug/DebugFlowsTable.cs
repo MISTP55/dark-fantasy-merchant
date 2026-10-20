@@ -90,7 +90,20 @@ namespace DarkFantasyMerchant.Game
         {
             cells[1].text = TreasuryHudController.FormatNumber(received);
             cells[2].text = TreasuryHudController.FormatNumber(shipped);
-            cells[3].text = DebugTradeText.SignedGold(received - shipped);
+            cells[3].text = Signed(received - shipped);
+        }
+
+        // "+30" in green, "-30" in red, a plain "0".
+        private static string Signed(long value)
+        {
+            string text = TreasuryHudController.FormatNumber(value);
+
+            if (value > 0)
+            {
+                return $"<color={DebugCitiesTable.PositiveColor}>+{text}</color>";
+            }
+
+            return value < 0 ? $"<color={DebugCitiesTable.NegativeColor}>{text}</color>" : text;
         }
 
         private static Label[] AddCells(VisualElement row)

@@ -46,9 +46,6 @@ namespace DarkFantasyMerchant.Core
 
             // Units it loaded for a port and has not delivered there, by port then good.
             public int[,] Records;
-
-            // Gold it paid for the units of each good aboard, for the profit of a sale.
-            public long[] CostAboard;
         }
 
         private readonly ShipDocking<TPort> docking;
@@ -213,7 +210,6 @@ namespace DarkFantasyMerchant.Core
                 NextPort = -1,
                 Visited = new bool[planner.PortCount],
                 Records = new int[planner.PortCount, planner.GoodCount],
-                CostAboard = new long[planner.GoodCount],
             };
 
             merchants.Add(merchant);
@@ -393,8 +389,7 @@ namespace DarkFantasyMerchant.Core
 
                 if (bought.Units > 0)
                 {
-                    merchant.CostAboard[good] += bought.Gold;
-                    Traded?.Invoke(new FleetTrade(merchant.Ship, markets[from], good, bought.Units, bought.Gold, false, null));
+                    Traded?.Invoke(new FleetTrade(merchant.Ship, markets[from], good, bought.Units, bought.Gold, false));
                 }
             }
         }
@@ -443,22 +438,16 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
-        // A sale costs its share of what the units of its good aboard were bought for.
         private void Sell(Merchant merchant, int port, int good, int units)
         {
             CityMarket market = markets[port];
-            int aboard = merchant.Ship.Cargo.UnitsOf(good);
             TradeResult sold = Trade.Sell(market, merchant.Ship.Cargo, good, units);
             merchant.Profit += sold.Gold;
 
-            if (sold.Units <= 0)
+            if (sold.Units > 0)
             {
-                return;
+                Traded?.Invoke(new FleetTrade(merchant.Ship, market, good, sold.Units, sold.Gold, true));
             }
-
-            long cost = aboard > 0 ? merchant.CostAboard[good] * sold.Units / aboard : 0;
-            merchant.CostAboard[good] -= cost;
-            Traded?.Invoke(new FleetTrade(merchant.Ship, market, good, sold.Units, sold.Gold, true, sold.Gold - cost));
         }
 
         private void Record(Merchant merchant, int port, int good, int units)

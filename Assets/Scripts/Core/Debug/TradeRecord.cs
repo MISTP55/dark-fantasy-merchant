@@ -1,25 +1,15 @@
 namespace DarkFantasyMerchant.Core
 {
-    public enum Trader
-    {
-        AiMerchant,
-        Player,
-    }
-
-    /// <summary>A purchase or a sale in a city's market, for the debug tools.</summary>
+    /// <summary>Units of a good bought from a city's market or sold to it, for the flows of the debug tools.</summary>
     public readonly struct TradeRecord
     {
-        public TradeRecord(int day, int city, int good, Trader trader, Ship ship, PlayerTradeKind kind, int units, long gold, long? profit)
+        public TradeRecord(int day, int city, int good, PlayerTradeKind kind, int units)
         {
             Day = day;
             City = city;
             Good = good;
-            Trader = trader;
-            Ship = ship;
             Kind = kind;
             Units = units;
-            Gold = gold;
-            Profit = profit;
         }
 
         public int Day { get; }
@@ -29,19 +19,9 @@ namespace DarkFantasyMerchant.Core
 
         public int Good { get; }
 
-        public Trader Trader { get; }
-
-        /// <summary>The AI ship that traded; null for the player.</summary>
-        public Ship Ship { get; }
-
-        /// <summary>A purchase from the market or a sale to it; an AI merchant never builds.</summary>
+        /// <summary>A purchase from the market, a sale to it, or materials of a building of the player.</summary>
         public PlayerTradeKind Kind { get; }
 
         public int Units { get; }
-
-        public long Gold { get; }
-
-        /// <summary>The profit of an AI sale; null otherwise.</summary>
-        public long? Profit { get; }
     }
 }

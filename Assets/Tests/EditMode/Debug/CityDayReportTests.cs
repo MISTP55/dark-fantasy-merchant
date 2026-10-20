@@ -59,22 +59,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             market.StartDay();
 
             Assert.AreEqual(2d, market.LastDay.MissingOf(Iron), 1e-9);
-            Assert.AreEqual(3d, market.LastDay.ProducedOf(Iron), 1e-9);
             Assert.AreEqual(3d, market.StockOf(Iron), 1e-9);
-            Assert.IsFalse(market.LastDay.IsHaltedOf(Iron));
-        }
-
-        [Test]
-        public void AFullStock_HaltsTheWorkshop()
-        {
-            // 100 days, 200 barrels: above T3.
-            CityMarket market = FishAndIron(100);
-
-            market.StartDay();
-
-            Assert.IsTrue(market.LastDay.IsHaltedOf(Iron));
-            Assert.AreEqual(0d, market.LastDay.ProducedOf(Iron), 1e-9);
-            Assert.IsFalse(market.LastDay.IsHaltedOf(Fish));
         }
 
         [Test]
@@ -96,73 +81,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityMarket market = FishAndIron(0);
 
             Assert.AreEqual(0d, market.LastDay.MissingOf(Fish));
-            Assert.AreEqual(0, market.LastDay.HiredOf(Iron));
-        }
-
-        [Test]
-        public void Hires_AndTheBeggarChange_AreCounted()
-        {
-            // An empty stock wants 26 workers; 24 places take 6 of the 40 beggars, then 7 come: the change
-            // counts those who come or go, not those hired.
-            CityMarket market = LabourMarket(0, new CityPopulation(1000, 40, 1024));
-
-            market.StartDay();
-
-            Assert.AreEqual(6, market.LastDay.HiredOf(0));
-            Assert.AreEqual(0, market.LastDay.LaidOffOf(0));
-            Assert.AreEqual(7, market.LastDay.BeggarChange);
-        }
-
-        [Test]
-        public void LayOffs_AreCounted()
-        {
-            // 200 barrels, above T3: the workshop keeps one worker.
-            CityMarket market = LabourMarket(100, new CityPopulation(1000));
-
-            market.StartDay();
-
-            Assert.AreEqual(9, market.LastDay.LaidOffOf(0));
-            Assert.AreEqual(0, market.LastDay.HiredOf(0));
-        }
-
-        [Test]
-        public void ClassMoves_AreCounted()
-        {
-            CityMarket market = LabourMarket(7, Population(60, 180, 600, 0, 200, 400, 700), true);
-
-            market.StartDay();
-
-            Assert.AreEqual(6, market.LastDay.ClassChangeOf(SocialClass.Rich));
-            Assert.AreEqual(4, market.LastDay.ClassChangeOf(SocialClass.Wealthy));
-            Assert.AreEqual(0, market.LastDay.ClassChangeOf(SocialClass.Poor));
-        }
-
-        [Test]
-        public void ThePoorWhoLeave_AreCounted_WithTheirWorkers()
-        {
-            // One rich and one wealthy rise, then 5 poor want to leave: one worker's family.
-            CityMarket market = LabourMarket(100, Population(0, 0, 1000, 0, 0, 0, 980), true);
-
-            market.StartDay();
-
-            Assert.AreEqual(4, market.LastDay.PoorLeft);
-            Assert.AreEqual(1, market.LastDay.WorkersLeft);
-        }
-
-        [Test]
-        public void AHouseOfTheCity_IsCounted()
-        {
-            var material = new MarketGood(10, 0, 0, 0);
-            var housing = new CityHousingRule(SocialClass.Poor, 0.95, 100, new[] { new MaterialCost(0, 10), new MaterialCost(1, 10) });
-            var market = new CityMarket(new[] { material, material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0,
-                TestMarkets.Pricing, 7, new CityPopulation(960, 0, 1000), TestMarkets.Labour, new[] { housing });
-            market.Put(0, 25);
-            market.Put(1, 12);
-
-            market.StartDay();
-
-            Assert.AreEqual(1, market.LastDay.HousesBuiltOf(SocialClass.Poor));
-            Assert.AreEqual(0, market.LastDay.HousesBuiltOf(SocialClass.Rich));
+            Assert.AreEqual(0d, market.LastDay.NeededOf(Iron));
         }
 
         [Test]
@@ -176,7 +95,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             {
                 watched.StartDay();
                 alone.StartDay();
-                read += watched.LastDay.MissingOf(0) + watched.LastDay.HiredOf(0) + watched.LastDay.BeggarChange;
+                read += watched.LastDay.MissingOf(0) + watched.LastDay.NeededOf(0);
             }
 
             Assert.AreEqual(alone.StockOf(0), watched.StockOf(0), 1e-9);

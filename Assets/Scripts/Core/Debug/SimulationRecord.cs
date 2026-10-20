@@ -5,23 +5,14 @@ namespace DarkFantasyMerchant.Core
 {
     /// <summary>
     /// What the debug tools keep of the simulation: the figures of every city at the end of each
-    /// day, the events of the cities' days and the trades in their markets, all over the same
-    /// horizon. It reads the markets and changes nothing of them.
+    /// day and the trades in their markets, both over the same horizon. It reads the markets and
+    /// changes nothing of them.
     /// </summary>
     public sealed class SimulationRecord
     {
         private readonly IReadOnlyList<CityMarket> markets;
         private readonly Dictionary<CityMarket, int> cityIndices = new Dictionary<CityMarket, int>();
-        private readonly TrimmedList<SimulationEvent> events = new TrimmedList<SimulationEvent>();
         private readonly TrimmedList<TradeRecord> trades = new TrimmedList<TradeRecord>();
-
-        // The events a day finds, before they join the others.
-        private readonly List<SimulationEvent> dayEvents = new List<SimulationEvent>();
-
-        // Each city's row of the last day recorded: the history may reuse its own once it is forgotten.
-        private readonly float[][] previousRows;
-        private readonly bool[][] wasHalted;
-        private bool hasPrevious;
 
         /// <param name="markets">The cities recorded, in the order of their indices.</param>
         /// <param name="horizonDays">Days kept, 1 or more; null for the whole game.</param>
@@ -29,35 +20,22 @@ namespace DarkFantasyMerchant.Core
         {
             this.markets = markets ?? throw new ArgumentNullException(nameof(markets));
             History = new SimulationHistory(markets.Count, goodCount, horizonDays);
-            previousRows = new float[markets.Count][];
-            wasHalted = new bool[markets.Count][];
 
             for (int city = 0; city < markets.Count; city++)
             {
                 cityIndices[markets[city] ?? throw new ArgumentNullException(nameof(markets))] = city;
-                previousRows[city] = new float[CitySnapshot.SizeFor(goodCount)];
-                wasHalted[city] = new bool[goodCount];
             }
         }
 
         public SimulationHistory History { get; }
 
-        /// <summary>The events kept, oldest first.</summary>
-        public IReadOnlyList<SimulationEvent> Events => events;
-
-        /// <summary>Events forgotten since the start: an event kept at index i is the (EventsTrimmed + i)th ever recorded.</summary>
-        public long EventsTrimmed { get; private set; }
-
         /// <summary>The trades kept, oldest first.</summary>
         public IReadOnlyList<TradeRecord> Trades => trades;
-
-        /// <summary>Trades forgotten since the start: a trade kept at index i is the (TradesTrimmed + i)th ever recorded.</summary>
-        public long TradesTrimmed { get; private set; }
 
         /// <summary>Raised after a day is recorded and after the horizon changes.</summary>
         public event Action Recorded;
 
-        /// <summary>Records every city at the end of a day, after its <see cref="CityMarket.StartDay"/>, with the events of the day.</summary>
+        /// <summary>Records every city at the end of a day, after its <see cref="CityMarket.StartDay"/>.</summary>
         /// <param name="underWay">Units of a good the AI merchants carry to a city: (city, good).</param>
         public void RecordDay(int day, Func<int, int, int> underWay)
         {
@@ -67,24 +45,13 @@ namespace DarkFantasyMerchant.Core
             }
 
             float[][] rows = History.BeginDay(day);
-            dayEvents.Clear();
 
             for (int city = 0; city < markets.Count; city++)
             {
-                CityMarket market = markets[city];
                 int cityIndex = city;
-                CitySnapshot.Capture(market, good => underWay(cityIndex, good), rows[city]);
-                CityEventDetector.Detect(
-                    day, city, market, market.LastDay, hasPrevious ? previousRows[city] : null, rows[city], wasHalted[city], dayEvents);
-                Array.Copy(rows[city], previousRows[city], rows[city].Length);
+                CitySnapshot.Capture(markets[city], good => underWay(cityIndex, good), rows[city]);
             }
 
-            foreach (SimulationEvent found in dayEvents)
-            {
-                events.Add(found);
-            }
-
-            hasPrevious = true;
             Trim();
             Recorded?.Invoke();
         }
@@ -94,18 +61,16 @@ namespace DarkFantasyMerchant.Core
         {
             if (market != null && cityIndices.TryGetValue(market, out int city))
             {
-                trades.Add(new TradeRecord(
-                    day, city, trade.Good, Trader.AiMerchant, trade.Ship,
-                    trade.IsSale ? PlayerTradeKind.Sell : PlayerTradeKind.Buy, trade.Units, trade.Gold, trade.Profit));
+                trades.Add(new TradeRecord(day, city, trade.Good, trade.IsSale ? PlayerTradeKind.Sell : PlayerTradeKind.Buy, trade.Units));
             }
         }
 
         /// <summary>Records a purchase, a sale or materials of a building of the player; nothing for a market not recorded.</summary>
-        public void AddPlayerTrade(int day, CityMarket market, int good, int units, long gold, PlayerTradeKind kind)
+        public void AddPlayerTrade(int day, CityMarket market, int good, int units, PlayerTradeKind kind)
         {
             if (market != null && cityIndices.TryGetValue(market, out int city))
             {
-                trades.Add(new TradeRecord(day, city, good, Trader.Player, null, kind, units, gold, null));
+                trades.Add(new TradeRecord(day, city, good, kind, units));
             }
         }
 
@@ -181,22 +146,12 @@ namespace DarkFantasyMerchant.Core
             int firstDay = History.FirstDay;
             int forgotten = 0;
 
-            while (forgotten < events.Count && events[forgotten].Day < firstDay)
-            {
-                forgotten++;
-            }
-
-            events.RemoveFirst(forgotten);
-            EventsTrimmed += forgotten;
-            forgotten = 0;
-
             while (forgotten < trades.Count && trades[forgotten].Day < firstDay)
             {
                 forgotten++;
             }
 
             trades.RemoveFirst(forgotten);
-            TradesTrimmed += forgotten;
         }
     }
 }

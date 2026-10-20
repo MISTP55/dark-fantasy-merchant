@@ -251,7 +251,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void Traded_ReportsTheBuyAndTheSale_WithTheProfitOfTheSale()
+        public void Traded_ReportsTheBuyAndTheSale()
         {
             CreateOutAndBack();
             var trades = new System.Collections.Generic.List<FleetTrade>();
@@ -270,45 +270,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(60, buy.Units);
             Assert.AreEqual(paid, buy.Gold);
             Assert.IsFalse(buy.IsSale);
-            Assert.IsNull(buy.Profit);
 
             FleetTrade sale = trades[1];
             Assert.AreSame(markets[D], sale.Market);
             Assert.AreEqual(60, sale.Units);
             Assert.IsTrue(sale.IsSale);
-            Assert.AreEqual(sale.Gold - paid, sale.Profit);
             Assert.AreEqual(sale.Gold - paid, fleet.ProfitOf(ship));
-        }
-
-        [Test]
-        public void APartialSale_CostsItsShareOfThePurchase()
-        {
-            CreateHomeShort();
-            var trades = new System.Collections.Generic.List<FleetTrade>();
-            fleet.Traded += trades.Add;
-            Ship ship = AddShip(H);
-            Depart();
-            Arrive(ship);
-            Depart();
-
-            Arrive(ship);
-
-            // Bought 82 at D (for home and for S), sold 20 at S: the cost is the whole purchase's share.
-            int unitsBought = 0;
-            long goldPaid = 0;
-
-            foreach (FleetTrade trade in trades.FindAll(trade => !trade.IsSale))
-            {
-                Assert.AreSame(markets[D], trade.Market);
-                unitsBought += trade.Units;
-                goldPaid += trade.Gold;
-            }
-
-            FleetTrade sale = trades.FindLast(trade => trade.IsSale);
-            Assert.AreEqual(82, unitsBought);
-            Assert.AreSame(markets[S], sale.Market);
-            Assert.AreEqual(20, sale.Units);
-            Assert.AreEqual(sale.Gold - goldPaid * 20 / 82, sale.Profit);
         }
 
         [Test]

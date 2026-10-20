@@ -6,9 +6,9 @@ using UnityEngine.UIElements;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The debug tools' panel, in five tabs: the cities as they are, the curves of their past, the
-    /// events of their days, the trades in their markets, and the ships, the player's and the
-    /// others, with what they are doing and carrying. The header chooses how far back the record
+    /// The debug tools' panel, in four tabs: the cities as they are, the curves of their past, the
+    /// flows of the trades in their markets, and the ships, the player's and the others, with what
+    /// they are doing and carrying. The header chooses how far back the record
     /// goes and speeds the world's normal speed up. Opened and closed with the debug key of the
     /// map's input; exists only in the Editor and in development builds. Reads the simulation and
     /// changes nothing, but for the buttons of the ships tab, which add and remove the ships of
@@ -19,11 +19,10 @@ namespace DarkFantasyMerchant.Game
     {
         private const int CitiesTab = 0;
         private const int CurvesTab = 1;
-        private const int EventsTab = 2;
-        private const int TradesTab = 3;
-        private const int ShipsTab = 4;
+        private const int TradesTab = 2;
+        private const int ShipsTab = 3;
 
-        private static readonly string[] TabNames = { "cities", "curves", "events", "trades", "ships" };
+        private static readonly string[] TabNames = { "cities", "curves", "trades", "ships" };
 
         [SerializeField] private WorldEconomy worldEconomy;
         [SerializeField] private WorldMapView mapView;
@@ -38,7 +37,7 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Optional. Without it, the panel has no slider to speed the world up.")]
         [SerializeField] private WorldClock worldClock;
 
-        [Tooltip("Optional. Without it, the curves, events and trades tabs have nothing to show.")]
+        [Tooltip("Optional. Without it, the curves and trades tabs have nothing to show.")]
         [SerializeField] private SimulationRecorder recorder;
 
         private VisualElement panel;
@@ -69,9 +68,8 @@ namespace DarkFantasyMerchant.Game
         private DebugShipsTable shipsTable;
         private readonly IDebugView[] views = new IDebugView[TabNames.Length];
 
-        // The sub-tabs of the tabs whose views come later; each view will own its own.
+        // The sub-tabs of the curves, whose view comes later.
         private DebugTabs curvesSubtabs;
-        private DebugTabs tradesSubtabs;
 
         // The goods' names, with and without their unit, in the catalogue's order, for the views made later.
         private readonly List<string> goodTitles = new List<string>();
@@ -350,7 +348,7 @@ namespace DarkFantasyMerchant.Game
             shownView = null;
 
             // The tabs of the past have nothing to show before the record exists.
-            bool needsRecord = index == CurvesTab || index == EventsTab || index == TradesTab;
+            bool needsRecord = index == CurvesTab || index == TradesTab;
             bool available = !needsRecord || (recorder != null && recorder.IsReady);
             pages[index].style.display = available ? DisplayStyle.Flex : DisplayStyle.None;
             unavailable.style.display = available ? DisplayStyle.None : DisplayStyle.Flex;
@@ -529,7 +527,6 @@ namespace DarkFantasyMerchant.Game
                 goodNames);
             curvesSubtabs = SubtabsOf(pages[CurvesTab], "city-curves", "indicator-curves", "composed-curves");
             curvesSubtabs.Select(0);
-            tradesSubtabs = SubtabsOf(pages[TradesTab], "trade-journal", "trade-flows");
 
             // Without the AI merchants, no ship can be removed: the rows have no button.
             if (shipsView != null)
@@ -556,20 +553,9 @@ namespace DarkFantasyMerchant.Game
                     new DebugComposedCurvesView(pages[CurvesTab].Q<VisualElement>("composed-curves-page"), recorder, goodTitles),
                 });
             }
-            else if (index == EventsTab)
-            {
-                views[EventsTab] = new DebugEventsView(pages[EventsTab], recorder, plainGoodNames);
-            }
             else if (index == TradesTab)
             {
-                views[TradesTab] = new DebugTradesView(
-                    tradesSubtabs,
-                    pages[TradesTab].Q<VisualElement>("trade-journal-page"),
-                    pages[TradesTab].Q<VisualElement>("trade-flows-page"),
-                    recorder,
-                    // A ship removed since keeps no name.
-                    ship => (shipsView != null ? shipsView.DisplayNameOf(ship) : null) ?? DebugCitiesTable.NoFigure,
-                    plainGoodNames);
+                views[TradesTab] = new DebugTradesView(pages[TradesTab], recorder, plainGoodNames);
             }
         }
 

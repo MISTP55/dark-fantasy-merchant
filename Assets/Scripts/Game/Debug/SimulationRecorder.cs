@@ -7,8 +7,8 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// Records the simulation for the debug tools from the start of the game, whether their panel
-    /// is open or not: every city at the end of each day, with the events of the day, and every
-    /// trade of the AI merchants and of the player. Exists only in the Editor and in development
+    /// is open or not: every city at the end of each day, and every trade of the AI merchants and
+    /// of the player. Exists only in the Editor and in development
     /// builds. Reads the simulation and changes nothing.
     /// </summary>
     public sealed class SimulationRecorder : MonoBehaviour
@@ -168,7 +168,7 @@ namespace DarkFantasyMerchant.Game
 
         private void OnPlayerTraded(CityDefinition city, int good, int units, long gold, PlayerTradeKind kind)
         {
-            Record.AddPlayerTrade(Record.History.LastDay, worldEconomy.MarketOf(city), good, units, gold, kind);
+            Record.AddPlayerTrade(Record.History.LastDay, worldEconomy.MarketOf(city), good, units, kind);
         }
     }
 }

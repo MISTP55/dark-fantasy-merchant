@@ -8,7 +8,6 @@
                 <ui:VisualElement class="debug-panel__tabs">
                     <ui:Button name="cities-tab" text="Villes" class="debug-panel__tab" />
                     <ui:Button name="curves-tab" text="Courbes" class="debug-panel__tab" />
-                    <ui:Button name="events-tab" text="Événements" class="debug-panel__tab" />
                     <ui:Button name="trades-tab" text="Échanges" class="debug-panel__tab" />
                     <ui:Button name="ships-tab" text="Navires" class="debug-panel__tab" />
                 </ui:VisualElement>
@@ -74,15 +73,7 @@
                 <ui:VisualElement name="indicator-curves-page" class="debug-panel__page" />
                 <ui:VisualElement name="composed-curves-page" class="debug-panel__page" />
             </ui:VisualElement>
-            <ui:VisualElement name="events-page" class="debug-panel__page" />
-            <ui:VisualElement name="trades-page" class="debug-panel__page">
-                <ui:VisualElement class="debug-panel__subtabs">
-                    <ui:Button name="trade-journal-tab" text="Journal" class="debug-panel__tab debug-panel__subtab" />
-                    <ui:Button name="trade-flows-tab" text="Flux par marchandise" class="debug-panel__tab debug-panel__subtab" />
-                </ui:VisualElement>
-                <ui:VisualElement name="trade-journal-page" class="debug-panel__page" />
-                <ui:VisualElement name="trade-flows-page" class="debug-panel__page" />
-            </ui:VisualElement>
+            <ui:VisualElement name="trades-page" class="debug-panel__page" />
             <ui:VisualElement name="ships-page" class="debug-panel__page">
                 <ui:VisualElement class="debug-panel__toolbar">
                     <ui:Label text="Tous les navires de la carte. Le profit est celui des marchands IA depuis le début de la partie." class="debug-cities__legend" />
