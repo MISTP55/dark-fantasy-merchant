@@ -73,6 +73,9 @@ namespace DarkFantasyMerchant.Game
         private DebugTabs curvesSubtabs;
         private DebugTabs tradesSubtabs;
 
+        // The goods' names with their unit, in the catalogue's order, for the views made later.
+        private readonly List<string> goodTitles = new List<string>();
+
         // Reused by every refresh of the ships tab.
         private readonly List<DebugShipInfo> shipInfos = new List<DebugShipInfo>();
 
@@ -357,6 +360,11 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
+            if (available && needsRecord && views[index] == null)
+            {
+                CreateRecordView(index);
+            }
+
             if (available)
             {
                 shownView = views[index];
@@ -480,6 +488,9 @@ namespace DarkFantasyMerchant.Game
                 shipGoodNames.Add(good.DisplayName);
             }
 
+            goodTitles.Clear();
+            goodTitles.AddRange(goodNames);
+
             VisualElement citiesPage = pages[CitiesTab];
             var citiesTable = new DebugCitiesTable(
                 citiesHeader, citiesRows, citiesTotals, goodsHeader, goodsRows, goodsTotals, goodNames);
@@ -529,6 +540,20 @@ namespace DarkFantasyMerchant.Game
             tabs = new DebugTabs(tabButtons, pages);
             tabs.Changed += OnTabChanged;
             return true;
+        }
+
+        // The views of the past, made once the record exists: they list its cities.
+        private void CreateRecordView(int index)
+        {
+            if (index == CurvesTab)
+            {
+                views[CurvesTab] = new DebugCurvesView(curvesSubtabs, new IDebugView[]
+                {
+                    new DebugCityCurvesView(pages[CurvesTab].Q<VisualElement>("city-curves-page"), recorder, goodTitles),
+                    null,
+                    null,
+                });
+            }
         }
 
         private static DebugTabs SubtabsOf(VisualElement page, params string[] names)

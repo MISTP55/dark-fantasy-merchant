@@ -365,3 +365,67 @@
     border-width: 1px;
     border-color: rgb(110, 84, 52);
 }
+
+/* The curves of a city: the list of the cities at the left, their charts at the right. */
+.debug-curves {
+    flex-direction: row;
+}
+
+.debug-curves__cities {
+    flex-shrink: 0;
+    width: 160px;
+    margin-right: 8px;
+}
+
+.debug-panel .debug-curves__city {
+    height: 22px;
+    margin: 0;
+    padding: 0 8px;
+    color: rgb(190, 164, 120);
+    font-size: 13px;
+    -unity-text-align: middle-left;
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    border-radius: 0;
+}
+
+.debug-panel .debug-curves__city.list-row--alternate {
+    background-color: rgba(240, 226, 196, 0.01);
+}
+
+.debug-panel .debug-curves__city:hover:enabled {
+    color: rgb(240, 226, 196);
+    background-color: rgb(62, 46, 30);
+}
+
+.debug-panel .debug-curves__city.debug-panel__tab--selected {
+    color: rgb(240, 226, 196);
+    background-color: rgb(96, 72, 44);
+    -unity-font-style: bold;
+}
+
+.debug-curves__charts {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.debug-curves__section {
+    margin: 4px 0;
+    color: rgb(190, 164, 120);
+    font-size: 13px;
+    -unity-font-style: bold;
+}
+
+.debug-curves__grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.debug-chart--third {
+    width: 32.5%;
+    height: 170px;
+}
+
+.debug-chart--quarter {
+    width: 24.2%;
+}
