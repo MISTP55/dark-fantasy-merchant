@@ -9,6 +9,7 @@
                     <ui:Button name="cities-tab" text="Villes" class="debug-panel__tab" />
                     <ui:Button name="ships-tab" text="Navires" class="debug-panel__tab" />
                 </ui:VisualElement>
+                <ui:Button name="turbo-button" text="Avance très rapide" class="debug-panel__button debug-panel__turbo" />
                 <ui:Button name="close-button" text="X" class="info-panel__close" />
             </ui:VisualElement>
             <ui:VisualElement name="cities-page" class="debug-panel__page">

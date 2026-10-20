@@ -11,7 +11,7 @@ paths:
 ## Ships
 
 - `Ship` (Core) is the runtime state of one ship; `ShipDefinition` (Game) its static definition. `SetDestination` asks the ship's `NavigationPathfinder` for a route over water; without one (a map with no mask) the route is one straight leg.
-- `ShipsView` owns every ship of the map, the player's and the AI's, and advances them with the world clock's `DeltaTime`. A ship's name is its own (`DisplayNameOf`), not its definition's. Only the player's ships (`IsPlayerShip`) take orders, are awaited by a fast forward, are paid wages and have their arrivals announced.
+- `ShipsView` owns every ship of the map, the player's and the AI's, and advances them, the docking and the arrivals at every `GameClock.Stepped` (in real time once per frame without a clock). It raises `StepStarted` before the ships sail a step: `AiMerchants` advances its fleet there, so that a ship that leaves sails the step and a stopover is not shortened by the step it starts in. A ship's name is its own (`DisplayNameOf`), not its definition's. Only the player's ships (`IsPlayerShip`) take orders, are awaited by a fast forward, are paid wages and have their arrivals announced.
 - `WorldMapInteraction` arbitrates between the two selection states: a ship is picked before the cities, and at most one thing is hovered and one selected (except a ship in port, below). An order on a city sends the ship to that city's port.
 
 ## Crew

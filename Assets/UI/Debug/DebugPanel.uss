@@ -207,6 +207,20 @@
     background-color: rgb(96, 72, 44);
 }
 
+/* In the header, as tall as the tabs and the close button. */
+.debug-panel .debug-panel__turbo {
+    height: 28px;
+    margin-right: 12px;
+}
+
+/* Lit while the world runs at its speed, like the fast forward button of the date. */
+.debug-panel .debug-panel__turbo--active,
+.debug-panel .debug-panel__turbo--active:hover:enabled {
+    color: rgb(24, 17, 12);
+    background-color: rgb(255, 140, 51);
+    border-color: rgb(240, 226, 196);
+}
+
 .debug-panel__toolbar .debug-panel__button {
     margin-left: 16px;
     margin-bottom: 8px;

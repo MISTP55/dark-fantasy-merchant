@@ -139,7 +139,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AClockStepThatCrossesSeveralWeeks_PaysEachOfThem()
         {
             WeeklyBilling billing = CreateBilling();
-            var clock = new GameClock(30f, 60f, 932, 12, 30);
+            var clock = new GameClock(30f, 60f, 1800f, 932, 12, 30);
             clock.DayStarted += _ => billing.StartDay(clock.ElapsedDays);
 
             clock.Advance(30f * 21);

@@ -117,12 +117,19 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
+        private void OnDestroy()
+        {
+            if (fleet != null)
+            {
+                shipsView.StepStarted -= OnStepStarted;
+            }
+        }
+
+        // Only to start: once started, the fleet advances with the steps of the world's time.
         private void Update()
         {
             if (fleet != null)
             {
-                // The world's time: stopovers are shorter in fast forward, like the trips.
-                fleet.Advance(worldClock.Clock.DeltaTime);
                 return;
             }
 
@@ -236,6 +243,9 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
+            // The world's time: stopovers are shorter in fast forward, like the trips. Before
+            // the ships sail the step, so that a ship that leaves sails it.
+            shipsView.StepStarted += OnStepStarted;
             candidates.Clear();
 
             for (int i = 0; i < ports.Count; i++)
@@ -269,6 +279,11 @@ namespace DarkFantasyMerchant.Game
                     }
                 }
             }
+        }
+
+        private void OnStepStarted(float deltaTime)
+        {
+            fleet.Advance(deltaTime);
         }
 
         private Ship SpawnShip(int port)

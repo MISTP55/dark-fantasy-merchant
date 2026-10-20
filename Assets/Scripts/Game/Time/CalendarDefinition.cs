@@ -31,6 +31,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("How many times faster the world runs in fast forward.")]
         [SerializeField, Min(1f)] private float fastForwardMultiplier = 60f;
 
+        [Tooltip("How many times faster the world runs in the debug tools' fast forward.")]
+        [SerializeField, Min(1f)] private float turboMultiplier = 600f;
+
         public int StartYear => startYear;
 
         public int MonthsPerYear => monthNames != null ? monthNames.Length : 0;
@@ -43,13 +46,16 @@ namespace DarkFantasyMerchant.Game
 
         public float FastForwardMultiplier => fastForwardMultiplier;
 
+        public float TurboMultiplier => turboMultiplier;
+
         /// <summary>
         /// A clock on the first day of the start year. Throws when the values of the asset
         /// are unusable: the Min attributes only constrain the Inspector, not the file.
         /// </summary>
         public GameClock CreateClock()
         {
-            return new GameClock(secondsPerDay, fastForwardMultiplier, startYear, MonthsPerYear, daysPerMonth);
+            return new GameClock(
+                secondsPerDay, fastForwardMultiplier, turboMultiplier, startYear, MonthsPerYear, daysPerMonth);
         }
 
         /// <param name="month">Month of the year, from 1.</param>

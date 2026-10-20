@@ -7,8 +7,8 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// Owns the ships of the map, the player's and the others, their views, the ship
-    /// selection state and which ships lie in which city's port, sails the ships every
-    /// frame and shows the route of the selected one.
+    /// selection state and which ships lie in which city's port, sails the ships at every
+    /// step of the world's time and shows the route of the selected one.
     /// </summary>
     public sealed class ShipsView : MonoBehaviour
     {
@@ -58,6 +58,9 @@ namespace DarkFantasyMerchant.Game
         private Ship hoveredShip;
         private Ship selectedShip;
 
+        // Null without a usable world clock: ships then sail in real time, once per frame.
+        private GameClock clock;
+
         public MapSelectionState<Ship> Selection { get; } = new MapSelectionState<Ship>();
 
         /// <summary>
@@ -71,6 +74,12 @@ namespace DarkFantasyMerchant.Game
         /// whose port it has entered, or null when it stopped at sea.
         /// </summary>
         public event Action<Ship, CityDefinition> ShipArrived;
+
+        /// <summary>
+        /// Raised at every step of the world's time, with its simulated seconds, before the
+        /// ships sail it: what gives ships their orders for the step listens to it.
+        /// </summary>
+        public event Action<float> StepStarted;
 
         public IReadOnlyList<Ship> Ships => ships;
 
@@ -124,6 +133,14 @@ namespace DarkFantasyMerchant.Game
             Selection.SelectedChanged += OnSelectedChanged;
             Docking.Docked += OnDocked;
             Docking.Undocked += OnUndocked;
+
+            // The world's time: ships sail faster in fast forward, in steps short enough that
+            // none sails past its port's arrival, however fast.
+            if (worldClock != null && worldClock.IsReady)
+            {
+                clock = worldClock.Clock;
+                clock.Stepped += Step;
+            }
         }
 
         private void OnDestroy()
@@ -132,12 +149,31 @@ namespace DarkFantasyMerchant.Game
             Selection.SelectedChanged -= OnSelectedChanged;
             Docking.Docked -= OnDocked;
             Docking.Undocked -= OnUndocked;
+
+            if (clock != null)
+            {
+                clock.Stepped -= Step;
+            }
         }
 
         private void Update()
         {
-            // The world's time: ships sail faster in fast forward.
-            float deltaTime = worldClock != null && worldClock.IsReady ? worldClock.Clock.DeltaTime : Time.deltaTime;
+            if (clock == null)
+            {
+                Step(Time.deltaTime);
+            }
+
+            // Once per frame, after all the steps of the frame.
+            for (int i = 0; i < ships.Count; i++)
+            {
+                shipWorldPositions[i] = Docking.IsDocked(ships[i]) ? NotOnMap : ships[i].WorldPosition;
+                views[i].Refresh();
+            }
+        }
+
+        private void Step(float deltaTime)
+        {
+            StepStarted?.Invoke(deltaTime);
 
             foreach (Ship ship in ships)
             {
@@ -148,12 +184,6 @@ namespace DarkFantasyMerchant.Game
 
             // After the docking's update, so that a ship that arrived at its port is in it.
             arrivals.Report();
-
-            for (int i = 0; i < ships.Count; i++)
-            {
-                shipWorldPositions[i] = Docking.IsDocked(ships[i]) ? NotOnMap : ships[i].WorldPosition;
-                views[i].Refresh();
-            }
         }
 
         // LateUpdate, not Update: the selection and the orders of this frame are in.

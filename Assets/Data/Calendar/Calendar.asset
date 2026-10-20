@@ -29,4 +29,5 @@ MonoBehaviour:
   daysPerMonth: 30
   secondsPerDay: 30
   fastForwardMultiplier: 60
+  turboMultiplier: 600
   daysPerWeek: 7

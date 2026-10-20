@@ -1682,6 +1682,9 @@ namespace DarkFantasyMerchant.Editor
             changed |= FillReference(panel, "shipsView", FindInScene<ShipsView>(scene));
             changed |= FillReference(panel, "aiMerchants", FindInScene<AiMerchants>(scene));
 
+            // Its button that runs the world much faster than the player's fast forward.
+            changed |= FillReference(panel, "worldClock", FindInScene<WorldClock>(scene));
+
             if (changed)
             {
                 SaveSceneChanges(scene, sceneHadUnsavedChanges, "The debug panel");
