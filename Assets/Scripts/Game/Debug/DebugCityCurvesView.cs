@@ -15,6 +15,10 @@ namespace DarkFantasyMerchant.Game
         private const string CityButtonClass = "debug-curves__city";
         private const string ThirdClass = "debug-chart--third";
         private const string QuarterClass = "debug-chart--quarter";
+        private const string BelowT0Name = "Sous T0";
+        private const string T0ToT1Name = "T0 à T1";
+        private const string T1ToT2Name = "T1 à T2";
+        private const string T2ToT3Name = "T2 à T3";
 
         private readonly SimulationRecorder recorder;
         private readonly List<Button> cityButtons = new List<Button>();
@@ -27,7 +31,6 @@ namespace DarkFantasyMerchant.Game
 
         // The arrays of the curves, kept from one refresh to the next and grown with the days.
         private readonly Dictionary<string, float[]> buffers = new Dictionary<string, float[]>();
-        private readonly Func<int, string> dayLabel;
 
         private int city;
         private bool isShown;
@@ -42,7 +45,6 @@ namespace DarkFantasyMerchant.Game
             }
 
             this.recorder = recorder ?? throw new ArgumentNullException(nameof(recorder));
-            dayLabel = index => DebugDayLabel.Of(recorder.Record.History, index, recorder.FormatDay);
             page.Clear();
             page.AddToClassList("debug-curves");
 
@@ -75,11 +77,24 @@ namespace DarkFantasyMerchant.Game
             charts.Add(Section("Population"));
             VisualElement populationGrid = Grid();
             charts.Add(populationGrid);
-            classesChart = AddChart(populationGrid, "Habitants par classe et mendiants", ThirdClass);
-            satisfactionChart = AddChart(populationGrid, "Satisfaction", ThirdClass);
-            workersChart = AddChart(populationGrid, "Ouvriers et réserve", ThirdClass);
+            classesChart = AddChart(populationGrid, "Habitants par classe et mendiants", ThirdClass, recorder.ChartCalendar);
+            satisfactionChart = AddChart(populationGrid, "Satisfaction", ThirdClass, recorder.ChartCalendar);
+            workersChart = AddChart(populationGrid, "Ouvriers et réserve", ThirdClass, recorder.ChartCalendar);
 
-            charts.Add(Section("Marchandises : stock sur les bandes des seuils, prix d'achat en pointillé (échelle propre)"));
+            // One legend for every good: their charts are too small for one each.
+            charts.Add(Section("Marchandises : stock sur les bandes des seuils, prix d'achat sur l'échelle de droite"));
+            var goodsLegend = new ChartLegend();
+            goodsLegend.AddToClassList("debug-curves__legend");
+            goodsLegend.SetEntries(new[]
+            {
+                new ChartLegendEntry("Stock", DebugChartColors.Stock, ChartSeriesStyle.Line),
+                new ChartLegendEntry("Prix d'achat", DebugChartColors.Price, ChartSeriesStyle.Dashed),
+                new ChartLegendEntry(BelowT0Name, DebugChartColors.BelowT0, ChartSeriesStyle.StackedArea),
+                new ChartLegendEntry(T0ToT1Name, DebugChartColors.T0ToT1, ChartSeriesStyle.StackedArea),
+                new ChartLegendEntry(T1ToT2Name, DebugChartColors.T1ToT2, ChartSeriesStyle.StackedArea),
+                new ChartLegendEntry(T2ToT3Name, DebugChartColors.T2ToT3, ChartSeriesStyle.StackedArea),
+            });
+            charts.Add(goodsLegend);
             VisualElement goodsGrid = Grid();
             charts.Add(goodsGrid);
             goodOrder = NameOrder.Of(goodTitles);
@@ -87,7 +102,8 @@ namespace DarkFantasyMerchant.Game
 
             foreach (int good in goodOrder)
             {
-                goodCharts[good] = AddChart(goodsGrid, goodTitles[good], QuarterClass);
+                goodCharts[good] = AddChart(goodsGrid, goodTitles[good], QuarterClass, recorder.ChartCalendar);
+                goodCharts[good].ShowsLegend = false;
             }
 
             Select(cityButtons.Count > 0 ? (int)cityButtons[0].userData : 0);
@@ -113,8 +129,9 @@ namespace DarkFantasyMerchant.Game
 
             SimulationHistory history = recorder.Record.History;
             int count = history.DayCount;
+            int first = history.FirstDay;
 
-            classesChart.SetData(count, dayLabel, new[]
+            classesChart.SetData(first, count, new[]
             {
                 Series("Riches", DebugChartColors.Rich, ChartSeriesStyle.StackedArea, Fill("rich", history, CityIndicator.Rich)),
                 Series("Aisés", DebugChartColors.Wealthy, ChartSeriesStyle.StackedArea, Fill("wealthy", history, CityIndicator.Wealthy)),
@@ -122,14 +139,14 @@ namespace DarkFantasyMerchant.Game
                 Series("Mendiants", DebugChartColors.Beggars, ChartSeriesStyle.StackedArea, Fill("beggars", history, CityIndicator.Beggars)),
             }, null);
 
-            satisfactionChart.SetData(count, dayLabel, new[]
+            satisfactionChart.SetData(first, count, new[]
             {
                 Series("Riches", DebugChartColors.Rich, ChartSeriesStyle.Line, Fill("rich-satisfaction", history, CityIndicator.RichSatisfaction)),
                 Series("Aisés", DebugChartColors.Wealthy, ChartSeriesStyle.Line, Fill("wealthy-satisfaction", history, CityIndicator.WealthySatisfaction)),
                 Series("Pauvres", DebugChartColors.Poor, ChartSeriesStyle.Line, Fill("poor-satisfaction", history, CityIndicator.PoorSatisfaction)),
             }, null);
 
-            workersChart.SetData(count, dayLabel, new[]
+            workersChart.SetData(first, count, new[]
             {
                 Series("Ouvriers", DebugChartColors.Workers, ChartSeriesStyle.Line, FillSum("workers", history, GoodIndicator.Workers)),
                 Series("Réserve", DebugChartColors.Reserve, ChartSeriesStyle.Dashed, FillSum("reserve", history, GoodIndicator.Reserve)),
@@ -149,15 +166,15 @@ namespace DarkFantasyMerchant.Game
                 price.Format = value => TreasuryHudController.FormatNumber((long)Math.Round(value));
 
                 goodCharts[good].SetData(
+                    first,
                     count,
-                    dayLabel,
                     new[] { Series("Stock", DebugChartColors.Stock, ChartSeriesStyle.Line, Fill("stock-" + good, history, GoodIndicator.Stock, good)), price },
                     new[]
                     {
-                        new ChartBand { Lower = zero, Upper = t0, Color = DebugChartColors.BelowT0 },
-                        new ChartBand { Lower = t0, Upper = t1, Color = DebugChartColors.T0ToT1 },
-                        new ChartBand { Lower = t1, Upper = t2, Color = DebugChartColors.T1ToT2 },
-                        new ChartBand { Lower = t2, Upper = t3, Color = DebugChartColors.T2ToT3 },
+                        new ChartBand { Name = BelowT0Name, Lower = zero, Upper = t0, Color = DebugChartColors.BelowT0 },
+                        new ChartBand { Name = T0ToT1Name, Lower = t0, Upper = t1, Color = DebugChartColors.T0ToT1 },
+                        new ChartBand { Name = T1ToT2Name, Lower = t1, Upper = t2, Color = DebugChartColors.T1ToT2 },
+                        new ChartBand { Name = T2ToT3Name, Lower = t2, Upper = t3, Color = DebugChartColors.T2ToT3 },
                     });
             }
         }
@@ -249,9 +266,9 @@ namespace DarkFantasyMerchant.Game
             return grid;
         }
 
-        private static TimeSeriesChart AddChart(VisualElement grid, string title, string sizeClass)
+        private static TimeSeriesChart AddChart(VisualElement grid, string title, string sizeClass, ChartCalendar calendar)
         {
-            var chart = new TimeSeriesChart(title);
+            var chart = new TimeSeriesChart(title, calendar);
             chart.AddToClassList(sizeClass);
             grid.Add(chart);
             return chart;

@@ -23,7 +23,6 @@ namespace DarkFantasyMerchant.Game
         private readonly int[] goodOrder;
         private readonly List<string> cityNames = new List<string>();
         private readonly IReadOnlyList<string> goodNames;
-        private readonly Func<int, string> dayLabel;
 
         private bool isShown;
 
@@ -36,7 +35,6 @@ namespace DarkFantasyMerchant.Game
 
             this.recorder = recorder ?? throw new ArgumentNullException(nameof(recorder));
             goodNames = goodTitles ?? throw new ArgumentNullException(nameof(goodTitles));
-            dayLabel = index => DebugDayLabel.Of(recorder.Record.History, index, recorder.FormatDay);
             page.Clear();
 
             foreach (CityDefinition city in recorder.Cities)
@@ -73,7 +71,10 @@ namespace DarkFantasyMerchant.Game
             chips.AddToClassList("debug-curves__chips");
             page.Add(chips);
 
-            chart = new TimeSeriesChart("Chaque courbe a sa propre échelle ; la valeur se lit au survol.");
+            // The chips above are its legend.
+            chart = new TimeSeriesChart(
+                "Chaque courbe a sa propre échelle : celle de la première à gauche, celle de la deuxième à droite ; toutes se lisent au survol.",
+                recorder.ChartCalendar) { ShowsLegend = false };
             chart.AddToClassList("debug-chart--large");
             page.Add(chart);
         }
@@ -128,7 +129,7 @@ namespace DarkFantasyMerchant.Game
                 });
             }
 
-            chart.SetData(count, dayLabel, series, null);
+            chart.SetData(history.FirstDay, count, series, null);
         }
 
         private void Add()

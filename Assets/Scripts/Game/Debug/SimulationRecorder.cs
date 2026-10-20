@@ -42,6 +42,9 @@ namespace DarkFantasyMerchant.Game
 
         public CalendarDefinition Calendar => worldClock != null ? worldClock.Calendar : null;
 
+        /// <summary>The calendar of the charts; null until <see cref="IsReady"/>.</summary>
+        public ChartCalendar ChartCalendar { get; private set; }
+
         /// <summary>The choice of <see cref="HorizonChoices"/>; twelve months at every start.</summary>
         public int HorizonIndex { get; private set; } = HorizonChoices.DefaultIndex;
 
@@ -53,14 +56,6 @@ namespace DarkFantasyMerchant.Game
             int? days = HorizonChoices.DaysOf(index, Calendar.DaysPerMonth);
             HorizonIndex = index;
             Record?.SetHorizon(days);
-        }
-
-        /// <summary>A day counted from the start of the game, as the calendar writes it.</summary>
-        public string FormatDay(int day)
-        {
-            CalendarDefinition calendar = Calendar;
-
-            return calendar.Format(GameDate.FromElapsedDays(day, calendar.StartYear, calendar.MonthsPerYear, calendar.DaysPerMonth));
         }
 
         private void Start()
@@ -131,6 +126,8 @@ namespace DarkFantasyMerchant.Game
             }
 
             clock = worldClock.Clock;
+            CalendarDefinition calendar = Calendar;
+            ChartCalendar = new ChartCalendar(calendar.StartYear, calendar.MonthsPerYear, calendar.DaysPerMonth, calendar.MonthName);
             Record = new SimulationRecord(markets, goodNames.Count, HorizonChoices.DaysOf(HorizonIndex, Calendar.DaysPerMonth));
 
             // The cities as the game starts, then at the end of every day.

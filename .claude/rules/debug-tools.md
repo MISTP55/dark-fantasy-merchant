@@ -17,4 +17,6 @@ paths:
 - A shortage ("Manque") is what the inhabitants needed and did not get (`MissingOf`), not a stock at 0 in the evening: the city consumes before it produces.
 - `Construction` reports the materials it buys through an optional callback; they count as shipped from the city.
 - Trades are kept in a `TrimmedList` (constant-time trimming): with `List.RemoveRange`, a day's cost grew with the number kept.
-- Editing the panel's USS or UXML in Play mode rebuilds its tree: restart Play mode before checking it.
+- `TimeSeriesChart` writes its scale at its left (`ChartMath.NiceScale`, round steps) and, at its right in its colour, that of the first curve with a scale of its own that the left does not write; without a curve on the chart's scale, the left writes the first curve's own. Its dates (`ChartTimeAxis`) are in days up to two months, in months up to three years, in years beyond. Its legend leaves out a single colour; the goods of "Par ville" share one legend, and "Composer" has its chips instead.
+- A dashed line is cut on the days of the game (`ChartMath.DashSpans`, a period of a power of two days), not along its length from its first point: cut along its length, its dashes crawled along the curve each time a day came or went, which flickered.
+- Editing the panel's USS or UXML in Play mode rebuilds its tree, and editing a script reloads the whole game: restart Play mode before checking it.

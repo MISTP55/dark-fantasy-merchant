@@ -320,11 +320,11 @@
     padding-left: 8px;
 }
 
-/* A chart of days: its title over its plot, drawn by TimeSeriesChart. */
+/* A chart of days: its title and its legend over its plot, drawn by TimeSeriesChart, between its scales and over its dates. */
 .debug-chart {
     flex-direction: column;
     flex-shrink: 0;
-    height: 130px;
+    height: 150px;
     margin: 0 6px 6px 0;
     padding: 4px 6px;
     background-color: rgb(35, 29, 24);
@@ -349,8 +349,101 @@
     white-space: nowrap;
 }
 
+.debug-chart__body {
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+.debug-chart__column {
+    flex-direction: column;
+    flex-grow: 1;
+}
+
 .debug-chart__plot {
     flex-grow: 1;
+}
+
+/* The scales: their labels are placed by the chart, at the height of their values. */
+.debug-chart__axis {
+    flex-shrink: 0;
+    width: 44px;
+}
+
+.debug-chart__time {
+    flex-shrink: 0;
+    height: 14px;
+}
+
+.debug-chart__axis-label {
+    position: absolute;
+    height: 12px;
+    margin: 0;
+    padding: 0;
+    color: rgb(150, 130, 100);
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.debug-chart__axis--left .debug-chart__axis-label {
+    right: 5px;
+    -unity-text-align: middle-right;
+}
+
+.debug-chart__axis--right .debug-chart__axis-label {
+    left: 5px;
+    -unity-text-align: middle-left;
+}
+
+.debug-chart__time .debug-chart__axis-label {
+    top: 2px;
+}
+
+/* The colours of a chart, each with its name. */
+.debug-legend {
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    margin-bottom: 2px;
+}
+
+.debug-legend__entry {
+    flex-direction: row;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.debug-legend__swatch--line {
+    width: 14px;
+    height: 3px;
+}
+
+.debug-legend__swatch--dashed {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 14px;
+    height: 3px;
+}
+
+.debug-legend__swatch-dash {
+    width: 5px;
+    height: 3px;
+}
+
+.debug-legend__swatch--area {
+    width: 10px;
+    height: 10px;
+    border-width: 1px;
+}
+
+.debug-legend__name {
+    margin: 0 0 0 4px;
+    padding: 0;
+    color: rgb(222, 210, 188);
+    font-size: 11px;
+}
+
+.debug-curves__legend {
+    margin-bottom: 6px;
 }
 
 /* Over the plot, at the pointer's height: on the side away from the pointer. */
@@ -423,7 +516,7 @@
 
 .debug-chart--third {
     width: 32.5%;
-    height: 170px;
+    height: 200px;
 }
 
 .debug-chart--quarter {

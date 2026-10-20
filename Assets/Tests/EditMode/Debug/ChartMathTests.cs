@@ -84,5 +84,69 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(60f, ChartMath.YOf(2f, 2f, 10f, 60f));
             Assert.AreEqual(30f, ChartMath.YOf(6f, 2f, 10f, 60f));
         }
+
+        [TestCase(0f, 97f, 5, 0f, 100f, 20f)]
+        [TestCase(950f, 1230f, 4, 900f, 1300f, 100f)]
+        [TestCase(-3f, 7f, 5, -4f, 8f, 2f)]
+        [TestCase(0f, 0.8f, 4, 0f, 0.8f, 0.2f)]
+        [TestCase(0f, 1f, 4, 0f, 1f, 0.25f)]
+        public void NiceScale_WidensTheRangeToRoundSteps(float min, float max, int ticks, float niceMin, float niceMax, float step)
+        {
+            ChartMath.NiceScale(min, max, ticks, out float actualMin, out float actualMax, out float actualStep);
+
+            Assert.AreEqual(niceMin, actualMin, 1e-4f);
+            Assert.AreEqual(niceMax, actualMax, 1e-4f);
+            Assert.AreEqual(step, actualStep, 1e-4f);
+        }
+
+        [Test]
+        public void NiceScale_OfAFlatRange_StillHasAStep()
+        {
+            ChartMath.NiceScale(5f, 5f, 4, out float min, out float max, out float step);
+
+            Assert.Greater(step, 0f);
+            Assert.LessOrEqual(min, 5f);
+            Assert.GreaterOrEqual(max, 5f);
+            Assert.Greater(max, min);
+        }
+
+        [TestCase(12000f, 2000f, "12 000")]
+        [TestCase(-4f, 2f, "-4")]
+        [TestCase(0.4f, 0.2f, "0,4")]
+        [TestCase(0.75f, 0.25f, "0,75")]
+        [TestCase(0.6000001f, 0.2f, "0,6")]
+        public void FormatTick_WritesTheDecimalsOfTheStep(float value, float step, string expected)
+        {
+            Assert.AreEqual(System.Text.RegularExpressions.Regex.Unescape(expected), ChartMath.FormatTick(value, step));
+        }
+
+        [TestCase(1f, 8f)]
+        [TestCase(0.5f, 16f)]
+        [TestCase(7f, 1f)]
+        [TestCase(10f, 1f)]
+        [TestCase(20f, 0.5f)]
+        [TestCase(0f, 1f)]
+        public void DashPeriodDays_IsAPowerOfTwo_OfAboutSevenPixels(float pixelsPerDay, float expected)
+        {
+            Assert.AreEqual(expected, ChartMath.DashPeriodDays(pixelsPerDay));
+        }
+
+        [Test]
+        public void DashSpans_AreAnchoredToTheDays_NotToTheStartOfTheLine()
+        {
+            var spans = new System.Collections.Generic.List<(double, double)>();
+
+            ChartMath.DashSpans(0d, 3d, 2d, 0.5d, spans);
+            CollectionAssert.AreEqual(new[] { (0d, 1d), (2d, 3d) }, spans);
+
+            // The same days drawn from another start: the dashes stay where they were.
+            spans.Clear();
+            ChartMath.DashSpans(1.5d, 2.5d, 2d, 0.5d, spans);
+            CollectionAssert.AreEqual(new[] { (2d, 2.5d) }, spans);
+
+            spans.Clear();
+            ChartMath.DashSpans(3d, 4.6d, 1d, 0.5d, spans);
+            CollectionAssert.AreEqual(new[] { (3d, 3.5d), (4d, 4.5d) }, spans);
+        }
     }
 }

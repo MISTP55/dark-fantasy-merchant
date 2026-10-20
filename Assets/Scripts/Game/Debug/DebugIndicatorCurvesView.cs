@@ -23,7 +23,6 @@ namespace DarkFantasyMerchant.Game
         private readonly TimeSeriesChart[] cityCharts;
         private readonly TimeSeriesChart worldChart;
         private readonly float[][] cityValues;
-        private readonly Func<int, string> dayLabel;
 
         private float[] worldValues = new float[0];
         private bool isShown;
@@ -36,7 +35,6 @@ namespace DarkFantasyMerchant.Game
             }
 
             this.recorder = recorder ?? throw new ArgumentNullException(nameof(recorder));
-            dayLabel = index => DebugDayLabel.Of(recorder.Record.History, index, recorder.FormatDay);
             page.Clear();
 
             var toolbar = new VisualElement();
@@ -93,13 +91,13 @@ namespace DarkFantasyMerchant.Game
 
             foreach (int city in cityOrder)
             {
-                cityCharts[city] = new TimeSeriesChart(names[city]);
+                cityCharts[city] = new TimeSeriesChart(names[city], recorder.ChartCalendar);
                 cityCharts[city].AddToClassList(QuarterClass);
                 grid.Add(cityCharts[city]);
                 cityValues[city] = new float[0];
             }
 
-            worldChart = new TimeSeriesChart("Monde");
+            worldChart = new TimeSeriesChart("Monde", recorder.ChartCalendar);
             worldChart.AddToClassList(QuarterClass);
             grid.Add(worldChart);
         }
@@ -151,7 +149,7 @@ namespace DarkFantasyMerchant.Game
 
             for (int city = 0; city < cityCharts.Length; city++)
             {
-                cityCharts[city].SetData(count, dayLabel, new[] { SeriesOf(indicator.Name, cityValues[city], format) }, null, commonMin, commonMax);
+                cityCharts[city].SetData(history.FirstDay, count, new[] { SeriesOf(indicator.Name, cityValues[city], format) }, null, commonMin, commonMax);
             }
 
             worldChart.style.display = indicator.AddsUp ? DisplayStyle.Flex : DisplayStyle.None;
@@ -165,7 +163,7 @@ namespace DarkFantasyMerchant.Game
                     values[day] = DebugIndicators.WorldValueOf(history, day, cityCharts.Length, indicator, good);
                 }
 
-                worldChart.SetData(count, dayLabel, new[] { SeriesOf(indicator.Name, values, format) }, null);
+                worldChart.SetData(history.FirstDay, count, new[] { SeriesOf(indicator.Name, values, format) }, null);
             }
         }
 
