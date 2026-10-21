@@ -3,8 +3,7 @@ using System;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// What a unit of a good, a barrel or a bushel, costs in a city, as in Patrician III: the
-    /// good's base price times a factor that follows the city's stock against its thresholds.
+    /// What a unit of a good, a barrel or a bushel, costs in a city: the good's base price times a factor that follows the city's stock against its thresholds.
     /// The player buys on one curve and sells on another, never above it. Every unit is priced at the average factor over the
     /// stock it takes away or adds, so a trade of several units costs the integral of the curve.
     /// </summary>

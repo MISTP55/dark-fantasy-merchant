@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// Plans the supply of the ports as the merchants of Patrician III do: a good is carried from a port
-    /// where it is plentiful to one where it will be short, by the quantity <see cref="ShipmentQuantity"/>
+    /// Plans how the AI merchants supply the ports: a good is carried from a port where it is
+    /// plentiful to one where it will be short, by the quantity <see cref="ShipmentQuantity"/>
     /// gives and for the gap of the factors of the two prices times the weight of the good. From that
     /// it chooses a ship's final destination from its home, a stopover on its way back, and a cargo.
     /// The length of a trip divides nothing. Ports are indices into the markets it was given, goods

@@ -55,18 +55,18 @@ namespace DarkFantasyMerchant.Game
         [FormerlySerializedAs("house")]
         [SerializeField] private BuildingType poorHouse = new BuildingType();
 
-        [Tooltip("Poor a poor house shelters: 140 is Patrician III's.")]
+        [Tooltip("Poor a poor house shelters: 140.")]
         [FormerlySerializedAs("houseRoom")]
         [SerializeField, Min(1)] private int poorHouseRoom = 140;
 
         [SerializeField] private BuildingType wealthyHouse = new BuildingType();
 
-        [Tooltip("Wealthy a wealthy house shelters: 70 is Patrician III's.")]
+        [Tooltip("Wealthy a wealthy house shelters: 70.")]
         [SerializeField, Min(1)] private int wealthyHouseRoom = 70;
 
         [SerializeField] private BuildingType richHouse = new BuildingType();
 
-        [Tooltip("Rich a rich house shelters: 40 is Patrician III's.")]
+        [Tooltip("Rich a rich house shelters: 40.")]
         [SerializeField, Min(1)] private int richHouseRoom = 40;
 
         /// <summary>What the costs line writes for a building that cannot be built.</summary>

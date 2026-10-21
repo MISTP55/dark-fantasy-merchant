@@ -65,6 +65,7 @@ A new script goes in the subfolder of its subsystem; a new subsystem gets its su
 - **Striped lists**: every list of rows on screen has a slightly lighter background on every other row, from the second. USS has no `:nth-child`: call `ListStripes.Apply` on the row container whenever rows are added, removed or moved. The notifications, labels over the map, are not striped.
 - **Data**: game content (goods, cities, ships, prices, ranks, etc.) is defined in ScriptableObject assets, not hard-coded. ScriptableObjects hold static definitions only; mutable simulation state lives in separate runtime objects, never written back into the assets.
 - **Testing**: keep simulation logic (economy, trade, progression) in plain C# classes with no `MonoBehaviour` or scene dependency, and cover it with EditMode tests. MonoBehaviours are thin adapters that drive the simulation and present its state.
+- **No mention of Patrician III**: apart from this rule, nothing in this repository names Patrician III — not the code, the comments, the asset names, the rules and documentation (`.claude/rules/`, `docs/`), nor the commit messages. This covers its abbreviation "P3", the `patrician3-re` project, its files and the addresses of its code. The specs and plans already in `docs/superpowers/` and the commits already made are left as they are. A rule taken from it is described for what it does, in the game's own terms, never by where it comes from ("the price falls linearly above the threshold", not "Patrician III's price curve").
 
 ## Commands
 

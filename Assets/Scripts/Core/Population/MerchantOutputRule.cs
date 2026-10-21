@@ -3,7 +3,7 @@ using System;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// What the workshops of a merchant (the player's) make in a city, as in Patrician III:
+    /// What the workshops of a merchant (the player's) make in a city:
     /// their workers make the good's merchant output, which lacks the coefficient of the city's
     /// own workshop, and the more workshops of the good the merchant has in the city, the more
     /// each worker makes. A count equal to a step gets its bonus.
@@ -11,7 +11,7 @@ namespace DarkFantasyMerchant.Core
     public sealed class MerchantOutputRule
     {
         /// <param name="firstStep">Workshops of a good from which the first bonus applies, at least 1.</param>
-        /// <param name="firstBonus">Factor of the output from the first step: 1.03 is Patrician III's.</param>
+        /// <param name="firstBonus">Factor of the output from the first step.</param>
         /// <param name="secondStep">Workshops from which the second bonus applies, above the first step.</param>
         /// <param name="secondBonus">Factor of the output from the second step.</param>
         /// <param name="thirdStep">Workshops from which the third bonus applies, above the second step.</param>

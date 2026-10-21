@@ -2,7 +2,7 @@ using System;
 
 namespace DarkFantasyMerchant.Core
 {
-    /// <summary>The housed classes of a city, in Patrician III's order; the beggars are apart.</summary>
+    /// <summary>The housed classes of a city, from the top down; the beggars are apart.</summary>
     public enum SocialClass
     {
         Rich,

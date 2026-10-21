@@ -8,7 +8,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
     {
         private const double Tolerance = 1e-9;
 
-        // Patrician III's: 7 days, 14 more, 10 days of production more; floors of 5 to 20 barrels.
+        // 7 days, 14 more, 10 days of production more; floors of 5 to 20 barrels.
         private static ThresholdRule Rule => new ThresholdRule(7, 14, 10, 5, 10, 15, 20);
 
         private static void AssertThresholds(StockThresholds actual, double t0, double t1, double t2, double t3)

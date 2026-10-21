@@ -4,8 +4,8 @@ namespace DarkFantasyMerchant.Core
 {
     /// <summary>
     /// How many units of one good an AI ship carries from a source city to a destination city, from the
-    /// stock thresholds of both, as Patrician III does: the source never gives below the middle of its
-    /// T0 and T1, the destination never receives at or above its T1, and the rest is shared so that both
+    /// stock thresholds of both: the source never gives below the middle of its T0 and T1, the
+    /// destination never receives at or above its T1, and the rest is shared so that both
     /// end at the same relative position in their range. Rounding and the smallest lot are the planner's.
     /// </summary>
     public static class ShipmentQuantity

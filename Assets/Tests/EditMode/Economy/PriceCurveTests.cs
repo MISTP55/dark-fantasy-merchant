@@ -8,7 +8,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
     {
         private const double Tolerance = 1e-9;
 
-        // The factors at which the player buys in Patrician III.
+        // The factors at which the player buys.
         private static PriceCurve Curve => new PriceCurve(4, 1.5, 1, 0.8, 0.6);
 
         private static readonly StockThresholds Thresholds = new StockThresholds(20, 40, 60, 80);

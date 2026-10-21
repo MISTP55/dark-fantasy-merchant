@@ -3,20 +3,20 @@ using System;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// How satisfied a city's classes are and what it does to them, as in Patrician III (see
-    /// <c>patrician3-re\resultats\Population des villes.md</c>): each class's satisfaction follows
-    /// the stock of the goods it consumes against their T0 (0x51CB80); the rich and the wealthy
+    /// How satisfied a city's classes are and what it does to them: each class's satisfaction
+    /// follows the stock of the goods it consumes against their T0; the rich and the wealthy
     /// take or give back poor towards a share of the poor set by their satisfaction and their
-    /// room, and the poor without room or unhappy leave the city (0x51C9A0). Stateless: the
-    /// population is passed in. Integer arithmetic, truncated as Patrician III's.
+    /// room, and the poor without room or unhappy leave the city. Stateless: the population
+    /// is passed in. Integer arithmetic, truncated.
     /// </summary>
     public sealed class SocialRule
     {
-        // Patrician III's shift of two, apart from the inhabitants per worker.
+        // A quarter, as a shift of two bits: a constant of its own, not the inhabitants per
+        // worker, though both are 4.
         private const int ExcessPoorDivisor = 4;
 
         /// <param name="startingSatisfaction">Satisfaction of every class when the game starts (50).</param>
-        /// <param name="satisfactionBases">The base of each class's target (Intermédiaire: -13, -18, -27).</param>
+        /// <param name="satisfactionBases">The base of each class's target (-13, -18, -27).</param>
         /// <param name="satisfactionRise">Points a satisfaction rises in a day towards its target (2).</param>
         /// <param name="satisfactionFall">Points it falls in a day (1).</param>
         /// <param name="commonSatisfaction">The term every class's target shares (9).</param>
@@ -230,7 +230,7 @@ namespace DarkFantasyMerchant.Core
 
             if (target < count)
             {
-                // A target of 0 is a class without room nor floor, which Patrician III never has.
+                // A target of 0 is a class without room nor floor, which a city never has.
                 int moved = 2 * count / Math.Max(1, target) + 1;
 
                 if (moved >= count)

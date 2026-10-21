@@ -8,7 +8,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
     {
         private const double Tolerance = 1e-9;
 
-        // Patrician III's: 3 % from 3 workshops, 6 % from 6, 10 % from 9.
+        // 3 % from 3 workshops, 6 % from 6, 10 % from 9.
         private static MerchantOutputRule Rule => new MerchantOutputRule(3, 1.03, 6, 1.06, 9, 1.1);
 
         [TestCase(0, 1)]

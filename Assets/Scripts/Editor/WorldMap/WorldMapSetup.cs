@@ -125,12 +125,11 @@ namespace DarkFantasyMerchant.Editor
             public int AiWeight { get; }
         }
 
-        // Patrician III's goods, in the order of the catalogue, which is their order on screen.
-        // Category, unit, base price, what 1 000 rich, wealthy and poor consume in a week and how
-        // much the stock weighs in their satisfaction (Patrician III's tables), then the
-        // workshop's maximum of workers, a worker's daily output in the city's workshop and in a
-        // merchant's (Patrician III's, without the city's coefficient): the values a good that is
-        // missing is created with, which are then balanced by hand in the asset.
+        // The goods, in the order of the catalogue. Category, unit, base price, what 1 000 rich,
+        // wealthy and poor consume in a week and how much the stock weighs in their satisfaction,
+        // then the workshop's maximum of workers, a worker's daily output in the city's workshop
+        // and in a merchant's (without the city's coefficient): the values a good that is missing
+        // is created with, which are then balanced by hand in the asset.
         private static PerClass<double> Weekly(double rich, double wealthy, double poor) => new PerClass<double>(rich, wealthy, poor);
 
         private static PerClass<int> Weights(int rich, int wealthy, int poor) => new PerClass<int>(rich, wealthy, poor);
@@ -201,9 +200,8 @@ namespace DarkFantasyMerchant.Editor
             public string Description { get; }
         }
 
-        // Patrician III's 24 towns of its standard map, with the goods they produce there
-        // (patrician3-re\resultats\Villes de la carte.md). A town's cattle makes meat and
-        // leather, its whale oil comes with an inefficient fishery, and its hidden supply of
+        // The 24 towns of the map, with the goods they produce there. A town's cattle makes
+        // meat and leather, its whale oil comes with an inefficient fishery, and its hidden supply of
         // skins, wine or salt is an inefficient workshop. Each city stands on the navigable
         // cell nearest a town drawn on the placeholder image. The seven first keep the
         // places of the cities they replaced, so the player still starts where they did.

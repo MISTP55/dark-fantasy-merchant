@@ -23,11 +23,11 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Days of its consumption a city holds of every good when the game starts, whether it produces it or not.")]
         [SerializeField, Min(0f)] private double startingStockDays = 7d;
 
-        [Tooltip("Barrels of room a bushel takes in a hold: 10 is Patrician III's load.")]
+        [Tooltip("Barrels of room a bushel takes in a hold: 10.")]
         [SerializeField, Min(1)] private int barrelsPerBushel = 10;
 
         [Header("Workshops (a good's maximum of workers and output per worker are the good's own)")]
-        [Tooltip("Share of a good's output per worker in a city that produces it inefficiently: 0.75 is Patrician III's 768 / 1024.")]
+        [Tooltip("Share of a good's output per worker in a city that produces it inefficiently: 0.75.")]
         [SerializeField, Range(0f, 1f)] private double inefficientEfficiency = 0.75d;
 
         [Tooltip("Workers a workshop hires in a day while the stock of its good is at T0 or under.")]
@@ -45,37 +45,37 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Workers a workshop keeps above T3, where it produces nothing.")]
         [SerializeField, Min(0)] private int workersAboveT3 = 1;
 
-        [Header("Merchants' workshops (the player's), as in Patrician III")]
-        [Tooltip("Workshops of a good in a city from which a merchant's workers make more: 3 is Patrician III's.")]
+        [Header("Merchants' workshops (the player's)")]
+        [Tooltip("Workshops of a good in a city from which a merchant's workers make more: 3.")]
         [SerializeField, Min(1)] private int merchantFirstStep = 3;
 
-        [Tooltip("Factor of their output from the first step: 1.03 is Patrician III's.")]
+        [Tooltip("Factor of their output from the first step: 1.03.")]
         [SerializeField, Min(0f)] private double merchantFirstBonus = 1.03d;
 
-        [Tooltip("Workshops from which the second bonus applies: 6 is Patrician III's.")]
+        [Tooltip("Workshops from which the second bonus applies: 6.")]
         [SerializeField, Min(1)] private int merchantSecondStep = 6;
 
-        [Tooltip("Factor of their output from the second step: 1.06 is Patrician III's.")]
+        [Tooltip("Factor of their output from the second step: 1.06.")]
         [SerializeField, Min(0f)] private double merchantSecondBonus = 1.06d;
 
-        [Tooltip("Workshops from which the third bonus applies: 9 is Patrician III's.")]
+        [Tooltip("Workshops from which the third bonus applies: 9.")]
         [SerializeField, Min(1)] private int merchantThirdStep = 9;
 
-        [Tooltip("Factor of their output from the third step: 1.1 is Patrician III's.")]
+        [Tooltip("Factor of their output from the third step: 1.1.")]
         [SerializeField, Min(0f)] private double merchantThirdBonus = 1.1d;
 
         [Header("Start of a game")]
-        [Tooltip("Workers every city starts with, spread evenly over its workshops: 250 is Patrician III's.")]
+        [Tooltip("Workers every city starts with, spread evenly over its workshops: 250.")]
         [SerializeField, Min(0)] private int startingWorkforce = 250;
 
-        [Tooltip("Inhabitants housed per starting worker: 4 is Patrician III's.")]
+        [Tooltip("Inhabitants housed per starting worker: 4.")]
         [SerializeField, Min(0)] private int inhabitantsPerWorker = 4;
 
-        [Header("Labour, as in Patrician III")]
-        [Tooltip("Beggars per starting worker, rounded down for the city: 4 / 17 is Patrician III's.")]
+        [Header("Labour")]
+        [Tooltip("Beggars per starting worker, rounded down for the city: 4 / 17.")]
         [SerializeField, Min(0f)] private double startingBeggarsPerWorker = 4d / 17d;
 
-        [Tooltip("How satisfied the beggars must be for the city to attract them: 50 is Patrician III's.")]
+        [Tooltip("How satisfied the beggars must be for the city to attract them: 50.")]
         [SerializeField, Min(0f)] private double beggarSatisfaction = 50d;
 
         [Tooltip("The beggars' target is the root of (inhabitants x satisfaction / 2) divided by this, plus the minimum.")]
@@ -102,26 +102,26 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("The reserve leaks only while the workers and the reserve of the workshop stay under this.")]
         [SerializeField, Min(0)] private int reserveLeakCeiling = 30;
 
-        [Header("Satisfaction and classes, as in Patrician III (« Besoins des citoyens » : Intermédiaire)")]
-        [Tooltip("Satisfaction of every class when the game starts: 50 is Patrician III's.")]
+        [Header("Satisfaction and classes")]
+        [Tooltip("Satisfaction of every class when the game starts: 50.")]
         [SerializeField] private int startingSatisfaction = 50;
 
-        [Tooltip("Base of the rich's target satisfaction: -13 at Intermédiaire.")]
+        [Tooltip("Base of the rich's target satisfaction: -13.")]
         [SerializeField] private int richSatisfactionBase = -13;
 
-        [Tooltip("Base of the wealthy's target satisfaction: -18 at Intermédiaire.")]
+        [Tooltip("Base of the wealthy's target satisfaction: -18.")]
         [SerializeField] private int wealthySatisfactionBase = -18;
 
-        [Tooltip("Base of the poor's target satisfaction: -27 at Intermédiaire.")]
+        [Tooltip("Base of the poor's target satisfaction: -27.")]
         [SerializeField] private int poorSatisfactionBase = -27;
 
-        [Tooltip("Points a satisfaction rises in a day towards twice its target: 2 at Intermédiaire.")]
+        [Tooltip("Points a satisfaction rises in a day towards twice its target: 2.")]
         [SerializeField, Min(0)] private int satisfactionRise = 2;
 
-        [Tooltip("Points a satisfaction falls in a day towards twice its target: 1 at Intermédiaire.")]
+        [Tooltip("Points a satisfaction falls in a day towards twice its target: 1.")]
         [SerializeField, Min(0)] private int satisfactionFall = 1;
 
-        [Tooltip("The term every class's target shares: 9, Patrician III's without its public buildings and events.")]
+        [Tooltip("The term every class's target shares: 9, as there are no public buildings nor events yet to add to it.")]
         [SerializeField] private int commonSatisfaction = 9;
 
         [Tooltip("The lowest a satisfaction falls: -40.")]
@@ -148,7 +148,7 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Workers of a city's workshop the leaving poor spare while other jobs can be taken: 30.")]
         [SerializeField, Min(0)] private int protectedWorkers = 30;
 
-        [Header("Cities' houses, as in Patrician III")]
+        [Header("Cities' houses")]
         [Tooltip("A city builds a rich house of its own, with the materials of the player's, once its rich are above this share of their room.")]
         [SerializeField, Range(0f, 1f)] private double cityRichHouseOccupancy = 0.97d;
 
@@ -531,7 +531,7 @@ namespace DarkFantasyMerchant.Game
         /// <summary>
         /// The market of a city at the start of the game, with one stock per active good and its
         /// population: the starting population, the same in every city, or, with a labour rule,
-        /// the one Patrician III starts with (housed families, beggars, houses). Call
+        /// the one of a new game (housed families, beggars, houses). Call
         /// <see cref="TryValidate"/> first. Throws when a setting or a good's figure is unusable.
         /// </summary>
         /// <param name="daysPerWeek">Days of the calendar's week: goods give their consumption per week.</param>

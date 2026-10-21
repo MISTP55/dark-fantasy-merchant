@@ -6,7 +6,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 {
     public class WorkforceRuleTests
     {
-        // Patrician III's: 16, 8, 4 and 1 workers a day, one above T3; 250 to start with.
+        // 16, 8, 4 and 1 workers a day, one above T3; 250 to start with.
         private static WorkforceRule Rule => new WorkforceRule(16, 8, 4, 1, 1, 250);
 
         private static readonly StockThresholds Thresholds = new StockThresholds(20, 60, 90, 110);

@@ -3,11 +3,10 @@ using System;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// How the workshops of a city hire and lay off, as in Patrician III: every day a
-    /// workshop hires more workers the lower the stock of its good stands against the
-    /// thresholds, up to its maximum, and keeps a few workers above T3, where it produces
-    /// nothing. A stock equal to a threshold counts as under it. It also spreads the
-    /// workers every city starts with over its workshops.
+    /// How the workshops of a city hire and lay off: every day a workshop hires more workers the
+    /// lower the stock of its good stands against the thresholds, up to its maximum, and keeps a
+    /// few workers above T3, where it produces nothing. A stock equal to a threshold counts as
+    /// under it. It also spreads the workers every city starts with over its workshops.
     /// </summary>
     public sealed class WorkforceRule
     {
@@ -79,7 +78,7 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// The workers a workshop starts with: the starting workforce over the city's
-        /// workshops, rounded up as in Patrician III, and never above the workshop's maximum.
+        /// workshops, rounded up, and never above the workshop's maximum.
         /// </summary>
         public int StartingWorkersOf(int maxWorkers, int workshops)
         {

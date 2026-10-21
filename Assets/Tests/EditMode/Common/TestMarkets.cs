@@ -12,21 +12,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public static ThresholdRule Thresholds => new ThresholdRule(10, 20, 10, 5, 10, 15, 20);
 
         /// <summary>
-        /// Patrician III's hiring, and a starting workforce large enough that every workshop
+        /// The economy's default hiring, and a starting workforce large enough that every workshop
         /// of a test market starts with its maximum of workers.
         /// </summary>
         public static WorkforceRule Workforce => new WorkforceRule(16, 8, 4, 1, 1, 1000);
 
-        /// <summary>Patrician III's labour, as the economy's defaults.</summary>
+        /// <summary>The labour rule with the economy's default settings.</summary>
         public static LabourRule Labour => new LabourRule(4, 50, 3, 8, 5, 10, 5, 3, 0.02, 30);
 
-        /// <summary>Patrician III's satisfaction and classes, at the « Besoins des citoyens » Intermédiaire.</summary>
+        /// <summary>The social rule with the economy's default settings.</summary>
         public static SocialRule Social => new SocialRule(50, new PerClass<int>(-13, -18, -27), 2, 1, 9, -40, 80, 40, 320, 160, 10, 100, 30);
 
-        /// <summary>The factors at which the player buys in Patrician III.</summary>
+        /// <summary>The factors at which the player buys, the economy's defaults.</summary>
         public static PriceCurve BuyCurve => new PriceCurve(4, 1.5, 1, 0.8, 0.6);
 
-        /// <summary>The factors at which the player sells in Patrician III, at the middle setting.</summary>
+        /// <summary>The factors at which the player sells, the economy's defaults.</summary>
         public static PriceCurve SellCurve => new PriceCurve(2, 1.4, 1, 0.7, 0.5);
 
         public static MarketPricing Pricing => new MarketPricing(BuyCurve, SellCurve);

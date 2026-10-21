@@ -11,10 +11,12 @@ namespace DarkFantasyMerchant.Core
     /// </summary>
     public sealed class CityPopulation
     {
-        // Patrician III's weight of a satisfied class when a family leaves for the beggars (0x50E6D0).
+        // The weight of a satisfied class when a family leaves for the beggars.
         private const int LeavingWeight = 10;
 
-        // Patrician III scales the weights down past this, to stay within 32 bits.
+        // The weights are shifted down by 4 bits until their total is no more than this. The
+        // arithmetic would not overflow without it, but the scaling is kept on purpose: its
+        // truncation changes the share each class gives.
         private const int LeavingWeightCeiling = 0x1000;
 
         private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
@@ -112,9 +114,9 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
-        /// The population of a new game, as Patrician III starts it: every worker's family is housed,
-        /// a tenth of them rich, three tenths wealthy and the rest poor; a share of beggars comes
-        /// with them, and each class has as many of its houses as it needs.
+        /// The population of a new game: every worker's family is housed, a tenth of them rich,
+        /// three tenths wealthy and the rest poor; a share of beggars comes with them, and each
+        /// class has as many of its houses as it needs.
         /// </summary>
         /// <param name="workers">Workers of the city.</param>
         /// <param name="inhabitantsPerWorker">Inhabitants a worker's family takes up, at least 1.</param>
@@ -185,10 +187,10 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
-        /// Sends the families of workers who leave their jobs back to the beggars, as Patrician III
-        /// does (0x50E6D0): they are taken from the three classes in proportion to their count, the
-        /// unhappy ones giving more, and no class falls below one inhabitant. A worker whose family
-        /// cannot be taken in full keeps his job.
+        /// Sends the families of workers who leave their jobs back to the beggars: they are taken
+        /// from the three classes in proportion to their count, the unhappy ones giving more, and
+        /// no class falls below one inhabitant. A worker whose family cannot be taken in full keeps
+        /// his job.
         /// </summary>
         /// <returns>The workers who stay, whose families were not taken.</returns>
         public int SendToBeggars(int workers, int inhabitantsPerWorker)
@@ -205,7 +207,7 @@ namespace DarkFantasyMerchant.Core
 
             for (int i = 0; i < 3; i++)
             {
-                // Patrician III gives an empty class a weight of -10; it never has one.
+                // An empty class gets no weight rather than a negative one; a city never has an empty class.
                 int factor = satisfactions[i] < 0 ? LeavingWeight - satisfactions[i] : LeavingWeight;
                 weights[i] = Math.Max(0, counts[i] - 1) * factor;
                 total += weights[i];
@@ -235,8 +237,9 @@ namespace DarkFantasyMerchant.Core
             int kept = remaining / inhabitantsPerWorker;
             remaining %= inhabitantsPerWorker;
 
-            // The last few, one at a time from the poor up; Patrician III loops forever when no
-            // class has more than one inhabitant, which it never reaches.
+            // The last few, one at a time from the poor up. The loop also stops once no class
+            // has more than one inhabitant, so that it never runs forever, though a city never
+            // comes to that.
             for (int i = (int)SocialClass.Poor; remaining > 0 && AnyClassAboveOne(); i = i == 0 ? 2 : i - 1)
             {
                 if (counts[i] > 1)

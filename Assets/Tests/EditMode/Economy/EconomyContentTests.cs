@@ -28,7 +28,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return map;
         }
 
-        // Patrician III's twenty goods, in its order, with its units and base prices, active or not.
+        // The twenty goods, in the catalogue's order, with their units and base prices, active or not.
         [TestCase(0, "Céréales", GoodCategory.Food, GoodUnit.Bushel, 110, 16)]
         [TestCase(1, "Viande", GoodCategory.Food, GoodUnit.Bushel, 957, 9)]
         [TestCase(2, "Poisson", GoodCategory.Food, GoodUnit.Bushel, 440, 9)]
@@ -49,7 +49,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase(17, "Chanvre", GoodCategory.RawMaterial, GoodUnit.Bushel, 440, 9)]
         [TestCase(18, "Poterie", GoodCategory.RawMaterial, GoodUnit.Barrel, 171, 9)]
         [TestCase(19, "Tuiles", GoodCategory.RawMaterial, GoodUnit.Bushel, 79.8, 8)]
-        public void TheCatalogue_HasPatricianIIIsGoods_InOrder(
+        public void TheCatalogue_HasTheTwentyGoods_InOrder(
             int index, string name, GoodCategory category, GoodUnit unit, double basePrice, int aiWeight)
         {
             EconomyDefinition economy = LoadEconomy();
@@ -133,7 +133,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void EveryCity_StartsWithPatricianIIIsWorkforce()
+        public void EveryCity_StartsWith250Workers_Of4InhabitantsEach()
         {
             EconomyDefinition economy = LoadEconomy();
 
@@ -142,7 +142,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void TheEconomy_HasPatricianIIIsSatisfaction_AtIntermediaire()
+        public void TheEconomy_HasItsSatisfactionAndHousingSettings()
         {
             SocialRule rule = LoadEconomy().CreateSocialRule();
 
@@ -159,7 +159,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase(0, 3.15, 4.2, 5.25, 2, 4, 8)]   // Céréales
         [TestCase(7, 52.5, 13.3, 0, 5, 2, 0)]     // Vin
         [TestCase(17, 0.175, 0.105, 0.07, 0, 0, 0)] // Chanvre
-        public void AGood_ConsumesAndWeighsAsInPatricianIII(
+        public void AGood_HasItsConsumptionAndWeights(
             int index, double rich, double wealthy, double poor, int richWeight, int wealthyWeight, int poorWeight)
         {
             GoodDefinition good = LoadEconomy().Catalogue[index].Good;
@@ -173,7 +173,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void TheEconomy_HasPatricianIIIsLabour()
+        public void TheEconomy_HasItsLabourSettings()
         {
             EconomyDefinition economy = LoadEconomy();
 

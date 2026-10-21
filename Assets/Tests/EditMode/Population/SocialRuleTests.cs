@@ -48,7 +48,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void ClassTargetOf_IsPatricianIIIs()
+        public void ClassTargetOf_IsAShareOfThePoor_WithinTheRoom()
         {
             Assert.AreEqual(168, Rule.ClassTargetOf(SocialClass.Rich, 50, 600, 200));
             Assert.AreEqual(337, Rule.ClassTargetOf(SocialClass.Wealthy, 50, 600, 400));

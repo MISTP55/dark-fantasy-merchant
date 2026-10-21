@@ -31,7 +31,7 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <param name="dailyConsumptionPerThousand">Units of the good 1 000 inhabitants of each housed class consume in a day; the beggars consume nothing.</param>
-        /// <param name="satisfactionWeights">How much the stock of the good weighs in the satisfaction of each class, as in Patrician III; 0 or more.</param>
+        /// <param name="satisfactionWeights">How much the stock of the good weighs in the satisfaction of each class; 0 or more.</param>
         public MarketGood(
             double basePrice,
             PerClass<double> dailyConsumptionPerThousand,

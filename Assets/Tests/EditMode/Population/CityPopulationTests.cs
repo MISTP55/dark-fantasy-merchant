@@ -8,7 +8,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
     {
         private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
 
-        // Patrician III's houses: 40 rich, 70 wealthy, 140 poor.
+        // The houses: 40 rich, 70 wealthy, 140 poor.
         private static PerClass<int> HouseRooms => new PerClass<int>(40, 70, 140);
 
         private static void SetSatisfactions(CityPopulation population, int rich, int wealthy, int poor)
@@ -18,7 +18,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             population.SetSatisfaction(SocialClass.Poor, poor);
         }
 
-        [TestCase(252, 1008, 59, 1100)] // Patrician III's start: 4 × W, 4 × W ÷ 17, houses rounded up
+        [TestCase(252, 1008, 59, 1100)] // 4 × W, 4 × W ÷ 17, houses rounded up
         [TestCase(250, 1000, 58, 1000)]
         [TestCase(17, 68, 4, 300)]
         [TestCase(0, 0, 0, 0)]
@@ -33,7 +33,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void AtStart_SplitsTheHousedAsPatricianIII()
+        public void AtStart_SplitsTheHousedIntoClasses()
         {
             CityPopulation population = CityPopulation.AtStart(275, 4, 4d / 17d, HouseRooms);
 

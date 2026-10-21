@@ -3,8 +3,7 @@ using System;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// What a city's labour does, as in Patrician III (see
-    /// <c>patrician3-re\resultats\Population des villes.md</c>): the beggars it attracts,
+    /// What a city's labour does: the beggars it attracts,
     /// how many workers they can be hired as, the vacancies they fill and the reserve of
     /// laid-off workers that leaks away. Stateless: the figures are passed in.
     /// </summary>
@@ -154,7 +153,8 @@ namespace DarkFantasyMerchant.Core
 
             int leaving = Math.Min(whole, ReserveLeakCeiling - total);
 
-            // Patrician III subtracts what leaves a second time.
+            // What leaves is subtracted from the counter a second time, on purpose: the counter
+            // can fall below zero and hold back the next leaks.
             return new ReserveLeak(leaving, next - leaving);
         }
 

@@ -5,7 +5,7 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// The merchant ships that trade on their own, on Patrician III's tour. Every ship has a home
+    /// The merchant ships that trade on their own, each on a round trip. Every ship has a home
     /// city. From home it sails straight to a final destination, with the cargo the planner loads
     /// for it, and sells everything there; then it comes back home, stopping on the way at the
     /// cities worth a short detour, where it sells only up to their T1 and keeps what home lacks;

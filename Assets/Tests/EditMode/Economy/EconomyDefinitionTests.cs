@@ -296,7 +296,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void CreateMarket_StartsWithThePopulationOfTheWorkforce()
         {
-            // Patrician III's 4 inhabitants for each of 250 workers.
+            // 4 inhabitants for each of 250 workers.
             var serialized = new SerializedObject(economy);
             serialized.FindProperty("startingWorkforce").intValue = 250;
             serialized.FindProperty("inhabitantsPerWorker").intValue = 4;
@@ -342,7 +342,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void CreateMarket_WithLabour_SplitsThePopulationAsPatricianIII()
+        public void CreateMarket_WithLabour_SplitsThePopulationIntoClasses()
         {
             var serialized = new SerializedObject(economy);
             serialized.FindProperty("startingWorkforce").intValue = 250;

@@ -6,7 +6,7 @@ namespace DarkFantasyMerchant.Game
         // The first, so that a new good is counted in barrels until it is said otherwise.
         Barrel,
 
-        /// <summary>Patrician III's load: it takes the economy's barrels per bushel of room in a hold.</summary>
+        /// <summary>The larger load: it takes the economy's barrels per bushel of room in a hold.</summary>
         Bushel,
     }
 }

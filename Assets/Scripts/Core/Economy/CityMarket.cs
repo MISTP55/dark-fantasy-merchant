@@ -188,8 +188,8 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
-        /// The stocks at which the prices of a good are given and its workshop hires, as Patrician
-        /// III keeps them: worked out at the start and at the end of every day, for the population
+        /// The stocks at which the prices of a good are given and its workshop hires, as the city
+        /// keeps them: worked out at the start and at the end of every day, for the population
         /// of that moment, and unchanged in between, so that every workshop of a day decides on the
         /// same thresholds.
         /// </summary>
@@ -447,9 +447,9 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
-        /// One day of the city, as in Patrician III: the inhabitants consume every good, down
-        /// to nothing; then every workshop hires or lays off by where the stock left stands
-        /// against the thresholds, and produces, unless that stock is above T3. With labour,
+        /// One day of the city: the inhabitants consume every good, down to nothing; then every
+        /// workshop hires or lays off by where the stock left stands against the thresholds, and
+        /// produces, unless that stock is above T3. With labour,
         /// the classes' satisfactions follow the stocks (with a social rule), the player's
         /// workshops fill their vacancies from the beggars, the poor rise and fall between the
         /// classes and some leave (with a social rule), the beggars come or go, and the city
@@ -524,7 +524,7 @@ namespace DarkFantasyMerchant.Core
                 BuildCityHouses();
             }
 
-            // Patrician III's last step of a city's day.
+            // Last, so that the next day starts on the thresholds of the population this day leaves.
             UpdateThresholds();
             Changed?.Invoke();
         }
@@ -561,14 +561,14 @@ namespace DarkFantasyMerchant.Core
             return starting;
         }
 
-        // Patrician III's order: the workshop's own reserve, the beggars within the free room,
+        // In this order: the workshop's own reserve, the beggars within the free room,
         // then the reserves of the other workshops in the order of the catalogue. What is still
         // missing is not hired today.
         private void Hire(int good, int wanted)
         {
             wanted -= TakeFromReserve(good, good, wanted);
 
-            // Patrician III hires the beggars only while the poor are satisfied (0x510C30).
+            // The beggars are hired only while the poor are satisfied.
             bool poorSatisfied = Social == null || Population.SatisfactionOf(SocialClass.Poor) > 0;
             int fromBeggars = poorSatisfied
                 ? Math.Min(wanted, Labour.WorkersHireableFrom(Population.Beggars, Population.FreeRoomOf(SocialClass.Poor)))
@@ -610,7 +610,7 @@ namespace DarkFantasyMerchant.Core
             reserves[good] += Population.SendToBeggars(leak.Leaving, Labour.InhabitantsPerWorker);
         }
 
-        // Patrician III's second hiring: the beggars fill the player's workshops in the order
+        // The second hiring: the beggars fill the player's workshops in the order
         // they were built, each up to its jobs.
         private void FillVacancies()
         {
@@ -664,7 +664,7 @@ namespace DarkFantasyMerchant.Core
         }
 
         // Each class's satisfaction takes a step towards the target the stocks of the goods it
-        // consumes give, as Patrician III's 0x51CB80.
+        // consumes give.
         private void UpdateSatisfactions()
         {
             foreach (SocialClass housedClass in Classes)
@@ -698,9 +698,9 @@ namespace DarkFantasyMerchant.Core
             Population.Leave(SocialClass.Poor, removed * Labour.InhabitantsPerWorker);
         }
 
-        // Patrician III's 0x51C6B0: the reserves first, in the catalogue's order; then the
-        // workers above the protected ones of the city's workshops, spread by a step over all
-        // that can be taken; then the player's workshops, in the order they were built.
+        // The reserves first, in the catalogue's order; then the workers above the protected ones
+        // of the city's workshops, spread by a step over all that can be taken; then the player's
+        // workshops, in the order they were built.
         private int TakeWorkersAway(int wanted)
         {
             int removed = 0;

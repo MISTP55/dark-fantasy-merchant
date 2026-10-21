@@ -4,9 +4,9 @@ namespace DarkFantasyMerchant.Core
 {
     /// <summary>
     /// How the four stock thresholds of a good in a city follow what the city consumes and
-    /// produces of it, as in Patrician III: T0 is days of consumption, T1 adds days of
-    /// consumption, T2 adds days of production, T3 adds T0 again. Each is at least its floor,
-    /// in units of the good, so that a village or a good little consumed keeps a range of prices.
+    /// produces of it: T0 is days of consumption, T1 adds days of consumption, T2 adds days of
+    /// production, T3 adds T0 again. Each is at least its floor, in units of the good, so that a
+    /// village or a good little consumed keeps a range of prices.
     /// </summary>
     public sealed class ThresholdRule
     {
