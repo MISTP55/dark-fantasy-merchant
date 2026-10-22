@@ -27,3 +27,8 @@ MonoBehaviour:
   dailyOutputPerWorker: 0.05332
   merchantDailyOutputPerWorker: 0.03333
   aiWeight: 9
+  inputs:
+  - good: {fileID: 11400000, guid: 6e7e1dd68eea0924888bedf71fa7be72, type: 2}
+    unitsPerUnit: 0.1
+  - good: {fileID: 11400000, guid: c1aee0a6d45237f4f98a31437e2602e4, type: 2}
+    unitsPerUnit: 0.02

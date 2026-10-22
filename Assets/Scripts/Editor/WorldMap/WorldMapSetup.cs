@@ -176,6 +176,24 @@ namespace DarkFantasyMerchant.Editor
             new SampleGood("Tiles", "Tuiles", "Tuilerie", GoodCategory.RawMaterial, GoodUnit.Bushel, 79.8, Weekly(0.035, 0.035, 0), Weights(0, 0, 0), 27, 0.067, 0.067, 8),
         };
 
+        // The inputs of the city's workshop of a good, by asset name: the asset name of each input and
+        // its units per unit made, in the units of each. A good not listed takes none.
+        private static readonly Dictionary<string, (string input, double unitsPerUnit)[]> SampleInputs =
+            new Dictionary<string, (string input, double unitsPerUnit)[]>
+            {
+                ["Beer"] = new[] { ("Grain", 0.025), ("Timber", 0.01) },
+                ["Metal"] = new[] { ("Timber", 0.1), ("PigIron", 0.1) },
+                ["Cloth"] = new[] { ("Wool", 0.1) },
+                ["Salt"] = new[] { ("Timber", 0.08) },
+                ["Pottery"] = new[] { ("Timber", 0.05) },
+                ["Tiles"] = new[] { ("Timber", 0.5) },
+                ["Pitch"] = new[] { ("Timber", 0.1) },
+                ["Skins"] = new[] { ("Metal", 0.05), ("Hemp", 0.005) },
+                ["Fish"] = new[] { ("Salt", 2.0), ("Hemp", 0.1) },
+                ["Meat"] = new[] { ("Salt", 2.5) },
+                ["Leather"] = new[] { ("Salt", 0.1), ("Timber", 0.02) },
+            };
+
         private readonly struct SampleCity
         {
             public SampleCity(
@@ -608,10 +626,22 @@ namespace DarkFantasyMerchant.Editor
         private static EconomyDefinition CreateEconomy()
         {
             var goods = new GoodDefinition[SampleGoods.Length];
+            var createdGoods = new List<GoodDefinition>();
 
             for (int i = 0; i < SampleGoods.Length; i++)
             {
-                goods[i] = CreateGood(SampleGoods[i]);
+                goods[i] = CreateGood(SampleGoods[i], out bool isNew);
+
+                if (isNew)
+                {
+                    createdGoods.Add(goods[i]);
+                }
+            }
+
+            // Once every good exists, since a recipe names others. A good that existed is the user's.
+            foreach (GoodDefinition good in createdGoods)
+            {
+                SetSampleInputs(good);
             }
 
             var existing = AssetDatabase.LoadAssetAtPath<EconomyDefinition>(EconomyPath);
@@ -831,10 +861,48 @@ namespace DarkFantasyMerchant.Editor
             building.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static GoodDefinition CreateGood(SampleGood sample)
+        /// <summary>
+        /// Gives a good of the sample content, known by its asset name, the inputs of the sample
+        /// content, in place of those it has; a good with none there gets none.
+        /// </summary>
+        public static void SetSampleInputs(GoodDefinition good)
+        {
+            if (good == null)
+            {
+                throw new System.ArgumentNullException(nameof(good));
+            }
+
+            if (!SampleInputs.TryGetValue(good.name, out (string input, double unitsPerUnit)[] inputs))
+            {
+                inputs = System.Array.Empty<(string, double)>();
+            }
+
+            var serialized = new SerializedObject(good);
+            SerializedProperty list = serialized.FindProperty("inputs");
+            list.arraySize = inputs.Length;
+
+            for (int i = 0; i < inputs.Length; i++)
+            {
+                var input = AssetDatabase.LoadAssetAtPath<GoodDefinition>(GoodPath(inputs[i].input));
+
+                if (input == null)
+                {
+                    throw new FileNotFoundException("An input of a sample good could not be loaded.", GoodPath(inputs[i].input));
+                }
+
+                SerializedProperty entry = list.GetArrayElementAtIndex(i);
+                entry.FindPropertyRelative("good").objectReferenceValue = input;
+                entry.FindPropertyRelative("unitsPerUnit").doubleValue = inputs[i].unitsPerUnit;
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static GoodDefinition CreateGood(SampleGood sample, out bool isNew)
         {
             string path = GoodPath(sample.AssetName);
             var existing = AssetDatabase.LoadAssetAtPath<GoodDefinition>(path);
+            isNew = existing == null;
 
             if (existing != null)
             {

@@ -70,6 +70,49 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.Greater(good.MerchantDailyOutputPerWorker, 0d);
         }
 
+        // The inputs of each good's workshop, in units of the input per unit made, in their order.
+        [TestCase("Bière", "Céréales", 0.025, "Bois", 0.01)]
+        [TestCase("Métal", "Bois", 0.1, "Fonte brute", 0.1)]
+        [TestCase("Étoffe", "Laine", 0.1)]
+        [TestCase("Sel", "Bois", 0.08)]
+        [TestCase("Poterie", "Bois", 0.05)]
+        [TestCase("Tuiles", "Bois", 0.5)]
+        [TestCase("Brai", "Bois", 0.1)]
+        [TestCase("Peaux", "Métal", 0.05, "Chanvre", 0.005)]
+        [TestCase("Poisson", "Sel", 2.0, "Chanvre", 0.1)]
+        [TestCase("Viande", "Sel", 2.5)]
+        [TestCase("Cuir", "Sel", 0.1, "Bois", 0.02)]
+        [TestCase("Céréales")]
+        [TestCase("Bois")]
+        [TestCase("Miel")]
+        [TestCase("Laine")]
+        [TestCase("Fonte brute")]
+        [TestCase("Vin")]
+        [TestCase("Chanvre")]
+        [TestCase("Huile")]
+        [TestCase("Épices")]
+        public void EveryGood_HasTheSampleRecipe(string name, params object[] inputs)
+        {
+            GoodDefinition good = null;
+
+            foreach (CatalogueGood entry in LoadEconomy().Catalogue)
+            {
+                if (entry.Good.DisplayName == name)
+                {
+                    good = entry.Good;
+                }
+            }
+
+            Assert.IsNotNull(good, name);
+            Assert.AreEqual(inputs.Length / 2, good.Inputs.Count, name);
+
+            for (int i = 0; i < good.Inputs.Count; i++)
+            {
+                Assert.AreEqual((string)inputs[2 * i], good.Inputs[i].Good.DisplayName, name);
+                Assert.AreEqual((double)inputs[2 * i + 1], good.Inputs[i].UnitsPerUnit, 1e-9, name);
+            }
+        }
+
         [Test]
         public void ABushel_TakesTenBarrels()
         {
