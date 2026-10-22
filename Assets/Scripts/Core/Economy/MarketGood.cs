@@ -1,13 +1,18 @@
 using System;
+using System.Collections.Generic;
 
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
     /// The figures of one good in one city: its base price, what each housed class consumes
-    /// of it and how much its stock weighs in their satisfaction, and the workshop that produces it there, if any.
+    /// of it and how much its stock weighs in their satisfaction, and the workshop that produces it there, if any,
+    /// with the inputs it takes.
     /// </summary>
     public readonly struct MarketGood
     {
+        // Null for a good without recipe, as the default good has.
+        private readonly MarketInput[] inputs;
+
         /// <summary>A good that every housed class consumes at the same rate, and whose stock weighs nothing in their satisfaction.</summary>
         /// <param name="basePrice">Gold per unit that the factors of the price curves multiply, above 0; it can be a fraction.</param>
         /// <param name="dailyConsumptionPerThousand">Units of the good 1 000 housed inhabitants consume in a day, whatever their class; it can be a fraction.</param>
@@ -68,6 +73,42 @@ namespace DarkFantasyMerchant.Core
             DailyOutputPerWorker = dailyOutputPerWorker;
             MerchantDailyOutputPerWorker = merchantDailyOutputPerWorker;
             SatisfactionWeights = satisfactionWeights;
+            inputs = null;
+        }
+
+        /// <summary>What the workshop takes for every unit it makes; empty for a good that needs nothing.</summary>
+        public IReadOnlyList<MarketInput> Inputs => inputs ?? Array.Empty<MarketInput>();
+
+        /// <summary>The same good, whose workshop takes these inputs; null or empty for none. A good is listed once at most.</summary>
+        public MarketGood WithInputs(IReadOnlyList<MarketInput> recipe)
+        {
+            var copy = new MarketInput[recipe?.Count ?? 0];
+
+            for (int i = 0; i < copy.Length; i++)
+            {
+                copy[i] = recipe[i];
+
+                for (int j = 0; j < i; j++)
+                {
+                    if (copy[j].Good == copy[i].Good)
+                    {
+                        throw new ArgumentException($"The good {copy[i].Good} is listed twice in the recipe.", nameof(recipe));
+                    }
+                }
+            }
+
+            return new MarketGood(this, copy);
+        }
+
+        private MarketGood(MarketGood good, MarketInput[] inputs)
+        {
+            BasePrice = good.BasePrice;
+            DailyConsumptionPerThousand = good.DailyConsumptionPerThousand;
+            MaxWorkers = good.MaxWorkers;
+            DailyOutputPerWorker = good.DailyOutputPerWorker;
+            MerchantDailyOutputPerWorker = good.MerchantDailyOutputPerWorker;
+            SatisfactionWeights = good.SatisfactionWeights;
+            this.inputs = inputs;
         }
 
         public double BasePrice { get; }

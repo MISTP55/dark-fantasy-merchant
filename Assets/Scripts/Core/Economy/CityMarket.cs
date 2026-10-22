@@ -40,9 +40,9 @@ namespace DarkFantasyMerchant.Core
 
         private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
 
-        /// <param name="thresholdRule">How the stock thresholds of a good, at which its prices are given, follow what the city consumes and produces of it.</param>
+        /// <param name="thresholdRule">How the stock thresholds of a good, at which its prices are given, follow what the city needs (its inhabitants and its workshops' inputs) and produces of it.</param>
         /// <param name="workforce">How the workshops hire, lay off and start.</param>
-        /// <param name="startingDays">Days of consumption the city holds of every good when the game starts.</param>
+        /// <param name="startingDays">Days of its demand (consumption and inputs) the city holds of every good when the game starts.</param>
         /// <param name="daysPerWeek">Days of the calendar's week, over which the weekly figures are given.</param>
         /// <param name="population">The inhabitants of the city, who set what it consumes.</param>
         /// <param name="labour">How the workshops take their workers from the population; null for immediate hiring and a population that stays.</param>
@@ -103,8 +103,25 @@ namespace DarkFantasyMerchant.Core
             {
                 this.goods[i] = goods[i];
 
-                // The same for every good, produced or not: producers fill up as the days pass.
-                stocks[i] = startingDays * DailyConsumptionOf(i);
+                foreach (MarketInput input in goods[i].Inputs)
+                {
+                    if (input.Good >= goods.Count)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(goods), $"The good {i} takes the good {input.Good}, which the market does not have.");
+                    }
+
+                    if (input.Good == i)
+                    {
+                        throw new ArgumentException($"The good {i} is its own input.", nameof(goods));
+                    }
+                }
+            }
+
+            // Every good first: the demand of one reads the workshops of the others.
+            for (int i = 0; i < goods.Count; i++)
+            {
+                // The same days for every good, produced or not: producers fill up as the days pass.
+                stocks[i] = startingDays * DailyDemandOf(i);
             }
 
             UpdateThresholds();
@@ -172,6 +189,36 @@ namespace DarkFantasyMerchant.Core
                 + rates.Poor * Population.CountOf(SocialClass.Poor)) / 1000d;
         }
 
+        /// <summary>
+        /// Units of a good the city's workshops take in a day as their input, with their workers of
+        /// the moment and no shortage, whether their own stock is above T3 or not.
+        /// </summary>
+        public double DailyInputNeedOf(int good)
+        {
+            RequireGood(good);
+
+            double need = 0d;
+
+            for (int i = 0; i < goods.Length; i++)
+            {
+                foreach (MarketInput input in goods[i].Inputs)
+                {
+                    if (input.Good == good)
+                    {
+                        need += DailyProductionOf(i) * input.UnitsPerUnit;
+                    }
+                }
+            }
+
+            return need;
+        }
+
+        /// <summary>What the city needs of a good in a day: what its inhabitants consume and its workshops take as input.</summary>
+        public double DailyDemandOf(int good)
+        {
+            return DailyConsumptionOf(good) + DailyInputNeedOf(good);
+        }
+
         /// <summary>Units in stock; a city consumes fractions of a unit, so it is not whole.</summary>
         public double StockOf(int good)
         {
@@ -204,7 +251,7 @@ namespace DarkFantasyMerchant.Core
         {
             for (int i = 0; i < goods.Length; i++)
             {
-                thresholds[i] = thresholdRule.ThresholdsFor(DailyConsumptionOf(i), goods[i].DailyCapacity);
+                thresholds[i] = thresholdRule.ThresholdsFor(DailyDemandOf(i), goods[i].DailyCapacity);
             }
         }
 
