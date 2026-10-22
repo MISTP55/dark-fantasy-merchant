@@ -102,7 +102,8 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// The stock a port will hold after the days of a trip: what it has, what is under way to it,
-        /// and what it will produce less what it will consume, never below nothing.
+        /// and what it will produce less what its inhabitants will consume and its workshops take as
+        /// inputs, never below nothing. The production is the nominal one, as if no input were short.
         /// </summary>
         public double ProjectedStockOf(int port, int good, double travelDays, int underWay)
         {
@@ -110,7 +111,7 @@ namespace DarkFantasyMerchant.Core
             RequireGood(good);
 
             CityMarket market = markets[port];
-            double net = market.DailyProductionOf(good) - market.DailyConsumptionOf(good);
+            double net = market.DailyProductionOf(good) - market.DailyDemandOf(good);
 
             return Math.Max(0d, market.StockOf(good) + underWay + net * travelDays);
         }

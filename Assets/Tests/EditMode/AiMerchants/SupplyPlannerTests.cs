@@ -116,6 +116,29 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void TheProjectedStock_TakesOffWhatTheWorkshopsNeedAsInputs()
+        {
+            // Grain, 2 a day for the inhabitants, and a brewery of 30 workers making 3 barrels a
+            // day out of half a unit of grain each: 3.5 a day, 105 in stock after 30 days of it.
+            CityMarket Brewing() => new CityMarket(
+                new[]
+                {
+                    new MarketGood(10, 2, 0, 0),
+                    new MarketGood(10, 2, 30, 0.1).WithInputs(new[] { new MarketInput(0, 0.5) }),
+                },
+                TestMarkets.Thresholds,
+                TestMarkets.Workforce,
+                30,
+                TestMarkets.Pricing,
+                7,
+                new CityPopulation(1000));
+
+            var planner = Planner(Brewing(), Brewing());
+
+            Assert.AreEqual(105d - 3.5 * 10, planner.ProjectedStockOf(0, 0, 10, 0), 1e-9);
+        }
+
+        [Test]
         public void TheProjectedStock_IsNeverBelowNothing()
         {
             var planner = Planner(Market(6), Market(0));
