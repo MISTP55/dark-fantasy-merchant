@@ -14,7 +14,7 @@ paths:
 - `SocialRule` (Core) holds the satisfaction and class formulas, in truncated integer arithmetic. A market without one (the tests' default) keeps its classes and satisfactions still; it needs a `LabourRule` to have one.
 - The order of a day in `CityMarket.StartDay`, per city:
   1. consumption of every good, each class at its rate, before any workshop hires: a hire turns beggars, who consume nothing, into poor;
-  2. the city's workshops, in the catalogue's order: hiring (from the beggars only while the poor's satisfaction is above 0), layoffs into a reserve, production (`WorkforceRule`, `LabourRule`);
+  2. the city's workshops, in the catalogue's order: hiring (from the beggars only while the poor's satisfaction is above 0), layoffs into a reserve, production (`WorkforceRule`, `LabourRule`), which takes its inputs from the stocks as they stand (a good made earlier in the catalogue's order is already there);
   3. the satisfaction of the three classes (`SocialRule`);
   4. the player's workshops, which hire from the beggars after the city, never lay off and produce nothing yet (`PlayerDailyOutputOf` is known, `MerchantOutputRule`; their production will need a trading office, the "comptoir");
   5. the rich and the wealthy take poor or give them back, then the poor without room or unhappy leave the city with their jobs (reserves first, then the city's workers above 30, then the player's);
