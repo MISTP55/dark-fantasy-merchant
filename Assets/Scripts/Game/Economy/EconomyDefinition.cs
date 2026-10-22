@@ -467,7 +467,7 @@ namespace DarkFantasyMerchant.Game
         /// occupancy or the room is unusable.
         /// </summary>
         /// <param name="room">Places of a house of the class, the player's.</param>
-        /// <param name="materials">What a house takes from the market (<see cref="BuildingsDefinition.MaterialsOf"/>).</param>
+        /// <param name="materials">What a house takes from the market (<see cref="BuildingDefinition.MaterialsOf"/>).</param>
         public CityHousingRule CreateHousingRule(SocialClass housedClass, int room, IReadOnlyList<MaterialCost> materials)
         {
             double occupancy = housedClass == SocialClass.Rich

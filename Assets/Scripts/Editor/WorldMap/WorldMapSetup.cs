@@ -101,6 +101,7 @@ namespace DarkFantasyMerchant.Editor
             public SampleGood(
                 string assetName,
                 string displayName,
+                string workshopName,
                 GoodCategory category,
                 GoodUnit unit,
                 double basePrice,
@@ -113,6 +114,7 @@ namespace DarkFantasyMerchant.Editor
             {
                 AssetName = assetName;
                 DisplayName = displayName;
+                WorkshopName = workshopName;
                 Category = category;
                 Unit = unit;
                 BasePrice = basePrice;
@@ -126,6 +128,9 @@ namespace DarkFantasyMerchant.Editor
 
             public string AssetName { get; }
             public string DisplayName { get; }
+
+            /// <summary>The name of the player's workshop of the good.</summary>
+            public string WorkshopName { get; }
             public GoodCategory Category { get; }
             public GoodUnit Unit { get; }
             public double BasePrice { get; }
@@ -137,37 +142,38 @@ namespace DarkFantasyMerchant.Editor
             public int AiWeight { get; }
         }
 
-        // The goods, in the order of the catalogue. Category, unit, base price, what 1 000 rich,
-        // wealthy and poor consume in a week and how much the stock weighs in their satisfaction,
-        // then the workshop's maximum of workers, a worker's daily output in the city's workshop
-        // and in a merchant's (without the city's coefficient): the values a good that is missing
-        // is created with, which are then balanced by hand in the asset.
+        // The goods, in the order of the catalogue. Their name, the name of the player's workshop of
+        // them, category, unit, base price, what 1 000 rich, wealthy and poor consume in a week and
+        // how much the stock weighs in their satisfaction, then the workshop's maximum of workers, a
+        // worker's daily output in the city's workshop and in a merchant's (without the city's
+        // coefficient): the values a good that is missing is created with, which are then balanced
+        // by hand in the asset.
         private static PerClass<double> Weekly(double rich, double wealthy, double poor) => new PerClass<double>(rich, wealthy, poor);
 
         private static PerClass<int> Weights(int rich, int wealthy, int poor) => new PerClass<int>(rich, wealthy, poor);
 
         private static readonly SampleGood[] SampleGoods =
         {
-            new SampleGood("Grain", "Céréales", GoodCategory.Food, GoodUnit.Bushel, 110, Weekly(3.15, 4.2, 5.25), Weights(2, 4, 8), 68, 0.04333, 0.03333, 16),
-            new SampleGood("Meat", "Viande", GoodCategory.Food, GoodUnit.Bushel, 957, Weekly(3.85, 3.045, 0.42), Weights(5, 4, 4), 60, 0.01333, 0.00833, 9),
-            new SampleGood("Fish", "Poisson", GoodCategory.Food, GoodUnit.Bushel, 440, Weekly(1.4, 2.8, 3.5), Weights(2, 6, 6), 65, 0.03066, 0.03333, 9),
-            new SampleGood("Beer", "Bière", GoodCategory.Food, GoodUnit.Barrel, 34.8, Weekly(22.75, 45.5, 22.75), Weights(2, 6, 6), 68, 0.37591, 0.235, 9),
-            new SampleGood("Salt", "Sel", GoodCategory.RawMaterial, GoodUnit.Barrel, 28.5, Weekly(0.35, 0.35, 0.35), Weights(2, 2, 4), 54, 0.167, 0.167, 16),
-            new SampleGood("Honey", "Miel", GoodCategory.RawMaterial, GoodUnit.Barrel, 110, Weekly(17.5, 8.75, 1.75), Weights(3, 2, 0), 60, 0.08, 0.06667, 9),
-            new SampleGood("Spices", "Épices", GoodCategory.RawMaterial, GoodUnit.Barrel, 280, Weekly(1.4, 0.7, 0.7), Weights(3, 0, 0), 60, 0.02038, 0.02038, 9),
-            new SampleGood("Wine", "Vin", GoodCategory.RawMaterial, GoodUnit.Barrel, 220, Weekly(52.5, 13.3, 0), Weights(5, 2, 0), 93, 0.268, 0.067, 9),
-            new SampleGood("Cloth", "Étoffe", GoodCategory.RawMaterial, GoodUnit.Barrel, 206.8, Weekly(17.5, 12.25, 5.25), Weights(5, 4, 0), 60, 0.15, 0.1, 9),
-            new SampleGood("Skins", "Peaux", GoodCategory.RawMaterial, GoodUnit.Barrel, 676.5, Weekly(21, 10.5, 0), Weights(3, 2, 0), 72, 0.06667, 0.03333, 9),
-            new SampleGood("Oil", "Huile", GoodCategory.RawMaterial, GoodUnit.Barrel, 82.5, Weekly(17.5, 12.25, 3.5), Weights(3, 4, 4), 60, 0.135, 0.135, 9),
-            new SampleGood("Timber", "Bois", GoodCategory.RawMaterial, GoodUnit.Bushel, 55, Weekly(2.8, 2.8, 1.4), Weights(3, 4, 6), 48, 0.08, 0.06667, 11),
-            new SampleGood("Metal", "Métal", GoodCategory.RawMaterial, GoodUnit.Barrel, 255.6, Weekly(35, 26.25, 8.75), Weights(2, 2, 0), 78, 0.2, 0.1, 11),
-            new SampleGood("Leather", "Cuir", GoodCategory.RawMaterial, GoodUnit.Barrel, 224, Weekly(15.4, 12.25, 1.75), Weights(2, 2, 4), 60, 0.05332, 0.03333, 9),
-            new SampleGood("Wool", "Laine", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, Weekly(0.35, 1.4, 0.7), Weights(2, 6, 4), 50, 0.02004, 0.0167, 11),
-            new SampleGood("Pitch", "Brai", GoodCategory.RawMaterial, GoodUnit.Barrel, 55.6, Weekly(0, 0, 0), Weights(0, 0, 0), 26, 0.067, 0.067, 8),
-            new SampleGood("PigIron", "Fonte brute", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, Weekly(0, 0, 0), Weights(0, 0, 0), 70, 0.01667, 0.01667, 8),
-            new SampleGood("Hemp", "Chanvre", GoodCategory.RawMaterial, GoodUnit.Bushel, 440, Weekly(0.175, 0.105, 0.07), Weights(0, 0, 0), 62, 0.00833, 0.00833, 9),
-            new SampleGood("Pottery", "Poterie", GoodCategory.RawMaterial, GoodUnit.Barrel, 171, Weekly(10.5, 6.3, 4.2), Weights(3, 2, 4), 58, 0.067, 0.067, 9),
-            new SampleGood("Tiles", "Tuiles", GoodCategory.RawMaterial, GoodUnit.Bushel, 79.8, Weekly(0.035, 0.035, 0), Weights(0, 0, 0), 27, 0.067, 0.067, 8),
+            new SampleGood("Grain", "Céréales", "Ferme", GoodCategory.Food, GoodUnit.Bushel, 110, Weekly(3.15, 4.2, 5.25), Weights(2, 4, 8), 68, 0.04333, 0.03333, 16),
+            new SampleGood("Meat", "Viande", "Élevage", GoodCategory.Food, GoodUnit.Bushel, 957, Weekly(3.85, 3.045, 0.42), Weights(5, 4, 4), 60, 0.01333, 0.00833, 9),
+            new SampleGood("Fish", "Poisson", "Pêcherie", GoodCategory.Food, GoodUnit.Bushel, 440, Weekly(1.4, 2.8, 3.5), Weights(2, 6, 6), 65, 0.03066, 0.03333, 9),
+            new SampleGood("Beer", "Bière", "Brasserie", GoodCategory.Food, GoodUnit.Barrel, 34.8, Weekly(22.75, 45.5, 22.75), Weights(2, 6, 6), 68, 0.37591, 0.235, 9),
+            new SampleGood("Salt", "Sel", "Saline", GoodCategory.RawMaterial, GoodUnit.Barrel, 28.5, Weekly(0.35, 0.35, 0.35), Weights(2, 2, 4), 54, 0.167, 0.167, 16),
+            new SampleGood("Honey", "Miel", "Rucher", GoodCategory.RawMaterial, GoodUnit.Barrel, 110, Weekly(17.5, 8.75, 1.75), Weights(3, 2, 0), 60, 0.08, 0.06667, 9),
+            new SampleGood("Spices", "Épices", "Jardin d'épices", GoodCategory.RawMaterial, GoodUnit.Barrel, 280, Weekly(1.4, 0.7, 0.7), Weights(3, 0, 0), 60, 0.02038, 0.02038, 9),
+            new SampleGood("Wine", "Vin", "Vignoble", GoodCategory.RawMaterial, GoodUnit.Barrel, 220, Weekly(52.5, 13.3, 0), Weights(5, 2, 0), 93, 0.268, 0.067, 9),
+            new SampleGood("Cloth", "Étoffe", "Tisserand", GoodCategory.RawMaterial, GoodUnit.Barrel, 206.8, Weekly(17.5, 12.25, 5.25), Weights(5, 4, 0), 60, 0.15, 0.1, 9),
+            new SampleGood("Skins", "Peaux", "Trappeur", GoodCategory.RawMaterial, GoodUnit.Barrel, 676.5, Weekly(21, 10.5, 0), Weights(3, 2, 0), 72, 0.06667, 0.03333, 9),
+            new SampleGood("Oil", "Huile", "Pressoir à huile", GoodCategory.RawMaterial, GoodUnit.Barrel, 82.5, Weekly(17.5, 12.25, 3.5), Weights(3, 4, 4), 60, 0.135, 0.135, 9),
+            new SampleGood("Timber", "Bois", "Bûcheron", GoodCategory.RawMaterial, GoodUnit.Bushel, 55, Weekly(2.8, 2.8, 1.4), Weights(3, 4, 6), 48, 0.08, 0.06667, 11),
+            new SampleGood("Metal", "Métal", "Forge", GoodCategory.RawMaterial, GoodUnit.Barrel, 255.6, Weekly(35, 26.25, 8.75), Weights(2, 2, 0), 78, 0.2, 0.1, 11),
+            new SampleGood("Leather", "Cuir", "Tannerie", GoodCategory.RawMaterial, GoodUnit.Barrel, 224, Weekly(15.4, 12.25, 1.75), Weights(2, 2, 4), 60, 0.05332, 0.03333, 9),
+            new SampleGood("Wool", "Laine", "Bergerie", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, Weekly(0.35, 1.4, 0.7), Weights(2, 6, 4), 50, 0.02004, 0.0167, 11),
+            new SampleGood("Pitch", "Brai", "Goudronnerie", GoodCategory.RawMaterial, GoodUnit.Barrel, 55.6, Weekly(0, 0, 0), Weights(0, 0, 0), 26, 0.067, 0.067, 8),
+            new SampleGood("PigIron", "Fonte brute", "Fonderie", GoodCategory.RawMaterial, GoodUnit.Bushel, 880, Weekly(0, 0, 0), Weights(0, 0, 0), 70, 0.01667, 0.01667, 8),
+            new SampleGood("Hemp", "Chanvre", "Chanvrière", GoodCategory.RawMaterial, GoodUnit.Bushel, 440, Weekly(0.175, 0.105, 0.07), Weights(0, 0, 0), 62, 0.00833, 0.00833, 9),
+            new SampleGood("Pottery", "Poterie", "Atelier de potier", GoodCategory.RawMaterial, GoodUnit.Barrel, 171, Weekly(10.5, 6.3, 4.2), Weights(3, 2, 4), 58, 0.067, 0.067, 9),
+            new SampleGood("Tiles", "Tuiles", "Tuilerie", GoodCategory.RawMaterial, GoodUnit.Bushel, 79.8, Weekly(0.035, 0.035, 0), Weights(0, 0, 0), 27, 0.067, 0.067, 8),
         };
 
         private readonly struct SampleCity
@@ -634,16 +640,6 @@ namespace DarkFantasyMerchant.Editor
             return economy;
         }
 
-        // The name of each sample good's workshop, by the good's asset name.
-        private static readonly Dictionary<string, string> SampleWorkshopNames = new Dictionary<string, string>
-        {
-            { "Grain", "Ferme" }, { "Meat", "Élevage" }, { "Fish", "Pêcherie" }, { "Beer", "Brasserie" },
-            { "Salt", "Saline" }, { "Honey", "Rucher" }, { "Spices", "Jardin d'épices" }, { "Wine", "Vignoble" },
-            { "Cloth", "Tisserand" }, { "Skins", "Trappeur" }, { "Oil", "Pressoir à huile" }, { "Timber", "Bûcheron" },
-            { "Metal", "Forge" }, { "Leather", "Tannerie" }, { "Wool", "Bergerie" }, { "Pitch", "Goudronnerie" },
-            { "PigIron", "Fonderie" }, { "Hemp", "Chanvrière" }, { "Pottery", "Atelier de potier" }, { "Tiles", "Tuilerie" },
-        };
-
         /// <summary>
         /// Creates the buildings of the player when missing: the catalogue, a house per class and a
         /// workshop per sample good, whose materials are the timber and the metal of the goods,
@@ -671,7 +667,7 @@ namespace DarkFantasyMerchant.Editor
             }
 
             var goods = new List<GoodDefinition>();
-            var goodAssetNames = new Dictionary<GoodDefinition, string>();
+            var samples = new Dictionary<GoodDefinition, SampleGood>();
 
             foreach (SampleGood sample in SampleGoods)
             {
@@ -680,14 +676,14 @@ namespace DarkFantasyMerchant.Editor
                 if (good != null)
                 {
                     goods.Add(good);
-                    goodAssetNames[good] = sample.AssetName;
+                    samples[good] = sample;
                 }
             }
 
             CompleteBuildings(
                 buildings, isNew, goods,
                 housedClass => LoadOrCreateHouse(housedClass, timber, metal),
-                good => LoadOrCreateWorkshop(goodAssetNames[good], good, timber, metal));
+                good => LoadOrCreateWorkshop(samples[good], good, timber, metal));
             EditorUtility.SetDirty(buildings);
             return buildings;
         }
@@ -797,9 +793,9 @@ namespace DarkFantasyMerchant.Editor
         }
 
         private static (WorkshopDefinition workshop, bool created) LoadOrCreateWorkshop(
-            string goodAssetName, GoodDefinition good, GoodDefinition timber, GoodDefinition metal)
+            SampleGood sample, GoodDefinition good, GoodDefinition timber, GoodDefinition metal)
         {
-            string path = $"{WorkshopsFolder}/{goodAssetName}Workshop.asset";
+            string path = $"{WorkshopsFolder}/{sample.AssetName}Workshop.asset";
             var existing = AssetDatabase.LoadAssetAtPath<WorkshopDefinition>(path);
 
             if (existing != null)
@@ -811,7 +807,7 @@ namespace DarkFantasyMerchant.Editor
             var serialized = new SerializedObject(workshop);
             serialized.FindProperty("good").objectReferenceValue = good;
             serialized.FindProperty("jobs").intValue = 30;
-            FillBuilding(serialized, SampleWorkshopNames[goodAssetName], 10000, timber, 10, metal, 30);
+            FillBuilding(serialized, sample.WorkshopName, 10000, timber, 10, metal, 30);
             AssetDatabase.CreateAsset(workshop, path);
             return (workshop, true);
         }
