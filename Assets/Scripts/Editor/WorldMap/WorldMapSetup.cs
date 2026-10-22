@@ -646,10 +646,10 @@ namespace DarkFantasyMerchant.Editor
 
         /// <summary>
         /// Creates the buildings of the player when missing: the catalogue, a house per class and a
-        /// workshop per sample good, whose materials are the timber and the metal of the goods. A
-        /// definition is added to the catalogue only when it is created, so one taken out of it by
-        /// hand stays out. Like the expenses, new buildings are the game's: their defaults are the
-        /// content. The goods are made by <see cref="CreateEconomy"/>, called first.
+        /// workshop per sample good, whose materials are the timber and the metal of the goods,
+        /// then completes the catalogue (<see cref="CompleteBuildings"/>). Like the expenses, new
+        /// buildings are the game's: their defaults are the content. The goods are made by
+        /// <see cref="CreateEconomy"/>, called first.
         /// </summary>
         public static BuildingsDefinition CreateBuildings()
         {
@@ -662,20 +662,16 @@ namespace DarkFantasyMerchant.Editor
             }
 
             var buildings = AssetDatabase.LoadAssetAtPath<BuildingsDefinition>(BuildingsPath);
+            bool isNew = buildings == null;
 
-            if (buildings == null)
+            if (isNew)
             {
                 buildings = ScriptableObject.CreateInstance<BuildingsDefinition>();
                 AssetDatabase.CreateAsset(buildings, BuildingsPath);
             }
 
-            var catalogue = new SerializedObject(buildings);
-            SerializedProperty houses = catalogue.FindProperty("houses");
-            SerializedProperty workshops = catalogue.FindProperty("workshops");
-
-            AddIfCreated(houses, CreateHouse("RichHouse", "Maison de riches", SocialClass.Rich, 40, 25000, timber, 25, metal, 30));
-            AddIfCreated(houses, CreateHouse("WealthyHouse", "Maison d'aisés", SocialClass.Wealthy, 70, 10000, timber, 15, metal, 20));
-            AddIfCreated(houses, CreateHouse("PoorHouse", "Maison de pauvres", SocialClass.Poor, 140, 5000, timber, 10, metal, 10));
+            var goods = new List<GoodDefinition>();
+            var goodAssetNames = new Dictionary<GoodDefinition, string>();
 
             foreach (SampleGood sample in SampleGoods)
             {
@@ -683,33 +679,111 @@ namespace DarkFantasyMerchant.Editor
 
                 if (good != null)
                 {
-                    AddIfCreated(workshops, CreateWorkshop(sample.AssetName, good, timber, metal));
+                    goods.Add(good);
+                    goodAssetNames[good] = sample.AssetName;
+                }
+            }
+
+            CompleteBuildings(
+                buildings, isNew, goods,
+                housedClass => LoadOrCreateHouse(housedClass, timber, metal),
+                good => LoadOrCreateWorkshop(goodAssetNames[good], good, timber, metal));
+            EditorUtility.SetDirty(buildings);
+            return buildings;
+        }
+
+        /// <summary>
+        /// Gives the catalogue what it lacks: its empty entries (a deleted definition) go, then a
+        /// class without a house, or a good without a workshop, gets the one <paramref name="houseOf"/>
+        /// or <paramref name="workshopOf"/> gives, when that one was just created or the catalogue
+        /// itself is new. A definition that exists and was taken out of the catalogue by hand stays
+        /// out, and one the catalogue holds is never looked for, whatever its asset is called.
+        /// </summary>
+        /// <param name="houseOf">The house of a class, and whether it was just created; null when there is none.</param>
+        /// <param name="workshopOf">The workshop of a good, and whether it was just created; null when there is none.</param>
+        public static void CompleteBuildings(
+            BuildingsDefinition buildings,
+            bool isNew,
+            IEnumerable<GoodDefinition> goods,
+            System.Func<SocialClass, (HouseDefinition house, bool created)> houseOf,
+            System.Func<GoodDefinition, (WorkshopDefinition workshop, bool created)> workshopOf)
+        {
+            var catalogue = new SerializedObject(buildings);
+            SerializedProperty houses = catalogue.FindProperty("houses");
+            SerializedProperty workshops = catalogue.FindProperty("workshops");
+            RemoveEmptyEntries(houses);
+            RemoveEmptyEntries(workshops);
+            catalogue.ApplyModifiedPropertiesWithoutUndo();
+
+            foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
+            {
+                if (buildings.HouseOf(housedClass) == null)
+                {
+                    (HouseDefinition house, bool created) = houseOf(housedClass);
+                    AddIf(houses, house, created || isNew);
+                }
+            }
+
+            foreach (GoodDefinition good in goods)
+            {
+                if (buildings.WorkshopOf(good) == null)
+                {
+                    (WorkshopDefinition workshop, bool created) = workshopOf(good);
+                    AddIf(workshops, workshop, created || isNew);
                 }
             }
 
             catalogue.ApplyModifiedPropertiesWithoutUndo();
-            return buildings;
         }
 
-        private static void AddIfCreated(SerializedProperty list, UnityEngine.Object created)
+        private static void RemoveEmptyEntries(SerializedProperty list)
         {
-            if (created != null)
+            for (int i = list.arraySize - 1; i >= 0; i--)
             {
-                list.arraySize++;
-                list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = created;
+                if (list.GetArrayElementAtIndex(i).objectReferenceValue == null)
+                {
+                    // Cleared first: deleting an element that still holds a reference, even a missing one, only clears it.
+                    list.GetArrayElementAtIndex(i).objectReferenceValue = null;
+                    list.DeleteArrayElementAtIndex(i);
+                }
             }
         }
 
-        /// <returns>The house, or null when it already existed.</returns>
-        private static HouseDefinition CreateHouse(
+        private static void AddIf(SerializedProperty list, UnityEngine.Object definition, bool add)
+        {
+            if (definition != null && add)
+            {
+                list.arraySize++;
+                list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = definition;
+            }
+        }
+
+        private static (HouseDefinition house, bool created) LoadOrCreateHouse(
+            SocialClass housedClass, GoodDefinition timber, GoodDefinition metal)
+        {
+            switch (housedClass)
+            {
+                case SocialClass.Rich:
+                    return LoadOrCreateHouse("RichHouse", "Maison de riches", housedClass, 40, 25000, timber, 25, metal, 30);
+                case SocialClass.Wealthy:
+                    return LoadOrCreateHouse("WealthyHouse", "Maison d'aisés", housedClass, 70, 10000, timber, 15, metal, 20);
+                case SocialClass.Poor:
+                    return LoadOrCreateHouse("PoorHouse", "Maison de pauvres", housedClass, 140, 5000, timber, 10, metal, 10);
+                default:
+                    throw new System.ArgumentOutOfRangeException(nameof(housedClass));
+            }
+        }
+
+        private static (HouseDefinition house, bool created) LoadOrCreateHouse(
             string assetName, string displayName, SocialClass housedClass, int room,
             long gold, GoodDefinition timber, int timberUnits, GoodDefinition metal, int metalUnits)
         {
             string path = $"{HousesFolder}/{assetName}.asset";
+            var existing = AssetDatabase.LoadAssetAtPath<HouseDefinition>(path);
 
-            if (AssetDatabase.LoadAssetAtPath<HouseDefinition>(path) != null)
+            if (existing != null)
             {
-                return null;
+                return (existing, false);
             }
 
             // Filled in before the asset is created, so the file is written complete.
@@ -719,17 +793,18 @@ namespace DarkFantasyMerchant.Editor
             serialized.FindProperty("room").intValue = room;
             FillBuilding(serialized, displayName, gold, timber, timberUnits, metal, metalUnits);
             AssetDatabase.CreateAsset(house, path);
-            return house;
+            return (house, true);
         }
 
-        /// <returns>The workshop of the good, or null when it already existed.</returns>
-        private static WorkshopDefinition CreateWorkshop(string goodAssetName, GoodDefinition good, GoodDefinition timber, GoodDefinition metal)
+        private static (WorkshopDefinition workshop, bool created) LoadOrCreateWorkshop(
+            string goodAssetName, GoodDefinition good, GoodDefinition timber, GoodDefinition metal)
         {
             string path = $"{WorkshopsFolder}/{goodAssetName}Workshop.asset";
+            var existing = AssetDatabase.LoadAssetAtPath<WorkshopDefinition>(path);
 
-            if (AssetDatabase.LoadAssetAtPath<WorkshopDefinition>(path) != null)
+            if (existing != null)
             {
-                return null;
+                return (existing, false);
             }
 
             var workshop = ScriptableObject.CreateInstance<WorkshopDefinition>();
@@ -738,7 +813,7 @@ namespace DarkFantasyMerchant.Editor
             serialized.FindProperty("jobs").intValue = 30;
             FillBuilding(serialized, SampleWorkshopNames[goodAssetName], 10000, timber, 10, metal, 30);
             AssetDatabase.CreateAsset(workshop, path);
-            return workshop;
+            return (workshop, true);
         }
 
         private static void FillBuilding(
