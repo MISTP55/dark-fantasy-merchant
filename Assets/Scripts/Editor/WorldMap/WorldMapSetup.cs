@@ -16,8 +16,9 @@ namespace DarkFantasyMerchant.Editor
     /// existing scene only gains the ships, ship route, ship panel, world clock, time HUD,
     /// player treasury, treasury HUD, player notifications, notifications HUD, ship
     /// arrival notifier, player expenses, world economy, AI merchants and debug panel objects when
-    /// it has none, and the references to them that are empty. Cities of the map that
-    /// produce nothing are given the productions of the sample content.
+    /// it has none, each in its group at the root of the scene, and the references to them
+    /// that are empty. Cities of the map that produce nothing are given the productions of
+    /// the sample content.
     /// </summary>
     public static class WorldMapSetup
     {
@@ -35,6 +36,13 @@ namespace DarkFantasyMerchant.Editor
         private const string ShipPanelTemplatePath = UiFolder + "/ShipInfoPanel.uxml";
         private const string ThemePath = "Assets/UI/DefaultRuntimeTheme.tss";
         private const string ScenePath = "Assets/Scenes/WorldMap.unity";
+
+        // The groups at the root of the scene, which hold all its objects.
+        private const string RenderingGroup = "Rendering";
+        private const string WorldGroup = "World";
+        private const string UiGroup = "UI";
+        private const string SimulationGroup = "Simulation";
+        private const string DebugGroup = "Debug";
 
         private const string CalendarFolder = "Assets/Data/Calendar";
         private const string CalendarPath = CalendarFolder + "/Calendar.asset";
@@ -320,9 +328,11 @@ namespace DarkFantasyMerchant.Editor
             AssetDatabase.SaveAssets();
             BuildScene();
             AddShipsToScene(mapSceneHadUnsavedChanges);
-            AddShipPanelToScene(mapSceneHadUnsavedChanges);
             AddTimeToScene(mapSceneHadUnsavedChanges);
             AddTreasuryToScene(mapSceneHadUnsavedChanges);
+
+            // After the HUDs: in their group, the UI documents keep the order they are made in.
+            AddShipPanelToScene(mapSceneHadUnsavedChanges);
             AddNotificationsToScene(mapSceneHadUnsavedChanges);
             AddExpensesToScene(mapSceneHadUnsavedChanges);
             AddEconomyToScene(mapSceneHadUnsavedChanges);
@@ -1020,6 +1030,7 @@ namespace DarkFantasyMerchant.Editor
             GameObject cameraObject = ObjectFactory.CreateGameObject(
                 "Main Camera", typeof(Camera), typeof(AudioListener));
             cameraObject.tag = "MainCamera";
+            cameraObject.transform.SetParent(SceneGroup(scene, RenderingGroup), false);
             cameraObject.transform.position = new Vector3(0f, 0f, -10f);
 
             var mapCamera = cameraObject.GetComponent<Camera>();
@@ -1030,8 +1041,9 @@ namespace DarkFantasyMerchant.Editor
             // Lit sprites render black under the 2D renderer without a light.
             GameObject lightObject = ObjectFactory.CreateGameObject("Global Light 2D", typeof(Light2D));
             lightObject.GetComponent<Light2D>().lightType = Light2D.LightType.Global;
+            lightObject.transform.SetParent(SceneGroup(scene, RenderingGroup), false);
 
-            var mapObject = new GameObject("World Map");
+            GameObject mapObject = CreateInGroup(scene, WorldGroup, "World Map");
             GameObject spriteObject = ObjectFactory.CreateGameObject("Map Sprite", typeof(SpriteRenderer));
             spriteObject.transform.SetParent(mapObject.transform, false);
             var markersObject = new GameObject("City Markers");
@@ -1044,7 +1056,7 @@ namespace DarkFantasyMerchant.Editor
             SetReference(mapView, "markerRoot", markersObject.transform);
             mapView.LayOutMap();
 
-            var uiObject = new GameObject("World Map UI");
+            GameObject uiObject = CreateInGroup(scene, UiGroup, "World Map UI");
             var document = uiObject.AddComponent<UIDocument>();
             document.panelSettings = panelSettings;
             document.visualTreeAsset = panelTemplate;
@@ -1100,8 +1112,7 @@ namespace DarkFantasyMerchant.Editor
                     throw new FileNotFoundException("A generated ship asset could not be loaded.");
                 }
 
-                var shipsObject = new GameObject("Ships");
-                SceneManager.MoveGameObjectToScene(shipsObject, scene);
+                GameObject shipsObject = CreateInGroup(scene, WorldGroup, "Ships");
 
                 shipsView = shipsObject.AddComponent<ShipsView>();
                 SetReference(shipsView, "mapView", mapView);
@@ -1198,8 +1209,7 @@ namespace DarkFantasyMerchant.Editor
                     throw new FileNotFoundException("The ship panel UXML is missing.", ShipPanelTemplatePath);
                 }
 
-                var panelObject = new GameObject("Ship Panel");
-                SceneManager.MoveGameObjectToScene(panelObject, scene);
+                GameObject panelObject = CreateInGroup(scene, UiGroup, "Ship Panel");
 
                 var document = panelObject.AddComponent<UIDocument>();
                 document.panelSettings = FindPanelSettings(scene);
@@ -1238,8 +1248,7 @@ namespace DarkFantasyMerchant.Editor
                     throw new FileNotFoundException("The calendar could not be loaded.", CalendarPath);
                 }
 
-                var clockObject = new GameObject("World Clock");
-                SceneManager.MoveGameObjectToScene(clockObject, scene);
+                GameObject clockObject = CreateInGroup(scene, SimulationGroup, "World Clock");
 
                 worldClock = clockObject.AddComponent<WorldClock>();
                 SetReference(worldClock, "calendar", calendar);
@@ -1255,8 +1264,7 @@ namespace DarkFantasyMerchant.Editor
                     throw new FileNotFoundException("The time HUD UXML is missing.", TimeHudTemplatePath);
                 }
 
-                var hudObject = new GameObject("Time HUD");
-                SceneManager.MoveGameObjectToScene(hudObject, scene);
+                GameObject hudObject = CreateInGroup(scene, UiGroup, "Time HUD");
 
                 var document = hudObject.AddComponent<UIDocument>();
                 document.panelSettings = FindPanelSettings(scene);
@@ -1311,8 +1319,7 @@ namespace DarkFantasyMerchant.Editor
                     throw new FileNotFoundException("The player start could not be loaded.", PlayerStartPath);
                 }
 
-                var treasuryObject = new GameObject("Player Treasury");
-                SceneManager.MoveGameObjectToScene(treasuryObject, scene);
+                GameObject treasuryObject = CreateInGroup(scene, SimulationGroup, "Player Treasury");
 
                 playerTreasury = treasuryObject.AddComponent<PlayerTreasury>();
                 SetReference(playerTreasury, "playerStart", playerStart);
@@ -1330,8 +1337,7 @@ namespace DarkFantasyMerchant.Editor
                     throw new FileNotFoundException("The treasury HUD UXML is missing.", TreasuryHudTemplatePath);
                 }
 
-                var hudObject = new GameObject("Treasury HUD");
-                SceneManager.MoveGameObjectToScene(hudObject, scene);
+                GameObject hudObject = CreateInGroup(scene, UiGroup, "Treasury HUD");
 
                 var document = hudObject.AddComponent<UIDocument>();
                 document.panelSettings = FindPanelSettings(scene);
@@ -1367,8 +1373,7 @@ namespace DarkFantasyMerchant.Editor
 
             if (playerNotifications == null)
             {
-                var notificationsObject = new GameObject("Player Notifications");
-                SceneManager.MoveGameObjectToScene(notificationsObject, scene);
+                GameObject notificationsObject = CreateInGroup(scene, SimulationGroup, "Player Notifications");
 
                 playerNotifications = notificationsObject.AddComponent<PlayerNotifications>();
                 changed = true;
@@ -1385,8 +1390,7 @@ namespace DarkFantasyMerchant.Editor
                     throw new FileNotFoundException("The notifications HUD UXML is missing.", NotificationsHudTemplatePath);
                 }
 
-                var hudObject = new GameObject("Notifications HUD");
-                SceneManager.MoveGameObjectToScene(hudObject, scene);
+                GameObject hudObject = CreateInGroup(scene, UiGroup, "Notifications HUD");
 
                 var document = hudObject.AddComponent<UIDocument>();
                 document.panelSettings = FindPanelSettings(scene);
@@ -1408,8 +1412,7 @@ namespace DarkFantasyMerchant.Editor
             // Without ships, nothing arrives.
             if (arrivalNotifier == null && shipsView != null)
             {
-                var notifierObject = new GameObject("Ship Arrival Notifier");
-                SceneManager.MoveGameObjectToScene(notifierObject, scene);
+                GameObject notifierObject = CreateInGroup(scene, SimulationGroup, "Ship Arrival Notifier");
 
                 arrivalNotifier = notifierObject.AddComponent<ShipArrivalNotifier>();
             }
@@ -1469,8 +1472,7 @@ namespace DarkFantasyMerchant.Editor
 
             if (playerExpenses == null)
             {
-                var expensesObject = new GameObject("Player Expenses");
-                SceneManager.MoveGameObjectToScene(expensesObject, scene);
+                GameObject expensesObject = CreateInGroup(scene, SimulationGroup, "Player Expenses");
 
                 playerExpenses = expensesObject.AddComponent<PlayerExpenses>();
                 changed = true;
@@ -1528,8 +1530,7 @@ namespace DarkFantasyMerchant.Editor
 
             if (worldEconomy == null)
             {
-                var economyObject = new GameObject("World Economy");
-                SceneManager.MoveGameObjectToScene(economyObject, scene);
+                GameObject economyObject = CreateInGroup(scene, SimulationGroup, "World Economy");
 
                 worldEconomy = economyObject.AddComponent<WorldEconomy>();
                 changed = true;
@@ -1608,8 +1609,7 @@ namespace DarkFantasyMerchant.Editor
 
             if (aiMerchants == null)
             {
-                var merchantsObject = new GameObject("AI Merchants");
-                SceneManager.MoveGameObjectToScene(merchantsObject, scene);
+                GameObject merchantsObject = CreateInGroup(scene, SimulationGroup, "AI Merchants");
 
                 aiMerchants = merchantsObject.AddComponent<AiMerchants>();
                 changed = true;
@@ -1662,8 +1662,7 @@ namespace DarkFantasyMerchant.Editor
                     throw new FileNotFoundException("The debug panel UXML is missing.", DebugPanelTemplatePath);
                 }
 
-                var panelObject = new GameObject("Debug Panel");
-                SceneManager.MoveGameObjectToScene(panelObject, scene);
+                GameObject panelObject = CreateInGroup(scene, DebugGroup, "Debug Panel");
 
                 var document = panelObject.AddComponent<UIDocument>();
                 document.panelSettings = FindPanelSettings(scene);
@@ -1693,8 +1692,7 @@ namespace DarkFantasyMerchant.Editor
 
             if (recorder == null)
             {
-                var recorderObject = new GameObject("Simulation Recorder");
-                SceneManager.MoveGameObjectToScene(recorderObject, scene);
+                GameObject recorderObject = CreateInGroup(scene, DebugGroup, "Simulation Recorder");
                 recorder = recorderObject.AddComponent<SimulationRecorder>();
                 changed = true;
             }
@@ -1774,6 +1772,29 @@ namespace DarkFantasyMerchant.Editor
             }
 
             EditorSceneManager.SaveScene(scene);
+        }
+
+        private static GameObject CreateInGroup(Scene scene, string group, string name)
+        {
+            var gameObject = new GameObject(name);
+            gameObject.transform.SetParent(SceneGroup(scene, group), false);
+            return gameObject;
+        }
+
+        // A group missing from an existing scene is added after the others.
+        private static Transform SceneGroup(Scene scene, string name)
+        {
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                if (root.name == name)
+                {
+                    return root.transform;
+                }
+            }
+
+            var group = new GameObject(name);
+            SceneManager.MoveGameObjectToScene(group, scene);
+            return group.transform;
         }
 
         private static T FindInScene<T>(Scene scene) where T : Component

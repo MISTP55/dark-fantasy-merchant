@@ -45,6 +45,7 @@ A new script goes in the subfolder of its subsystem; a new subsystem gets its su
 ### Scene setup
 
 - `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates whatever is missing (scene, prefabs, panel settings, data assets, scene objects and the references between them) and leaves what exists untouched. Every new scene object, data asset or reference between components must be added to it, so that an existing scene gets it too. It saves the scene unless it already had unsaved changes, and gives cities that produce nothing the productions of the sample content.
+- The scene's root holds only empty groups at the origin (`Rendering`, `World`, `UI`, `Simulation`, `Debug`), which hold every object. `WorldMapSetup` puts each object it creates in its group (`CreateInGroup`), and makes the group when it is missing; an object made again goes last in its group. Do not reorder the panels and HUDs of `UI`: UI documents of equal `sortingOrder` may be drawn in that order.
 - Components that others read in `Awake`/`Start` are created first: `WorldClock`, `PlayerTreasury` and `PlayerNotifications` run at execution order -100.
 
 ### Runtime UI
