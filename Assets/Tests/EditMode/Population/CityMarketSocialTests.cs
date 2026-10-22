@@ -68,6 +68,29 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void AGoodNobodyConsumes_DoesNotWeighInTheSatisfaction_EvenAsAnInput()
+        {
+            // Pitch: weighs much, consumed by no class. Ships: consumed by nobody either, made out of pitch.
+            // 100 days of the workshop's need in stock: far above twice T0, so pitch counted by mistake
+            // would raise the satisfactions while the others fall.
+            var pitch = new MarketGood(10, PerClass<double>.All(0), 0, 0, 0, PerClass<int>.All(40));
+            var ships = new MarketGood(10, PerClass<double>.All(0), 60, 0.1, 0, PerClass<int>.All(0));
+            CityMarket withInputs = Market(
+                Population(100, 300, 600, 0, 120, 350, 700), 100, new[] { pitch, ships.WithInputs(new[] { new MarketInput(0, 0.5) }) });
+            CityMarket without = Market(Population(100, 300, 600, 0, 120, 350, 700), 100, new[] { pitch, ships });
+
+            withInputs.StartDay();
+            without.StartDay();
+
+            Assert.Greater(withInputs.DailyInputNeedOf(0), 0d);
+
+            foreach (SocialClass housedClass in Classes)
+            {
+                Assert.AreEqual(without.Population.SatisfactionOf(housedClass), withInputs.Population.SatisfactionOf(housedClass), housedClass.ToString());
+            }
+        }
+
+        [Test]
         public void StartDay_RaisesTheSatisfactionOfAWellSuppliedCity()
         {
             // Above twice T0: targets 36, 31, 22.

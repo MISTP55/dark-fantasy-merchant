@@ -128,6 +128,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(2, market.RecentProductionOf(1), Tolerance);
             Assert.AreEqual(1.5, market.LastDay.InputNeedOf(0), Tolerance);
             Assert.AreEqual(1, market.LastDay.InputsConsumedOf(0), Tolerance);
+
+            // The inhabitants had their 2: what the workshop lacked is no shortage of theirs.
+            Assert.AreEqual(0, market.LastDay.MissingOf(0), Tolerance);
+            Assert.AreEqual(2, market.LastDay.NeededOf(0), Tolerance);
         }
 
         [Test]
