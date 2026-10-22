@@ -271,7 +271,8 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>
         /// Whether the catalogue can be used: at least one good, none missing, none twice, active
-        /// or not, and at least one active.
+        /// or not, at least one active, and the recipe of every good, active or not, made of goods of
+        /// the catalogue other than itself, each once and above 0.
         /// </summary>
         /// <param name="problem">What is wrong, for the console; null when nothing is.</param>
         public bool TryValidate(out string problem)
@@ -305,6 +306,52 @@ namespace DarkFantasyMerchant.Game
             {
                 problem = "none of its goods is active";
                 return false;
+            }
+
+            foreach (CatalogueGood entry in goods)
+            {
+                if (!TryValidateRecipe(entry.Good, out problem))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private bool TryValidateRecipe(GoodDefinition good, out string problem)
+        {
+            problem = null;
+            var seen = new HashSet<GoodDefinition>();
+
+            foreach (GoodDefinition.InputAmount input in good.Inputs)
+            {
+                if (input == null || input.Good == null)
+                {
+                    problem = $"'{good.name}' has an input with no good";
+                }
+                else if (input.Good == good)
+                {
+                    problem = $"'{good.name}' is its own input";
+                }
+                else if (!IsInCatalogue(input.Good))
+                {
+                    problem = $"'{good.name}' takes '{input.Good.name}', which is not in the catalogue";
+                }
+                else if (!seen.Add(input.Good))
+                {
+                    problem = $"'{good.name}' takes '{input.Good.name}' twice";
+                }
+                // The negated comparison also rejects NaN.
+                else if (!(input.UnitsPerUnit > 0d) || double.IsInfinity(input.UnitsPerUnit))
+                {
+                    problem = $"'{good.name}' takes '{input.Good.name}' at {input.UnitsPerUnit}, which is not above 0";
+                }
+
+                if (problem != null)
+                {
+                    return false;
+                }
             }
 
             return true;
@@ -594,7 +641,8 @@ namespace DarkFantasyMerchant.Game
                     maxWorkers,
                     outputPerWorker,
                     merchantOutputPerWorker,
-                    good.SatisfactionWeights);
+                    good.SatisfactionWeights)
+                    .WithInputs(InputsOf(good));
             }
 
             WorkforceRule workforce = CreateWorkforceRule();
@@ -619,6 +667,24 @@ namespace DarkFantasyMerchant.Game
                 labour,
                 housing,
                 social);
+        }
+
+        // The recipe of a good by the indices of its inputs among the active goods; an inactive input is left out.
+        private List<MarketInput> InputsOf(GoodDefinition good)
+        {
+            var inputs = new List<MarketInput>();
+
+            foreach (GoodDefinition.InputAmount input in good.Inputs)
+            {
+                int index = input == null ? -1 : IndexOf(input.Good);
+
+                if (index >= 0)
+                {
+                    inputs.Add(new MarketInput(index, input.UnitsPerUnit));
+                }
+            }
+
+            return inputs;
         }
     }
 }

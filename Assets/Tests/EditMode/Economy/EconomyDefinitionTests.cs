@@ -723,6 +723,86 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void ARecipe_ReachesTheMarket_ByTheIndicesOfTheActiveGoods()
+        {
+            TestEconomy.SetInputs(fish, (salt, 0.25));
+            TestEconomy.SetActive(economy, wheat, false);
+
+            CityMarket market = economy.CreateMarket(City(new[] { fish }, new GoodDefinition[0]), economy.CreatePricing(), DaysPerWeek);
+
+            // Without wheat, fish is the good 0 and salt the good 1.
+            Assert.Greater(market.WorkersOf(0), 0);
+            Assert.AreEqual(market.WorkersOf(0) * 0.3 * 0.25, market.DailyInputNeedOf(1), Tolerance);
+        }
+
+        [Test]
+        public void AnInactiveInput_IsLeftOut_TheWorkshopNeedsOnlyTheOthers()
+        {
+            TestEconomy.SetInputs(fish, (salt, 0.25), (wheat, 0.1));
+            TestEconomy.SetActive(economy, wheat, false);
+
+            CityMarket market = economy.CreateMarket(City(new[] { fish }, new GoodDefinition[0]), economy.CreatePricing(), DaysPerWeek);
+
+            Assert.AreEqual(2, market.GoodCount);
+            Assert.AreEqual(market.WorkersOf(0) * 0.3 * 0.25, market.DailyInputNeedOf(1), Tolerance);
+        }
+
+        [Test]
+        public void AnInefficientWorkshop_NeedsInputsForWhatItMakes()
+        {
+            TestEconomy.SetInputs(fish, (salt, 0.25));
+
+            CityMarket market = economy.CreateMarket(City(new GoodDefinition[0], new[] { fish }), economy.CreatePricing(), DaysPerWeek);
+
+            Assert.Greater(market.WorkersOf(1), 0);
+            Assert.AreEqual(market.WorkersOf(1) * 0.3 * 0.75 * 0.25, market.DailyInputNeedOf(2), Tolerance);
+        }
+
+        [TestCase("no good")]
+        [TestCase("itself")]
+        [TestCase("not in the catalogue")]
+        [TestCase("twice")]
+        [TestCase("zero")]
+        public void TryValidate_RefusesABrokenRecipe(string broken)
+        {
+            GoodDefinition outsider = Track(TestEconomy.CreateGood("Ambre", 50, 1));
+
+            switch (broken)
+            {
+                case "no good":
+                    TestEconomy.SetInputs(fish, (null, 0.25));
+                    break;
+                case "itself":
+                    TestEconomy.SetInputs(fish, (fish, 0.25));
+                    break;
+                case "not in the catalogue":
+                    TestEconomy.SetInputs(fish, (outsider, 0.25));
+                    break;
+                case "twice":
+                    TestEconomy.SetInputs(fish, (salt, 0.25), (salt, 0.1));
+                    break;
+                case "zero":
+                    TestEconomy.SetInputs(fish, (salt, 0d));
+                    break;
+            }
+
+            // An inactive good's recipe is checked too.
+            TestEconomy.SetActive(economy, fish, false);
+
+            Assert.IsFalse(economy.TryValidate(out string problem));
+            StringAssert.Contains(fish.name, problem);
+        }
+
+        [Test]
+        public void TryValidate_AcceptsARecipeWhoseInputIsInactive()
+        {
+            TestEconomy.SetInputs(fish, (salt, 0.25));
+            TestEconomy.SetActive(economy, salt, false);
+
+            Assert.IsTrue(economy.TryValidate(out string problem), problem);
+        }
+
+        [Test]
         public void TryValidate_RejectsAnEmptyEntry()
         {
             EconomyDefinition holed = Track(TestEconomy.CreateEconomy(wheat, null));

@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using DarkFantasyMerchant.Core;
 using UnityEngine;
 
@@ -7,6 +9,21 @@ namespace DarkFantasyMerchant.Game
     [CreateAssetMenu(fileName = "Good", menuName = "Dark Fantasy Merchant/Good")]
     public sealed class GoodDefinition : ScriptableObject
     {
+        /// <summary>A good the city's workshop of this one takes, and how much of it for every unit it makes.</summary>
+        [Serializable]
+        public sealed class InputAmount
+        {
+            [Tooltip("The good taken. One that is not active is left out: the workshop needs only the others.")]
+            [SerializeField] private GoodDefinition good;
+
+            [Tooltip("Units of it, in its own unit (barrels or bushels), for every unit of this good made; above 0.")]
+            [SerializeField, Min(0f)] private double unitsPerUnit = 0.1d;
+
+            public GoodDefinition Good => good;
+
+            public double UnitsPerUnit => unitsPerUnit;
+        }
+
         [SerializeField] private string displayName;
 
         [Tooltip("Shown before the good's name in the city's market. None: an empty place.")]
@@ -53,6 +70,10 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("How much the AI merchants care to carry the good: the gap of price factors between two cities is multiplied by it. 0: they never carry it.")]
         [SerializeField, Min(0)] private int aiWeight = 9;
 
+        [Header("Inputs of the city's workshop, per unit produced")]
+        [Tooltip("What the workshop takes from the city's stocks to make the good, a good once at most. When one is short, it makes as much as the scarcest allows.")]
+        [SerializeField] private List<InputAmount> inputs = new List<InputAmount>();
+
         public string DisplayName => displayName;
 
         public Sprite Icon => icon;
@@ -75,6 +96,8 @@ namespace DarkFantasyMerchant.Game
         public double DailyOutputPerWorker => dailyOutputPerWorker;
 
         public double MerchantDailyOutputPerWorker => merchantDailyOutputPerWorker;
+
+        public IReadOnlyList<InputAmount> Inputs => inputs;
 
         public int AiWeight => aiWeight;
     }

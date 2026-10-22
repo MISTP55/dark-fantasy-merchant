@@ -103,6 +103,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
+        /// <summary>Gives the city's workshop of a good these inputs, in this order, in units per unit it makes.</summary>
+        public static void SetInputs(GoodDefinition good, params (GoodDefinition good, double unitsPerUnit)[] inputs)
+        {
+            var serialized = new SerializedObject(good);
+            SerializedProperty list = serialized.FindProperty("inputs");
+            list.arraySize = inputs.Length;
+
+            for (int i = 0; i < inputs.Length; i++)
+            {
+                SerializedProperty entry = list.GetArrayElementAtIndex(i);
+                entry.FindPropertyRelative("good").objectReferenceValue = inputs[i].good;
+                entry.FindPropertyRelative("unitsPerUnit").doubleValue = inputs[i].unitsPerUnit;
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         /// <summary>
         /// Makes every city of the economy start with these inhabitants: as many workers, one
         /// inhabitant each. The workshops then start full.
