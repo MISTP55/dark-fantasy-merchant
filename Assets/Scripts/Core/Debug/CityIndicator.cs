@@ -48,5 +48,11 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>Units the AI merchants carry to the city.</summary>
         UnderWay,
+
+        /// <summary>Units the workshops take as their inputs in a week with the workers of the day.</summary>
+        NominalWeeklyInputs,
+
+        /// <summary>Units the workshops actually took as their inputs over the last week.</summary>
+        RecentInputs,
     }
 }

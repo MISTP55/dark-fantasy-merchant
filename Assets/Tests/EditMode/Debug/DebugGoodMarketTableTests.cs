@@ -18,10 +18,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int BuyCell = 6;
         private const int SellCell = 7;
         private const int ProductionCell = 8;
-        private const int NetCell = 10;
-        private const int WorkersCell = 11;
-        private const int UnderWayCell = 12;
-        private const int Cells = 13;
+        private const int InputsCell = 10;
+        private const int NetCell = 11;
+        private const int WorkersCell = 12;
+        private const int UnderWayCell = 13;
+        private const int Cells = 14;
 
         private VisualElement header;
         private VisualElement rows;
@@ -71,6 +72,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("Ville", ((Label)header[0][NameCell]).text);
             Assert.AreEqual("T0", ((Label)header[0][T0Cell]).text);
             Assert.AreEqual("Achat", ((Label)header[0][BuyCell]).text);
+            Assert.AreEqual("Conso.", ((Label)header[0][InputsCell - 1]).text);
+            Assert.AreEqual("Intr.", ((Label)header[0][InputsCell]).text);
+            Assert.AreEqual("Net", ((Label)header[0][NetCell]).text);
             Assert.AreEqual("En route (IA)", ((Label)header[0][UnderWayCell]).text);
         }
 
@@ -125,6 +129,29 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(DebugCitiesTable.NoFigure, Total(BuyCell));
             Assert.AreEqual(DebugCitiesTable.NoFigure, Total(SellCell));
             Assert.AreEqual(DebugCitiesTable.FormatNet(-21) + " (" + DebugCitiesTable.FormatNet(0) + ")", Total(NetCell));
+        }
+
+        [Test]
+        public void GoodMarket_WritesTheInputs_AndANetThatTakesThemOff()
+        {
+            // A smithy whose iron workshop takes half a barrel of fish for every barrel it makes: 10.5 a week.
+            var smithy = new CityMarket(
+                new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 30, 0.1).WithInputs(new[] { new MarketInput(Fish, 0.5) }) },
+                TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7, new CityPopulation(1000));
+            var alone = new DebugGoodMarketTable(new VisualElement(), rows = new VisualElement(), totals = new VisualElement());
+            alone.AddCity("Sparia", smithy, good => 0);
+            alone.SetGood(Fish);
+            alone.Show();
+
+            Assert.AreEqual("10,5 (0,0)", Text(0, InputsCell));
+            Assert.AreEqual(DebugCitiesTable.FormatNet(-24.5) + " (" + DebugCitiesTable.FormatNet(0) + ")", Text(0, NetCell));
+            Assert.AreEqual("10,5 (0,0)", Total(InputsCell));
+            Assert.AreEqual(DebugCitiesTable.FormatNet(-24.5) + " (" + DebugCitiesTable.FormatNet(0) + ")", Total(NetCell));
+
+            smithy.StartDay();
+
+            Assert.AreEqual("10,5 (1,5)", Text(0, InputsCell));
+            Assert.AreEqual(DebugCitiesTable.FormatNet(-24.5) + " (" + DebugCitiesTable.FormatNet(-3.5) + ")", Text(0, NetCell));
         }
 
         [Test]

@@ -11,7 +11,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Iron = 1;
 
         // Children of a row of the city's columns, in order: the city, its population, its beggars, its rich,
-        // wealthy and poor, its growth since the start. A row of the goods' columns has five cells per good.
+        // wealthy and poor, its growth since the start. A row of the goods' columns has six cells per good.
         private const int NameCell = 0;
         private const int PopulationCell = 1;
         private const int BeggarsCell = 2;
@@ -20,7 +20,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int PoorCell = 5;
         private const int GrowthSinceStartCell = 6;
         private const int CityCells = 7;
-        private const int CellsPerGood = 5;
+        private const int CellsPerGood = 6;
 
         // The goods' columns in alphabetical order: "Fer" before "Poisson".
         private const int IronColumn = 0;
@@ -28,8 +28,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Stock = 0;
         private const int Production = 1;
         private const int Consumption = 2;
-        private const int Net = 3;
-        private const int Workers = 4;
+        private const int Inputs = 3;
+        private const int Net = 4;
+        private const int Workers = 5;
 
         private VisualElement header;
         private VisualElement rows;
@@ -134,6 +135,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("Stock", ((Label)goodHeader[1][Stock]).text);
             Assert.AreEqual("Prod.", ((Label)goodHeader[1][Production]).text);
             Assert.AreEqual("Conso.", ((Label)goodHeader[1][Consumption]).text);
+            Assert.AreEqual("Intr.", ((Label)goodHeader[1][Inputs]).text);
             Assert.AreEqual("Net", ((Label)goodHeader[1][FishColumn * CellsPerGood + Net]).text);
             Assert.AreEqual("Ouv.", ((Label)goodHeader[1][Workers]).text);
         }
@@ -262,6 +264,36 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("21,0 (0,0)", Text(0, Iron, Production));
             Assert.AreEqual("14,0 (0,0)", Text(0, Iron, Consumption));
             Assert.AreEqual($"{Positive("+7,0")} (0,0)", Text(0, Iron, Net));
+        }
+
+        [Test]
+        public void ARow_WritesTheInputs_AndANetThatTakesThemOff()
+        {
+            // The same city, whose iron workshop takes half a barrel of fish for every barrel it makes.
+            var smithy = new CityMarket(
+                new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 30, 0.1).WithInputs(new[] { new MarketInput(Fish, 0.5) }) },
+                TestMarkets.Thresholds,
+                TestMarkets.Workforce,
+                30,
+                TestMarkets.Pricing,
+                7,
+                new CityPopulation(1000));
+
+            table.AddCity("Sparia", smithy);
+            table.Show();
+
+            Assert.AreEqual("10,5 (0,0)", Text(0, Fish, Inputs));
+            Assert.AreEqual($"{Negative("-24,5")} (0,0)", Text(0, Fish, Net));
+            Assert.AreEqual("0,0 (0,0)", Text(0, Iron, Inputs));
+            Assert.AreEqual("10,5 (0,0)", Total(Fish, Inputs));
+            Assert.AreEqual($"{Negative("-24,5")} (0,0)", Total(Fish, Net));
+
+            smithy.StartDay();
+
+            // A day of 1.5 barrels taken: the recent figures follow.
+            Assert.AreEqual("10,5 (1,5)", Text(0, Fish, Inputs));
+            Assert.AreEqual($"{Negative("-24,5")} ({Negative("-3,5")})", Text(0, Fish, Net));
+            Assert.AreEqual("10,5 (1,5)", Total(Fish, Inputs));
         }
 
         [Test]

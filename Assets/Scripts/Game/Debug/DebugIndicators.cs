@@ -68,6 +68,8 @@ namespace DarkFantasyMerchant.Game
             new DebugIndicator(GoodIndicator.RecentProduction, "Production réelle (7 jours)", true),
             new DebugIndicator(GoodIndicator.NominalWeeklyConsumption, "Consommation théorique (semaine)", true),
             new DebugIndicator(GoodIndicator.RecentConsumption, "Consommation réelle (7 jours)", true),
+            new DebugIndicator(GoodIndicator.NominalWeeklyInputs, "Intrants théoriques (semaine)", true),
+            new DebugIndicator(GoodIndicator.RecentInputs, "Intrants réels (7 jours)", true),
             new DebugIndicator(GoodIndicator.Missing, "Manque (jour)", true),
             new DebugIndicator(GoodIndicator.Workers, "Ouvriers", true),
             new DebugIndicator(GoodIndicator.Reserve, "Réserve", true),

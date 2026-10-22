@@ -91,6 +91,8 @@ namespace DarkFantasyMerchant.Core
                 Set(into, GoodIndicator.Workers, good, market.WorkersOf(good));
                 Set(into, GoodIndicator.Reserve, good, market.ReserveOf(good));
                 Set(into, GoodIndicator.UnderWay, good, underWay(good));
+                Set(into, GoodIndicator.NominalWeeklyInputs, good, market.NominalWeeklyInputNeedOf(good));
+                Set(into, GoodIndicator.RecentInputs, good, market.RecentInputsOf(good));
             }
         }
 

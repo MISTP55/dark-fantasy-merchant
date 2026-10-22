@@ -40,8 +40,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void All_HasEveryIndicatorOnce()
         {
             Assert.AreEqual(13, DebugIndicators.All.Count(indicator => !indicator.IsGood));
-            Assert.AreEqual(15, DebugIndicators.All.Count(indicator => indicator.IsGood));
-            Assert.AreEqual(28, DebugIndicators.All.Select(indicator => indicator.Name).Distinct().Count());
+            Assert.AreEqual(17, DebugIndicators.All.Count(indicator => indicator.IsGood));
+            Assert.AreEqual(30, DebugIndicators.All.Select(indicator => indicator.Name).Distinct().Count());
         }
 
         [Test]
@@ -50,6 +50,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(GoodIndicator.Missing, Find("Manque (jour)").Good);
             Assert.AreEqual(CityIndicator.BeggarTarget, Find("Cible des mendiants").City);
             Assert.AreEqual(GoodIndicator.BuyPrice, Find("Prix d'achat").Good);
+            Assert.AreEqual(GoodIndicator.NominalWeeklyInputs, Find("Intrants théoriques (semaine)").Good);
+            Assert.AreEqual(GoodIndicator.RecentInputs, Find("Intrants réels (7 jours)").Good);
+            Assert.IsTrue(Find("Intrants réels (7 jours)").AddsUp);
         }
 
         [Test]

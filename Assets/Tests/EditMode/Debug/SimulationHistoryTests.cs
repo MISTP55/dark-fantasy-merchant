@@ -141,6 +141,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void Capture_WritesTheInputs()
+        {
+            // Iron takes half a barrel of fish for every barrel: 1.5 a day, 10.5 a week.
+            var smithy = new CityMarket(
+                new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 30, 0.1).WithInputs(new[] { new MarketInput(Fish, 0.5) }) },
+                TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7, new CityPopulation(1000));
+            smithy.StartDay();
+            var history = new SimulationHistory(1, 2, null);
+
+            CitySnapshot.Capture(smithy, good => 0, history.BeginDay(1)[0]);
+
+            Assert.AreEqual(10.5f, history.ValueOf(0, 0, GoodIndicator.NominalWeeklyInputs, Fish), 1e-4);
+            Assert.AreEqual(1.5f, history.ValueOf(0, 0, GoodIndicator.RecentInputs, Fish), 1e-4);
+            Assert.AreEqual(0f, history.ValueOf(0, 0, GoodIndicator.RecentInputs, Iron), 1e-4);
+        }
+
+        [Test]
         public void AGoodTheMarketLacks_IsNaN()
         {
             var village = new CityMarket(new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, TestMarkets.Workforce, 30,

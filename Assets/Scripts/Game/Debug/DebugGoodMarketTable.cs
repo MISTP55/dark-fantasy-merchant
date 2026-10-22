@@ -7,7 +7,7 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// One good in every city's market, for the debug panel: its stock, its thresholds, its prices,
-    /// what the city produces, consumes and gains of it in a week (nominal, then the last days in
+    /// what the city produces, consumes, takes as inputs and gains of it in a week (nominal, then the last days in
     /// brackets), its workers and what the AI ships carry there, and a last row with the totals.
     /// The cities are in alphabetical order. Follows the markets while it is shown.
     /// </summary>
@@ -20,7 +20,7 @@ namespace DarkFantasyMerchant.Game
 
         private static readonly string[] Titles =
         {
-            "Ville", "Stock", "T0", "T1", "T2", "T3", "Achat", "Vente", "Prod.", "Conso.", "Net", "Ouv.", "En route (IA)",
+            "Ville", "Stock", "T0", "T1", "T2", "T3", "Achat", "Vente", "Prod.", "Conso.", "Intr.", "Net", "Ouv.", "En route (IA)",
         };
 
         private static readonly string[] CellClasses =
@@ -28,7 +28,7 @@ namespace DarkFantasyMerchant.Game
             "debug-cities__cell--name", "debug-cities__cell--stock", "debug-cities__cell--threshold",
             "debug-cities__cell--threshold", "debug-cities__cell--threshold", "debug-cities__cell--threshold",
             "debug-cities__cell--price", "debug-cities__cell--price", "debug-cities__cell--figure",
-            "debug-cities__cell--figure", "debug-cities__cell--figure", "debug-cities__cell--workers",
+            "debug-cities__cell--figure", "debug-cities__cell--figure", "debug-cities__cell--figure", "debug-cities__cell--workers",
             "debug-cities__cell--under-way",
         };
 
@@ -195,8 +195,10 @@ namespace DarkFantasyMerchant.Game
                 cells,
                 market.NominalWeeklyProductionOf(good),
                 market.NominalWeeklyConsumptionOf(good),
+                market.NominalWeeklyInputNeedOf(good),
                 market.RecentProductionOf(good),
                 market.RecentConsumptionOf(good),
+                market.RecentInputsOf(good),
                 market.WorkersOf(good),
                 market.MaxWorkersOf(good),
                 market.ReserveOf(good),
@@ -208,8 +210,10 @@ namespace DarkFantasyMerchant.Game
             long stock = 0;
             double nominalProduction = 0d;
             double nominalConsumption = 0d;
+            double nominalInputs = 0d;
             double recentProduction = 0d;
             double recentConsumption = 0d;
+            double recentInputs = 0d;
             long workers = 0;
             long maxWorkers = 0;
             long reserve = 0;
@@ -228,8 +232,10 @@ namespace DarkFantasyMerchant.Game
                 stock += market.AvailableOf(good);
                 nominalProduction += market.NominalWeeklyProductionOf(good);
                 nominalConsumption += market.NominalWeeklyConsumptionOf(good);
+                nominalInputs += market.NominalWeeklyInputNeedOf(good);
                 recentProduction += market.RecentProductionOf(good);
                 recentConsumption += market.RecentConsumptionOf(good);
+                recentInputs += market.RecentInputsOf(good);
                 workers += market.WorkersOf(good);
                 maxWorkers += market.MaxWorkersOf(good);
                 reserve += market.ReserveOf(good);
@@ -245,15 +251,27 @@ namespace DarkFantasyMerchant.Game
             }
 
             WriteFigures(
-                totals, nominalProduction, nominalConsumption, recentProduction, recentConsumption, workers, maxWorkers, reserve, underWay);
+                totals,
+                nominalProduction,
+                nominalConsumption,
+                nominalInputs,
+                recentProduction,
+                recentConsumption,
+                recentInputs,
+                workers,
+                maxWorkers,
+                reserve,
+                underWay);
         }
 
         private static void WriteFigures(
             Label[] cells,
             double nominalProduction,
             double nominalConsumption,
+            double nominalInputs,
             double recentProduction,
             double recentConsumption,
+            double recentInputs,
             long workers,
             long maxWorkers,
             long reserve,
@@ -261,10 +279,11 @@ namespace DarkFantasyMerchant.Game
         {
             cells[8].text = DebugCitiesTable.FormatFigure(nominalProduction, recentProduction);
             cells[9].text = DebugCitiesTable.FormatFigure(nominalConsumption, recentConsumption);
-            cells[10].text = $"{DebugCitiesTable.FormatNet(nominalProduction - nominalConsumption)} "
-                + $"({DebugCitiesTable.FormatNet(recentProduction - recentConsumption)})";
-            cells[11].text = DebugCitiesTable.FormatWorkers(workers, maxWorkers, reserve);
-            cells[12].text = TreasuryHudController.FormatNumber(underWay);
+            cells[10].text = DebugCitiesTable.FormatFigure(nominalInputs, recentInputs);
+            cells[11].text = $"{DebugCitiesTable.FormatNet(nominalProduction - nominalConsumption - nominalInputs)} "
+                + $"({DebugCitiesTable.FormatNet(recentProduction - recentConsumption - recentInputs)})";
+            cells[12].text = DebugCitiesTable.FormatWorkers(workers, maxWorkers, reserve);
+            cells[13].text = TreasuryHudController.FormatNumber(underWay);
         }
 
         private static Label[] AddCells(VisualElement row)
