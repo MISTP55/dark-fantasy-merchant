@@ -38,6 +38,11 @@ namespace DarkFantasyMerchant.Core
         private readonly int[] playerHouses = new int[3];
         private readonly StockThresholds[] thresholds;
 
+        // By good, the workshops that take it as an input and how much for every unit they make,
+        // each list in the catalogue's order of its workshops: the recipes never change once the
+        // market exists.
+        private readonly (int consumer, double unitsPerUnit)[][] consumersOf;
+
         private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
 
         /// <param name="thresholdRule">How the stock thresholds of a good, at which its prices are given, follow what the city needs (its inhabitants and its workshops' inputs) and produces of it.</param>
@@ -116,6 +121,8 @@ namespace DarkFantasyMerchant.Core
                     }
                 }
             }
+
+            consumersOf = ConsumersOf(goods);
 
             // Every good first: the demand of one reads the workshops of the others.
             for (int i = 0; i < goods.Count; i++)
@@ -199,15 +206,9 @@ namespace DarkFantasyMerchant.Core
 
             double need = 0d;
 
-            for (int i = 0; i < goods.Length; i++)
+            foreach ((int consumer, double unitsPerUnit) in consumersOf[good])
             {
-                foreach (MarketInput input in goods[i].Inputs)
-                {
-                    if (input.Good == good)
-                    {
-                        need += DailyProductionOf(i) * input.UnitsPerUnit;
-                    }
-                }
+                need += DailyProductionOf(consumer) * unitsPerUnit;
             }
 
             return need;
@@ -628,6 +629,26 @@ namespace DarkFantasyMerchant.Core
             }
 
             return factor;
+        }
+
+        private static (int consumer, double unitsPerUnit)[][] ConsumersOf(IReadOnlyList<MarketGood> goods)
+        {
+            var consumers = new List<(int consumer, double unitsPerUnit)>[goods.Count];
+
+            for (int i = 0; i < goods.Count; i++)
+            {
+                consumers[i] = new List<(int consumer, double unitsPerUnit)>();
+            }
+
+            for (int i = 0; i < goods.Count; i++)
+            {
+                foreach (MarketInput input in goods[i].Inputs)
+                {
+                    consumers[input.Good].Add((i, input.UnitsPerUnit));
+                }
+            }
+
+            return Array.ConvertAll(consumers, list => list.ToArray());
         }
 
         private static int[] StartingWorkersOf(IReadOnlyList<MarketGood> goods, WorkforceRule workforce)
