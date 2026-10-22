@@ -16,6 +16,7 @@ namespace DarkFantasyMerchant.Editor
     public static class CityPlacementTool
     {
         private static readonly Color HandleColor = new Color(1f, 0.8f, 0.2f);
+        private static readonly Color InactiveHandleColor = new Color(0.25f, 0.25f, 0.25f);
         private static readonly Color OutlineColor = new Color(1f, 0.8f, 0.2f, 0.5f);
 
         static CityPlacementTool()
@@ -49,13 +50,14 @@ namespace DarkFantasyMerchant.Editor
 
             DrawMapOutline(projection.WorldRect);
 
-            IReadOnlyList<CityDefinition> cities = definition.Cities;
+            // Inactive cities too, in dark grey: they keep their place for when they are switched back on.
+            IReadOnlyList<MapCity> cities = definition.MapCities;
 
             for (int i = 0; i < cities.Count; i++)
             {
-                if (cities[i] != null)
+                if (cities[i].City != null)
                 {
-                    DrawCityHandle(cities[i], projection);
+                    DrawCityHandle(cities[i].City, cities[i].Active ? HandleColor : InactiveHandleColor, projection);
                 }
             }
         }
@@ -81,12 +83,12 @@ namespace DarkFantasyMerchant.Editor
             Handles.DrawWireCube(rect.center, new Vector3(rect.width, rect.height, 0f));
         }
 
-        private static void DrawCityHandle(CityDefinition city, MapProjection projection)
+        private static void DrawCityHandle(CityDefinition city, Color color, MapProjection projection)
         {
             Vector3 worldPosition = projection.NormalizedToWorld(city.MapPosition);
             float size = HandleUtility.GetHandleSize(worldPosition) * 0.08f;
 
-            Handles.color = HandleColor;
+            Handles.color = color;
             EditorGUI.BeginChangeCheck();
             Vector3 moved = Handles.FreeMoveHandle(worldPosition, size, Vector3.zero, Handles.DotHandleCap);
 

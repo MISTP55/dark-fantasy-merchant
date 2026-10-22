@@ -91,11 +91,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void EveryCity_ProducesSomething_OnlyGoodsOfTheCatalogue_Once()
         {
-            // Inactive goods count: a city keeps its workshop for a good while the good is switched off.
+            // Inactive goods and cities count: they are switched off for a while, not removed.
             EconomyDefinition economy = LoadEconomy();
 
-            foreach (CityDefinition city in LoadMap().Cities)
+            foreach (MapCity entry in LoadMap().MapCities)
             {
+                CityDefinition city = entry.City;
+
                 Assert.Greater(city.EfficientGoods.Count + city.InefficientGoods.Count, 0, city.name);
 
                 var seen = new HashSet<GoodDefinition>();
@@ -121,9 +123,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var produced = new HashSet<GoodDefinition>();
 
-            foreach (CityDefinition city in LoadMap().Cities)
+            // Inactive cities count: a shortage from switching a city off is wanted.
+            foreach (MapCity entry in LoadMap().MapCities)
             {
-                produced.UnionWith(city.EfficientGoods);
+                produced.UnionWith(entry.City.EfficientGoods);
             }
 
             foreach (GoodDefinition good in LoadEconomy().Goods)

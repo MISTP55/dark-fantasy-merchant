@@ -31,7 +31,7 @@ namespace DarkFantasyMerchant.Game
 
         public MapSelectionState<CityDefinition> Selection { get; } = new MapSelectionState<CityDefinition>();
 
-        /// <summary>Valid cities shown on the map.</summary>
+        /// <summary>Valid active cities shown on the map: the cities of the game.</summary>
         public IReadOnlyList<CityDefinition> Cities => cities;
 
         /// <summary>World position of each entry of <see cref="Cities"/>, in the same order.</summary>
@@ -128,6 +128,12 @@ namespace DarkFantasyMerchant.Game
                 && (mapTransform.position - expectedPosition).sqrMagnitude < 1e-6f;
         }
 
+        /// <summary>Whether the city is one of <see cref="Cities"/>: false for an inactive city, or null.</summary>
+        public bool HasCity(CityDefinition city)
+        {
+            return city != null && markers.ContainsKey(city);
+        }
+
         public Vector2 GetWorldPosition(CityDefinition city)
         {
             return Projection.NormalizedToWorld(city.MapPosition);
@@ -151,16 +157,12 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            IReadOnlyList<CityDefinition> definedCities = definition.Cities;
-
-            for (int i = 0; i < definedCities.Count; i++)
+            foreach (CityDefinition city in definition.Cities)
             {
-                CityDefinition city = definedCities[i];
-
                 if (city == null)
                 {
                     Debug.LogError(
-                        $"WorldMapDefinition '{definition.name}' has a null city at index {i}; skipped.",
+                        $"WorldMapDefinition '{definition.name}' has an active entry with no city; skipped.",
                         definition);
                     continue;
                 }
@@ -168,7 +170,7 @@ namespace DarkFantasyMerchant.Game
                 if (markers.ContainsKey(city))
                 {
                     Debug.LogError(
-                        $"WorldMapDefinition '{definition.name}' lists city '{city.name}' twice (index {i}); skipped.",
+                        $"WorldMapDefinition '{definition.name}' lists city '{city.name}' twice; skipped.",
                         definition);
                     continue;
                 }
@@ -181,6 +183,11 @@ namespace DarkFantasyMerchant.Game
                 cities.Add(city);
                 cityWorldPositions.Add(worldPosition);
                 markers.Add(city, marker);
+            }
+
+            if (cities.Count == 0)
+            {
+                Debug.LogError($"WorldMapDefinition '{definition.name}' has no usable active city.", definition);
             }
         }
 

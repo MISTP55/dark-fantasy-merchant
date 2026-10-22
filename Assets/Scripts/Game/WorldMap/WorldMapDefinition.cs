@@ -6,14 +6,18 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>Static definition of the world map. Holds no runtime state.</summary>
     [CreateAssetMenu(fileName = "WorldMap", menuName = "Dark Fantasy Merchant/World Map")]
-    public sealed class WorldMapDefinition : ScriptableObject
+    public sealed class WorldMapDefinition : ScriptableObject, ISerializationCallbackReceiver
     {
         [SerializeField] private Sprite mapSprite;
 
         [Tooltip("Width of the map in world units. Height follows the sprite's aspect ratio.")]
         [SerializeField, Min(0.01f)] private float worldWidth = 40f;
 
-        [SerializeField] private List<CityDefinition> cities = new List<CityDefinition>();
+        [Tooltip("The cities of the map. The player starts in the first active one. A city that is not active does not exist in the game.")]
+        [SerializeField] private List<MapCity> cities = new List<MapCity>();
+
+        // The active cities, worked out on first use and again after every change of the file.
+        private List<CityDefinition> activeCities;
 
         [Tooltip("Smallest orthographic size the camera may reach when zooming in.")]
         [SerializeField, Min(0.01f)] private float maxZoomInOrthographicSize = 3f;
@@ -25,7 +29,11 @@ namespace DarkFantasyMerchant.Game
 
         public float WorldWidth => worldWidth;
 
-        public IReadOnlyList<CityDefinition> Cities => cities;
+        /// <summary>The active cities of the map, in its order: the only cities of the game.</summary>
+        public IReadOnlyList<CityDefinition> Cities => activeCities ??= ActiveCitiesOfTheMap();
+
+        /// <summary>Every city of the map, active or not, for the Editor and the content checks.</summary>
+        public IReadOnlyList<MapCity> MapCities => cities;
 
         public float MaxZoomInOrthographicSize => maxZoomInOrthographicSize;
 
@@ -52,6 +60,37 @@ namespace DarkFantasyMerchant.Game
 
             projection = new MapProjection(worldWidth, mapSprite.rect.width / mapSprite.rect.height);
             return true;
+        }
+
+        private void OnValidate()
+        {
+            activeCities = null;
+        }
+
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+        }
+
+        // A change made through a SerializedObject (the Inspector, an undo, the tests) comes in here.
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+            activeCities = null;
+        }
+
+        private List<CityDefinition> ActiveCitiesOfTheMap()
+        {
+            var active = new List<CityDefinition>(cities.Count);
+
+            foreach (MapCity entry in cities)
+            {
+                // An empty entry stays in, active: WorldMapView reports it rather than hide it.
+                if (entry.Active)
+                {
+                    active.Add(entry.City);
+                }
+            }
+
+            return active;
         }
     }
 }

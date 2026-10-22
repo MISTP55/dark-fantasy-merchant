@@ -14,8 +14,9 @@ paths:
 - `WorldMapInput` is the only reader of the `WorldMap` action map; it raises click, drag and zoom events and ignores pointer input that starts over the UI.
 - `MapCameraModel` is where input has sent the camera (the target); `MapCameraSmoother` is what is displayed, eased towards it. Hover, picking and marker size follow the displayed view.
 - Picking is `CityPicker` (nearest point within a screen-pixel radius, no colliders), for cities and ships alike.
-- A city stands on a navigable cell of the mask, at the edge of the water beside its town on the map. The order of the map's cities is the order of the AI merchants' numbers, and the player starts in the first.
-- Cities are placed by dragging their handles in the Scene view (`CityPlacementTool`); it and the navigation mask tool find the map through `WorldMapEditorContext`.
+- A city stands on a navigable cell of the mask, at the edge of the water beside its town on the map. The order of the map's active cities is the order of the AI merchants' numbers, and the player starts in the first.
+- **Active cities.** Each `MapCity` of the map is ticked active or not before Play mode, to test the economy on fewer cities. An inactive city does not exist in the game: `WorldMapDefinition.Cities` holds only the active ones, and everything in the game reads them through `WorldMapView.Cities`; `MapCities` is every city, for the Editor and the content tests. The shortages an inactive city leaves are wanted, not made up for.
+- Cities are placed by dragging their handles in the Scene view (`CityPlacementTool`), inactive ones in dark grey; it and the navigation mask tool find the map through `WorldMapEditorContext`.
 - `WorldMapInteraction` arbitrates between the selection of cities and that of ships (see `ships.md`), and drives fast forward (see `time.md`).
 
 ## City panel

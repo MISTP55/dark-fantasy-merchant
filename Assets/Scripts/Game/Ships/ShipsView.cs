@@ -21,7 +21,7 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private ShipView shipPrefab;
         [SerializeField] private ShipDefinition playerShipDefinition;
 
-        [Tooltip("City the player ship starts on. Empty uses the first city of the map.")]
+        [Tooltip("City the player ship starts on. Empty, or an inactive city, uses the first active city of the map.")]
         [SerializeField] private CityDefinition startCity;
 
         [Tooltip("Optional. Without it, the player ship starts with a full crew.")]
@@ -298,7 +298,8 @@ namespace DarkFantasyMerchant.Game
 
         private Vector2 StartPosition()
         {
-            if (startCity != null)
+            // An inactive city does not exist in the game: the player cannot start there.
+            if (mapView.HasCity(startCity))
             {
                 return startCity.MapPosition;
             }

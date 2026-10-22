@@ -29,8 +29,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var harbours = new List<Vector2>();
             var names = new List<string>();
 
-            foreach (CityDefinition city in map.Cities)
+            // Inactive cities too: they must be reachable once switched back on.
+            foreach (MapCity entry in map.MapCities)
             {
+                CityDefinition city = entry.City;
+
                 Assert.IsTrue(pathfinder.TryGetNearestNavigable(city.MapPosition, out Vector2 harbour), city.name);
                 harbours.Add(harbour);
                 names.Add(city.name);

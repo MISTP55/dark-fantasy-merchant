@@ -15,29 +15,53 @@ MonoBehaviour:
   mapSprite: {fileID: 21300000, guid: c9c71b87a16214c4c9d8149862be1200, type: 3}
   worldWidth: 40
   cities:
-  - {fileID: 11400000, guid: f8289e5cdc780f74b81fc096ec4b3ab1, type: 2}
-  - {fileID: 11400000, guid: e7195716f595f50489c786d0ee7ab8df, type: 2}
-  - {fileID: 11400000, guid: 4f08d71abf797694e92ed358f22297db, type: 2}
-  - {fileID: 11400000, guid: 93db23da26cc49546883cd26aa6d438f, type: 2}
-  - {fileID: 11400000, guid: 6cefd4a3c8db8be4ba2f8d8446eaee76, type: 2}
-  - {fileID: 11400000, guid: a585531eb3956004296cbf0f973c6d96, type: 2}
-  - {fileID: 11400000, guid: 60bc9c60a10caae4189e4518394e89dc, type: 2}
-  - {fileID: 11400000, guid: 2121574370668b640aba11fd08c469bd, type: 2}
-  - {fileID: 11400000, guid: e77a533ef7a4826458989b6c59534eba, type: 2}
-  - {fileID: 11400000, guid: 0fa1d26ece1945b4f8726e0c3981d5a8, type: 2}
-  - {fileID: 11400000, guid: d00a03f9ebefb8f479c0594adf9fec0c, type: 2}
-  - {fileID: 11400000, guid: 3b41e85768192194b948dab4b2256b9e, type: 2}
-  - {fileID: 11400000, guid: 8ff974fec5670d149b87aaf39ffdffe6, type: 2}
-  - {fileID: 11400000, guid: ada5d7a2605b8b1448b8d9b13886fbb2, type: 2}
-  - {fileID: 11400000, guid: 9bc74b2a4bc84b44dad952833850558b, type: 2}
-  - {fileID: 11400000, guid: bec99ecffeae7ee48a74dad4be699364, type: 2}
-  - {fileID: 11400000, guid: d125e681f85f8e1498ae7f300ab57569, type: 2}
-  - {fileID: 11400000, guid: 0af437263aeeb5141af13d6831986dff, type: 2}
-  - {fileID: 11400000, guid: ee1a6af22142bd84d9308088e055205d, type: 2}
-  - {fileID: 11400000, guid: a059b92780e76fb46bf766d3f098b7e4, type: 2}
-  - {fileID: 11400000, guid: 34c913911e502ac498230e682b668465, type: 2}
-  - {fileID: 11400000, guid: 012f6ddc8710188479be29e06baebadf, type: 2}
-  - {fileID: 11400000, guid: 96300858f3979704c8357c8276f0db74, type: 2}
-  - {fileID: 11400000, guid: f7f4e3589552bcd48a6aa1ce1330a867, type: 2}
+  - city: {fileID: 11400000, guid: f8289e5cdc780f74b81fc096ec4b3ab1, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: e7195716f595f50489c786d0ee7ab8df, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: 4f08d71abf797694e92ed358f22297db, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: 93db23da26cc49546883cd26aa6d438f, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: 6cefd4a3c8db8be4ba2f8d8446eaee76, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: a585531eb3956004296cbf0f973c6d96, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: 60bc9c60a10caae4189e4518394e89dc, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: 2121574370668b640aba11fd08c469bd, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: e77a533ef7a4826458989b6c59534eba, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: 0fa1d26ece1945b4f8726e0c3981d5a8, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: d00a03f9ebefb8f479c0594adf9fec0c, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: 3b41e85768192194b948dab4b2256b9e, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: 8ff974fec5670d149b87aaf39ffdffe6, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: ada5d7a2605b8b1448b8d9b13886fbb2, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: 9bc74b2a4bc84b44dad952833850558b, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: bec99ecffeae7ee48a74dad4be699364, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: d125e681f85f8e1498ae7f300ab57569, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: 0af437263aeeb5141af13d6831986dff, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: ee1a6af22142bd84d9308088e055205d, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: a059b92780e76fb46bf766d3f098b7e4, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: 34c913911e502ac498230e682b668465, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: 012f6ddc8710188479be29e06baebadf, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: 96300858f3979704c8357c8276f0db74, type: 2}
+    active: 1
+  - city: {fileID: 11400000, guid: f7f4e3589552bcd48a6aa1ce1330a867, type: 2}
+    active: 1
   maxZoomInOrthographicSize: 3
   navigationMask: {fileID: 11400000, guid: 49547ce99a366fa48a2253f39361ee06, type: 2}

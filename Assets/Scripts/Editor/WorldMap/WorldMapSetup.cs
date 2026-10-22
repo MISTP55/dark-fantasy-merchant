@@ -464,7 +464,9 @@ namespace DarkFantasyMerchant.Editor
 
             for (int i = 0; i < SampleCities.Length; i++)
             {
-                cities.GetArrayElementAtIndex(i).objectReferenceValue = CreateCity(SampleCities[i]);
+                SerializedProperty entry = cities.GetArrayElementAtIndex(i);
+                entry.FindPropertyRelative("city").objectReferenceValue = CreateCity(SampleCities[i]);
+                entry.FindPropertyRelative("active").boolValue = true;
             }
 
             serialized.ApplyModifiedPropertiesWithoutUndo();
@@ -722,8 +724,11 @@ namespace DarkFantasyMerchant.Editor
                 return;
             }
 
-            foreach (CityDefinition city in definition.Cities)
+            // Inactive cities too: a city switched back on has its economy.
+            foreach (MapCity entry in definition.MapCities)
             {
+                CityDefinition city = entry.City;
+
                 if (city == null || city.EfficientGoods.Count + city.InefficientGoods.Count > 0)
                 {
                     continue;
