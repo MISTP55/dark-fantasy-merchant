@@ -320,7 +320,7 @@
 }
 
 /* The player's buildings: a text and the button that builds, one row each. The rows scroll
-   above the costs when they do not fit in the tab. */
+   when they do not fit in the tab. */
 .buildings > .buildings__scroll {
     flex-grow: 1;
     flex-shrink: 1;
@@ -385,10 +385,21 @@
     opacity: 1;
 }
 
-.buildings__costs {
+/* The area that takes the pointer for its button, enabled or not. */
+.buildings__button-area {
     flex-shrink: 0;
-    margin-top: 4px;
-    color: rgb(190, 164, 120);
+}
+
+/* The cost of the building whose button the pointer is over, laid over the rows. */
+.buildings__cost-tip {
+    position: absolute;
+    display: none;
+    margin: 0;
+    padding: 4px 6px;
+    color: rgb(240, 226, 196);
     font-size: 13px;
-    white-space: normal;
+    white-space: nowrap;
+    background-color: rgba(24, 17, 12, 0.94);
+    border-width: 1px;
+    border-color: rgb(110, 84, 52);
 }

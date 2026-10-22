@@ -53,7 +53,7 @@
                                 <ui:Label text="Ateliers" class="buildings__title" />
                                 <ui:VisualElement name="workshop-rows" />
                             </ui:ScrollView>
-                            <ui:Label name="buildings-costs" class="buildings__costs" />
+                            <ui:Label name="buildings-cost-tip" class="buildings__cost-tip" picking-mode="Ignore" />
                         </ui:VisualElement>
                     </ui:VisualElement>
                     <ui:VisualElement name="ships-page" class="city-panel__page">

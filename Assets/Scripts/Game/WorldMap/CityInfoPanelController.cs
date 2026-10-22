@@ -66,6 +66,7 @@ namespace DarkFantasyMerchant.Game
         private VisualElement buildingsElement;
         private VisualElement houseRows;
         private VisualElement workshopRows;
+        private Label buildingsCostTip;
         private Button marketTabButton;
         private Button buildingsTabButton;
         private Button shipsTabButton;
@@ -133,6 +134,7 @@ namespace DarkFantasyMerchant.Game
             buildingsElement = root.Q<VisualElement>("buildings-section");
             houseRows = root.Q<VisualElement>("house-rows");
             workshopRows = root.Q<VisualElement>("workshop-rows");
+            buildingsCostTip = root.Q<Label>("buildings-cost-tip");
             marketTabButton = root.Q<Button>("tab-market");
             buildingsTabButton = root.Q<Button>("tab-buildings");
             shipsTabButton = root.Q<Button>("tab-ships");
@@ -150,7 +152,7 @@ namespace DarkFantasyMerchant.Game
                 || efficientGoodsLabel == null || inefficientGoodsLabel == null
                 || shipList == null || closeButton == null || populationLabel == null
                 || marketElement == null || marketRows == null || marketHoldLabel == null
-                || buildingsElement == null || houseRows == null || workshopRows == null
+                || buildingsElement == null || houseRows == null || workshopRows == null || buildingsCostTip == null
                 || marketTabButton == null || buildingsTabButton == null || shipsTabButton == null
                 || marketPage == null || buildingsPage == null || shipsPage == null
                 || tradingShipField == null)
@@ -552,7 +554,7 @@ namespace DarkFantasyMerchant.Game
                 // buttons stay disabled. WorldEconomy has warned about it once.
                 Treasury treasury = playerTreasury != null && playerTreasury.IsReady ? playerTreasury.Treasury : null;
                 buildingsSection = new CityBuildingsSection(
-                    buildingsElement, houseRows, workshopRows, worldEconomy.HouseOffers, worldEconomy.WorkshopOffers, treasury);
+                    buildingsElement, houseRows, workshopRows, buildingsCostTip, worldEconomy.HouseOffers, worldEconomy.WorkshopOffers, treasury);
                 buildingsSection.BuildingBuilt += OnBuildingBuilt;
                 buildingsSection.MaterialBought += OnMaterialBought;
             }

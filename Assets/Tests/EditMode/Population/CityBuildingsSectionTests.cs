@@ -20,6 +20,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private VisualElement sectionElement;
         private VisualElement houses;
         private VisualElement workshops;
+        private Label costTip;
         private CityMarket market;
         private Treasury treasury;
         private BuildingCost houseCost;
@@ -48,7 +49,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 new WorkshopOffer(Salt, "Saline", 30, workshopCost, "200 or, 2 blé"),
             };
 
-            return new CityBuildingsSection(sectionElement, houses, workshops, houseOffers, workshopOffers, forTreasury);
+            return new CityBuildingsSection(sectionElement, houses, workshops, costTip, houseOffers, workshopOffers, forTreasury);
         }
 
         [SetUp]
@@ -57,6 +58,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
             sectionElement = new VisualElement();
             houses = new VisualElement();
             workshops = new VisualElement();
+            costTip = new Label();
+            sectionElement.Add(houses);
+            sectionElement.Add(workshops);
+            sectionElement.Add(costTip);
             market = NewMarket();
             treasury = new Treasury(100000);
             houseCost = new BuildingCost(100, new[] { new MaterialCost(Material, 3) });
@@ -315,6 +320,76 @@ namespace DarkFantasyMerchant.Tests.EditMode
             treasury.Withdraw(100000);
 
             Assert.IsFalse(ButtonOf(houses[0]).enabledSelf);
+        }
+
+        [Test]
+        public void TheCostTip_ShowsTheCostOfTheHoveredBuilding_AndHidesOnLeave()
+        {
+            section.Show(market, null);
+            Assert.AreEqual(DisplayStyle.None, costTip.style.display.value);
+
+            section.ShowCostTip(workshops[0]);
+            Assert.AreEqual(DisplayStyle.Flex, costTip.style.display.value);
+            Assert.AreEqual("200 or, 2 blé", costTip.text);
+
+            section.ShowCostTip(houses[RichRow]);
+            Assert.AreEqual("100 or, 3 blé", costTip.text);
+
+            section.HideCostTip();
+            Assert.AreEqual(DisplayStyle.None, costTip.style.display.value);
+        }
+
+        [Test]
+        public void TheCostTip_ShowsForADisabledButton_AndUnavailableForABuildingWithoutCost()
+        {
+            section = NewSection(new Treasury(0));
+            section.Show(market, null);
+            Assert.IsFalse(ButtonOf(workshops[0]).enabledSelf);
+
+            section.ShowCostTip(workshops[0]);
+            Assert.AreEqual(DisplayStyle.Flex, costTip.style.display.value);
+            Assert.AreEqual("200 or, 2 blé", costTip.text);
+
+            var unavailable = new CityBuildingsSection(
+                sectionElement, houses, workshops, costTip,
+                new[] { new HouseOffer(SocialClass.Poor, "Maison de pauvres", 140, null, "indisponible") },
+                new WorkshopOffer[0], treasury);
+            unavailable.Show(market, null);
+            unavailable.ShowCostTip(houses[0]);
+            Assert.AreEqual("indisponible", costTip.text);
+        }
+
+        [Test]
+        public void ShowCostTip_OfAnotherElement_ShowsNothing()
+        {
+            section.Show(market, null);
+
+            section.ShowCostTip(new VisualElement());
+
+            Assert.AreEqual(DisplayStyle.None, costTip.style.display.value);
+        }
+
+        [Test]
+        public void HideAndShow_HideTheCostTip()
+        {
+            section.Show(market, null);
+            section.ShowCostTip(workshops[0]);
+            section.Hide();
+            Assert.AreEqual(DisplayStyle.None, costTip.style.display.value);
+
+            section.Show(market, null);
+            section.ShowCostTip(workshops[0]);
+            section.Show(NewMarket(), null);
+            Assert.AreEqual(DisplayStyle.None, costTip.style.display.value);
+        }
+
+        [Test]
+        public void EachButton_IsInItsHoverArea()
+        {
+            section.Show(market, null);
+
+            Assert.IsTrue(ButtonOf(houses[0]).parent.ClassListContains("buildings__button-area"));
+            Assert.AreEqual(PickingMode.Ignore, costTip.pickingMode);
         }
     }
 }
