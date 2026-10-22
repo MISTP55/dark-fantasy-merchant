@@ -10,7 +10,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
     public class EconomyContentTests
     {
         private const string EconomyPath = "Assets/Data/Economy/Economy.asset";
-        private const string BuildingsPath = "Assets/Data/Economy/Buildings.asset";
+        private const string BuildingsPath = "Assets/Data/Buildings/Buildings.asset";
         private const string MapPath = "Assets/Data/WorldMap/WorldMap.asset";
         private const string ShipPath = "Assets/Data/Ships/MerchantShip.asset";
 
@@ -196,33 +196,58 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(30, rule.ReserveLeakCeiling);
         }
 
+        // The name of each good's workshop, by the good's name.
+        private static readonly Dictionary<string, string> WorkshopNames = new Dictionary<string, string>
+        {
+            { "Bière", "Brasserie" }, { "Bois", "Bûcheron" }, { "Brai", "Goudronnerie" }, { "Céréales", "Ferme" },
+            { "Chanvre", "Chanvrière" }, { "Cuir", "Tannerie" }, { "Épices", "Jardin d'épices" }, { "Étoffe", "Tisserand" },
+            { "Fonte brute", "Fonderie" }, { "Huile", "Pressoir à huile" }, { "Laine", "Bergerie" }, { "Métal", "Forge" },
+            { "Miel", "Rucher" }, { "Peaux", "Trappeur" }, { "Poisson", "Pêcherie" }, { "Poterie", "Atelier de potier" },
+            { "Sel", "Saline" }, { "Tuiles", "Tuilerie" }, { "Viande", "Élevage" }, { "Vin", "Vignoble" },
+        };
+
         [Test]
-        public void TheBuildings_AreTheWorkshopAndTheHouse()
+        public void TheBuildings_AreTheGamesHousesAndWorkshops()
         {
             var buildings = AssetDatabase.LoadAssetAtPath<BuildingsDefinition>(BuildingsPath);
             Assert.IsNotNull(buildings, BuildingsPath);
-
-            AssertBuilding(buildings.Workshop, 10000, 10, 30);
-            Assert.AreEqual(30, buildings.WorkshopJobs);
-            AssertBuilding(buildings.HouseOf(SocialClass.Poor), 5000, 10, 10);
-            AssertBuilding(buildings.HouseOf(SocialClass.Wealthy), 10000, 15, 20);
-            AssertBuilding(buildings.HouseOf(SocialClass.Rich), 25000, 25, 30);
-            Assert.AreEqual(140, buildings.HouseRooms.Poor);
-            Assert.AreEqual(70, buildings.HouseRooms.Wealthy);
-            Assert.AreEqual(40, buildings.HouseRooms.Rich);
             Assert.IsTrue(buildings.TryValidate(out string problem), problem);
-            Assert.IsTrue(buildings.TryCreateCost(buildings.HouseOf(SocialClass.Rich), LoadEconomy(), out _, out problem), problem);
-            Assert.IsTrue(buildings.TryCreateCost(buildings.Workshop, LoadEconomy(), out _, out problem), problem);
+
+            Assert.AreEqual(3, buildings.Houses.Count);
+            AssertHouse(buildings.HouseOf(SocialClass.Rich), "Maison de riches", 25000, 25, 30, 40);
+            AssertHouse(buildings.HouseOf(SocialClass.Wealthy), "Maison d'aisés", 10000, 15, 20, 70);
+            AssertHouse(buildings.HouseOf(SocialClass.Poor), "Maison de pauvres", 5000, 10, 10, 140);
+
+            EconomyDefinition economy = LoadEconomy();
+            Assert.AreEqual(20, buildings.Workshops.Count);
+
+            foreach (GoodDefinition good in economy.Goods)
+            {
+                WorkshopDefinition workshop = buildings.WorkshopOf(good);
+                Assert.IsNotNull(workshop, good.DisplayName);
+                Assert.AreEqual(WorkshopNames[good.DisplayName], workshop.DisplayName);
+                Assert.AreEqual(30, workshop.Jobs, workshop.DisplayName);
+                AssertCost(workshop, 10000, 10, 30);
+                Assert.IsTrue(workshop.TryCreateCost(economy, out _, out problem), problem);
+            }
         }
 
-        private static void AssertBuilding(BuildingsDefinition.BuildingType building, long gold, int timber, int metal)
+        private static void AssertHouse(HouseDefinition house, string name, long gold, int timber, int metal, int room)
         {
-            Assert.AreEqual(gold, building.Gold);
-            Assert.AreEqual(2, building.Materials.Count);
+            Assert.IsNotNull(house, name);
+            Assert.AreEqual(name, house.DisplayName);
+            Assert.AreEqual(room, house.Room, name);
+            AssertCost(house, gold, timber, metal);
+        }
+
+        private static void AssertCost(BuildingDefinition building, long gold, int timber, int metal)
+        {
+            Assert.AreEqual(gold, building.Gold, building.DisplayName);
+            Assert.AreEqual(2, building.Materials.Count, building.DisplayName);
             Assert.AreEqual("Bois", building.Materials[0].Good.DisplayName);
-            Assert.AreEqual(timber, building.Materials[0].Units);
+            Assert.AreEqual(timber, building.Materials[0].Units, building.DisplayName);
             Assert.AreEqual("Métal", building.Materials[1].Good.DisplayName);
-            Assert.AreEqual(metal, building.Materials[1].Units);
+            Assert.AreEqual(metal, building.Materials[1].Units, building.DisplayName);
         }
 
         [Test]

@@ -15,6 +15,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private GoodDefinition timber;
         private GoodDefinition metal;
         private EconomyDefinition economy;
+        private HouseDefinition richHouse;
+        private HouseDefinition wealthyHouse;
+        private HouseDefinition poorHouse;
+        private WorkshopDefinition farm;
+        private WorkshopDefinition lumberjack;
         private BuildingsDefinition buildings;
 
         [SetUp]
@@ -24,15 +29,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
             timber = Track(TestEconomy.CreateGood("Bois", 55, 3, unit: GoodUnit.Bushel));
             metal = Track(TestEconomy.CreateGood("Métal", 255, 3));
             economy = Track(TestEconomy.CreateEconomy(wheat, timber, metal));
+
+            richHouse = Track(TestBuildings.CreateHouse("Maison de riches", SocialClass.Rich, 25000, 40, (timber, 25), (metal, 30)));
+            wealthyHouse = Track(TestBuildings.CreateHouse("Maison d'aisés", SocialClass.Wealthy, 10000, 70, (timber, 15), (metal, 20)));
+            poorHouse = Track(TestBuildings.CreateHouse("Maison de pauvres", SocialClass.Poor, 5000, 140, (timber, 10), (metal, 10)));
+            farm = Track(TestBuildings.CreateWorkshop("Ferme", wheat, 10000, 30, (timber, 10), (metal, 30)));
+            lumberjack = Track(TestBuildings.CreateWorkshop("Bûcheron", timber, 10000, 30, (timber, 10), (metal, 30)));
+
             buildings = Track(ScriptableObject.CreateInstance<BuildingsDefinition>());
-
-            SetBuilding("poorHouse", 5000, (timber, 10), (metal, 10));
-            SetBuilding("wealthyHouse", 10000, (timber, 15), (metal, 20));
-            SetBuilding("richHouse", 25000, (timber, 25), (metal, 30));
-            SetBuilding("workshop", 10000, (timber, 10), (metal, 30));
+            buildings.name = "Buildings";
+            SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse }, new[] { farm, lumberjack });
         }
-
-        private static string Gold(long gold) => TreasuryHudController.FormatGold(gold);
 
         [TearDown]
         public void TearDown()
@@ -51,260 +58,165 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return instance;
         }
 
-        private void SetBuilding(string field, long gold, params (GoodDefinition good, int units)[] materials)
+        private static string Gold(long gold) => TreasuryHudController.FormatGold(gold);
+
+        private void SetCatalogue(HouseDefinition[] houses, WorkshopDefinition[] workshops)
         {
             var serialized = new SerializedObject(buildings);
-            SerializedProperty building = serialized.FindProperty(field);
-            building.FindPropertyRelative("gold").longValue = gold;
-            SerializedProperty list = building.FindPropertyRelative("materials");
-            list.arraySize = materials.Length;
+            SetList(serialized.FindProperty("houses"), houses);
+            SetList(serialized.FindProperty("workshops"), workshops);
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
 
-            for (int i = 0; i < materials.Length; i++)
+        private static void SetList(SerializedProperty list, Object[] entries)
+        {
+            list.arraySize = entries.Length;
+
+            for (int i = 0; i < entries.Length; i++)
             {
-                SerializedProperty entry = list.GetArrayElementAtIndex(i);
-                entry.FindPropertyRelative("good").objectReferenceValue = materials[i].good;
-                entry.FindPropertyRelative("units").intValue = materials[i].units;
+                list.GetArrayElementAtIndex(i).objectReferenceValue = entries[i];
             }
-
-            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         [Test]
-        public void ANewDefinition_HasTheGamesBuildings()
-        {
-            BuildingsDefinition fresh = Track(ScriptableObject.CreateInstance<BuildingsDefinition>());
-
-            Assert.AreEqual(30, fresh.WorkshopJobs);
-            Assert.AreEqual(40, fresh.HouseRooms.Rich);
-            Assert.AreEqual(70, fresh.HouseRooms.Wealthy);
-            Assert.AreEqual(140, fresh.HouseRooms.Poor);
-        }
-
-        [Test]
-        public void TryCreateCost_MapsTheMaterialsToTheirIndicesAmongTheActiveGoods()
-        {
-            Assert.IsTrue(buildings.TryCreateCost(buildings.Workshop, economy, out BuildingCost cost, out string problem), problem);
-
-            Assert.AreEqual(10000, cost.Gold);
-            Assert.AreEqual(2, cost.Materials.Count);
-            Assert.AreEqual(1, cost.Materials[0].Good);
-            Assert.AreEqual(10, cost.Materials[0].Units);
-            Assert.AreEqual(2, cost.Materials[1].Good);
-            Assert.AreEqual(30, cost.Materials[1].Units);
-        }
-
-        [Test]
-        public void MaterialsOf_MapsTheHousesMaterialsToTheirIndices()
-        {
-            IReadOnlyList<MaterialCost> materials = buildings.MaterialsOf(buildings.HouseOf(SocialClass.Poor), economy);
-
-            Assert.AreEqual(2, materials.Count);
-            Assert.AreEqual(1, materials[0].Good);
-            Assert.AreEqual(10, materials[0].Units);
-            Assert.AreEqual(2, materials[1].Good);
-            Assert.AreEqual(10, materials[1].Units);
-        }
-
-        [Test]
-        public void MaterialsOf_LeaveOutAnInactiveMaterial_AndAnEmptyOne()
-        {
-            SetBuilding("poorHouse", 5000, (timber, 10), (null, 5), (metal, 10));
-            TestEconomy.SetActive(economy, metal, false);
-
-            IReadOnlyList<MaterialCost> materials = buildings.MaterialsOf(buildings.HouseOf(SocialClass.Poor), economy);
-
-            Assert.AreEqual(1, materials.Count);
-            Assert.AreEqual(economy.IndexOf(timber), materials[0].Good);
-            Assert.AreEqual(10, materials[0].Units);
-        }
-
-        [Test]
-        public void MaterialsOf_AddUpAGoodListedTwice()
-        {
-            SetBuilding("poorHouse", 5000, (timber, 10), (timber, 4));
-
-            IReadOnlyList<MaterialCost> materials = buildings.MaterialsOf(buildings.HouseOf(SocialClass.Poor), economy);
-
-            Assert.AreEqual(1, materials.Count);
-            Assert.AreEqual(14, materials[0].Units);
-        }
-
-        [Test]
-        public void MaterialsOf_WithEveryMaterialInactive_AreNone()
-        {
-            TestEconomy.SetActive(economy, timber, false);
-            TestEconomy.SetActive(economy, metal, false);
-
-            Assert.AreEqual(0, buildings.MaterialsOf(buildings.HouseOf(SocialClass.Poor), economy).Count);
-        }
-
-        [Test]
-        public void TryCreateCost_TheWorkshop_LeavesOutAnInactiveMaterial()
-        {
-            TestEconomy.SetActive(economy, metal, false);
-
-            Assert.IsTrue(buildings.TryCreateCost(buildings.Workshop, economy, out BuildingCost cost, out string problem), problem);
-            Assert.AreEqual(10000, cost.Gold);
-            Assert.AreEqual(1, cost.Materials.Count);
-            Assert.AreEqual(economy.IndexOf(timber), cost.Materials[0].Good);
-            Assert.AreEqual(10, cost.Materials[0].Units);
-        }
-
-        [Test]
-        public void TryCreateCost_TheWorkshopWithEveryMaterialInactive_CostsOnlyItsGold()
-        {
-            TestEconomy.SetActive(economy, timber, false);
-            TestEconomy.SetActive(economy, metal, false);
-
-            Assert.IsTrue(buildings.TryCreateCost(buildings.Workshop, economy, out BuildingCost cost, out string problem), problem);
-            Assert.AreEqual(10000, cost.Gold);
-            Assert.AreEqual(0, cost.Materials.Count);
-        }
-
-        [Test]
-        public void TryCreateCost_TheHouse_LeavesOutAnInactiveMaterial()
-        {
-            TestEconomy.SetActive(economy, metal, false);
-
-            Assert.IsTrue(buildings.TryCreateCost(buildings.HouseOf(SocialClass.Poor), economy, out BuildingCost cost, out string problem), problem);
-            Assert.AreEqual(5000, cost.Gold);
-            Assert.AreEqual(1, cost.Materials.Count);
-            Assert.AreEqual(economy.IndexOf(timber), cost.Materials[0].Good);
-        }
-
-        [Test]
-        public void TryCreateCost_TheHouseWithEveryMaterialInactive_CostsOnlyItsGold()
-        {
-            TestEconomy.SetActive(economy, timber, false);
-            TestEconomy.SetActive(economy, metal, false);
-
-            Assert.IsTrue(buildings.TryCreateCost(buildings.HouseOf(SocialClass.Poor), economy, out BuildingCost cost, out string problem), problem);
-            Assert.AreEqual(5000, cost.Gold);
-            Assert.AreEqual(0, cost.Materials.Count);
-        }
-
-        [Test]
-        public void TryCreateCost_ANullMaterial_IsLeftOut()
-        {
-            SetBuilding("workshop", 10000, (null, 10), (metal, 30));
-
-            Assert.IsTrue(buildings.TryCreateCost(buildings.Workshop, economy, out BuildingCost cost, out string problem), problem);
-            Assert.AreEqual(1, cost.Materials.Count);
-            Assert.AreEqual(economy.IndexOf(metal), cost.Materials[0].Good);
-        }
-
-        [Test]
-        public void TryCreateCost_NoUnits_IsLeftOut()
-        {
-            SetBuilding("workshop", 10000, (timber, 0));
-
-            Assert.IsTrue(buildings.TryCreateCost(buildings.Workshop, economy, out BuildingCost cost, out string problem), problem);
-            Assert.AreEqual(0, cost.Materials.Count);
-        }
-
-        [Test]
-        public void TryCreateCost_AGoodListedTwice_IsAddedUp()
-        {
-            SetBuilding("workshop", 10000, (metal, 30), (metal, 5));
-
-            Assert.IsTrue(buildings.TryCreateCost(buildings.Workshop, economy, out BuildingCost cost, out string problem), problem);
-            Assert.AreEqual(1, cost.Materials.Count);
-            Assert.AreEqual(35, cost.Materials[0].Units);
-        }
-
-        [Test]
-        public void TryCreateCost_ANegativeGold_IsAProblem()
-        {
-            SetBuilding("poorHouse", -1, (timber, 10));
-
-            Assert.IsFalse(buildings.TryCreateCost(buildings.HouseOf(SocialClass.Poor), economy, out _, out string problem));
-            StringAssert.Contains("house", problem);
-            StringAssert.Contains("gold", problem);
-        }
-
-        [Test]
-        public void TryValidate_AcceptsTheGamesBuildings_AndRefusesNoJobsOrNoRoom()
+        public void TryValidate_AcceptsOneHousePerClass()
         {
             Assert.IsTrue(buildings.TryValidate(out string problem), problem);
+        }
 
-            var serialized = new SerializedObject(buildings);
-            serialized.FindProperty("workshopJobs").intValue = 0;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
+        [Test]
+        public void TryValidate_RefusesAClassWithoutHouse()
+        {
+            SetCatalogue(new[] { wealthyHouse, poorHouse }, new[] { farm });
+
+            Assert.IsFalse(buildings.TryValidate(out string problem));
+            StringAssert.Contains("no house", problem);
+            StringAssert.Contains("rich", problem);
+        }
+
+        [Test]
+        public void TryValidate_RefusesTwoHousesOfAClass()
+        {
+            HouseDefinition other = Track(TestBuildings.CreateHouse("Taudis", SocialClass.Poor, 1000, 100));
+            SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse, other }, new[] { farm });
+
+            Assert.IsFalse(buildings.TryValidate(out string problem));
+            StringAssert.Contains("houses", problem);
+        }
+
+        [Test]
+        public void TryValidate_RefusesTwoWorkshopsOfAGood_EvenInactive()
+        {
+            WorkshopDefinition sawmill = Track(TestBuildings.CreateWorkshop("Scierie", timber, 10000, 30));
+            SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse }, new[] { farm, lumberjack, sawmill });
+            TestEconomy.SetActive(economy, timber, false);
+
+            Assert.IsFalse(buildings.TryValidate(out string problem));
+            StringAssert.Contains("workshops", problem);
+            StringAssert.Contains("Bois", problem);
+        }
+
+        [Test]
+        public void TryValidate_RefusesAnEmptyEntry_AndAnInvalidDefinition()
+        {
+            SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse }, new[] { farm, null });
+
+            Assert.IsFalse(buildings.TryValidate(out string problem));
+            StringAssert.Contains("empty entry", problem);
+
+            WorkshopDefinition idle = Track(TestBuildings.CreateWorkshop("Atelier vide", metal, 10000, 0));
+            SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse }, new[] { farm, idle });
+
             Assert.IsFalse(buildings.TryValidate(out problem));
+            StringAssert.Contains("Atelier vide", problem);
             StringAssert.Contains("jobs", problem);
-
-            serialized.FindProperty("workshopJobs").intValue = 30;
-            serialized.FindProperty("wealthyHouseRoom").intValue = 0;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-            Assert.IsFalse(buildings.TryValidate(out problem));
-            StringAssert.Contains("room", problem);
         }
 
         [Test]
-        public void TryValidate_IgnoresTheCosts_ANegativeGoldOnlyMakesItsBuildingUnavailable()
+        public void TryValidate_IgnoresTheCosts()
         {
-            SetBuilding("poorHouse", -1, (timber, 10));
-            SetBuilding("workshop", -1, (timber, 10));
+            TestBuildings.SetCost(poorHouse, -1, (timber, 10));
 
             Assert.IsTrue(buildings.TryValidate(out string problem), problem);
-            Assert.IsFalse(buildings.TryCreateCost(buildings.HouseOf(SocialClass.Poor), economy, out _, out _));
-            Assert.IsFalse(buildings.TryCreateCost(buildings.Workshop, economy, out _, out _));
         }
 
         [Test]
-        public void CostsText_WritesTheThreeHousesInAlphabeticalOrder_ThenTheWorkshop()
+        public void HouseOf_AndWorkshopOf_FindTheDefinition()
         {
-            Assert.AreEqual(
-                $"Maison d'aisés : {Gold(10000)}, 15 bois, 20 métal · Maison de pauvres : {Gold(5000)}, 10 bois, 10 métal · "
-                + $"Maison de riches : {Gold(25000)}, 25 bois, 30 métal · Atelier : {Gold(10000)}, 10 bois, 30 métal",
-                buildings.CostsText(economy));
+            Assert.AreSame(richHouse, buildings.HouseOf(SocialClass.Rich));
+            Assert.AreSame(poorHouse, buildings.HouseOf(SocialClass.Poor));
+            Assert.AreSame(lumberjack, buildings.WorkshopOf(timber));
+            Assert.IsNull(buildings.WorkshopOf(metal));
+            Assert.IsNull(buildings.WorkshopOf(null));
+            Assert.AreEqual(3, buildings.Houses.Count);
+            Assert.AreEqual(2, buildings.Workshops.Count);
         }
 
         [Test]
-        public void CostsText_NamesTheMaterialsInAlphabeticalOrder()
+        public void HouseRooms_AreTheRoomsOfTheHouses()
         {
-            SetBuilding("poorHouse", 5000, (metal, 10), (timber, 20));
+            PerClass<int> rooms = buildings.HouseRooms;
 
-            StringAssert.Contains($"Maison de pauvres : {Gold(5000)}, 20 bois, 10 métal ·", buildings.CostsText(economy));
+            Assert.AreEqual(40, rooms.Rich);
+            Assert.AreEqual(70, rooms.Wealthy);
+            Assert.AreEqual(140, rooms.Poor);
         }
 
         [Test]
-        public void CostsText_WritesABuildingWhoseCostCannotBeCreatedAsUnavailable()
+        public void CreateHouseOffers_GivesTheClassNameRoomCostAndCostText()
         {
-            SetBuilding("poorHouse", -1, (timber, 10));
+            IReadOnlyList<HouseOffer> offers = buildings.CreateHouseOffers(economy, null);
 
-            StringAssert.Contains("Maison de pauvres : indisponible · Maison de riches", buildings.CostsText(economy));
-            StringAssert.EndsWith($"Atelier : {Gold(10000)}, 10 bois, 30 métal", buildings.CostsText(economy));
-
-            SetBuilding("workshop", -1, (timber, 10));
-
-            StringAssert.EndsWith("Atelier : indisponible", buildings.CostsText(economy));
+            Assert.AreEqual(3, offers.Count);
+            Assert.AreEqual(SocialClass.Poor, offers[2].HousedClass);
+            Assert.AreEqual("Maison de pauvres", offers[2].Name);
+            Assert.AreEqual(140, offers[2].Room);
+            Assert.AreEqual(5000, offers[2].Cost.Gold);
+            Assert.AreEqual($"{Gold(5000)}, 10 bois, 10 métal", offers[2].CostText);
         }
 
         [Test]
-        public void CostsText_NamesOnlyTheActiveMaterialsOfTheHouse()
+        public void CreateWorkshopOffers_GivesTheIndexNameJobsCostAndCostText()
         {
-            string gold = TreasuryHudController.FormatGold(5000);
-            TestEconomy.SetActive(economy, metal, false);
+            IReadOnlyList<WorkshopOffer> offers = buildings.CreateWorkshopOffers(economy, null);
 
-            StringAssert.Contains($"Maison de pauvres : {gold}, 10 bois ·", buildings.CostsText(economy));
-
-            TestEconomy.SetActive(economy, timber, false);
-
-            StringAssert.Contains($"Maison de pauvres : {gold} ·", buildings.CostsText(economy));
+            Assert.AreEqual(2, offers.Count);
+            Assert.AreEqual(0, offers[0].Good);
+            Assert.AreEqual("Ferme", offers[0].Name);
+            Assert.AreEqual(30, offers[0].Jobs);
+            Assert.AreEqual(10000, offers[0].Cost.Gold);
+            Assert.AreEqual(2, offers[0].Cost.Materials.Count);
+            Assert.AreEqual($"{Gold(10000)}, 10 bois, 30 métal", offers[0].CostText);
         }
 
         [Test]
-        public void CostsText_NamesOnlyTheActiveMaterialsOfTheWorkshop()
+        public void CreateWorkshopOffers_SkipsAWorkshopOfAnInactiveGood()
         {
-            string gold = TreasuryHudController.FormatGold(10000);
-            TestEconomy.SetActive(economy, metal, false);
+            TestEconomy.SetActive(economy, wheat, false);
 
-            StringAssert.EndsWith($"Atelier : {gold}, 10 bois", buildings.CostsText(economy));
+            IReadOnlyList<WorkshopOffer> offers = buildings.CreateWorkshopOffers(economy, null);
 
-            TestEconomy.SetActive(economy, timber, false);
+            Assert.AreEqual(1, offers.Count);
+            Assert.AreEqual("Bûcheron", offers[0].Name);
+            Assert.AreEqual(economy.IndexOf(timber), offers[0].Good);
+        }
 
-            StringAssert.EndsWith($"Atelier : {gold}", buildings.CostsText(economy));
+        [Test]
+        public void CreateOffers_ANegativeGold_GivesANullCost_AndReportsIt()
+        {
+            TestBuildings.SetCost(poorHouse, -1, (timber, 10));
+            TestBuildings.SetCost(farm, -1);
+            var reported = new List<BuildingDefinition>();
+
+            IReadOnlyList<HouseOffer> houses = buildings.CreateHouseOffers(economy, (building, problem) => reported.Add(building));
+            IReadOnlyList<WorkshopOffer> workshops = buildings.CreateWorkshopOffers(economy, (building, problem) => reported.Add(building));
+
+            Assert.IsNull(houses[2].Cost);
+            Assert.AreEqual("indisponible", houses[2].CostText);
+            Assert.IsNotNull(houses[0].Cost);
+            Assert.IsNull(workshops[0].Cost);
+            Assert.IsNotNull(workshops[1].Cost);
+            CollectionAssert.AreEqual(new BuildingDefinition[] { poorHouse, farm }, reported);
         }
     }
 }

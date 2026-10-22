@@ -3,7 +3,7 @@ paths:
   - "Assets/Scripts/*/Population/**"
   - "Assets/Tests/EditMode/Population/**"
   - "Assets/Scripts/Core/Economy/CityMarket.cs"
-  - "Assets/Data/Economy/Buildings.asset"
+  - "Assets/Data/Buildings/**"
 ---
 
 # Population and buildings
@@ -25,6 +25,9 @@ paths:
 
 ## Buildings
 
-- `BuildingsDefinition` holds the player's house of each class (`HouseOf`, `HouseRooms`) and workshop; a city's own house of a class takes the materials of the player's, without the gold. `TryCreateCost` turns a cost into Core's `BuildingCost`. A cost that cannot be created only makes its building unavailable: its entry of `WorldEconomy.HouseCosts` or `WorkshopCost` is then null and its buttons stay disabled.
-- The house rows of the city panel and the costs line name the houses through `SocialClassNames`, sorted with `NameOrder`.
+- Each building the player can build is an asset of its own in `Assets/Data/Buildings/` (`Houses/`, `Workshops/`): a `BuildingDefinition` (name, gold, materials), either a `WorkshopDefinition` (its one good, its jobs) or a `HouseDefinition` (its class, its room). `TryCreateCost` turns its cost into Core's `BuildingCost`, `CostText` writes it for the player.
+- `BuildingsDefinition` (`Buildings.asset`) is the catalogue that `WorldEconomy` references. It must hold exactly one house per class: that house also gives every city its starting room (`HouseRooms`), and a city's own house of a class takes its materials, without the gold. A good has one workshop at most, active or not; the workshop of an inactive good is ignored. A catalogue that breaks this leaves the cities without a market.
+- The catalogue turns its definitions into `HouseOffer` / `WorkshopOffer` (name, cost, cost text, room or jobs, a workshop's good by its index among the active goods), which `WorldEconomy` exposes and the city panel shows. A cost that cannot be created only makes its building unavailable: its offer's cost is null and its button stays disabled.
+- Core knows a player's workshop only by its good and its jobs (`CityMarket.AddPlayerWorkshop`), never by its definition.
+- The rows of the city panel use the buildings' names, sorted with `NameOrder`; a good the city produces without a workshop definition has no row.
 - `Construction` (Core) quotes and builds the player's buildings.

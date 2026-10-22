@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using DarkFantasyMerchant.Core;
 using DarkFantasyMerchant.Game;
@@ -56,7 +57,10 @@ namespace DarkFantasyMerchant.Editor
         private const string EconomyFolder = "Assets/Data/Economy";
         private const string ExpensesPath = EconomyFolder + "/Expenses.asset";
         private const string EconomyPath = EconomyFolder + "/Economy.asset";
-        private const string BuildingsPath = EconomyFolder + "/Buildings.asset";
+        private const string BuildingsFolder = "Assets/Data/Buildings";
+        private const string BuildingsPath = BuildingsFolder + "/Buildings.asset";
+        private const string HousesFolder = BuildingsFolder + "/Houses";
+        private const string WorkshopsFolder = BuildingsFolder + "/Workshops";
         private const string GoodsFolder = "Assets/Data/Goods";
         private const string GoodIconsFolder = "Assets/Art/Goods/Icons";
 
@@ -349,7 +353,7 @@ namespace DarkFantasyMerchant.Editor
             {
                 ArtFolder, CitiesFolder, MapDataFolder, PrefabFolder, UiFolder,
                 ShipArtFolder, ShipDataFolder, ShipPrefabFolder, CalendarFolder, PlayerDataFolder,
-                EconomyFolder, GoodsFolder, AiFolder,
+                EconomyFolder, GoodsFolder, BuildingsFolder, HousesFolder, WorkshopsFolder, AiFolder,
                 "Assets/Scenes",
             })
             {
@@ -630,45 +634,120 @@ namespace DarkFantasyMerchant.Editor
             return economy;
         }
 
+        // The name of each sample good's workshop, by the good's asset name.
+        private static readonly Dictionary<string, string> SampleWorkshopNames = new Dictionary<string, string>
+        {
+            { "Grain", "Ferme" }, { "Meat", "Élevage" }, { "Fish", "Pêcherie" }, { "Beer", "Brasserie" },
+            { "Salt", "Saline" }, { "Honey", "Rucher" }, { "Spices", "Jardin d'épices" }, { "Wine", "Vignoble" },
+            { "Cloth", "Tisserand" }, { "Skins", "Trappeur" }, { "Oil", "Pressoir à huile" }, { "Timber", "Bûcheron" },
+            { "Metal", "Forge" }, { "Leather", "Tannerie" }, { "Wool", "Bergerie" }, { "Pitch", "Goudronnerie" },
+            { "PigIron", "Fonderie" }, { "Hemp", "Chanvrière" }, { "Pottery", "Atelier de potier" }, { "Tiles", "Tuilerie" },
+        };
+
         /// <summary>
-        /// Creates the buildings of the player when missing: a house per class and a workshop, whose materials
-        /// are the timber and the metal of the goods. Like the expenses, new buildings are the game's:
-        /// their defaults are the content. The goods are made by <see cref="CreateEconomy"/>, called first.
+        /// Creates the buildings of the player when missing: the catalogue, a house per class and a
+        /// workshop per sample good, whose materials are the timber and the metal of the goods. A
+        /// definition is added to the catalogue only when it is created, so one taken out of it by
+        /// hand stays out. Like the expenses, new buildings are the game's: their defaults are the
+        /// content. The goods are made by <see cref="CreateEconomy"/>, called first.
         /// </summary>
         public static BuildingsDefinition CreateBuildings()
         {
-            var existing = AssetDatabase.LoadAssetAtPath<BuildingsDefinition>(BuildingsPath);
-
-            if (existing != null)
-            {
-                return existing;
-            }
-
-            var timber = AssetDatabase.LoadAssetAtPath<GoodDefinition>(GoodsFolder + "/Timber.asset");
-            var metal = AssetDatabase.LoadAssetAtPath<GoodDefinition>(GoodsFolder + "/Metal.asset");
+            var timber = AssetDatabase.LoadAssetAtPath<GoodDefinition>(GoodPath("Timber"));
+            var metal = AssetDatabase.LoadAssetAtPath<GoodDefinition>(GoodPath("Metal"));
 
             if (timber == null || metal == null)
             {
                 throw new FileNotFoundException("The timber or the metal could not be loaded.", GoodsFolder);
             }
 
-            // Filled in before the asset is created, so the file is written complete.
-            var buildings = ScriptableObject.CreateInstance<BuildingsDefinition>();
-            var serialized = new SerializedObject(buildings);
-            FillBuilding(serialized.FindProperty("poorHouse"), 5000, timber, 10, metal, 10);
-            FillBuilding(serialized.FindProperty("wealthyHouse"), 10000, timber, 15, metal, 20);
-            FillBuilding(serialized.FindProperty("richHouse"), 25000, timber, 25, metal, 30);
-            FillBuilding(serialized.FindProperty("workshop"), 10000, timber, 10, metal, 30);
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-            AssetDatabase.CreateAsset(buildings, BuildingsPath);
+            var buildings = AssetDatabase.LoadAssetAtPath<BuildingsDefinition>(BuildingsPath);
+
+            if (buildings == null)
+            {
+                buildings = ScriptableObject.CreateInstance<BuildingsDefinition>();
+                AssetDatabase.CreateAsset(buildings, BuildingsPath);
+            }
+
+            var catalogue = new SerializedObject(buildings);
+            SerializedProperty houses = catalogue.FindProperty("houses");
+            SerializedProperty workshops = catalogue.FindProperty("workshops");
+
+            AddIfCreated(houses, CreateHouse("RichHouse", "Maison de riches", SocialClass.Rich, 40, 25000, timber, 25, metal, 30));
+            AddIfCreated(houses, CreateHouse("WealthyHouse", "Maison d'aisés", SocialClass.Wealthy, 70, 10000, timber, 15, metal, 20));
+            AddIfCreated(houses, CreateHouse("PoorHouse", "Maison de pauvres", SocialClass.Poor, 140, 5000, timber, 10, metal, 10));
+
+            foreach (SampleGood sample in SampleGoods)
+            {
+                var good = AssetDatabase.LoadAssetAtPath<GoodDefinition>(GoodPath(sample.AssetName));
+
+                if (good != null)
+                {
+                    AddIfCreated(workshops, CreateWorkshop(sample.AssetName, good, timber, metal));
+                }
+            }
+
+            catalogue.ApplyModifiedPropertiesWithoutUndo();
             return buildings;
         }
 
-        private static void FillBuilding(
-            SerializedProperty building, long gold, GoodDefinition timber, int timberUnits, GoodDefinition metal, int metalUnits)
+        private static void AddIfCreated(SerializedProperty list, UnityEngine.Object created)
         {
-            building.FindPropertyRelative("gold").longValue = gold;
-            SerializedProperty materials = building.FindPropertyRelative("materials");
+            if (created != null)
+            {
+                list.arraySize++;
+                list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = created;
+            }
+        }
+
+        /// <returns>The house, or null when it already existed.</returns>
+        private static HouseDefinition CreateHouse(
+            string assetName, string displayName, SocialClass housedClass, int room,
+            long gold, GoodDefinition timber, int timberUnits, GoodDefinition metal, int metalUnits)
+        {
+            string path = $"{HousesFolder}/{assetName}.asset";
+
+            if (AssetDatabase.LoadAssetAtPath<HouseDefinition>(path) != null)
+            {
+                return null;
+            }
+
+            // Filled in before the asset is created, so the file is written complete.
+            var house = ScriptableObject.CreateInstance<HouseDefinition>();
+            var serialized = new SerializedObject(house);
+            serialized.FindProperty("socialClass").enumValueIndex = (int)housedClass;
+            serialized.FindProperty("room").intValue = room;
+            FillBuilding(serialized, displayName, gold, timber, timberUnits, metal, metalUnits);
+            AssetDatabase.CreateAsset(house, path);
+            return house;
+        }
+
+        /// <returns>The workshop of the good, or null when it already existed.</returns>
+        private static WorkshopDefinition CreateWorkshop(string goodAssetName, GoodDefinition good, GoodDefinition timber, GoodDefinition metal)
+        {
+            string path = $"{WorkshopsFolder}/{goodAssetName}Workshop.asset";
+
+            if (AssetDatabase.LoadAssetAtPath<WorkshopDefinition>(path) != null)
+            {
+                return null;
+            }
+
+            var workshop = ScriptableObject.CreateInstance<WorkshopDefinition>();
+            var serialized = new SerializedObject(workshop);
+            serialized.FindProperty("good").objectReferenceValue = good;
+            serialized.FindProperty("jobs").intValue = 30;
+            FillBuilding(serialized, SampleWorkshopNames[goodAssetName], 10000, timber, 10, metal, 30);
+            AssetDatabase.CreateAsset(workshop, path);
+            return workshop;
+        }
+
+        private static void FillBuilding(
+            SerializedObject building, string displayName, long gold,
+            GoodDefinition timber, int timberUnits, GoodDefinition metal, int metalUnits)
+        {
+            building.FindProperty("displayName").stringValue = displayName;
+            building.FindProperty("gold").longValue = gold;
+            SerializedProperty materials = building.FindProperty("materials");
             materials.arraySize = 2;
 
             SerializedProperty first = materials.GetArrayElementAtIndex(0);
@@ -678,6 +757,7 @@ namespace DarkFantasyMerchant.Editor
             SerializedProperty second = materials.GetArrayElementAtIndex(1);
             second.FindPropertyRelative("good").objectReferenceValue = metal;
             second.FindPropertyRelative("units").intValue = metalUnits;
+            building.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static GoodDefinition CreateGood(SampleGood sample)

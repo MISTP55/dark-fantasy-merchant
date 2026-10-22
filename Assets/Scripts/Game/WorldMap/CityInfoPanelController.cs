@@ -66,7 +66,6 @@ namespace DarkFantasyMerchant.Game
         private VisualElement buildingsElement;
         private VisualElement houseRows;
         private VisualElement workshopRows;
-        private Label buildingsCostsLabel;
         private Button marketTabButton;
         private Button buildingsTabButton;
         private Button shipsTabButton;
@@ -134,7 +133,6 @@ namespace DarkFantasyMerchant.Game
             buildingsElement = root.Q<VisualElement>("buildings-section");
             houseRows = root.Q<VisualElement>("house-rows");
             workshopRows = root.Q<VisualElement>("workshop-rows");
-            buildingsCostsLabel = root.Q<Label>("buildings-costs");
             marketTabButton = root.Q<Button>("tab-market");
             buildingsTabButton = root.Q<Button>("tab-buildings");
             shipsTabButton = root.Q<Button>("tab-ships");
@@ -152,7 +150,7 @@ namespace DarkFantasyMerchant.Game
                 || efficientGoodsLabel == null || inefficientGoodsLabel == null
                 || shipList == null || closeButton == null || populationLabel == null
                 || marketElement == null || marketRows == null || marketHoldLabel == null
-                || buildingsElement == null || houseRows == null || workshopRows == null || buildingsCostsLabel == null
+                || buildingsElement == null || houseRows == null || workshopRows == null
                 || marketTabButton == null || buildingsTabButton == null || shipsTabButton == null
                 || marketPage == null || buildingsPage == null || shipsPage == null
                 || tradingShipField == null)
@@ -276,10 +274,10 @@ namespace DarkFantasyMerchant.Game
                 + $"Pauvres\u00A0:\u00A0{TreasuryHudController.FormatNumber(poor)}\u00A0· Mendiants\u00A0:\u00A0{TreasuryHudController.FormatNumber(beggars)}";
         }
 
-        /// <summary>"Atelier construit à Lübeck : céréales."</summary>
-        public static string WorkshopBuiltText(string city, string good)
+        /// <summary>"Construction achevée à Lübeck : Bûcheron.": a building's name has no known gender, the sentence needs none.</summary>
+        public static string BuildingBuiltText(string city, string building)
         {
-            return $"Atelier construit à {city} : {good.ToLowerInvariant()}.";
+            return $"Construction achevée à {city} : {building}.";
         }
 
         /// <summary>What the market's drop-down list reads when no ship of the player lies in the port.</summary>
@@ -309,12 +307,6 @@ namespace DarkFantasyMerchant.Game
         public static string ShipsTabText(int shipCount)
         {
             return $"Navires au port ({TreasuryHudController.FormatNumber(shipCount)})";
-        }
-
-        /// <summary>"Maison de pauvres construite à Lübeck."</summary>
-        public static string HouseBuiltText(string city, SocialClass housedClass)
-        {
-            return $"{SocialClassNames.HouseOf(housedClass)} construite à {city}.";
         }
 
         private void ShowHovered(CityDefinition city)
@@ -556,24 +548,12 @@ namespace DarkFantasyMerchant.Game
         {
             if (buildingsSection == null && worldEconomy != null && worldEconomy.IsReady)
             {
-                BuildingsDefinition buildings = worldEconomy.Buildings;
-                EconomyDefinition economy = worldEconomy.Economy;
-                var goodNames = new List<string>();
-
-                foreach (GoodDefinition good in economy.Goods)
-                {
-                    goodNames.Add(good.DisplayName);
-                }
-
                 // A building whose cost WorldEconomy could not work out has a null cost: its
                 // buttons stay disabled. WorldEconomy has warned about it once.
                 Treasury treasury = playerTreasury != null && playerTreasury.IsReady ? playerTreasury.Treasury : null;
                 buildingsSection = new CityBuildingsSection(
-                    buildingsElement, houseRows, workshopRows, buildingsCostsLabel, goodNames,
-                    worldEconomy.HouseCosts, buildings.HouseRooms, worldEconomy.WorkshopCost, buildings.WorkshopJobs,
-                    buildings.CostsText(economy), treasury);
-                buildingsSection.HouseBuilt += OnHouseBuilt;
-                buildingsSection.WorkshopBuilt += OnWorkshopBuilt;
+                    buildingsElement, houseRows, workshopRows, worldEconomy.HouseOffers, worldEconomy.WorkshopOffers, treasury);
+                buildingsSection.BuildingBuilt += OnBuildingBuilt;
                 buildingsSection.MaterialBought += OnMaterialBought;
             }
 
@@ -597,20 +577,11 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        private void OnHouseBuilt(SocialClass housedClass)
+        private void OnBuildingBuilt(string building)
         {
             if (buildingsCity != null && playerNotifications != null && playerNotifications.IsReady)
             {
-                playerNotifications.Feed.Post(HouseBuiltText(buildingsCity.DisplayName, housedClass));
-            }
-        }
-
-        private void OnWorkshopBuilt(int good)
-        {
-            if (buildingsCity != null && playerNotifications != null && playerNotifications.IsReady)
-            {
-                playerNotifications.Feed.Post(WorkshopBuiltText(
-                    buildingsCity.DisplayName, worldEconomy.Economy.Goods[good].DisplayName));
+                playerNotifications.Feed.Post(BuildingBuiltText(buildingsCity.DisplayName, building));
             }
         }
 

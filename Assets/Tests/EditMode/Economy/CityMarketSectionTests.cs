@@ -382,11 +382,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void BuiltTexts_NameTheCityAndTheGood()
+        public void BuildingBuiltText_NamesTheCityAndTheBuilding()
         {
-            Assert.AreEqual("Atelier construit \u00E0 L\u00FCbeck : c\u00E9r\u00E9ales.", CityInfoPanelController.WorkshopBuiltText("L\u00FCbeck", "C\u00E9r\u00E9ales"));
-            Assert.AreEqual("Maison de pauvres construite \u00E0 L\u00FCbeck.", CityInfoPanelController.HouseBuiltText("L\u00FCbeck", SocialClass.Poor));
-            Assert.AreEqual("Maison d'aisés construite \u00E0 Riga.", CityInfoPanelController.HouseBuiltText("Riga", SocialClass.Wealthy));
+            Assert.AreEqual("Construction achevée à Lübeck : Bûcheron.", CityInfoPanelController.BuildingBuiltText("Lübeck", "Bûcheron"));
+            Assert.AreEqual("Construction achevée à Riga : Maison d'aisés.", CityInfoPanelController.BuildingBuiltText("Riga", "Maison d'aisés"));
         }
     }
 }

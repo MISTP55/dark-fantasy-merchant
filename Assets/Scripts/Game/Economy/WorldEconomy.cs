@@ -24,12 +24,18 @@ namespace DarkFantasyMerchant.Game
 
         public BuildingsDefinition Buildings => buildings;
 
-        /// <summary>What a house costs, or null when it cannot be built (a negative gold): a material that is not an active good is left out.</summary>
-        /// <summary>What the player's house of each class costs; null for a house the player cannot build.</summary>
-        public PerClass<BuildingCost> HouseCosts { get; private set; }
+        /// <summary>
+        /// The player's house of each class. A house that cannot be built (a negative gold) has a
+        /// null cost; a material that is not an active good is left out.
+        /// </summary>
+        public IReadOnlyList<HouseOffer> HouseOffers { get; private set; }
 
-        /// <summary>What a workshop costs, or null when it cannot be built (a negative gold): a material that is not an active good is left out.</summary>
-        public BuildingCost WorkshopCost { get; private set; }
+        /// <summary>
+        /// The player's workshops, but for those of a good that is not active. A workshop that
+        /// cannot be built (a negative gold) has a null cost; a material that is not an active good
+        /// is left out.
+        /// </summary>
+        public IReadOnlyList<WorkshopOffer> WorkshopOffers { get; private set; }
 
         /// <summary>False until the markets exist, which is in Start, and for good when they could not be made.</summary>
         public bool IsReady { get; private set; }
@@ -77,11 +83,8 @@ namespace DarkFantasyMerchant.Game
             }
 
             // A cost that cannot be worked out only takes that building away from the player.
-            HouseCosts = new PerClass<BuildingCost>(
-                CostOf(buildings.HouseOf(SocialClass.Rich), "rich house"),
-                CostOf(buildings.HouseOf(SocialClass.Wealthy), "wealthy house"),
-                CostOf(buildings.HouseOf(SocialClass.Poor), "poor house"));
-            WorkshopCost = CostOf(buildings.Workshop, "workshop");
+            HouseOffers = buildings.CreateHouseOffers(economy, WarnUnavailable);
+            WorkshopOffers = buildings.CreateWorkshopOffers(economy, WarnUnavailable);
 
             if (!TryCreateMarkets())
             {
@@ -102,15 +105,9 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        private BuildingCost CostOf(BuildingsDefinition.BuildingType type, string building)
+        private void WarnUnavailable(BuildingDefinition building, string problem)
         {
-            if (buildings.TryCreateCost(type, economy, out BuildingCost cost, out string problem))
-            {
-                return cost;
-            }
-
-            Debug.LogWarning($"BuildingsDefinition '{buildings.name}': {problem}. The player cannot build a {building}.", buildings);
-            return null;
+            Debug.LogWarning($"BuildingsDefinition '{buildings.name}': {problem}. The player cannot build '{building.name}'.", building);
         }
 
         private bool TryCreateMarkets()
@@ -134,7 +131,7 @@ namespace DarkFantasyMerchant.Game
                 foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
                 {
                     housing.Add(economy.CreateHousingRule(
-                        housedClass, rooms[housedClass], buildings.MaterialsOf(buildings.HouseOf(housedClass), economy)));
+                        housedClass, rooms[housedClass], buildings.HouseOf(housedClass).MaterialsOf(economy)));
                 }
 
                 foreach (CityDefinition city in mapView.Cities)
