@@ -52,6 +52,30 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void AddInputs_AddsUp_WithinADay_AndIsForgottenAfterAWeek()
+        {
+            var log = new MarketWeekLog(2, 2);
+
+            log.StartDay();
+            log.AddInputs(0, 1.5);
+            log.AddInputs(0, 0.5);
+            log.Record(0, 3, 2);
+
+            Assert.AreEqual(2, log.InputsOf(0), Tolerance);
+            Assert.AreEqual(2, log.ConsumedOf(0), Tolerance);
+            Assert.AreEqual(0, log.InputsOf(1), Tolerance);
+
+            log.StartDay();
+            log.AddInputs(0, 1);
+            log.StartDay();
+
+            Assert.AreEqual(1, log.InputsOf(0), Tolerance);
+            Assert.Throws<ArgumentOutOfRangeException>(() => log.AddInputs(2, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => log.InputsOf(-1));
+            Assert.Throws<InvalidOperationException>(() => new MarketWeekLog(1, 7).AddInputs(0, 1));
+        }
+
+        [Test]
         public void ADayThatStarts_HasNothingUntilItIsRecorded()
         {
             var log = new MarketWeekLog(1, 2);

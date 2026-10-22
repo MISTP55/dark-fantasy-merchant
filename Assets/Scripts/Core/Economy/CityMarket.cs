@@ -432,11 +432,26 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// Units the city actually produced over the last days, a week of them at most:
-        /// less than the nominal figure on the days the stock was above T3.
+        /// less than the nominal figure on the days the stock was above T3 or an input was short.
         /// </summary>
         public double RecentProductionOf(int good)
         {
             return weekLog.ProducedOf(good);
+        }
+
+        /// <summary>Units the workshops take of a good as their input in a week, with the workers of the moment and no shortage.</summary>
+        public double NominalWeeklyInputNeedOf(int good)
+        {
+            return DailyInputNeedOf(good) * daysPerWeek;
+        }
+
+        /// <summary>
+        /// Units the workshops actually took of a good as their input over the last days, a week
+        /// of them at most: less than the nominal figure when the stock was short.
+        /// </summary>
+        public double RecentInputsOf(int good)
+        {
+            return weekLog.InputsOf(good);
         }
 
         /// <summary>
@@ -495,8 +510,9 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// One day of the city: the inhabitants consume every good, down to nothing; then every
-        /// workshop hires or lays off by where the stock left stands against the thresholds, and
-        /// produces, unless that stock is above T3. With labour,
+        /// workshop hires or lays off by where the stock left stands against the thresholds, takes
+        /// its inputs, in proportion to the scarcest, and produces as much, unless that stock is
+        /// above T3, where the inputs are taken all the same. With labour,
         /// the classes' satisfactions follow the stocks (with a social rule), the player's
         /// workshops fill their vacancies from the beggars, the poor rise and fall between the
         /// classes and some leave (with a social rule), the beggars come or go, and the city
@@ -542,9 +558,13 @@ namespace DarkFantasyMerchant.Core
                         LayOff(i, workers[i] - target);
                     }
 
+                    double potential = workers[i] * good.DailyOutputPerWorker;
+                    double made = potential * TakeInputs(good, potential);
+
+                    // Above T3 the inputs are taken all the same, and lost.
                     if (WorkforceRule.ProducesAt(stocks[i], goodThresholds))
                     {
-                        produced = workers[i] * good.DailyOutputPerWorker;
+                        produced = made;
                         stocks[i] += produced;
                     }
                 }
@@ -574,6 +594,40 @@ namespace DarkFantasyMerchant.Core
             // Last, so that the next day starts on the thresholds of the population this day leaves.
             UpdateThresholds();
             Changed?.Invoke();
+        }
+
+        // Takes what a workshop needs to make these units, in proportion to its scarcest input, from
+        // the stocks as they stand, and returns that proportion: 1 with all its inputs or none.
+        private double TakeInputs(MarketGood good, double units)
+        {
+            IReadOnlyList<MarketInput> inputs = good.Inputs;
+            double factor = 1d;
+            int scarcest = -1;
+
+            for (int k = 0; k < inputs.Count; k++)
+            {
+                double needed = units * inputs[k].UnitsPerUnit;
+
+                if (needed > 0d && stocks[inputs[k].Good] / needed < factor)
+                {
+                    factor = stocks[inputs[k].Good] / needed;
+                    scarcest = k;
+                }
+            }
+
+            for (int k = 0; k < inputs.Count; k++)
+            {
+                int input = inputs[k].Good;
+                double needed = units * inputs[k].UnitsPerUnit;
+
+                // The scarcest is taken whole, so that no rounding leaves a crumb of it.
+                double taken = k == scarcest ? stocks[input] : Math.Min(stocks[input], needed * factor);
+                stocks[input] -= taken;
+                weekLog.AddInputs(input, taken);
+                LastDay.AddInputs(input, needed, taken);
+            }
+
+            return factor;
         }
 
         private static int[] StartingWorkersOf(IReadOnlyList<MarketGood> goods, WorkforceRule workforce)
