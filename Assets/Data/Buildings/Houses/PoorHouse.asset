@@ -19,5 +19,7 @@ MonoBehaviour:
     units: 10
   - good: {fileID: 11400000, guid: 4aa4ecf3894e5d34b8ade5228cde2e48, type: 2}
     units: 10
+  - good: {fileID: 11400000, guid: 4ca27dedb2f7085448acb00de4c9761a, type: 2}
+    units: 40
   socialClass: 2
   room: 140
