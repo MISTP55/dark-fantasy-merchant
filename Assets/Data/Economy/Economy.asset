@@ -22,7 +22,7 @@ MonoBehaviour:
   - good: {fileID: 11400000, guid: e16d4cf6557c96944bd222d7b8d70c9d, type: 2}
     active: 1
   - good: {fileID: 11400000, guid: 6e7e1dd68eea0924888bedf71fa7be72, type: 2}
-    active: 0
+    active: 1
   - good: {fileID: 11400000, guid: bce1ec221f911fe4fbb8d73be43de51b, type: 2}
     active: 1
   - good: {fileID: 11400000, guid: a99e7b1605a341b4ebd40f9ad0bb0760, type: 2}
@@ -44,15 +44,15 @@ MonoBehaviour:
   - good: {fileID: 11400000, guid: 162c9bd0d68bff0479a6d68a5b63b40d, type: 2}
     active: 1
   - good: {fileID: 11400000, guid: a6f289409860c3845a74f080d558fd10, type: 2}
-    active: 0
+    active: 1
   - good: {fileID: 11400000, guid: 742f8f0eb153b5340b4793df8bd7b622, type: 2}
-    active: 0
+    active: 1
   - good: {fileID: 11400000, guid: 00e756b06ca491c4ab15fc26b44160a0, type: 2}
-    active: 0
+    active: 1
   - good: {fileID: 11400000, guid: 15fb5c777029f084daf4b709fbc1b570, type: 2}
     active: 1
   - good: {fileID: 11400000, guid: 4ca27dedb2f7085448acb00de4c9761a, type: 2}
-    active: 0
+    active: 1
   startingStockDays: 7
   barrelsPerBushel: 10
   inefficientEfficiency: 0.75
