@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97dbf28e6257fc748b545afb61ebdfa1, type: 3}
   m_Name: AiMerchants
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.AiMerchantsDefinition
-  shipsPerCity: 2
+  shipsPerCity: 4
   shipDefinition: {fileID: 11400000, guid: 18b3e3fb8dac72947b20f2d72f48a95a, type: 2}
   tint: {r: 0.5, g: 0.7, b: 1, a: 1}
   crew: 14
