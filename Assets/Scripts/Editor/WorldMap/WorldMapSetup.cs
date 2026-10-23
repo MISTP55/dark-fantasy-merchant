@@ -365,6 +365,7 @@ namespace DarkFantasyMerchant.Editor
             AddExpensesToScene(mapSceneHadUnsavedChanges);
             AddEconomyToScene(mapSceneHadUnsavedChanges);
             AddAiMerchantsToScene(mapSceneHadUnsavedChanges);
+            AddSimulationServicesToScene(mapSceneHadUnsavedChanges);
             AddDebugToolsToScene(mapSceneHadUnsavedChanges);
             AssetDatabase.SaveAssets();
 
@@ -1844,6 +1845,57 @@ namespace DarkFantasyMerchant.Editor
             if (changed)
             {
                 SaveSceneChanges(scene, sceneHadUnsavedChanges, "The AI merchants");
+            }
+        }
+
+        // After every component it gives access to, so that it finds them all, also in a scene
+        // built before it existed.
+        private static void AddSimulationServicesToScene(bool sceneHadUnsavedChanges)
+        {
+            if (!TryOpenMapScene("The simulation services", out Scene scene))
+            {
+                return;
+            }
+
+            var worldClock = FindInScene<WorldClock>(scene);
+            var playerTreasury = FindInScene<PlayerTreasury>(scene);
+            var playerNotifications = FindInScene<PlayerNotifications>(scene);
+            var worldEconomy = FindInScene<WorldEconomy>(scene);
+            var shipsView = FindInScene<ShipsView>(scene);
+            var aiMerchants = FindInScene<AiMerchants>(scene);
+
+            // Added all the same: the services the scene has are reachable, the others filled in
+            // by a later run.
+            if (worldClock == null || playerTreasury == null || playerNotifications == null
+                || worldEconomy == null || shipsView == null || aiMerchants == null)
+            {
+                Debug.LogWarning(
+                    $"{ScenePath} lacks a WorldClock, PlayerTreasury, PlayerNotifications, WorldEconomy, "
+                    + "ShipsView or AiMerchants; the simulation services miss it.");
+            }
+
+            bool changed = false;
+            var services = FindInScene<SimulationServices>(scene);
+
+            if (services == null)
+            {
+                GameObject servicesObject = CreateInGroup(scene, SimulationGroup, "Simulation Services");
+
+                services = servicesObject.AddComponent<SimulationServices>();
+                changed = true;
+            }
+
+            // Also for a scene in which one of them was deleted and made again.
+            changed |= FillReference(services, "worldClock", worldClock);
+            changed |= FillReference(services, "playerTreasury", playerTreasury);
+            changed |= FillReference(services, "playerNotifications", playerNotifications);
+            changed |= FillReference(services, "worldEconomy", worldEconomy);
+            changed |= FillReference(services, "shipsView", shipsView);
+            changed |= FillReference(services, "aiMerchants", aiMerchants);
+
+            if (changed)
+            {
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The simulation services");
             }
         }
 

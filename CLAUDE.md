@@ -38,7 +38,7 @@ Inside each assembly folder, scripts are in one subfolder per subsystem, with th
 | `Population` | `population.md` | Labour, beggars, houses, buildings and construction |
 | `AiMerchants` | `ai-merchants.md` | AI merchant ships and their planning |
 | `Debug` | `debug-tools.md` | In-game debug tools |
-| `Common` | — | Shared helpers (`NameOrder`, `ListStripes`, test helpers) |
+| `Common` | — | Shared helpers (`NameOrder`, `ListStripes`, `SimulationServices`, test helpers) |
 
 A new script goes in the subfolder of its subsystem; a new subsystem gets its subfolder in every assembly that needs one, and its rule, with `paths` matching those subfolders.
 
@@ -46,7 +46,8 @@ A new script goes in the subfolder of its subsystem; a new subsystem gets its su
 
 - `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates whatever is missing (scene, prefabs, panel settings, data assets, scene objects and the references between them) and leaves what exists untouched. Every new scene object, data asset or reference between components must be added to it, so that an existing scene gets it too. It saves the scene unless it already had unsaved changes, and gives cities that produce nothing the productions of the sample content.
 - The scene's root holds only empty groups at the origin (`Rendering`, `World`, `UI`, `Simulation`, `Debug`), which hold every object. `WorldMapSetup` puts each object it creates in its group (`CreateInGroup`), and makes the group when it is missing; an object made again goes last in its group. Do not reorder the panels and HUDs of `UI`: UI documents of equal `sortingOrder` may be drawn in that order.
-- Components that others read in `Awake`/`Start` are created first: `WorldClock`, `PlayerTreasury` and `PlayerNotifications` run at execution order -100.
+- Components that others read in `Awake`/`Start` are created first: `WorldClock`, `PlayerTreasury`, `PlayerNotifications` and `SimulationServices` run at execution order -100.
+- `SimulationServices.Current` is the entry point to the components that run the world (clock, treasury, notifications, economy, ships, AI merchants). Code that has no serialized reference to them, in particular the objects of another scene, which cannot hold one, goes through it; the world map scene's own objects keep their serialized references. It is set in the world map scene's `Awake`: an object of a scene loaded with it, or before it, finds it null in its own `Awake`. A new service of the simulation is added to it.
 
 ### Runtime UI
 
