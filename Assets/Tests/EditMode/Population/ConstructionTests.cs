@@ -170,6 +170,99 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void TryBuildHouse_Free_TakesNothing_EvenFromATreasuryInDebt()
+        {
+            var grid = new CityGrid(4, 4, new Vector2Int[0]);
+            CityMarket market = GridMarket(grid);
+            CargoHold hold = HoldWith(3);
+            var treasury = new Treasury(-500);
+            int stock = market.AvailableOf(0);
+            int reports = 0;
+            var place = new GridPlace(new Vector2Int(1, 1), BuildingOrientation.Along);
+
+            bool built = Construction.TryBuildHouse(market, hold, treasury, Cost(100), SocialClass.Poor, 100, new Footprint(1, 1), place,
+                (good, units, gold) => reports++, isFree: true);
+
+            Assert.IsTrue(built);
+            Assert.AreEqual(1, grid.HousesOf(SocialClass.Poor));
+            Assert.AreEqual(-500, treasury.Gold);
+            Assert.AreEqual(3, hold.UnitsOf(0));
+            Assert.AreEqual(stock, market.AvailableOf(0));
+            Assert.AreEqual(0, reports);
+        }
+
+        [Test]
+        public void TryBuildHouse_Free_StillNeedsAFreePlace()
+        {
+            var grid = new CityGrid(4, 4, new Vector2Int[0]);
+            CityMarket market = GridMarket(grid);
+            var place = new GridPlace(new Vector2Int(1, 1), BuildingOrientation.Along);
+            Construction.TryBuildHouse(market, null, new Treasury(0), Cost(), SocialClass.Poor, 100, new Footprint(1, 1), place, isFree: true);
+
+            bool built = Construction.TryBuildHouse(market, null, new Treasury(0), Cost(), SocialClass.Poor, 100, new Footprint(1, 1), place, isFree: true);
+
+            Assert.IsFalse(built);
+            Assert.AreEqual(1, grid.Buildings.Count);
+        }
+
+        [Test]
+        public void TryBuildWorkshop_Free_TakesNothing_EvenFromATreasuryInDebt()
+        {
+            var grid = new CityGrid(4, 4, new Vector2Int[0]);
+            CityMarket market = GridMarket(grid);
+            CargoHold hold = HoldWith(3);
+            var treasury = new Treasury(-500);
+            int stock = market.AvailableOf(0);
+            int reports = 0;
+            var place = new GridPlace(new Vector2Int(2, 2), BuildingOrientation.Along);
+
+            bool built = Construction.TryBuildWorkshop(market, hold, treasury, Cost(1000), 1, 5, new Footprint(2, 2), place,
+                (good, units, gold) => reports++, isFree: true);
+
+            Assert.IsTrue(built);
+            Assert.AreEqual(1, market.PlayerWorkshopsOf(1));
+            Assert.AreEqual(-500, treasury.Gold);
+            Assert.AreEqual(3, hold.UnitsOf(0));
+            Assert.AreEqual(stock, market.AvailableOf(0));
+            Assert.AreEqual(0, reports);
+        }
+
+        [Test]
+        public void TryBuildWorkshop_Free_RefusesAGoodTheCityDoesNotProduce()
+        {
+            var grid = new CityGrid(4, 4, new Vector2Int[0]);
+            CityMarket market = GridMarket(grid);
+            var place = new GridPlace(new Vector2Int(2, 2), BuildingOrientation.Along);
+
+            bool built = Construction.TryBuildWorkshop(market, null, new Treasury(0), Cost(), 0, 5, new Footprint(2, 2), place, isFree: true);
+
+            Assert.IsFalse(built);
+            Assert.AreEqual(0, grid.Buildings.Count);
+        }
+
+        [Test]
+        public void QuoteHouse_Free_IsPossibleAtNoGold_EvenFromATreasuryInDebt()
+        {
+            ConstructionQuote quote = Construction.QuoteHouse(Market(), null, new Treasury(-1), Cost(1000), isFree: true);
+
+            Assert.IsTrue(quote.IsPossible);
+            Assert.AreEqual(0, quote.Gold);
+        }
+
+        [Test]
+        public void QuoteWorkshop_Free_IsPossibleAtNoGold_OnlyForAProducedGood()
+        {
+            CityMarket market = Market();
+
+            ConstructionQuote produced = Construction.QuoteWorkshop(market, null, new Treasury(-1), Cost(1000), 1, isFree: true);
+            ConstructionQuote notProduced = Construction.QuoteWorkshop(market, null, new Treasury(-1), Cost(1000), 0, isFree: true);
+
+            Assert.IsTrue(produced.IsPossible);
+            Assert.AreEqual(0, produced.Gold);
+            Assert.IsFalse(notProduced.IsPossible);
+        }
+
+        [Test]
         public void Quote_TakesTheHoldFirst_ThenPricesWhatIsBought()
         {
             CityMarket market = Market();

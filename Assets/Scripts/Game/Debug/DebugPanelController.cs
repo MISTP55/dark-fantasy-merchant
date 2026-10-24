@@ -8,11 +8,11 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// The debug tools' panel, in four tabs: the cities as they are, the curves of their past, the
     /// flows of the trades in their markets, and the ships, the player's and the others, with what
-    /// they are doing and carrying. The header chooses how far back the record
-    /// goes and speeds the world's normal speed up. Opened and closed with the debug key, on the
-    /// map and in the city view; exists only in the Editor and in development builds. Reads the
+    /// they are doing and carrying. The header chooses how far back the record goes, speeds the
+    /// world's normal speed up and makes the player's buildings free. Opened and closed with the
+    /// debug key, on the map and in the city view; exists only in the Editor and in development builds. Reads the
     /// simulation and changes nothing, but for the buttons of the ships tab, which add and remove
-    /// the ships of the AI merchants, and the slider of the header.
+    /// the ships of the AI merchants, and the slider and the free building box of the header.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class DebugPanelController : MonoBehaviour
@@ -39,6 +39,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Optional. Without it, the curves and trades tabs have nothing to show.")]
         [SerializeField] private SimulationRecorder recorder;
 
+        [Tooltip("Optional. Without it, the panel has no box to make the player's buildings free.")]
+        [SerializeField] private PlayerBuilder playerBuilder;
+
         private VisualElement panel;
         private readonly Button[] tabButtons = new Button[TabNames.Length];
         private readonly VisualElement[] pages = new VisualElement[TabNames.Length];
@@ -58,6 +61,7 @@ namespace DarkFantasyMerchant.Game
         private SliderInt speedSlider;
         private VisualElement horizon;
         private DropdownField horizonField;
+        private Toggle freeBuildingToggle;
 
         // Null without a usable world clock.
         private GameClock clock;
@@ -152,6 +156,17 @@ namespace DarkFantasyMerchant.Game
             closeButton.focusable = false;
             speedSlider.focusable = false;
             horizonField.focusable = false;
+            freeBuildingToggle.focusable = false;
+
+            if (playerBuilder == null)
+            {
+                freeBuildingToggle.style.display = DisplayStyle.None;
+            }
+            else
+            {
+                freeBuildingToggle.SetValueWithoutNotify(playerBuilder.IsFree);
+                freeBuildingToggle.RegisterValueChangedCallback(OnFreeBuildingChanged);
+            }
 
             clock = worldClock != null && worldClock.IsReady ? worldClock.Clock : null;
 
@@ -197,6 +212,11 @@ namespace DarkFantasyMerchant.Game
             if (clock != null)
             {
                 speedSlider.UnregisterValueChangedCallback(OnSpeedChanged);
+            }
+
+            if (playerBuilder != null)
+            {
+                freeBuildingToggle.UnregisterValueChangedCallback(OnFreeBuildingChanged);
             }
 
             if (recorder != null)
@@ -276,11 +296,13 @@ namespace DarkFantasyMerchant.Game
             speedSlider = root.Q<SliderInt>("speed-slider");
             horizon = root.Q<VisualElement>("horizon");
             horizonField = root.Q<DropdownField>("horizon-field");
+            freeBuildingToggle = root.Q<Toggle>("free-building-toggle");
 
             foreach (VisualElement element in new VisualElement[]
                      {
                          panel, citiesHeader, citiesRows, citiesTotals, goodsHeader, goodsRows, goodsTotals, shipsHeader,
                          shipsRows, unavailable, closeButton, addShipButton, speed, speedLabel, speedSlider, horizon, horizonField,
+                         freeBuildingToggle,
                      })
             {
                 if (element == null)
@@ -412,6 +434,12 @@ namespace DarkFantasyMerchant.Game
         {
             clock.SetNormalSpeedMultiplier(change.newValue);
             ShowSpeed();
+        }
+
+        // Neither gold nor materials: the city view's offers are quoted again at once.
+        private void OnFreeBuildingChanged(ChangeEvent<bool> change)
+        {
+            playerBuilder.SetFree(change.newValue);
         }
 
         private void ShowSpeed()

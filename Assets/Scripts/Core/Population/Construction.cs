@@ -87,27 +87,32 @@ namespace DarkFantasyMerchant.Core
     /// Quotes and pays for a player's building (a house or a workshop): the materials come first
     /// from a ship's hold, the rest is bought from the city's market, and the gold is taken from
     /// the treasury, all or nothing. What is bought does not pass through a hold. The purchase is
-    /// priced with the market as it is before anything is taken, and exactly that is paid.
+    /// priced with the market as it is before anything is taken, and exactly that is paid. A free
+    /// building (the debug tools') takes nothing and asks nothing of the treasury, not even to be
+    /// out of debt; a workshop still needs a city that produces its good, and a building its place.
     /// </summary>
     public static class Construction
     {
         /// <summary>Quotes a house; <paramref name="hold"/> may be null (no ship: everything is bought).</summary>
-        public static ConstructionQuote QuoteHouse(CityMarket market, CargoHold hold, Treasury treasury, BuildingCost cost)
+        /// <param name="isFree">For the debug tools: the quote is possible at 0 gold.</param>
+        public static ConstructionQuote QuoteHouse(CityMarket market, CargoHold hold, Treasury treasury, BuildingCost cost, bool isFree = false)
         {
             Require(market, treasury, cost);
 
-            return Quote(market, hold, treasury, cost, true);
+            return Quote(market, hold, treasury, cost, true, isFree);
         }
 
         /// <summary>
         /// Quotes a workshop for a good; impossible when the city does not produce it.
         /// <paramref name="hold"/> may be null (no ship: everything is bought).
         /// </summary>
-        public static ConstructionQuote QuoteWorkshop(CityMarket market, CargoHold hold, Treasury treasury, BuildingCost cost, int good)
+        /// <param name="isFree">For the debug tools: the quote is possible at 0 gold when the city produces the good.</param>
+        public static ConstructionQuote QuoteWorkshop(
+            CityMarket market, CargoHold hold, Treasury treasury, BuildingCost cost, int good, bool isFree = false)
         {
             Require(market, treasury, cost);
 
-            return Quote(market, hold, treasury, cost, market.MaxWorkersOf(good) > 0);
+            return Quote(market, hold, treasury, cost, market.MaxWorkersOf(good) > 0, isFree);
         }
 
         /// <param name="materialBought">Told, for the debug tools, of each material bought from the market: its good, units and gold.</param>
@@ -132,7 +137,7 @@ namespace DarkFantasyMerchant.Core
                 return false;
             }
 
-            Pay(market, hold, treasury, cost, quote, materialBought);
+            Pay(market, hold, treasury, cost, quote, materialBought, false);
             market.AddPlayerHouse(housedClass, room);
             return true;
         }
@@ -159,7 +164,7 @@ namespace DarkFantasyMerchant.Core
                 return false;
             }
 
-            Pay(market, hold, treasury, cost, quote, materialBought);
+            Pay(market, hold, treasury, cost, quote, materialBought, false);
             market.AddPlayerWorkshop(good, jobs);
             return true;
         }
@@ -177,6 +182,7 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>Builds a house at a place of the market's grid; the place is checked before anything is paid.</summary>
         /// <param name="materialBought">Told, for the debug tools, of each material bought from the market: its good, units and gold.</param>
+        /// <param name="isFree">For the debug tools: nothing is taken, nothing is bought.</param>
         /// <returns>False when the quote is impossible or the house cannot stand there; nothing was taken then.</returns>
         /// <exception cref="ArgumentOutOfRangeException">A room under 1, before anything is taken.</exception>
         public static bool TryBuildHouse(
@@ -188,7 +194,8 @@ namespace DarkFantasyMerchant.Core
             int room,
             Footprint footprint,
             GridPlace place,
-            Action<int, int, long> materialBought = null)
+            Action<int, int, long> materialBought = null,
+            bool isFree = false)
         {
             RequireAtLeastOne(room, nameof(room));
             RequireClass(housedClass);
@@ -198,20 +205,21 @@ namespace DarkFantasyMerchant.Core
                 return false;
             }
 
-            ConstructionQuote quote = QuoteHouse(market, hold, treasury, cost);
+            ConstructionQuote quote = QuoteHouse(market, hold, treasury, cost, isFree);
 
             if (!quote.IsPossible)
             {
                 return false;
             }
 
-            Pay(market, hold, treasury, cost, quote, materialBought);
+            Pay(market, hold, treasury, cost, quote, materialBought, isFree);
             market.AddPlayerHouse(housedClass, room, footprint, place);
             return true;
         }
 
         /// <summary>Builds a workshop at a place of the market's grid; the place is checked before anything is paid.</summary>
         /// <param name="materialBought">Told, for the debug tools, of each material bought from the market: its good, units and gold.</param>
+        /// <param name="isFree">For the debug tools: nothing is taken, nothing is bought.</param>
         /// <returns>False when the quote is impossible or the workshop cannot stand there; nothing was taken then.</returns>
         /// <exception cref="ArgumentOutOfRangeException">Jobs under 1, before anything is taken.</exception>
         public static bool TryBuildWorkshop(
@@ -223,7 +231,8 @@ namespace DarkFantasyMerchant.Core
             int jobs,
             Footprint footprint,
             GridPlace place,
-            Action<int, int, long> materialBought = null)
+            Action<int, int, long> materialBought = null,
+            bool isFree = false)
         {
             RequireAtLeastOne(jobs, nameof(jobs));
 
@@ -232,20 +241,26 @@ namespace DarkFantasyMerchant.Core
                 return false;
             }
 
-            ConstructionQuote quote = QuoteWorkshop(market, hold, treasury, cost, good);
+            ConstructionQuote quote = QuoteWorkshop(market, hold, treasury, cost, good, isFree);
 
             if (!quote.IsPossible)
             {
                 return false;
             }
 
-            Pay(market, hold, treasury, cost, quote, materialBought);
+            Pay(market, hold, treasury, cost, quote, materialBought, isFree);
             market.AddPlayerWorkshop(good, jobs, footprint, place);
             return true;
         }
 
-        private static ConstructionQuote Quote(CityMarket market, CargoHold hold, Treasury treasury, BuildingCost cost, bool buildable)
+        private static ConstructionQuote Quote(
+            CityMarket market, CargoHold hold, Treasury treasury, BuildingCost cost, bool buildable, bool isFree)
         {
+            if (isFree)
+            {
+                return new ConstructionQuote(buildable, 0);
+            }
+
             bool possible = buildable;
             long gold = cost.Gold;
 
@@ -276,8 +291,14 @@ namespace DarkFantasyMerchant.Core
             Treasury treasury,
             BuildingCost cost,
             ConstructionQuote quote,
-            Action<int, int, long> materialBought)
+            Action<int, int, long> materialBought,
+            bool isFree)
         {
+            if (isFree)
+            {
+                return;
+            }
+
             foreach (MaterialCost material in cost.Materials)
             {
                 int toBuy = ToBuy(hold, material);

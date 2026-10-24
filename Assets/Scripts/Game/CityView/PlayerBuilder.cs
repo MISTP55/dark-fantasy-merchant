@@ -9,6 +9,7 @@ namespace DarkFantasyMerchant.Game
     /// The one place through which the player builds: quotes a building in a city, builds it at a
     /// place of the city's grid, pays from the treasury and, first, from the hold of the player's
     /// ship docked in the city, announces it and tells the debug tools of each material bought.
+    /// The debug tools can make every building free (<see cref="SetFree"/>).
     /// </summary>
     public sealed class PlayerBuilder : MonoBehaviour
     {
@@ -22,6 +23,27 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>Raised for each material a building bought from the market: its good, units and gold. For the debug tools.</summary>
         public event Action<CityDefinition, int, int, long> MaterialBought;
+
+        /// <summary>Raised when buildings become free or stop being free: every quote has changed.</summary>
+        public event Action FreeChanged;
+
+        /// <summary>
+        /// For the debug tools: every building is quoted at 0 gold and takes neither gold nor materials,
+        /// even from a treasury in debt. Off for the whole session unless they switch it on.
+        /// </summary>
+        public bool IsFree { get; private set; }
+
+        /// <summary>Makes every building free, or not; only in the Editor and development builds.</summary>
+        public void SetFree(bool isFree)
+        {
+            if (!Debug.isDebugBuild || isFree == IsFree)
+            {
+                return;
+            }
+
+            IsFree = isFree;
+            FreeChanged?.Invoke();
+        }
 
         /// <summary>"Construction achevée à Lübeck : Bûcheron.": a building's name has no known gender, the sentence needs none.</summary>
         public static string BuildingBuiltText(string city, string building)
@@ -37,7 +59,7 @@ namespace DarkFantasyMerchant.Game
                 return default;
             }
 
-            return Construction.QuoteHouse(market, HoldIn(city), treasury, offer.Cost);
+            return Construction.QuoteHouse(market, HoldIn(city), treasury, offer.Cost, IsFree);
         }
 
         /// <summary>What building a workshop in the city would cost now; impossible without a market, an offer with a cost or a treasury.</summary>
@@ -48,7 +70,7 @@ namespace DarkFantasyMerchant.Game
                 return default;
             }
 
-            return Construction.QuoteWorkshop(market, HoldIn(city), treasury, offer.Cost, offer.Good);
+            return Construction.QuoteWorkshop(market, HoldIn(city), treasury, offer.Cost, offer.Good, IsFree);
         }
 
         /// <returns>True when the house was built at the place; nothing was paid otherwise.</returns>
@@ -61,7 +83,7 @@ namespace DarkFantasyMerchant.Game
 
             bool built = Construction.TryBuildHouse(
                 market, HoldIn(city), treasury, offer.Cost, offer.HousedClass, offer.Room, offer.Footprint, place,
-                (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold));
+                (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold), IsFree);
 
             if (built)
             {
@@ -81,7 +103,7 @@ namespace DarkFantasyMerchant.Game
 
             bool built = Construction.TryBuildWorkshop(
                 market, HoldIn(city), treasury, offer.Cost, offer.Good, offer.Jobs, offer.Footprint, place,
-                (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold));
+                (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold), IsFree);
 
             if (built)
             {

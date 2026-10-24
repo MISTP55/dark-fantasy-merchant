@@ -10,13 +10,16 @@ namespace DarkFantasyMerchant.Game
     /// The build bar of the city view, over its document: two categories at the bottom, and above them the offers
     /// of the chosen one in the alphabetical order of their names, each with what it would cost now. An offer that
     /// cannot be built now is disabled, and so is a workshop of a good the city does not produce. The pointer over
-    /// an offer, enabled or not, shows its full cost in a tip. Follows the market, the treasury and the hold the
-    /// materials come from while it is shown, never every frame.
+    /// an offer, enabled or not, shows its full cost in a tip. Follows the market, the treasury, the hold the
+    /// materials come from and the debug tools' free building while it is shown, never every frame.
     /// </summary>
     public sealed class BuildBarController
     {
         public const string HousesText = "Maisons";
         public const string WorkshopsText = "Ateliers";
+
+        /// <summary>The cost tip while the debug tools make every building free.</summary>
+        public const string FreeText = "Gratuit (débogage)";
 
         private const string OfferClass = "build-bar__offer";
         private const string OfferAreaClass = "build-bar__offer-area";
@@ -143,6 +146,8 @@ namespace DarkFantasyMerchant.Game
                 treasury.Changed += OnGoldChanged;
             }
 
+            builder.FreeChanged += Refresh;
+
             if (docking != null)
             {
                 docking.Docked += OnDockingChanged;
@@ -163,6 +168,11 @@ namespace DarkFantasyMerchant.Game
             if (treasury != null)
             {
                 treasury.Changed -= OnGoldChanged;
+            }
+
+            if (builder != null)
+            {
+                builder.FreeChanged -= Refresh;
             }
 
             if (docking != null)
@@ -255,7 +265,7 @@ namespace DarkFantasyMerchant.Game
 
         private void ShowCostTip(Offer offer, VisualElement area)
         {
-            costTip.text = offer.CostText;
+            costTip.text = builder != null && builder.IsFree ? FreeText : offer.CostText;
             costTip.style.display = DisplayStyle.Flex;
 
             VisualElement parent = costTip.parent;

@@ -11,6 +11,7 @@
                     <ui:Button name="trades-tab" text="Échanges" class="debug-panel__tab" />
                     <ui:Button name="ships-tab" text="Navires" class="debug-panel__tab" />
                 </ui:VisualElement>
+                <ui:Toggle name="free-building-toggle" text="Construction gratuite" class="debug-panel__toggle" />
                 <ui:VisualElement name="horizon" class="debug-panel__horizon">
                     <ui:Label text="Historique" class="debug-panel__speed-label debug-panel__horizon-label" />
                     <ui:DropdownField name="horizon-field" class="debug-panel__dropdown" />

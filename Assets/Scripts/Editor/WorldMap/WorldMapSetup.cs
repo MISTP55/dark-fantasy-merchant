@@ -2172,6 +2172,9 @@ namespace DarkFantasyMerchant.Editor
             changed |= FillReference(recorder, "playerBuilder", FindInScene<PlayerBuilder>(scene));
             changed |= FillReference(panel, "recorder", recorder);
 
+            // Its box that makes the player's buildings free.
+            changed |= FillReference(panel, "playerBuilder", FindInScene<PlayerBuilder>(scene));
+
             if (changed)
             {
                 SaveSceneChanges(scene, sceneHadUnsavedChanges, "The debug panel");
