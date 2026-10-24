@@ -5,13 +5,13 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// The colour of a house by the class it shelters, the same in the city view and the layout window: shades of
-    /// yellow, from light for the poor to dark for the rich.
+    /// yellow of one hue and lightness, the duller the poorer.
     /// </summary>
     public static class HouseColors
     {
-        public static readonly Color Rich = new Color32(0xA6, 0x7C, 0x00, 0xFF);
-        public static readonly Color Wealthy = new Color32(0xE0, 0xBC, 0x2A, 0xFF);
-        public static readonly Color Poor = new Color32(0xF5, 0xE6, 0x9C, 0xFF);
+        public static readonly Color Rich = new Color32(0xE0, 0xBC, 0x2A, 0xFF);
+        public static readonly Color Wealthy = new Color32(0xBC, 0xA6, 0x4E, 0xFF);
+        public static readonly Color Poor = new Color32(0x9E, 0x94, 0x6D, 0xFF);
 
         public static Color Of(SocialClass housedClass)
         {
