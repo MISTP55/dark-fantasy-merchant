@@ -50,6 +50,10 @@ namespace DarkFantasyMerchant.Editor
         private CityLayoutDefinition shownLayout;
         private Vector2 scroll;
 
+        // Every city asset, in the alphabetical order of their names, and those names for the drop-down.
+        private readonly List<CityDefinition> cities = new List<CityDefinition>();
+        private string[] cityNames = new string[0];
+
         [MenuItem("Tools/Dark Fantasy Merchant/City Layout")]
         public static void Open()
         {
@@ -61,7 +65,37 @@ namespace DarkFantasyMerchant.Editor
             economy = FindAsset<EconomyDefinition>();
             buildings = FindAsset<BuildingsDefinition>();
             wantsMouseMove = true;
+            FindCities();
             OnSelectionChange();
+        }
+
+        private void OnProjectChange()
+        {
+            FindCities();
+            Repaint();
+        }
+
+        private void FindCities()
+        {
+            cities.Clear();
+
+            foreach (string guid in AssetDatabase.FindAssets("t:" + nameof(CityDefinition)))
+            {
+                var found = AssetDatabase.LoadAssetAtPath<CityDefinition>(AssetDatabase.GUIDToAssetPath(guid));
+
+                if (found != null)
+                {
+                    cities.Add(found);
+                }
+            }
+
+            NameOrder.Sort(cities, NameOf);
+            cityNames = cities.ConvertAll(NameOf).ToArray();
+        }
+
+        private static string NameOf(CityDefinition definition)
+        {
+            return string.IsNullOrEmpty(definition.DisplayName) ? definition.name : definition.DisplayName;
         }
 
         private void OnSelectionChange()
@@ -75,11 +109,16 @@ namespace DarkFantasyMerchant.Editor
 
         private void OnGUI()
         {
-            city = (CityDefinition)EditorGUILayout.ObjectField("City", city, typeof(CityDefinition), false);
+            int chosen = EditorGUILayout.Popup("City", cities.IndexOf(city), cityNames);
+
+            if (chosen >= 0 && chosen < cities.Count)
+            {
+                city = cities[chosen];
+            }
 
             if (city == null)
             {
-                EditorGUILayout.HelpBox("Select a city.", MessageType.Info);
+                EditorGUILayout.HelpBox(cities.Count > 0 ? "Choose a city." : "There is no city asset.", MessageType.Info);
                 return;
             }
 
