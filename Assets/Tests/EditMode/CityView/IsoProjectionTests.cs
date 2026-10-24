@@ -55,38 +55,64 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void SortingOrderOf_DrawsTheNearerLater()
+        public void DrawKeyOf_DrawsTheNearerLater()
         {
             var one = Vector2Int.one;
             Assert.Greater(
-                IsoProjection.SortingOrderOf(new Vector2Int(5, 5), one),
-                IsoProjection.SortingOrderOf(new Vector2Int(4, 4), one));
+                IsoProjection.DrawKeyOf(new Vector2Int(5, 5), one),
+                IsoProjection.DrawKeyOf(new Vector2Int(4, 4), one));
         }
 
         [Test]
-        public void SortingOrderOf_A1x2IsInFrontOfAnAdjacent2x2()
+        public void DrawKeyOf_A1x2IsInFrontOfAnAdjacent2x2()
         {
             Assert.Greater(
-                IsoProjection.SortingOrderOf(new Vector2Int(2, 0), new Vector2Int(1, 2)),
-                IsoProjection.SortingOrderOf(new Vector2Int(0, 1), new Vector2Int(2, 2)));
+                IsoProjection.DrawKeyOf(new Vector2Int(2, 0), new Vector2Int(1, 2)),
+                IsoProjection.DrawKeyOf(new Vector2Int(0, 1), new Vector2Int(2, 2)));
         }
 
         [Test]
-        public void SortingOrderOf_A2x1IsInFrontOfAnAdjacent2x2()
+        public void DrawKeyOf_A2x1IsInFrontOfAnAdjacent2x2()
         {
             Assert.Greater(
-                IsoProjection.SortingOrderOf(new Vector2Int(0, 2), new Vector2Int(2, 1)),
-                IsoProjection.SortingOrderOf(new Vector2Int(1, 0), new Vector2Int(2, 2)));
+                IsoProjection.DrawKeyOf(new Vector2Int(0, 2), new Vector2Int(2, 1)),
+                IsoProjection.DrawKeyOf(new Vector2Int(1, 0), new Vector2Int(2, 2)));
         }
 
         [Test]
-        public void SortingOrderOf_NeverTiesOrInvertsAFrontBlockAndTheOneBehindIt()
+        public void DrawKeyOf_OrdersEveryFrontBlockAfterTheOneBehindIt_NearTheOrigin()
+        {
+            AssertFrontBlocksDrawnLater(0, 19, 0, 19);
+        }
+
+        [Test]
+        public void DrawKeyOf_OrdersEveryFrontBlockAfterTheOneBehindIt_AtTheFarCornersOfA200x200Grid()
+        {
+            AssertFrontBlocksDrawnLater(194, 198, 0, 4);
+            AssertFrontBlocksDrawnLater(0, 4, 194, 198);
+            AssertFrontBlocksDrawnLater(194, 198, 194, 198);
+        }
+
+        [Test]
+        public void DrawKeyOf_KeepsItsOrderOnA1000x1000Grid()
+        {
+            var behind = IsoProjection.DrawKeyOf(new Vector2Int(998, 998), Vector2Int.one);
+            var front = IsoProjection.DrawKeyOf(new Vector2Int(999, 999), Vector2Int.one);
+            Assert.Greater(front, behind);
+            Assert.Greater(behind, 0L);
+        }
+
+        /// <summary>
+        /// Over every non-overlapping pair of 1x1, 2x1, 1x2 and 2x2 blocks with origins in the given ranges: when one
+        /// is beyond the other on an axis and they can be drawn over one another on screen, it has the larger key.
+        /// </summary>
+        private static void AssertFrontBlocksDrawnLater(int minX, int maxX, int minY, int maxY)
         {
             var sizes = new[] { new Vector2Int(1, 1), new Vector2Int(2, 1), new Vector2Int(1, 2), new Vector2Int(2, 2) };
             var blocks = new System.Collections.Generic.List<(Vector2Int origin, Vector2Int size)>();
-            for (var x = 0; x <= 4; x++)
+            for (var x = minX; x <= maxX; x++)
             {
-                for (var y = 0; y <= 4; y++)
+                for (var y = minY; y <= maxY; y++)
                 {
                     foreach (var size in sizes)
                     {
@@ -117,18 +143,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
                     }
 
                     Assert.Greater(
-                        IsoProjection.SortingOrderOf(a.origin, a.size),
-                        IsoProjection.SortingOrderOf(b.origin, b.size),
+                        IsoProjection.DrawKeyOf(a.origin, a.size),
+                        IsoProjection.DrawKeyOf(b.origin, b.size),
                         $"{a.origin} {a.size} should be drawn after {b.origin} {b.size}");
                 }
             }
-        }
-
-        [Test]
-        public void SortingOrderOf_StaysInTheSortingOrderRangeOnTheLargestGrid()
-        {
-            var order = IsoProjection.SortingOrderOf(new Vector2Int(199, 199), Vector2Int.one);
-            Assert.LessOrEqual(order, short.MaxValue);
         }
     }
 }

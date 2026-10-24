@@ -40,20 +40,20 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
-        /// The sorting order of a building: the further down the screen its centre is, the later it is drawn.
-        /// The centre alone ties for two blocks of the same shape side by side, one in front of the other, so the
-        /// tie is broken by the side of the diagonal the origin is on, seen from the long side of the block (a
-        /// square has no long side). The tie-break is clamped: it only matters between neighbours, and the order
-        /// has to stay in Unity's sorting-order range (a short) on grids up to 200 by 200.
+        /// The key that orders buildings for drawing: a larger key is drawn later. It is not a sortingOrder itself
+        /// (it does not fit one): the city view ranks the placed buildings by this key and gives each sprite its rank.
+        /// The key is lexicographic: the centre of the block (twice the sum of the origin plus the sum of the size),
+        /// then, for same-shape neighbours that tie on the centre, the side of the diagonal the origin is on, seen
+        /// from the long side of the block (a square has no long side). Good for grids up to 1000 by 1000.
         /// </summary>
         /// <param name="size">The covered size, already turned (<see cref="Footprint.SizeFor"/>).</param>
-        public static int SortingOrderOf(Vector2Int origin, Vector2Int size)
+        public static long DrawKeyOf(Vector2Int origin, Vector2Int size)
         {
-            var centre = 2 * (origin.x + origin.y) + size.x + size.y;
-            var tieBreak = Mathf.Clamp((origin.y - origin.x) * Mathf.Clamp(size.x - size.y, -1, 1), -TieBreakReach, TieBreakReach);
-            return centre * (2 * TieBreakReach + 2) + tieBreak + TieBreakReach;
+            long centre = 2 * (origin.x + origin.y) + size.x + size.y;
+            long tieBreak = (origin.y - origin.x) * Mathf.Clamp(size.x - size.y, -1, 1);
+            return centre * TieBreakSpan + tieBreak + TieBreakSpan / 2;
         }
 
-        private const int TieBreakReach = 7;
+        private const long TieBreakSpan = 1_000_000;
     }
 }
