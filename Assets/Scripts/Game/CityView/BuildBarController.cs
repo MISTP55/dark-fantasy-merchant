@@ -8,9 +8,9 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// The build bar of the city view, over its document: two categories at the bottom, and above them the offers
-    /// of the chosen one in the alphabetical order of their names, each with what it would cost now. An offer that
-    /// cannot be built now is disabled, and so is a workshop of a good the city does not produce. The pointer over
-    /// an offer, enabled or not, shows its full cost in a tip. Follows the market, the treasury, the hold the
+    /// of the chosen one in the alphabetical order of their names, each with what it would cost now. Only the
+    /// workshops of the goods the city produces are offered; an offer that cannot be built now is disabled. The
+    /// pointer over an offer, enabled or not, shows its full cost in a tip. Follows the market, the treasury, the hold the
     /// materials come from and the debug tools' free building while it is shown, never every frame.
     /// </summary>
     public sealed class BuildBarController
@@ -219,7 +219,11 @@ namespace DarkFantasyMerchant.Game
             {
                 foreach (WorkshopOffer workshop in workshopOffers)
                 {
-                    offers.Add(new Offer { Workshop = workshop });
+                    // A workshop of a good the city does not produce could never be built there.
+                    if (IsProduced(workshop.Good))
+                    {
+                        offers.Add(new Offer { Workshop = workshop });
+                    }
                 }
             }
 
@@ -337,18 +341,9 @@ namespace DarkFantasyMerchant.Game
 
             foreach (Offer offer in offers)
             {
-                ConstructionQuote quote;
-
-                if (offer.House != null)
-                {
-                    quote = builder.QuoteHouse(city, offer.House);
-                }
-                else
-                {
-                    int good = offer.Workshop.Good;
-                    bool isProduced = market != null && good >= 0 && good < market.GoodCount && market.MaxWorkersOf(good) > 0;
-                    quote = isProduced ? builder.QuoteWorkshop(city, offer.Workshop) : default;
-                }
+                ConstructionQuote quote = offer.House != null
+                    ? builder.QuoteHouse(city, offer.House)
+                    : builder.QuoteWorkshop(city, offer.Workshop);
 
                 // An impossible quote's gold means nothing: the offer shows its name alone.
                 offer.Button.text = quote.IsPossible ? OfferText(offer.Name, quote.Gold) : offer.Name;
@@ -356,6 +351,11 @@ namespace DarkFantasyMerchant.Game
             }
 
             Refreshed?.Invoke();
+        }
+
+        private bool IsProduced(int good)
+        {
+            return market != null && good >= 0 && good < market.GoodCount && market.MaxWorkersOf(good) > 0;
         }
     }
 }
