@@ -14,7 +14,8 @@ namespace DarkFantasyMerchant.Core
         /// <param name="occupancy">Share of the class's room above which the city builds, between 0 and 1 (0.95 for the poor).</param>
         /// <param name="room">Places of a house the city builds, at least 1.</param>
         /// <param name="materials">Units of goods a house takes from the market, each good at most once; none is a house built from nothing.</param>
-        public CityHousingRule(SocialClass housedClass, double occupancy, int room, IReadOnlyList<MaterialCost> materials)
+        /// <param name="footprint">The cells a house covers on the city grid; required only when the market has a grid.</param>
+        public CityHousingRule(SocialClass housedClass, double occupancy, int room, IReadOnlyList<MaterialCost> materials, Footprint? footprint = null)
         {
             if (housedClass < SocialClass.Rich || housedClass > SocialClass.Poor)
             {
@@ -54,6 +55,7 @@ namespace DarkFantasyMerchant.Core
             Occupancy = occupancy;
             Room = room;
             Materials = copy;
+            Footprint = footprint;
         }
 
         /// <summary>The class the house shelters.</summary>
@@ -64,6 +66,9 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>Places of a house the city builds.</summary>
         public int Room { get; }
+
+        /// <summary>The cells a house covers on the city grid; null when the market has no grid.</summary>
+        public Footprint? Footprint { get; }
 
         /// <summary>Units of goods a house takes from the market.</summary>
         public IReadOnlyList<MaterialCost> Materials { get; }

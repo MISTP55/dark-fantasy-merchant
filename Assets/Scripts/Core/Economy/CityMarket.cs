@@ -30,6 +30,7 @@ namespace DarkFantasyMerchant.Core
         private readonly int[] reserves;
         private readonly double[] leakCounters;
         private readonly List<PlayerWorkshop> playerWorkshops = new List<PlayerWorkshop>();
+        private readonly IPlacementStrategy placement;
         private readonly ThresholdRule thresholdRule;
         private readonly WorkforceRule workforce;
         private readonly MarketPricing pricing;
@@ -53,6 +54,8 @@ namespace DarkFantasyMerchant.Core
         /// <param name="labour">How the workshops take their workers from the population; null for immediate hiring and a population that stays.</param>
         /// <param name="housing">When the city builds a house of its own for a class, each class once at most, only with labour; null for a city that never does.</param>
         /// <param name="social">The satisfaction and the moves of the classes, only with labour; null for classes that never move.</param>
+        /// <param name="grid">The city grid the houses stand on, with its placement strategy (both or neither); null for a city whose houses have no place. Every housing rule then has a footprint.</param>
+        /// <param name="placement">Where the city builds its own houses on the grid.</param>
         public CityMarket(
             IReadOnlyList<MarketGood> goods,
             ThresholdRule thresholdRule,
@@ -63,7 +66,9 @@ namespace DarkFantasyMerchant.Core
             CityPopulation population,
             LabourRule labour = null,
             IReadOnlyList<CityHousingRule> housing = null,
-            SocialRule social = null)
+            SocialRule social = null,
+            CityGrid grid = null,
+            IPlacementStrategy placement = null)
         {
             if (goods == null)
             {
@@ -94,6 +99,25 @@ namespace DarkFantasyMerchant.Core
             Labour = labour;
             Housing = CopyOf(housing);
             Social = social;
+
+            if ((grid == null) != (placement == null))
+            {
+                throw new ArgumentException("A grid and a placement strategy come together.", nameof(grid));
+            }
+
+            if (grid != null)
+            {
+                foreach (CityHousingRule rule in Housing)
+                {
+                    if (rule.Footprint == null)
+                    {
+                        throw new ArgumentException("A market with a grid needs a footprint for every housing rule.", nameof(housing));
+                    }
+                }
+            }
+
+            Grid = grid;
+            this.placement = placement;
             this.daysPerWeek = daysPerWeek;
             weekLog = new MarketWeekLog(goods.Count, daysPerWeek);
             LastDay = new CityDayReport(goods.Count);
@@ -162,6 +186,9 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>When the city builds a house of its own for each class; empty when it never does.</summary>
         public IReadOnlyList<CityHousingRule> Housing { get; }
+
+        /// <summary>The grid the houses and the player's workshops stand on; null for a city whose buildings have no place.</summary>
+        public CityGrid Grid { get; }
 
         /// <summary>How the classes are satisfied and move; null when they never do.</summary>
         public SocialRule Social { get; }
@@ -354,6 +381,72 @@ namespace DarkFantasyMerchant.Core
         /// </summary>
         public void AddPlayerWorkshop(int good, int jobs)
         {
+            RequireNoGrid();
+            RequireWorkshop(good, jobs);
+            playerWorkshops.Add(new PlayerWorkshop(good, jobs));
+            Changed?.Invoke();
+        }
+
+        /// <summary>Adds a workshop of the player on the grid, as <see cref="AddPlayerWorkshop(int, int)"/> does.</summary>
+        /// <exception cref="InvalidOperationException">The market has no grid, or the footprint cannot stand at the place; nothing has changed then.</exception>
+        public void AddPlayerWorkshop(int good, int jobs, Footprint footprint, GridPlace place)
+        {
+            RequireStandable(footprint, place);
+            RequireWorkshop(good, jobs);
+            Grid.Place(BuildingKind.Workshop(good), BuildingOwner.Player, footprint, place);
+            playerWorkshops.Add(new PlayerWorkshop(good, jobs));
+            Changed?.Invoke();
+        }
+
+        /// <summary>Adds a house of the player for a class: its room is the city's, open to any inhabitant of the class.</summary>
+        public void AddPlayerHouse(SocialClass housedClass, int room)
+        {
+            RequireNoGrid();
+            Population.AddRoom(housedClass, room);
+            playerHouses[(int)housedClass]++;
+            Changed?.Invoke();
+        }
+
+        /// <summary>Adds a house of the player on the grid, as <see cref="AddPlayerHouse(SocialClass, int)"/> does.</summary>
+        /// <exception cref="InvalidOperationException">The market has no grid, or the footprint cannot stand at the place; nothing has changed then.</exception>
+        public void AddPlayerHouse(SocialClass housedClass, int room, Footprint footprint, GridPlace place)
+        {
+            RequireStandable(footprint, place);
+
+            if (room < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(room));
+            }
+
+            Grid.Place(BuildingKind.House(housedClass), BuildingOwner.Player, footprint, place);
+            Population.AddRoom(housedClass, room);
+            playerHouses[(int)housedClass]++;
+            Changed?.Invoke();
+        }
+
+        private void RequireNoGrid()
+        {
+            if (Grid != null)
+            {
+                throw new InvalidOperationException("A market with a grid builds at a place.");
+            }
+        }
+
+        private void RequireStandable(Footprint footprint, GridPlace place)
+        {
+            if (Grid == null)
+            {
+                throw new InvalidOperationException("The market has no grid.");
+            }
+
+            if (!Grid.CanPlace(footprint, place))
+            {
+                throw new InvalidOperationException("The footprint does not fit at this place.");
+            }
+        }
+
+        private void RequireWorkshop(int good, int jobs)
+        {
             RequireGood(good);
 
             if (!goods[good].IsProduced)
@@ -365,17 +458,6 @@ namespace DarkFantasyMerchant.Core
             {
                 throw new ArgumentOutOfRangeException(nameof(jobs));
             }
-
-            playerWorkshops.Add(new PlayerWorkshop(good, jobs));
-            Changed?.Invoke();
-        }
-
-        /// <summary>Adds a house of the player for a class: its room is the city's, open to any inhabitant of the class.</summary>
-        public void AddPlayerHouse(SocialClass housedClass, int room)
-        {
-            Population.AddRoom(housedClass, room);
-            playerHouses[(int)housedClass]++;
-            Changed?.Invoke();
         }
 
         /// <summary>The most workers the city's workshop for a good can have: 0 for a good it does not produce.</summary>
@@ -775,10 +857,23 @@ namespace DarkFantasyMerchant.Core
                 }
             }
 
+            // With a grid the house needs a place, found before anything is taken.
+            GridPlace place = default;
+
+            if (Grid != null && !placement.TryChoose(Grid, rule.Footprint.Value, out place))
+            {
+                return;
+            }
+
             foreach (MaterialCost material in rule.Materials)
             {
                 // Not below nothing: the last unit can be a hair short.
                 stocks[material.Good] = Math.Max(0d, stocks[material.Good] - material.Units);
+            }
+
+            if (Grid != null)
+            {
+                Grid.Place(BuildingKind.House(rule.HousedClass), BuildingOwner.City, rule.Footprint.Value, place);
             }
 
             Population.AddRoom(rule.HousedClass, rule.Room);

@@ -124,6 +124,46 @@ namespace DarkFantasyMerchant.Core
         /// <param name="roomPerHouse">Places of one house of each class, at least 1; each room is a whole number of houses, rounded up.</param>
         public static CityPopulation AtStart(int workers, int inhabitantsPerWorker, double beggarsPerWorker, PerClass<int> roomPerHouse)
         {
+            return AtStart(workers, inhabitantsPerWorker, beggarsPerWorker, roomPerHouse, RoomAtStart(workers, inhabitantsPerWorker, roomPerHouse));
+        }
+
+        /// <summary>
+        /// The room of each class in a new game: as many whole houses as its inhabitants need,
+        /// which is what <see cref="AtStart(int, int, double, PerClass{int})"/> gives.
+        /// </summary>
+        /// <param name="workers">Workers of the city.</param>
+        /// <param name="inhabitantsPerWorker">Inhabitants a worker's family takes up, at least 1.</param>
+        /// <param name="roomPerHouse">Places of one house of each class, at least 1.</param>
+        public static PerClass<int> RoomAtStart(int workers, int inhabitantsPerWorker, PerClass<int> roomPerHouse)
+        {
+            RequireStart(workers, inhabitantsPerWorker, roomPerHouse);
+            PerClass<int> counts = HousedAtStart(workers, inhabitantsPerWorker);
+
+            return new PerClass<int>(
+                RoomFor(counts.Rich, roomPerHouse.Rich),
+                RoomFor(counts.Wealthy, roomPerHouse.Wealthy),
+                RoomFor(counts.Poor, roomPerHouse.Poor));
+        }
+
+        /// <summary>The population of a new game, with the given room instead of the whole houses' (see <see cref="RoomAtStart"/>).</summary>
+        /// <param name="room">Places of the houses of each class.</param>
+        public static CityPopulation AtStart(int workers, int inhabitantsPerWorker, double beggarsPerWorker, PerClass<int> roomPerHouse, PerClass<int> room)
+        {
+            RequireStart(workers, inhabitantsPerWorker, roomPerHouse);
+
+            // The negated comparison also rejects NaN.
+            if (!(beggarsPerWorker >= 0d) || double.IsInfinity(beggarsPerWorker))
+            {
+                throw new ArgumentOutOfRangeException(nameof(beggarsPerWorker));
+            }
+
+            int beggars = (int)Math.Floor(workers * beggarsPerWorker + 1e-9);
+
+            return new CityPopulation(HousedAtStart(workers, inhabitantsPerWorker), beggars, room);
+        }
+
+        private static void RequireStart(int workers, int inhabitantsPerWorker, PerClass<int> roomPerHouse)
+        {
             if (workers < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(workers));
@@ -141,24 +181,15 @@ namespace DarkFantasyMerchant.Core
                     throw new ArgumentOutOfRangeException(nameof(roomPerHouse));
                 }
             }
+        }
 
-            // The negated comparison also rejects NaN.
-            if (!(beggarsPerWorker >= 0d) || double.IsInfinity(beggarsPerWorker))
-            {
-                throw new ArgumentOutOfRangeException(nameof(beggarsPerWorker));
-            }
-
+        private static PerClass<int> HousedAtStart(int workers, int inhabitantsPerWorker)
+        {
             int housed = workers * inhabitantsPerWorker;
             int rich = housed / 10;
             int wealthy = 3 * rich;
-            var counts = new PerClass<int>(rich, wealthy, housed - rich - wealthy);
-            int beggars = (int)Math.Floor(workers * beggarsPerWorker + 1e-9);
-            var room = new PerClass<int>(
-                RoomFor(counts.Rich, roomPerHouse.Rich),
-                RoomFor(counts.Wealthy, roomPerHouse.Wealthy),
-                RoomFor(counts.Poor, roomPerHouse.Poor));
 
-            return new CityPopulation(counts, beggars, room);
+            return new PerClass<int>(rich, wealthy, housed - rich - wealthy);
         }
 
         /// <summary>Adds places to the houses of a class.</summary>

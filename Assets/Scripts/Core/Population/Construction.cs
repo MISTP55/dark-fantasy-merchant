@@ -162,6 +162,85 @@ namespace DarkFantasyMerchant.Core
             return true;
         }
 
+        /// <summary>Whether the market has a grid where the footprint fits at the place.</summary>
+        public static bool CanStand(CityMarket market, Footprint footprint, GridPlace place)
+        {
+            if (market == null)
+            {
+                throw new ArgumentNullException(nameof(market));
+            }
+
+            return market.Grid != null && market.Grid.CanPlace(footprint, place);
+        }
+
+        /// <summary>Builds a house at a place of the market's grid; the place is checked before anything is paid.</summary>
+        /// <param name="materialBought">Told, for the debug tools, of each material bought from the market: its good, units and gold.</param>
+        /// <returns>False when the quote is impossible or the house cannot stand there; nothing was taken then.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">A room under 1, before anything is taken.</exception>
+        public static bool TryBuildHouse(
+            CityMarket market,
+            CargoHold hold,
+            Treasury treasury,
+            BuildingCost cost,
+            SocialClass housedClass,
+            int room,
+            Footprint footprint,
+            GridPlace place,
+            Action<int, int, long> materialBought = null)
+        {
+            RequireAtLeastOne(room, nameof(room));
+
+            if (!CanStand(market, footprint, place))
+            {
+                return false;
+            }
+
+            ConstructionQuote quote = QuoteHouse(market, hold, treasury, cost);
+
+            if (!quote.IsPossible)
+            {
+                return false;
+            }
+
+            Pay(market, hold, treasury, cost, quote, materialBought);
+            market.AddPlayerHouse(housedClass, room, footprint, place);
+            return true;
+        }
+
+        /// <summary>Builds a workshop at a place of the market's grid; the place is checked before anything is paid.</summary>
+        /// <param name="materialBought">Told, for the debug tools, of each material bought from the market: its good, units and gold.</param>
+        /// <returns>False when the quote is impossible or the workshop cannot stand there; nothing was taken then.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Jobs under 1, before anything is taken.</exception>
+        public static bool TryBuildWorkshop(
+            CityMarket market,
+            CargoHold hold,
+            Treasury treasury,
+            BuildingCost cost,
+            int good,
+            int jobs,
+            Footprint footprint,
+            GridPlace place,
+            Action<int, int, long> materialBought = null)
+        {
+            RequireAtLeastOne(jobs, nameof(jobs));
+
+            if (!CanStand(market, footprint, place))
+            {
+                return false;
+            }
+
+            ConstructionQuote quote = QuoteWorkshop(market, hold, treasury, cost, good);
+
+            if (!quote.IsPossible)
+            {
+                return false;
+            }
+
+            Pay(market, hold, treasury, cost, quote, materialBought);
+            market.AddPlayerWorkshop(good, jobs, footprint, place);
+            return true;
+        }
+
         private static ConstructionQuote Quote(CityMarket market, CargoHold hold, Treasury treasury, BuildingCost cost, bool buildable)
         {
             bool possible = buildable;

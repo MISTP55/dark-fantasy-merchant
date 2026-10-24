@@ -19,7 +19,7 @@ paths:
   4. the player's workshops, which hire from the beggars after the city, never lay off and produce nothing yet (`PlayerDailyOutputOf` is known, `MerchantOutputRule`; their production will need a trading office, the "comptoir");
   5. the rich and the wealthy take poor or give them back, then the poor without room or unhappy leave the city with their jobs (reserves first, then the city's workers above 30, then the player's);
   6. the beggars, who come or go towards `BeggarTarget`;
-  7. a house for each crowded class (`CityHousingRule`, one per class, at most one house per class a day).
+  7. a house for each crowded class (`CityHousingRule`, one per class, at most one house per class a day).  With a grid, a house the strategy finds no place for is not built (nothing is taken).
 - A family sent back to the beggars is taken from the three classes, the unhappy ones giving more (`SendToBeggars`); a worker whose family cannot be taken stays in his reserve.
 - The rules are in `CityMarketLabourTests` / `CityMarketHousingTests` / `CityMarketSocialTests` / `SocialRuleTests`.
 

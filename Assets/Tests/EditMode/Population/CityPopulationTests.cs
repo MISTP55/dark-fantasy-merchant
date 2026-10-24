@@ -49,6 +49,31 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void RoomAtStart_IsWholeHouses()
+        {
+            PerClass<int> room = CityPopulation.RoomAtStart(275, 4, HouseRooms);
+
+            Assert.AreEqual(120, room.Rich);
+            Assert.AreEqual(350, room.Wealthy);
+            Assert.AreEqual(700, room.Poor);
+        }
+
+        [Test]
+        public void AtStart_WithRoom_KeepsTheInhabitants_AndTakesTheRoom()
+        {
+            var given = new PerClass<int>(40, 70, 280);
+            CityPopulation population = CityPopulation.AtStart(275, 4, 4d / 17d, HouseRooms, given);
+
+            Assert.AreEqual(110, population.CountOf(SocialClass.Rich));
+            Assert.AreEqual(330, population.CountOf(SocialClass.Wealthy));
+            Assert.AreEqual(660, population.CountOf(SocialClass.Poor));
+            Assert.AreEqual(64, population.Beggars);
+            Assert.AreEqual(40, population.RoomOf(SocialClass.Rich));
+            Assert.AreEqual(70, population.RoomOf(SocialClass.Wealthy));
+            Assert.AreEqual(280, population.RoomOf(SocialClass.Poor));
+        }
+
+        [Test]
         public void ConstructedWithTheHousedOnly_HasNoBeggarAndExactlyTheirRoom()
         {
             var population = new CityPopulation(2100);
