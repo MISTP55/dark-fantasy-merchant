@@ -37,6 +37,9 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private Color forbiddenCellColor = new Color32(0x24, 0x43, 0x5E, 0xFF);
         [Tooltip("The colour of every workshop; a house takes the colour of its class.")]
         [SerializeField] private Color workshopColor = new Color32(0xD6, 0x3A, 0xC4, 0xFF);
+        [Tooltip("A building's block is drawn this much smaller than its footprint, around its centre, so that a gap shows between neighbours.")]
+        [SerializeField, Range(0.5f, 1f)] private float buildingScale = 0.85f;
+
         [SerializeField] private Color validGhostColor = new Color32(0x6F, 0xBF, 0x73, 0x99);
         [SerializeField] private Color invalidGhostColor = new Color32(0xD0, 0x50, 0x50, 0x99);
 
@@ -185,6 +188,7 @@ namespace DarkFantasyMerchant.Game
             SpriteRenderer buildingRenderer = CreateRenderer(
                 $"{building.Owner} {(building.Kind.IsHouse ? "House" : "Workshop")} {origin.x},{origin.y}", buildingRoot, BlockSpriteOf(size));
             buildingRenderer.transform.localPosition = IsoProjection.CenterOf(origin, size);
+            buildingRenderer.transform.localScale = new Vector3(buildingScale, buildingScale, 1f);
             buildingRenderer.color = building.Kind.IsHouse ? HouseColors.Of(building.Kind.HousedClass) : workshopColor;
 
             // The buildings at and above the new one's rank move up by one.
