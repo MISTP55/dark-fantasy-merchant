@@ -27,3 +27,4 @@ paths:
 - `BuildingsDefinition.PlacementStrategy` (a `PlacementStrategyDefinition`, `Assets/Data/Buildings/Placement/`) is required: `WorldEconomy` makes one strategy for the whole world from it.
 - `CityLayoutDefinition` (`CityDefinition.Layout`) is a city's grid: size, forbidden cells, starting houses with their place. `TryCreateGrid` gives the grid; a city without a usable layout gets a market without grid and one warning at the start. `WorldEconomy.GridOf` returns the grid.
 - With a grid, the room of a class at the start is its houses on the grid × the room of a house (`EconomyDefinition.CreateMarket`); `StartingRoomOf` is the room a grid should give at least.
+- The scene setup gives a city without a layout (`Assets/Data/CityLayouts/<city>Layout.asset`) a 40 by 40 grid (`CityLayoutDefinition.DefaultSize`) with just the starting houses `StartingRoomOf` asks for, placed at random with the city's index in the map as seed; a city with a layout is never touched.

@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3b8fc5160fb5e547a2cd2adcb786f1b, type: 3}
+  m_Name: HamburgLayout
+  m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.CityLayoutDefinition
+  width: 40
+  height: 40
+  forbiddenCells: []
+  startingHouses:
+  - socialClass: 0
+    origin: {x: 30, y: 17}
+    orientation: 1
+  - socialClass: 0
+    origin: {x: 15, y: 36}
+    orientation: 1
+  - socialClass: 0
+    origin: {x: 6, y: 20}
+    orientation: 1
+  - socialClass: 1
+    origin: {x: 38, y: 35}
+    orientation: 1
+  - socialClass: 1
+    origin: {x: 4, y: 10}
+    orientation: 1
+  - socialClass: 1
+    origin: {x: 12, y: 6}
+    orientation: 0
+  - socialClass: 1
+    origin: {x: 31, y: 27}
+    orientation: 0
+  - socialClass: 1
+    origin: {x: 17, y: 26}
+    orientation: 1
+  - socialClass: 2
+    origin: {x: 8, y: 35}
+    orientation: 1
+  - socialClass: 2
+    origin: {x: 0, y: 17}
+    orientation: 0
+  - socialClass: 2
+    origin: {x: 30, y: 7}
+    orientation: 1
+  - socialClass: 2
+    origin: {x: 1, y: 5}
+    orientation: 1
+  - socialClass: 2
+    origin: {x: 0, y: 12}
+    orientation: 0

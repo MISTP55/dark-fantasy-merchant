@@ -26,3 +26,4 @@ MonoBehaviour:
   inefficientGoods:
   - {fileID: 11400000, guid: 610fada3e2af0f94a8f65494caaccba1, type: 2}
   - {fileID: 11400000, guid: 3a65d2812ceb57d40b5f455f5cad9518, type: 2}
+  layout: {fileID: 11400000, guid: 48a4c0e43c7910e40aead69882c9238b, type: 2}

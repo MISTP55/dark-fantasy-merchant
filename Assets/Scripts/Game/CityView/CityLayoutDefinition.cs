@@ -35,11 +35,14 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
+        /// <summary>Cells on each side of a new layout, and of the default grids the scene setup makes.</summary>
+        public const int DefaultSize = 40;
+
         [Tooltip("Cells on x, at least 1.")]
-        [SerializeField, Min(1)] private int width = 20;
+        [SerializeField, Min(1)] private int width = DefaultSize;
 
         [Tooltip("Cells on y, at least 1.")]
-        [SerializeField, Min(1)] private int height = 20;
+        [SerializeField, Min(1)] private int height = DefaultSize;
 
         [Tooltip("Cells nothing can cover (water, rock, fixed scenery), inside the grid.")]
         [SerializeField] private List<Vector2Int> forbiddenCells = new List<Vector2Int>();
