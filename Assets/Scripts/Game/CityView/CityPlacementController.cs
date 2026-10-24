@@ -250,6 +250,14 @@ namespace DarkFantasyMerchant.Game
                 return false;
             }
 
+            // A release over the UI (the build bar, say) builds nothing.
+            if (input != null && input.IsOverUi(screenPosition))
+            {
+                isTracing = false;
+                Hover(screenPosition);
+                return false;
+            }
+
             Hover(screenPosition);
             isTracing = false;
             RoadTrace.Of(traceStart, traceEnd, traceCells);

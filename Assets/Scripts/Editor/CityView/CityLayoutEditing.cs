@@ -177,9 +177,15 @@ namespace DarkFantasyMerchant.Editor
         /// grid's centre without houses), then lays the roads that connect each starting house not yet connected, in
         /// list order. Records nothing when nothing changes.
         /// </summary>
-        /// <returns>The number of starting houses left unconnected: walled in, or no town hall could stand.</returns>
+        /// <returns>The number of starting houses left unconnected: walled in, no town hall could stand, or the layout's content overlaps (nothing is changed then).</returns>
         public static int AutoConnect(CityLayoutDefinition layout, BuildingsDefinition buildings)
         {
+            // A hand-edited layout whose content overlaps cannot be placed on a grid: leave it as it is.
+            if (!TryMakeGrid(layout, buildings, out _))
+            {
+                return layout.StartingHouses.Count;
+            }
+
             GridPlace? townHall = TownHallOf(layout);
             var roads = new List<Vector2Int>(layout.Roads);
 

@@ -314,6 +314,24 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void AutoConnect_OverlappingContent_ReturnsTheHouseCountAndChangesNothing()
+        {
+            layout.SetContent(
+                10, 10, new Vector2Int[0],
+                new[]
+                {
+                    new CityLayoutDefinition.StartingHouse(SocialClass.Poor, new Vector2Int(0, 0), BuildingOrientation.Along),
+                    new CityLayoutDefinition.StartingHouse(SocialClass.Rich, new Vector2Int(0, 0), BuildingOrientation.Along),
+                },
+                null, new Vector2Int[0]);
+
+            Assert.AreEqual(2, CityLayoutEditing.AutoConnect(layout, buildings));
+
+            Assert.IsFalse(layout.HasTownHall);
+            Assert.AreEqual(0, layout.Roads.Count);
+        }
+
+        [Test]
         public void AutoConnect_WithNoRoomForATownHall_ReturnsTheHouseCountAndChangesNothing()
         {
             CityLayoutEditing.RemoveTownHall(layout);

@@ -25,8 +25,8 @@ namespace DarkFantasyMerchant.Core
 
         /// <remarks>
         /// A place costs the least distance, in roads, over the free cells touching it, ignoring the building's own
-        /// cells, so the cost is a lower bound: the drawn place is confirmed by the exact search, and dropped when
-        /// its roads are longer or missing.
+        /// cells, so the cost is a lower bound: the drawn place is confirmed by the exact search, re-ranked at its
+        /// exact cost when its roads are longer, and dropped only when no road path exists.
         /// </remarks>
         public bool TryChoose(CityGrid grid, Footprint footprint, out GridPlace place, List<Vector2Int> roads)
         {
