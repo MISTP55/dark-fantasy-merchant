@@ -515,13 +515,14 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         /// <param name="room">Places of a house of the class, the player's.</param>
         /// <param name="materials">What a house takes from the market (<see cref="BuildingDefinition.MaterialsOf"/>).</param>
-        public CityHousingRule CreateHousingRule(SocialClass housedClass, int room, IReadOnlyList<MaterialCost> materials)
+        /// <param name="footprint">The cells a house covers on the city grid; null for a market without grid.</param>
+        public CityHousingRule CreateHousingRule(SocialClass housedClass, int room, IReadOnlyList<MaterialCost> materials, Footprint? footprint = null)
         {
             double occupancy = housedClass == SocialClass.Rich
                 ? cityRichHouseOccupancy
                 : housedClass == SocialClass.Wealthy ? cityWealthyHouseOccupancy : cityPoorHouseOccupancy;
 
-            return new CityHousingRule(housedClass, occupancy, room, materials);
+            return new CityHousingRule(housedClass, occupancy, room, materials, footprint);
         }
 
         /// <summary>Barrels of room a unit of a good takes in a hold: one, or the barrels per bushel.</summary>
@@ -576,6 +577,22 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
+        /// The room the city's starting population needs, class by class: a whole number of houses
+        /// (<see cref="CityPopulation.RoomAtStart"/>).
+        /// </summary>
+        /// <param name="roomPerHouse">Places of a house of each class, each at least 1.</param>
+        public PerClass<int> StartingRoomOf(CityDefinition city, PerClass<int> roomPerHouse)
+        {
+            if (city == null)
+            {
+                throw new ArgumentNullException(nameof(city));
+            }
+
+            return CityPopulation.RoomAtStart(
+                CityMarket.StartingWorkforceOf(CreateMarketGoods(city, 1), CreateWorkforceRule()), inhabitantsPerWorker, roomPerHouse);
+        }
+
+        /// <summary>
         /// The market of a city at the start of the game, with one stock per active good and its
         /// population: the starting population, the same in every city, or, with a labour rule,
         /// the one of a new game (housed families, beggars, houses). Call
@@ -586,6 +603,8 @@ namespace DarkFantasyMerchant.Game
         /// <param name="roomPerHouse">Places of a house of each class, each at least 1 with a labour rule: the city starts with as many houses as each class needs.</param>
         /// <param name="housing">When the city builds a house of its own for each class, only with a labour rule; null for never.</param>
         /// <param name="social">The satisfaction and moves of the classes, only with a labour rule; null for classes that never move.</param>
+        /// <param name="grid">The city's grid, only with a labour rule: its houses give the room of each class (instead of the whole houses the population needs). With a placement strategy and a footprint on every housing rule.</param>
+        /// <param name="placement">Where the city's buildings are put on the grid; comes with the grid.</param>
         public CityMarket CreateMarket(
             CityDefinition city,
             MarketPricing pricing,
@@ -593,7 +612,9 @@ namespace DarkFantasyMerchant.Game
             LabourRule labour = null,
             PerClass<int> roomPerHouse = default,
             IReadOnlyList<CityHousingRule> housing = null,
-            SocialRule social = null)
+            SocialRule social = null,
+            CityGrid grid = null,
+            IPlacementStrategy placement = null)
         {
             if (city == null)
             {
@@ -610,6 +631,44 @@ namespace DarkFantasyMerchant.Game
                 throw new ArgumentOutOfRangeException(nameof(roomPerHouse), "A house shelters at least one inhabitant.");
             }
 
+            MarketGood[] marketGoods = CreateMarketGoods(city, daysPerWeek);
+
+            WorkforceRule workforce = CreateWorkforceRule();
+
+            // The labour relies on housed = inhabitants per worker x workers: only the start gives that.
+            int workers = CityMarket.StartingWorkforceOf(marketGoods, workforce);
+            CityPopulation population = labour == null
+                ? new CityPopulation(StartingPopulation)
+                : CityPopulation.AtStart(
+                    workers,
+                    inhabitantsPerWorker,
+                    startingBeggarsPerWorker,
+                    roomPerHouse,
+                    grid == null
+                        ? CityPopulation.RoomAtStart(workers, inhabitantsPerWorker, roomPerHouse)
+                        : new PerClass<int>(
+                            grid.HousesOf(SocialClass.Rich) * roomPerHouse.Rich,
+                            grid.HousesOf(SocialClass.Wealthy) * roomPerHouse.Wealthy,
+                            grid.HousesOf(SocialClass.Poor) * roomPerHouse.Poor));
+
+            return new CityMarket(
+                marketGoods,
+                CreateThresholdRule(),
+                workforce,
+                startingStockDays,
+                pricing,
+                daysPerWeek,
+                population,
+                labour,
+                housing,
+                social,
+                grid,
+                placement);
+        }
+
+        // One stock-less market good per active good of the catalogue, as the city produces it.
+        private MarketGood[] CreateMarketGoods(CityDefinition city, int daysPerWeek)
+        {
             var marketGoods = new MarketGood[Goods.Count];
 
             for (int i = 0; i < Goods.Count; i++)
@@ -645,28 +704,7 @@ namespace DarkFantasyMerchant.Game
                     .WithInputs(InputsOf(good));
             }
 
-            WorkforceRule workforce = CreateWorkforceRule();
-
-            // The labour relies on housed = inhabitants per worker x workers: only the start gives that.
-            CityPopulation population = labour == null
-                ? new CityPopulation(StartingPopulation)
-                : CityPopulation.AtStart(
-                    CityMarket.StartingWorkforceOf(marketGoods, workforce),
-                    inhabitantsPerWorker,
-                    startingBeggarsPerWorker,
-                    roomPerHouse);
-
-            return new CityMarket(
-                marketGoods,
-                CreateThresholdRule(),
-                workforce,
-                startingStockDays,
-                pricing,
-                daysPerWeek,
-                population,
-                labour,
-                housing,
-                social);
+            return marketGoods;
         }
 
         // The recipe of a good by the indices of its inputs among the active goods; an inactive input is left out.

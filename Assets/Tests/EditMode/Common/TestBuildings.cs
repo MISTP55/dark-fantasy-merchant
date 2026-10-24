@@ -17,6 +17,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var serialized = new SerializedObject(workshop);
             serialized.FindProperty("good").objectReferenceValue = good;
             serialized.FindProperty("jobs").intValue = jobs;
+            serialized.FindProperty("footprint").vector2IntValue = new Vector2Int(2, 2);
             SetBuilding(serialized, name, gold, materials);
             return workshop;
         }
@@ -30,8 +31,43 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var serialized = new SerializedObject(house);
             serialized.FindProperty("socialClass").enumValueIndex = (int)housedClass;
             serialized.FindProperty("room").intValue = room;
+            serialized.FindProperty("footprint").vector2IntValue = new Vector2Int(2, 1);
             SetBuilding(serialized, name, gold, materials);
             return house;
+        }
+
+        /// <summary>A valid catalogue: a house per class (40, 70 and 140 places, 2 by 1 cells) and a random placement strategy.</summary>
+        public static BuildingsDefinition CreateCatalogue()
+        {
+            var buildings = ScriptableObject.CreateInstance<BuildingsDefinition>();
+            HouseDefinition rich = CreateHouse("Maison de riches", SocialClass.Rich, 0, 40);
+            HouseDefinition wealthy = CreateHouse("Maison d'aisés", SocialClass.Wealthy, 0, 70);
+            HouseDefinition poor = CreateHouse("Maison de pauvres", SocialClass.Poor, 0, 140);
+
+            var serialized = new SerializedObject(buildings);
+            SerializedProperty houses = serialized.FindProperty("houses");
+            houses.arraySize = 3;
+            houses.GetArrayElementAtIndex(0).objectReferenceValue = rich;
+            houses.GetArrayElementAtIndex(1).objectReferenceValue = wealthy;
+            houses.GetArrayElementAtIndex(2).objectReferenceValue = poor;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            SetPlacement(buildings, ScriptableObject.CreateInstance<RandomPlacementDefinition>());
+            return buildings;
+        }
+
+        /// <summary>Gives a catalogue its placement strategy; null takes it away.</summary>
+        public static void SetPlacement(BuildingsDefinition buildings, PlacementStrategyDefinition placement)
+        {
+            var serialized = new SerializedObject(buildings);
+            serialized.FindProperty("placementStrategy").objectReferenceValue = placement;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        public static void SetFootprint(BuildingDefinition building, Vector2Int footprint)
+        {
+            var serialized = new SerializedObject(building);
+            serialized.FindProperty("footprint").vector2IntValue = footprint;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         /// <summary>Gives a definition a new gold and new materials.</summary>

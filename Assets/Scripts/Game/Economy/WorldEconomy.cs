@@ -17,6 +17,7 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private WorldClock worldClock;
 
         private readonly Dictionary<CityDefinition, CityMarket> markets = new Dictionary<CityDefinition, CityMarket>();
+        private readonly Dictionary<CityDefinition, CityGrid> grids = new Dictionary<CityDefinition, CityGrid>();
 
         private GameClock clock;
 
@@ -47,6 +48,12 @@ namespace DarkFantasyMerchant.Game
         public CityMarket MarketOf(CityDefinition city)
         {
             return city != null && markets.TryGetValue(city, out CityMarket market) ? market : null;
+        }
+
+        /// <returns>The grid of a city's market, or null for a city without one (no usable layout) and before the markets exist.</returns>
+        public CityGrid GridOf(CityDefinition city)
+        {
+            return city != null && grids.TryGetValue(city, out CityGrid grid) ? grid : null;
         }
 
         // Start, not Awake: WorldMapView lists its cities in its Awake.
@@ -89,6 +96,7 @@ namespace DarkFantasyMerchant.Game
             if (!TryCreateMarkets())
             {
                 markets.Clear();
+                grids.Clear();
                 return;
             }
 
@@ -131,13 +139,27 @@ namespace DarkFantasyMerchant.Game
                 foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
                 {
                     housing.Add(economy.CreateHousingRule(
-                        housedClass, rooms[housedClass], buildings.HouseOf(housedClass).MaterialsOf(economy)));
+                        housedClass, rooms[housedClass], buildings.HouseOf(housedClass).MaterialsOf(economy),
+                        buildings.HouseOf(housedClass).Footprint));
                 }
+
+                // One chance and one strategy for the whole world.
+                IPlacementStrategy placement = buildings.PlacementStrategy.CreateStrategy(new System.Random());
 
                 foreach (CityDefinition city in mapView.Cities)
                 {
                     WarnAbout(city);
-                    markets[city] = economy.CreateMarket(city, pricing, daysPerWeek, labour, rooms, housing, social);
+                    CityGrid grid = CreateGridOf(city);
+
+                    if (grid != null)
+                    {
+                        grids[city] = grid;
+                        WarnAboutRoom(city, grid, rooms);
+                    }
+
+                    markets[city] = grid == null
+                        ? economy.CreateMarket(city, pricing, daysPerWeek, labour, rooms, housing, social)
+                        : economy.CreateMarket(city, pricing, daysPerWeek, labour, rooms, housing, social, grid, placement);
                 }
             }
             catch (ArgumentOutOfRangeException exception)
@@ -151,6 +173,42 @@ namespace DarkFantasyMerchant.Game
             }
 
             return true;
+        }
+
+        // A city with no usable layout still gets a market, without grid.
+        private CityGrid CreateGridOf(CityDefinition city)
+        {
+            if (city.Layout == null)
+            {
+                Debug.LogWarning($"CityDefinition '{city.name}' has no layout; its market has no grid.", city);
+                return null;
+            }
+
+            if (!city.Layout.TryCreateGrid(buildings, out CityGrid grid, out string problem))
+            {
+                Debug.LogWarning($"CityLayoutDefinition '{city.Layout.name}' of '{city.name}' is unusable: {problem}. Its market has no grid.", city.Layout);
+                return null;
+            }
+
+            return grid;
+        }
+
+        // The grid's room is kept, but a class short of the room its inhabitants need starts crowded.
+        private void WarnAboutRoom(CityDefinition city, CityGrid grid, PerClass<int> roomPerHouse)
+        {
+            PerClass<int> needed = economy.StartingRoomOf(city, roomPerHouse);
+
+            foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
+            {
+                int room = grid.HousesOf(housedClass) * roomPerHouse[housedClass];
+
+                if (room < needed[housedClass])
+                {
+                    Debug.LogWarning(
+                        $"CityLayoutDefinition '{city.Layout.name}' of '{city.name}' gives the {housedClass} room for {room}, under the {needed[housedClass]} they need at the start.",
+                        city.Layout);
+                }
+            }
         }
 
         // A doubtful city still gets a market: these are mistakes of content, not reasons to stop.

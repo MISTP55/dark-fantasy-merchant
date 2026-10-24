@@ -37,12 +37,21 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("The materials of the building, a good once at most.")]
         [SerializeField] private List<MaterialAmount> materials = new List<MaterialAmount>();
 
+        [Tooltip("The cells the building covers on the city grid, in its Along orientation: width on x, depth on y. Each at least 1.")]
+        [SerializeField] private Vector2Int footprint;
+
         /// <summary>What the cost of a building that cannot be built reads.</summary>
         public const string UnavailableText = "indisponible";
 
         public string DisplayName => displayName;
 
         public long Gold => gold;
+
+        /// <summary>The footprint as set, usable or not (<see cref="TryValidate"/>).</summary>
+        public Vector2Int FootprintSize => footprint;
+
+        /// <summary>The cells the building covers on the grid. Throws for a footprint under 1: only for a building that <see cref="TryValidate"/> accepts.</summary>
+        public Footprint Footprint => new Footprint(footprint.x, footprint.y);
 
         public IReadOnlyList<MaterialAmount> Materials => materials;
 
@@ -148,6 +157,12 @@ namespace DarkFantasyMerchant.Game
         public virtual bool TryValidate(out string problem)
         {
             problem = string.IsNullOrWhiteSpace(displayName) ? "it has no name" : null;
+
+            if (problem == null && (footprint.x < 1 || footprint.y < 1))
+            {
+                problem = $"its footprint is {footprint.x} by {footprint.y}, a side is under 1";
+            }
+
             return problem == null;
         }
     }

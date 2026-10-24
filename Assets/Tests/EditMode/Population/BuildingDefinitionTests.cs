@@ -48,6 +48,22 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static string Gold(long gold) => TreasuryHudController.FormatGold(gold);
 
         [Test]
+        public void TryValidate_Fails_ForAFootprintSideUnderOne()
+        {
+            Assert.IsTrue(house.TryValidate(out string problem), problem);
+            Assert.AreEqual(2, house.Footprint.Width);
+            Assert.AreEqual(1, house.Footprint.Depth);
+
+            TestBuildings.SetFootprint(house, new Vector2Int(2, 0));
+            Assert.IsFalse(house.TryValidate(out problem));
+            StringAssert.Contains("footprint", problem);
+
+            TestBuildings.SetFootprint(workshop, new Vector2Int(0, 2));
+            Assert.IsFalse(workshop.TryValidate(out problem));
+            StringAssert.Contains("footprint", problem);
+        }
+
+        [Test]
         public void ANewWorkshopOrHouse_HasTheGamesJobsAndRoom()
         {
             Assert.AreEqual(30, Track(ScriptableObject.CreateInstance<WorkshopDefinition>()).Jobs);

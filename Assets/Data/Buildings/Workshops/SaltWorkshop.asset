@@ -19,5 +19,6 @@ MonoBehaviour:
     units: 10
   - good: {fileID: 11400000, guid: 4aa4ecf3894e5d34b8ade5228cde2e48, type: 2}
     units: 30
+  footprint: {x: 2, y: 2}
   good: {fileID: 11400000, guid: 6e7e1dd68eea0924888bedf71fa7be72, type: 2}
   jobs: 30

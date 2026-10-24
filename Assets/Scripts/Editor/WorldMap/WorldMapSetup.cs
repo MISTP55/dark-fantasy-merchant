@@ -61,6 +61,10 @@ namespace DarkFantasyMerchant.Editor
         private const string BuildingsPath = BuildingsFolder + "/Buildings.asset";
         private const string HousesFolder = BuildingsFolder + "/Houses";
         private const string WorkshopsFolder = BuildingsFolder + "/Workshops";
+        private const string PlacementFolder = BuildingsFolder + "/Placement";
+        private const string RandomPlacementPath = PlacementFolder + "/RandomPlacement.asset";
+        private static readonly Vector2Int HouseFootprint = new Vector2Int(2, 1);
+        private static readonly Vector2Int WorkshopFootprint = new Vector2Int(2, 2);
         private const string GoodsFolder = "Assets/Data/Goods";
         private const string GoodIconsFolder = "Assets/Art/Goods/Icons";
 
@@ -378,7 +382,7 @@ namespace DarkFantasyMerchant.Editor
             {
                 ArtFolder, CitiesFolder, MapDataFolder, PrefabFolder, UiFolder,
                 ShipArtFolder, ShipDataFolder, ShipPrefabFolder, CalendarFolder, PlayerDataFolder,
-                EconomyFolder, GoodsFolder, BuildingsFolder, HousesFolder, WorkshopsFolder, AiFolder,
+                EconomyFolder, GoodsFolder, BuildingsFolder, HousesFolder, WorkshopsFolder, PlacementFolder, AiFolder,
                 "Assets/Scenes",
             })
             {
@@ -717,6 +721,7 @@ namespace DarkFantasyMerchant.Editor
                 buildings, isNew, goods,
                 housedClass => LoadOrCreateHouse(housedClass, timber, metal, tiles),
                 good => LoadOrCreateWorkshop(samples[good], good, timber, metal));
+            CompletePlacement(buildings);
             EditorUtility.SetDirty(buildings);
             return buildings;
         }
@@ -763,6 +768,53 @@ namespace DarkFantasyMerchant.Editor
             }
 
             catalogue.ApplyModifiedPropertiesWithoutUndo();
+            CompleteFootprints(buildings.Houses, HouseFootprint);
+            CompleteFootprints(buildings.Workshops, WorkshopFootprint);
+        }
+
+        /// <summary>
+        /// Gives the catalogue a placement strategy when it has none: the random one, made when missing.
+        /// </summary>
+        public static void CompletePlacement(BuildingsDefinition buildings)
+        {
+            var catalogue = new SerializedObject(buildings);
+            SerializedProperty strategy = catalogue.FindProperty("placementStrategy");
+
+            if (strategy.objectReferenceValue != null)
+            {
+                return;
+            }
+
+            var random = AssetDatabase.LoadAssetAtPath<RandomPlacementDefinition>(RandomPlacementPath);
+
+            if (random == null)
+            {
+                random = ScriptableObject.CreateInstance<RandomPlacementDefinition>();
+                AssetDatabase.CreateAsset(random, RandomPlacementPath);
+            }
+
+            strategy.objectReferenceValue = random;
+            catalogue.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // Only a footprint nobody set (0 by 0) is filled: a footprint tuned by hand stays.
+        private static void CompleteFootprints(IEnumerable<BuildingDefinition> definitions, Vector2Int footprint)
+        {
+            foreach (BuildingDefinition definition in definitions)
+            {
+                if (definition != null && definition.FootprintSize == Vector2Int.zero)
+                {
+                    SetFootprint(definition, footprint);
+                }
+            }
+        }
+
+        private static void SetFootprint(BuildingDefinition definition, Vector2Int footprint)
+        {
+            var serialized = new SerializedObject(definition);
+            serialized.FindProperty("footprint").vector2IntValue = footprint;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(definition);
         }
 
         private static void RemoveEmptyEntries(SerializedProperty list)
@@ -821,6 +873,7 @@ namespace DarkFantasyMerchant.Editor
             var serialized = new SerializedObject(house);
             serialized.FindProperty("socialClass").enumValueIndex = (int)housedClass;
             serialized.FindProperty("room").intValue = room;
+            serialized.FindProperty("footprint").vector2IntValue = HouseFootprint;
             FillBuilding(serialized, displayName, gold, (timber, timberUnits), (metal, metalUnits), (tiles, tilesUnits));
             AssetDatabase.CreateAsset(house, path);
             return (house, true);
@@ -841,6 +894,7 @@ namespace DarkFantasyMerchant.Editor
             var serialized = new SerializedObject(workshop);
             serialized.FindProperty("good").objectReferenceValue = good;
             serialized.FindProperty("jobs").intValue = 30;
+            serialized.FindProperty("footprint").vector2IntValue = WorkshopFootprint;
             FillBuilding(serialized, sample.WorkshopName, 10000, (timber, 10), (metal, 30));
             AssetDatabase.CreateAsset(workshop, path);
             return (workshop, true);

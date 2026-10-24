@@ -36,6 +36,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 { timber, Track(TestBuildings.CreateWorkshop("Bûcheron", timber, 10000, 30)) },
             };
             buildings = Track(ScriptableObject.CreateInstance<BuildingsDefinition>());
+            TestBuildings.SetPlacement(buildings, Track(ScriptableObject.CreateInstance<RandomPlacementDefinition>()));
             loads = 0;
         }
 

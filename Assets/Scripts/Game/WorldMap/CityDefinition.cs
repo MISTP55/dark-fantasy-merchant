@@ -22,7 +22,12 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Goods the city has a workshop for, at the economy's inefficient share of the output.")]
         [SerializeField] private List<GoodDefinition> inefficientGoods = new List<GoodDefinition>();
 
+        [Tooltip("The city's grid, for its view; empty: the city has no grid.")]
+        [SerializeField] private CityLayoutDefinition layout;
+
         public string DisplayName => displayName;
+
+        public CityLayoutDefinition Layout => layout;
 
         public string Description => description;
 

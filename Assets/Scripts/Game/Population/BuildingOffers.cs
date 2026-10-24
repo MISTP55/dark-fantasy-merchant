@@ -5,8 +5,9 @@ namespace DarkFantasyMerchant.Game
     /// <summary>A house the player can build, as the city panel shows it. A null cost: it cannot be built.</summary>
     public sealed class HouseOffer
     {
-        public HouseOffer(SocialClass housedClass, string name, int room, BuildingCost cost, string costText)
+        public HouseOffer(SocialClass housedClass, string name, int room, BuildingCost cost, string costText, Footprint footprint = default)
         {
+            Footprint = footprint;
             HousedClass = housedClass;
             Name = name;
             Room = room;
@@ -20,6 +21,9 @@ namespace DarkFantasyMerchant.Game
 
         public int Room { get; }
 
+        /// <summary>The cells the house covers on the city grid.</summary>
+        public Footprint Footprint { get; }
+
         public BuildingCost Cost { get; }
 
         /// <summary>"5 000 or, 10 bois, 10 métal", or "indisponible".</summary>
@@ -30,8 +34,9 @@ namespace DarkFantasyMerchant.Game
     public sealed class WorkshopOffer
     {
         /// <param name="good">The good it makes, by its index among the active goods.</param>
-        public WorkshopOffer(int good, string name, int jobs, BuildingCost cost, string costText)
+        public WorkshopOffer(int good, string name, int jobs, BuildingCost cost, string costText, Footprint footprint = default)
         {
+            Footprint = footprint;
             Good = good;
             Name = name;
             Jobs = jobs;
@@ -45,6 +50,9 @@ namespace DarkFantasyMerchant.Game
         public string Name { get; }
 
         public int Jobs { get; }
+
+        /// <summary>The cells the workshop covers on the city grid.</summary>
+        public Footprint Footprint { get; }
 
         public BuildingCost Cost { get; }
 

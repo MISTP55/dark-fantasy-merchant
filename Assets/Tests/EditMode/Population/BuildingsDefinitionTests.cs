@@ -38,6 +38,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             buildings = Track(ScriptableObject.CreateInstance<BuildingsDefinition>());
             buildings.name = "Buildings";
+            TestBuildings.SetPlacement(buildings, Track(ScriptableObject.CreateInstance<RandomPlacementDefinition>()));
             SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse }, new[] { farm, lumberjack });
         }
 
@@ -82,6 +83,27 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TryValidate_AcceptsOneHousePerClass()
         {
             Assert.IsTrue(buildings.TryValidate(out string problem), problem);
+        }
+
+        [Test]
+        public void TryValidate_Fails_WithoutPlacementStrategy()
+        {
+            TestBuildings.SetPlacement(buildings, null);
+
+            Assert.IsFalse(buildings.TryValidate(out string problem));
+            StringAssert.Contains("placement", problem);
+        }
+
+        [Test]
+        public void CreateOffers_CarryTheFootprintOfTheirBuilding()
+        {
+            HouseOffer house = buildings.CreateHouseOffers(economy, null)[0];
+            WorkshopOffer workshop = buildings.CreateWorkshopOffers(economy, null)[0];
+
+            Assert.AreEqual(2, house.Footprint.Width);
+            Assert.AreEqual(1, house.Footprint.Depth);
+            Assert.AreEqual(2, workshop.Footprint.Width);
+            Assert.AreEqual(2, workshop.Footprint.Depth);
         }
 
         [Test]

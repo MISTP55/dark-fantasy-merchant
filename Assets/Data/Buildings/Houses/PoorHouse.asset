@@ -21,5 +21,6 @@ MonoBehaviour:
     units: 10
   - good: {fileID: 11400000, guid: 4ca27dedb2f7085448acb00de4c9761a, type: 2}
     units: 40
+  footprint: {x: 2, y: 1}
   socialClass: 2
   room: 140

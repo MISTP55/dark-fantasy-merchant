@@ -365,6 +365,58 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsNotNull(market.Labour);
         }
 
+        private void UseStartingWorkforce()
+        {
+            var serialized = new SerializedObject(economy);
+            serialized.FindProperty("startingWorkforce").intValue = 250;
+            serialized.FindProperty("inhabitantsPerWorker").intValue = 4;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        [Test]
+        public void StartingRoomOf_IsTheRoomOfAMarketWithoutGrid()
+        {
+            UseStartingWorkforce();
+            CityDefinition city = City(new[] { wheat }, new[] { fish });
+            var roomPerHouse = new PerClass<int>(40, 70, 140);
+
+            CityMarket market = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), roomPerHouse);
+            PerClass<int> room = economy.StartingRoomOf(city, roomPerHouse);
+
+            Assert.AreEqual(market.Population.RoomOf(SocialClass.Rich), room.Rich);
+            Assert.AreEqual(market.Population.RoomOf(SocialClass.Wealthy), room.Wealthy);
+            Assert.AreEqual(market.Population.RoomOf(SocialClass.Poor), room.Poor);
+            Assert.AreEqual(420, room.Poor);
+        }
+
+        [Test]
+        public void CreateMarket_TakesTheRoomOfTheGrid()
+        {
+            UseStartingWorkforce();
+            CityDefinition city = City(new[] { wheat }, new[] { fish });
+            var roomPerHouse = new PerClass<int>(40, 70, 140);
+            var footprints = new PerClass<Footprint>(new Footprint(2, 1), new Footprint(2, 1), new Footprint(2, 1));
+            var grid = new CityGrid(10, 10, new Vector2Int[0]);
+            var placement = new RandomPlacement(new System.Random(1));
+            Assert.IsTrue(StartingHouses.TryPlace(grid, new PerClass<int>(2, 3, 5), footprints, placement));
+            var housing = new List<CityHousingRule>();
+            foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
+            {
+                housing.Add(economy.CreateHousingRule(housedClass, roomPerHouse[housedClass], System.Array.Empty<MaterialCost>(), footprints[housedClass]));
+            }
+
+            CityMarket without = economy.CreateMarket(city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), roomPerHouse);
+            CityMarket market = economy.CreateMarket(
+                city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), roomPerHouse, housing, economy.CreateSocialRule(), grid, placement);
+
+            Assert.AreEqual(2 * 40, market.Population.RoomOf(SocialClass.Rich));
+            Assert.AreEqual(3 * 70, market.Population.RoomOf(SocialClass.Wealthy));
+            Assert.AreEqual(5 * 140, market.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(without.Population.Housed, market.Population.Housed);
+            Assert.AreEqual(without.Population.Beggars, market.Population.Beggars);
+            Assert.AreSame(grid, market.Grid);
+        }
+
         [Test]
         public void CreateMarket_WithLabour_NeedsTheRoomOfAHouse()
         {

@@ -21,6 +21,11 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("The workshops, one per good at most. A workshop of a good that is not active is ignored.")]
         [SerializeField] private List<WorkshopDefinition> workshops = new List<WorkshopDefinition>();
 
+        [Tooltip("How the buildings choose their place on a city's grid, for the whole world.")]
+        [SerializeField] private PlacementStrategyDefinition placementStrategy;
+
+        public PlacementStrategyDefinition PlacementStrategy => placementStrategy;
+
         public IReadOnlyList<HouseDefinition> Houses => houses;
 
         public IReadOnlyList<WorkshopDefinition> Workshops => workshops;
@@ -54,6 +59,12 @@ namespace DarkFantasyMerchant.Game
 
             if (problem != null)
             {
+                return false;
+            }
+
+            if (placementStrategy == null)
+            {
+                problem = "it has no placement strategy";
                 return false;
             }
 
@@ -97,7 +108,7 @@ namespace DarkFantasyMerchant.Game
             foreach (HouseDefinition house in houses)
             {
                 BuildingCost cost = CostOf(house, economy, unavailable);
-                offers.Add(new HouseOffer(house.SocialClass, house.DisplayName, house.Room, cost, house.CostText(economy)));
+                offers.Add(new HouseOffer(house.SocialClass, house.DisplayName, house.Room, cost, house.CostText(economy), house.Footprint));
             }
 
             return offers;
@@ -122,7 +133,7 @@ namespace DarkFantasyMerchant.Game
                 }
 
                 BuildingCost cost = CostOf(workshop, economy, unavailable);
-                offers.Add(new WorkshopOffer(good, workshop.DisplayName, workshop.Jobs, cost, workshop.CostText(economy)));
+                offers.Add(new WorkshopOffer(good, workshop.DisplayName, workshop.Jobs, cost, workshop.CostText(economy), workshop.Footprint));
             }
 
             return offers;
