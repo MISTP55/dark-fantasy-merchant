@@ -1,0 +1,38 @@
+/* At the top left: the time HUD is centred at the top and the treasury at the top right (TimeHud.uss,
+   TreasuryHud.uss). */
+.city-view__header {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    align-items: flex-start;
+}
+
+.city-view__name {
+    padding: 4px 18px;
+    color: rgb(240, 226, 196);
+    background-color: rgba(24, 17, 12, 0.94);
+    border-width: 2px;
+    border-color: rgb(110, 84, 52);
+    font-size: 22px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-left;
+}
+
+.city-view__back {
+    margin: 6px 0 0 0;
+    padding: 4px 14px;
+    color: rgb(222, 210, 188);
+    background-color: rgba(60, 44, 30, 0.9);
+    border-width: 1px;
+    border-radius: 0;
+    border-color: rgb(110, 84, 52);
+    font-size: 15px;
+}
+
+.city-view__back:hover {
+    background-color: rgb(84, 62, 40);
+}
+
+.city-view__back:active {
+    background-color: rgb(110, 84, 52);
+}

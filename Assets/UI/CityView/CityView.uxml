@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="CityView.uss" />
+    <ui:VisualElement name="city-view-header" picking-mode="Ignore" class="city-view__header">
+        <ui:Label name="city-name" picking-mode="Ignore" class="city-view__name" />
+        <ui:Button name="back-button" text="Retour à la carte" class="city-view__back" />
+    </ui:VisualElement>
+</ui:UXML>

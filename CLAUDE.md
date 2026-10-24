@@ -4,7 +4,7 @@ Dark Fantasy Merchant is a maritime trade management and simulation game, for PC
 
 ## Project state
 
-Unity **6000.6.4f1** project. What exists: the world map, the player's ship with its crew, ports, the date and fast forward, the treasury and weekly wages, notifications, the cities' economy (stocks, workshops, prices, population, buildings), trade, the AI merchants and the in-game debug tools. Nothing else of the game exists yet.
+Unity **6000.6.4f1** project. What exists: the world map, the player's ship with its crew, ports, the date and fast forward, the treasury and weekly wages, notifications, the cities' economy (stocks, workshops, prices, population, buildings), trade, the AI merchants, the city view (a city's grid of buildings, opened from the city panel) and the in-game debug tools. Nothing else of the game exists yet.
 
 ## Maintaining this file
 
@@ -46,13 +46,14 @@ A new script goes in the subfolder of its subsystem; a new subsystem gets its su
 ### Scene setup
 
 - `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates whatever is missing (scene, prefabs, panel settings, data assets, scene objects and the references between them) and leaves what exists untouched. Every new scene object, data asset or reference between components must be added to it, so that an existing scene gets it too. It saves the scene unless it already had unsaved changes, and gives cities that produce nothing the productions of the sample content.
+- The city view scene, `Assets/Scenes/CityView.unity`, is built by `CityViewSetup`, which `WorldMapSetup.Build` calls from the same menu item, in the same way: what is missing is created, what exists is left as it is. It also makes the view's placeholder sprites and its layer, and lists the scene after `WorldMap.unity` in the build list.
 - The scene's root holds only empty groups at the origin (`Rendering`, `World`, `UI`, `Simulation`, `Debug`), which hold every object. `WorldMapSetup` puts each object it creates in its group (`CreateInGroup`), and makes the group when it is missing; an object made again goes last in its group. Do not reorder the panels and HUDs of `UI`: UI documents of equal `sortingOrder` may be drawn in that order.
 - Components that others read in `Awake`/`Start` are created first: `WorldClock`, `PlayerTreasury`, `PlayerNotifications` and `SimulationServices` run at execution order -100.
 - `SimulationServices.Current` is the entry point to the components that run the world (clock, treasury, notifications, economy, ships, AI merchants). Code that has no serialized reference to them, in particular the objects of another scene, which cannot hold one, goes through it; the world map scene's own objects keep their serialized references. It is set in the world map scene's `Awake`: an object of a scene loaded with it, or before it, finds it null in its own `Awake`. A new service of the simulation is added to it.
 
 ### Runtime UI
 
-- Every `UIDocument` of the game (city panel, ship panel, time HUD, treasury HUD, notifications, debug panel) shares one `PanelSettings`: that is what lets `CityInfoPanelController.IsPointerOverUi` see them all and the map take no click or wheel step on them. A new panel goes on the same `PanelSettings`.
+- Every `UIDocument` of the game (city panel, ship panel, time HUD, treasury HUD, notifications, debug panel, city view) shares one `PanelSettings`: that is what lets `CityInfoPanelController.IsPointerOverUi` see them all and the map take no click or wheel step on them. A new panel goes on the same `PanelSettings`.
 - Labels drawn over the map (treasury, notifications) ignore the pointer, so the map under them stays reachable.
 - Labels are rewritten on the event that changes them (`Changed`, `DayStarted`…), not every frame. The exceptions are the debug ships table, rewritten every frame, and the debug views of the past, rewritten at most once a frame.
 - The city and ship panels share their frame, title and close button styles (`InfoPanel.uss`).
@@ -78,7 +79,7 @@ There is no CLI build or lint step; compilation happens in the Unity Editor. The
 
 - **Rendering**: URP with the **2D Renderer**: sprites are lit by 2D lights (`Light2D`, a global one in the scene); 3D lights and 3D-only URP features do not apply.
 - **Input**: the new Input System is the only active handler — the legacy `UnityEngine.Input` API will throw. The game uses the `WorldMap` action map of `Assets/InputSystem_Actions.inputactions`; its `Command` action is the right mouse button, which gives orders and never pans. The `Player` map is the template's and is unused.
-- **Build scenes**: only `Assets/Scenes/WorldMap.unity`.
+- **Build scenes**: `Assets/Scenes/WorldMap.unity`, first, and `Assets/Scenes/CityView.unity`, loaded additively over it.
 
 ## Unity conventions
 

@@ -32,16 +32,16 @@ namespace DarkFantasyMerchant.Editor
         private const string MapTexturePath = ArtFolder + "/WorldMap.jpg";
         private const string MarkerPrefabPath = PrefabFolder + "/CityMarker.prefab";
         private const string DefinitionPath = MapDataFolder + "/WorldMap.asset";
-        private const string PanelSettingsPath = UiFolder + "/WorldMapPanelSettings.asset";
+        internal const string PanelSettingsPath = UiFolder + "/WorldMapPanelSettings.asset";
         private const string PanelTemplatePath = UiFolder + "/CityInfoPanel.uxml";
         private const string ShipPanelTemplatePath = UiFolder + "/ShipInfoPanel.uxml";
         private const string ThemePath = "Assets/UI/DefaultRuntimeTheme.tss";
-        private const string ScenePath = "Assets/Scenes/WorldMap.unity";
+        internal const string ScenePath = "Assets/Scenes/WorldMap.unity";
 
         // The groups at the root of the scene, which hold all its objects.
-        private const string RenderingGroup = "Rendering";
-        private const string WorldGroup = "World";
-        private const string UiGroup = "UI";
+        internal const string RenderingGroup = "Rendering";
+        internal const string WorldGroup = "World";
+        internal const string UiGroup = "UI";
         private const string SimulationGroup = "Simulation";
         private const string DebugGroup = "Debug";
 
@@ -89,7 +89,7 @@ namespace DarkFantasyMerchant.Editor
         private const string RouteSailedMaterialPath = ShipArtFolder + "/ShipRouteSailed.mat";
         private const string RouteRemainingMaterialPath = ShipArtFolder + "/ShipRouteRemaining.mat";
         private const string ShipRoutePrefabPath = ShipPrefabFolder + "/ShipRoute.prefab";
-        private const string UnlitSpriteShaderName = "Universal Render Pipeline/2D/Sprite-Unlit-Default";
+        internal const string UnlitSpriteShaderName = "Universal Render Pipeline/2D/Sprite-Unlit-Default";
 
         private const float MerchantShipSpeed = 1.5f;
         private const int MerchantShipCrewCapacity = 28;
@@ -374,6 +374,8 @@ namespace DarkFantasyMerchant.Editor
             AddPlayerBuilderToScene(mapSceneHadUnsavedChanges);
             AddSimulationServicesToScene(mapSceneHadUnsavedChanges);
             AddDebugToolsToScene(mapSceneHadUnsavedChanges);
+            CityViewSetup.Build();
+            AddCityViewLoaderToScene(mapSceneHadUnsavedChanges);
             AssetDatabase.SaveAssets();
 
             Debug.Log("World map setup finished.");
@@ -2159,6 +2161,51 @@ namespace DarkFantasyMerchant.Editor
             }
         }
 
+        // The only way into the city view and out of it: it switches the map off and on around it.
+        private static void AddCityViewLoaderToScene(bool sceneHadUnsavedChanges)
+        {
+            if (!TryOpenMapScene("The city view loader", out Scene scene))
+            {
+                return;
+            }
+
+            var cameraController = FindInScene<WorldMapCameraController>(scene);
+            var input = FindInScene<WorldMapInput>(scene);
+            var interaction = FindInScene<WorldMapInteraction>(scene);
+            var mapView = FindInScene<WorldMapView>(scene);
+            var cityPanel = FindInScene<CityInfoPanelController>(scene);
+
+            // The ships are optional.
+            if (cameraController == null || input == null || interaction == null || mapView == null || cityPanel == null)
+            {
+                Debug.LogWarning(
+                    $"{ScenePath} lacks the map camera, input, interaction, view or city panel; city view loader not added.");
+                return;
+            }
+
+            bool changed = false;
+            var loader = FindInScene<CityViewLoader>(scene);
+
+            if (loader == null)
+            {
+                loader = CreateInGroup(scene, WorldGroup, "City View Loader").AddComponent<CityViewLoader>();
+                changed = true;
+            }
+
+            // Also for a scene in which one of them was deleted and made again.
+            changed |= FillReference(loader, "mapCamera", cameraController.gameObject);
+            changed |= FillReference(loader, "mapInput", input);
+            changed |= FillReference(loader, "mapInteraction", interaction);
+            changed |= FillReference(loader, "mapView", mapView);
+            changed |= FillReference(loader, "shipsView", FindInScene<ShipsView>(scene));
+            changed |= FillReference(loader, "cityPanel", cityPanel);
+
+            if (changed)
+            {
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The city view loader");
+            }
+        }
+
         // The HUDs and the ship panel share the city panel's panel, so that the map sees the pointer over
         // their buttons as it does over the panel.
         private static PanelSettings FindPanelSettings(Scene scene)
@@ -2182,7 +2229,7 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <returns>False when the scene does not exist or could not be opened.</returns>
-        private static bool TryOpenMapScene(string what, out Scene scene)
+        internal static bool TryOpenMapScene(string what, out Scene scene)
         {
             scene = default;
 
@@ -2209,7 +2256,7 @@ namespace DarkFantasyMerchant.Editor
             return true;
         }
 
-        private static void SaveSceneChanges(Scene scene, bool sceneHadUnsavedChanges, string what)
+        internal static void SaveSceneChanges(Scene scene, bool sceneHadUnsavedChanges, string what)
         {
             EditorSceneManager.MarkSceneDirty(scene);
 
@@ -2223,7 +2270,7 @@ namespace DarkFantasyMerchant.Editor
             EditorSceneManager.SaveScene(scene);
         }
 
-        private static GameObject CreateInGroup(Scene scene, string group, string name)
+        internal static GameObject CreateInGroup(Scene scene, string group, string name)
         {
             var gameObject = new GameObject(name);
             gameObject.transform.SetParent(SceneGroup(scene, group), false);
@@ -2246,7 +2293,7 @@ namespace DarkFantasyMerchant.Editor
             return group.transform;
         }
 
-        private static T FindInScene<T>(Scene scene) where T : Component
+        internal static T FindInScene<T>(Scene scene) where T : Component
         {
             foreach (GameObject root in scene.GetRootGameObjects())
             {
@@ -2261,7 +2308,7 @@ namespace DarkFantasyMerchant.Editor
             return null;
         }
 
-        private static bool IsReferenceEmpty(Object target, string propertyName)
+        internal static bool IsReferenceEmpty(Object target, string propertyName)
         {
             SerializedProperty property = new SerializedObject(target).FindProperty(propertyName);
 
@@ -2274,7 +2321,7 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <returns>True when the reference was empty and is now set.</returns>
-        private static bool FillReference(Object target, string propertyName, Object value)
+        internal static bool FillReference(Object target, string propertyName, Object value)
         {
             if (value == null || !IsReferenceEmpty(target, propertyName))
             {
@@ -2305,7 +2352,35 @@ namespace DarkFantasyMerchant.Editor
             return result;
         }
 
-        private static void SetReference(Object target, string propertyName, Object value)
+        /// <summary>
+        /// Returns the build scene list with <paramref name="scenePath"/> right after <paramref name="afterPath"/>,
+        /// or last when that one is not listed. A list that already contains it is returned unchanged; other scenes
+        /// are always kept, in their order.
+        /// </summary>
+        public static EditorBuildSettingsScene[] WithSceneAfter(
+            EditorBuildSettingsScene[] scenes, string scenePath, string afterPath)
+        {
+            int insertAt = scenes.Length;
+
+            for (int i = 0; i < scenes.Length; i++)
+            {
+                if (scenes[i].path == scenePath)
+                {
+                    return scenes;
+                }
+
+                if (scenes[i].path == afterPath)
+                {
+                    insertAt = i + 1;
+                }
+            }
+
+            var result = new List<EditorBuildSettingsScene>(scenes);
+            result.Insert(insertAt, new EditorBuildSettingsScene(scenePath, true));
+            return result.ToArray();
+        }
+
+        internal static void SetReference(Object target, string propertyName, Object value)
         {
             var serialized = new SerializedObject(target);
             SerializedProperty property = serialized.FindProperty(propertyName);
