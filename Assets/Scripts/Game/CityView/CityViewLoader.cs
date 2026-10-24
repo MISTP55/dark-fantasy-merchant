@@ -58,7 +58,7 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            cityPanel.ViewCityRequested += Open;
+            cityPanel.ViewCityRequested += OnViewCityRequested;
 
             if (worldClock != null && worldClock.IsReady)
             {
@@ -76,7 +76,7 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            cityPanel.ViewCityRequested -= Open;
+            cityPanel.ViewCityRequested -= OnViewCityRequested;
 
             if (clock != null)
             {
@@ -87,12 +87,20 @@ namespace DarkFantasyMerchant.Game
             isBound = false;
         }
 
-        /// <summary>Opens the view on the city; while it is open, shows this city instead.</summary>
-        public void Open(CityDefinition city)
+        private void OnViewCityRequested(CityDefinition city)
+        {
+            Open(city);
+        }
+
+        /// <summary>
+        /// Opens the view on the city; while it is open, shows this city instead. False when it cannot open
+        /// (no city, or the loader lacks a reference).
+        /// </summary>
+        public bool Open(CityDefinition city)
         {
             if (city == null || !isBound)
             {
-                return;
+                return false;
             }
 
             requestedCity = city;
@@ -101,6 +109,8 @@ namespace DarkFantasyMerchant.Game
             {
                 Apply();
             }
+
+            return true;
         }
 
         /// <summary>Closes the view, if open, and selects its city on the map again.</summary>
@@ -197,7 +207,7 @@ namespace DarkFantasyMerchant.Game
         private IEnumerator Unload()
         {
             isBusy = true;
-            CityDefinition closedCity = selectOnClose ? OpenCity : null;
+            CityDefinition closedCity = OpenCity;
             OpenCity = null;
             controller = null;
 
@@ -218,7 +228,11 @@ namespace DarkFantasyMerchant.Game
 
             SwitchMap(true);
 
-            if (closedCity != null)
+            // Decided now, not when the unload started: fast forward may have begun meanwhile, and the map is
+            // then only watched, with nothing selected.
+            bool isFastForward = clock != null && clock.IsFastForward;
+
+            if (closedCity != null && selectOnClose && !isFastForward)
             {
                 mapView.Selection.Select(closedCity);
             }

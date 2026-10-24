@@ -119,8 +119,11 @@ namespace DarkFantasyMerchant.Game
                 {
                     // The selection is back (the port's city); opening clears it and switches this
                     // component off, so nothing more is picked this frame.
-                    cityViewLoader.Open(shipsView.Docking.PortOf(arrivedShip));
-                    return;
+                    // An unbound loader refuses: the close-up then shows the arrival.
+                    if (cityViewLoader.Open(shipsView.Docking.PortOf(arrivedShip)))
+                    {
+                        return;
+                    }
                 }
 
                 // The camera has gone back to the view it had before the fast forward:
