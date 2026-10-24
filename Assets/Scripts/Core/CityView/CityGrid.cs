@@ -69,6 +69,13 @@ namespace DarkFantasyMerchant.Core
         {
             Vector2Int size = footprint.SizeFor(place.Orientation);
             Vector2Int origin = place.Origin;
+
+            // default(Footprint) is 0 by 0: it covers no cell and would give room with no place.
+            if (size.x < 1 || size.y < 1)
+            {
+                return false;
+            }
+
             if (origin.x < 0 || origin.y < 0 || origin.x + size.x > Width || origin.y + size.y > Height)
             {
                 return false;

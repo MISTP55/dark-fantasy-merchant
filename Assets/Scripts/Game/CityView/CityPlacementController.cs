@@ -5,8 +5,9 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// Places the building the player chose in the build bar: its ghost follows the cell under the pointer, green
-    /// where it can stand and red where it cannot, hidden over the UI and off the grid; R turns it, a click builds
-    /// it through <see cref="PlayerBuilder"/> and keeps placing the same building, the right button stops.
+    /// where it can stand and red where it cannot or the player cannot pay for it, hidden over the UI and off the
+    /// grid; R turns it, a click builds it through <see cref="PlayerBuilder"/> and keeps placing the same building,
+    /// the right button stops. Placing also stops when <see cref="Refresh"/> finds the building cannot be paid for.
     /// </summary>
     public sealed class CityPlacementController : MonoBehaviour
     {
@@ -108,8 +109,20 @@ namespace DarkFantasyMerchant.Game
             }
 
             GridPlace place = cursor.PlaceAt(cell);
-            bool canStand = Construction.CanStand(market, cursor.Footprint, place);
-            gridView.ShowGhost(cell, cursor.Footprint.SizeFor(cursor.Orientation), canStand);
+            bool canBuild = Construction.CanStand(market, cursor.Footprint, place) && CanPay();
+            gridView.ShowGhost(cell, cursor.Footprint.SizeFor(cursor.Orientation), canBuild);
+        }
+
+        /// <summary>
+        /// Stops placing when what is being placed cannot be paid for any more (gold or materials), so that the
+        /// player sees its offer disabled; called whenever the build bar quotes its offers again.
+        /// </summary>
+        public void Refresh()
+        {
+            if (cursor.IsPlacing && !CanPay())
+            {
+                Cancel();
+            }
         }
 
         /// <summary>Builds what is being placed at the cell under the screen position, and keeps placing it.</summary>
@@ -165,6 +178,22 @@ namespace DarkFantasyMerchant.Game
         private void OnClicked(Vector2 screenPosition)
         {
             Click(screenPosition);
+        }
+
+        // Whether the player can pay now for what is being placed, as its offer in the build bar is quoted.
+        private bool CanPay()
+        {
+            PlayerBuilder builder = SimulationServices.Current != null ? SimulationServices.Current.PlayerBuilder : null;
+
+            if (builder == null || city == null)
+            {
+                return false;
+            }
+
+            ConstructionQuote quote = house != null
+                ? builder.QuoteHouse(city, house)
+                : workshop != null ? builder.QuoteWorkshop(city, workshop) : default;
+            return quote.IsPossible;
         }
 
         private bool TryStart(Footprint footprint, string offerName)

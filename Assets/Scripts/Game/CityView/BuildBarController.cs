@@ -99,6 +99,12 @@ namespace DarkFantasyMerchant.Game
         /// <summary>Raised when the player picks a workshop to place.</summary>
         public event Action<WorkshopOffer> WorkshopChosen;
 
+        /// <summary>
+        /// Raised each time the bar quotes its offers again, while it follows a city, whether a category is open
+        /// or not: what the player can pay for may have changed.
+        /// </summary>
+        public event Action Refreshed;
+
         /// <summary>"Maison de pauvres\n5 000 or": the offer's name over its gold.</summary>
         public static string OfferText(string name, long gold)
         {
@@ -338,6 +344,8 @@ namespace DarkFantasyMerchant.Game
                 offer.Button.text = quote.IsPossible ? OfferText(offer.Name, quote.Gold) : offer.Name;
                 offer.Button.SetEnabled(quote.IsPossible);
             }
+
+            Refreshed?.Invoke();
         }
     }
 }

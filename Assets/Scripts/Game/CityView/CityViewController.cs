@@ -7,7 +7,7 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// The city view scene's entry point: <see cref="CityViewLoader"/> hands it the city to show. It writes the
     /// city's name, draws its grid, frames the camera over it, shows the build bar and hands what the player
-    /// chooses in it to the placement; its back button asks the loader to close the view. It reaches the world only through <see cref="SimulationServices.Current"/>.
+    /// chooses in it to the placement, which stops when the bar finds it can no longer be paid for; its back button asks the loader to close the view. It reaches the world only through <see cref="SimulationServices.Current"/>.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class CityViewController : MonoBehaviour
@@ -62,6 +62,7 @@ namespace DarkFantasyMerchant.Game
             backButton.clicked += OnBackClicked;
             buildBar.HouseChosen += placement.StartPlacing;
             buildBar.WorkshopChosen += placement.StartPlacing;
+            buildBar.Refreshed += placement.Refresh;
             isBound = true;
 
             if (City != null)
@@ -81,6 +82,7 @@ namespace DarkFantasyMerchant.Game
             backButton.clicked -= OnBackClicked;
             buildBar.HouseChosen -= placement.StartPlacing;
             buildBar.WorkshopChosen -= placement.StartPlacing;
+            buildBar.Refreshed -= placement.Refresh;
             buildBar.Hide();
             isBound = false;
         }

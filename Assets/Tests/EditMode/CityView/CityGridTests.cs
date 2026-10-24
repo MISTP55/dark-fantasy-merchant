@@ -53,6 +53,16 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void CanPlace_RefusesAFootprintWithNoCell_AndPlaceThrows()
+        {
+            var grid = Empty(4);
+            Assert.IsFalse(grid.CanPlace(default, At(1, 1)));
+            Assert.Throws<InvalidOperationException>(() =>
+                grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, default, At(1, 1)));
+            Assert.AreEqual(0, grid.Buildings.Count);
+        }
+
+        [Test]
         public void Place_CoversEveryCellOfItsFootprint()
         {
             var grid = Empty(4);

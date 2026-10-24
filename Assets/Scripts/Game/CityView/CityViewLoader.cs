@@ -9,7 +9,9 @@ namespace DarkFantasyMerchant.Game
     /// The only way into and out of the city view. Opening it clears the map's hover and selections (which closes
     /// its panels), switches off the map's camera (with its audio listener), its input and its interaction, and
     /// loads the city view scene over the map; the simulation keeps running. Closing it unloads the scene, switches
-    /// the map back on and selects the city again, whose panel reopens.
+    /// the map back on and selects the city again, whose panel reopens. The player's ship that was selected on the
+    /// map and under way when the view opened is remembered for the fast forward started from the view, which
+    /// awaits it (<see cref="TakeShipUnderWay"/>); a normal close forgets it.
     /// Loading and unloading take frames: a request that arrives meanwhile is kept, the latest one winning, and
     /// carried out when the scene is loaded or unloaded.
     /// </summary>
@@ -23,7 +25,7 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private WorldMapInteraction mapInteraction;
         [SerializeField] private WorldMapView mapView;
 
-        [Tooltip("Optional. Without it, no ship is deselected.")]
+        [Tooltip("Optional. Without it, no ship is deselected, nor awaited by a fast forward started from the view.")]
         [SerializeField] private ShipsView shipsView;
 
         [SerializeField] private CityInfoPanelController cityPanel;
@@ -41,6 +43,9 @@ namespace DarkFantasyMerchant.Game
 
         // Whether the closing view selects its city again on the map: not when fast forward closed it.
         private bool selectOnClose = true;
+
+        // The player's ship that was selected on the map and under way when the view opened, null otherwise.
+        private Ship shipUnderWay;
 
         /// <summary>True while the city view shows a city.</summary>
         public bool IsOpen => OpenCity != null;
@@ -119,9 +124,27 @@ namespace DarkFantasyMerchant.Game
             Close(true);
         }
 
+        /// <summary>
+        /// The player's ship that was selected on the map and under way when the view opened, or null; forgotten
+        /// once taken. Fast forward started from the view awaits it, as if it had been selected on the map.
+        /// </summary>
+        public Ship TakeShipUnderWay()
+        {
+            Ship ship = shipUnderWay;
+            shipUnderWay = null;
+            return ship;
+        }
+
         private void Close(bool selectCity)
         {
             selectOnClose = selectCity;
+
+            // Fast forward closes the view with the ship still remembered, for the map to await it.
+            if (selectCity)
+            {
+                shipUnderWay = null;
+            }
+
             requestedCity = null;
 
             if (!isBusy)
@@ -165,6 +188,10 @@ namespace DarkFantasyMerchant.Game
         private IEnumerator Load()
         {
             isBusy = true;
+
+            // Read before the selection is cleared; none when the map was already off (opened again while the view
+            // unloaded).
+            shipUnderWay = SelectedShipUnderWay();
             SwitchMap(false);
 
             AsyncOperation loading = SceneManager.LoadSceneAsync(SceneName, LoadSceneMode.Additive);
@@ -175,6 +202,7 @@ namespace DarkFantasyMerchant.Game
                 CityDefinition city = requestedCity;
                 isBusy = false;
                 requestedCity = null;
+                shipUnderWay = null;
                 SwitchMap(true);
                 mapView.Selection.Select(city);
                 yield break;
@@ -228,6 +256,9 @@ namespace DarkFantasyMerchant.Game
 
             SwitchMap(true);
 
+            // The view is closed for good: fast forward, if it closed it, has taken the ship already.
+            shipUnderWay = null;
+
             // Decided now, not when the unload started: fast forward may have begun meanwhile, and the map is
             // then only watched, with nothing selected.
             bool isFastForward = clock != null && clock.IsFastForward;
@@ -242,6 +273,14 @@ namespace DarkFantasyMerchant.Game
         {
             OpenCity = city;
             controller.Show(city, this);
+        }
+
+        private Ship SelectedShipUnderWay()
+        {
+            Ship ship = shipsView != null ? shipsView.Selection.Selected : null;
+
+            // Only a ship of the player is awaited: the others arrive all the time.
+            return ship != null && ship.IsMoving && shipsView.IsPlayerShip(ship) ? ship : null;
         }
 
         private void SwitchMap(bool on)

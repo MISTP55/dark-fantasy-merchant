@@ -1033,11 +1033,28 @@ namespace DarkFantasyMerchant.Editor
 
         /// <summary>
         /// Makes the default layout asset of a city and links it: a grid with just the houses its
-        /// starting population needs, placed at random with the seed. False (and an error logged) when
-        /// they do not fit. The caller checks that the city has no layout.
+        /// starting population needs, placed at random with the seed. A layout asset already at the
+        /// city's path is linked instead, its content untouched. False (and an error logged) when the
+        /// houses do not fit, or something else holds the path. The caller checks that the city has no layout.
         /// </summary>
         internal static bool TryCreateLayout(CityDefinition city, EconomyDefinition economy, BuildingsDefinition buildings, int seed)
         {
+            string path = $"{CityLayoutsFolder}/{city.name}Layout.asset";
+            Object existing = AssetDatabase.LoadMainAssetAtPath(path);
+
+            // A layout made by hand whose link was lost: CreateAsset would replace it.
+            if (existing is CityLayoutDefinition existingLayout)
+            {
+                LinkLayout(city, existingLayout);
+                return true;
+            }
+
+            if (existing != null)
+            {
+                Debug.LogError($"CityDefinition '{city.name}': '{path}' is not a city layout; no layout was made.", existing);
+                return false;
+            }
+
             PerClass<int> roomPerHouse = buildings.HouseRooms;
             var footprints = new PerClass<Footprint>(
                 buildings.HouseOf(SocialClass.Rich).Footprint,
@@ -1067,13 +1084,17 @@ namespace DarkFantasyMerchant.Editor
             var layout = ScriptableObject.CreateInstance<CityLayoutDefinition>();
             layout.SetContent(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, System.Array.Empty<Vector2Int>(), startingHouses);
             Directory.CreateDirectory(CityLayoutsFolder);
-            AssetDatabase.CreateAsset(layout, $"{CityLayoutsFolder}/{city.name}Layout.asset");
+            AssetDatabase.CreateAsset(layout, path);
+            LinkLayout(city, layout);
+            return true;
+        }
 
+        private static void LinkLayout(CityDefinition city, CityLayoutDefinition layout)
+        {
             var serialized = new SerializedObject(city);
             serialized.FindProperty("layout").objectReferenceValue = layout;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(city);
-            return true;
         }
 
         // A city that produces nothing has no economy yet: one made before the economy existed, or

@@ -66,10 +66,9 @@ namespace DarkFantasyMerchant.Game
         private VisualElement shipsPage;
         private DropdownField tradingShipField;
 
-
         /// <summary>
-        /// Raised by every purchase and sale of the market tab and every material a building bought
-        /// from the market: the city, the good, the units, the gold and what was done. For the debug tools.
+        /// Raised by every purchase and sale of the market tab: the city, the good, the units, the gold
+        /// and what was done. For the debug tools.
         /// </summary>
         public event Action<CityDefinition, int, int, long, PlayerTradeKind> PlayerTraded;
 
