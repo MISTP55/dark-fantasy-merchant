@@ -1,4 +1,5 @@
 using System.Collections;
+using DarkFantasyMerchant.Core;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -27,12 +28,19 @@ namespace DarkFantasyMerchant.Game
 
         [SerializeField] private CityInfoPanelController cityPanel;
 
+        [Tooltip("Optional. With it, starting fast forward closes the view.")]
+        [SerializeField] private WorldClock worldClock;
+
         // The city the view should show, null when it should be closed: what the last request asked for.
         private CityDefinition requestedCity;
         private CityViewController controller;
         private Scene loadedScene;
         private bool isBusy;
         private bool isBound;
+        private GameClock clock;
+
+        // Whether the closing view selects its city again on the map: not when fast forward closed it.
+        private bool selectOnClose = true;
 
         /// <summary>True while the city view shows a city.</summary>
         public bool IsOpen => OpenCity != null;
@@ -51,6 +59,13 @@ namespace DarkFantasyMerchant.Game
             }
 
             cityPanel.ViewCityRequested += Open;
+
+            if (worldClock != null && worldClock.IsReady)
+            {
+                clock = worldClock.Clock;
+                clock.FastForwardChanged += OnFastForwardChanged;
+            }
+
             isBound = true;
         }
 
@@ -62,6 +77,13 @@ namespace DarkFantasyMerchant.Game
             }
 
             cityPanel.ViewCityRequested -= Open;
+
+            if (clock != null)
+            {
+                clock.FastForwardChanged -= OnFastForwardChanged;
+                clock = null;
+            }
+
             isBound = false;
         }
 
@@ -84,12 +106,30 @@ namespace DarkFantasyMerchant.Game
         /// <summary>Closes the view, if open, and selects its city on the map again.</summary>
         public void Close()
         {
+            Close(true);
+        }
+
+        private void Close(bool selectCity)
+        {
+            selectOnClose = selectCity;
             requestedCity = null;
 
             if (!isBusy)
             {
                 Apply();
             }
+        }
+
+        // Fast forward is a mode in which the map is only watched: the view closes and nothing is selected on the
+        // map, which the fast forward has just cleared. Raised even while the interaction is switched off.
+        private void OnFastForwardChanged(bool isFastForward)
+        {
+            if (!isFastForward || (!IsOpen && requestedCity == null))
+            {
+                return;
+            }
+
+            Close(false);
         }
 
         // Carries out the last request, from whatever state the view is in.
@@ -157,7 +197,7 @@ namespace DarkFantasyMerchant.Game
         private IEnumerator Unload()
         {
             isBusy = true;
-            CityDefinition closedCity = OpenCity;
+            CityDefinition closedCity = selectOnClose ? OpenCity : null;
             OpenCity = null;
             controller = null;
 

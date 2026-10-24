@@ -430,6 +430,7 @@ MonoBehaviour:
   cameraController: {fileID: 1418061170}
   shipsView: {fileID: 948842205}
   worldClock: {fileID: 1809179065}
+  cityViewLoader: {fileID: 2009373777}
   pickRadiusPixels: 20
   shipPickRadiusPixels: 24
 --- !u!114 &935350161
@@ -1779,6 +1780,7 @@ MonoBehaviour:
   mapView: {fileID: 935350158}
   shipsView: {fileID: 948842205}
   cityPanel: {fileID: 950679376}
+  worldClock: {fileID: 1809179065}
 --- !u!1 &2074069754
 GameObject:
   m_ObjectHideFlags: 0

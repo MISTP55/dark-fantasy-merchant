@@ -25,6 +25,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Optional. With it, nothing can be hovered, selected or ordered during fast forward, and any input ends it.")]
         [SerializeField] private WorldClock worldClock;
 
+        [Tooltip("Optional. With it, the arrival of the awaited ship in a port opens that port's city view.")]
+        [SerializeField] private CityViewLoader cityViewLoader;
+
         [Tooltip("How close to a city the cursor must be, in screen pixels, at any zoom level.")]
         [SerializeField, Min(0f)] private float pickRadiusPixels = 20f;
 
@@ -111,6 +114,14 @@ namespace DarkFantasyMerchant.Game
                 // Read before the end of the fast forward forgets the ship.
                 Ship arrivedShip = awaitedShip;
                 clock.SetFastForward(false);
+
+                if (cityViewLoader != null && shipsView != null && shipsView.Docking.IsDocked(arrivedShip))
+                {
+                    // The selection is back (the port's city); opening clears it and switches this
+                    // component off, so nothing more is picked this frame.
+                    cityViewLoader.Open(shipsView.Docking.PortOf(arrivedShip));
+                    return;
+                }
 
                 // The camera has gone back to the view it had before the fast forward:
                 // the player was waiting for this ship, so it shows where it arrived instead.

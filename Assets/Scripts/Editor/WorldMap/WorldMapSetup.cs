@@ -2199,6 +2199,8 @@ namespace DarkFantasyMerchant.Editor
             changed |= FillReference(loader, "mapView", mapView);
             changed |= FillReference(loader, "shipsView", FindInScene<ShipsView>(scene));
             changed |= FillReference(loader, "cityPanel", cityPanel);
+            changed |= FillReference(loader, "worldClock", FindInScene<WorldClock>(scene));
+            changed |= FillReference(interaction, "cityViewLoader", loader);
 
             if (changed)
             {
