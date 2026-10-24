@@ -19,7 +19,10 @@ namespace DarkFantasyMerchant.Core
             return new Vector2((cell.x - cell.y) * CellWidth * 0.5f, -(cell.x + cell.y) * CellHeight * 0.5f);
         }
 
-        /// <summary>The centre of the cells a footprint of this size covers, from this origin.</summary>
+        /// <summary>
+        /// The centre of the cells a footprint covers, from this origin.
+        /// <paramref name="size"/> is the covered size, already turned (<see cref="Footprint.SizeFor"/>).
+        /// </summary>
         public static Vector2 CenterOf(Vector2Int origin, Vector2Int size)
         {
             var far = origin + size - Vector2Int.one;
@@ -36,11 +39,21 @@ namespace DarkFantasyMerchant.Core
                 Mathf.FloorToInt((sum - difference) * 0.5f + 0.5f));
         }
 
-        /// <summary>The sorting order of a building: the further down the screen its far cell is, the later it is drawn.</summary>
+        /// <summary>
+        /// The sorting order of a building: the further down the screen its centre is, the later it is drawn.
+        /// The centre alone ties for two blocks of the same shape side by side, one in front of the other, so the
+        /// tie is broken by the side of the diagonal the origin is on, seen from the long side of the block (a
+        /// square has no long side). The tie-break is clamped: it only matters between neighbours, and the order
+        /// has to stay in Unity's sorting-order range (a short) on grids up to 200 by 200.
+        /// </summary>
+        /// <param name="size">The covered size, already turned (<see cref="Footprint.SizeFor"/>).</param>
         public static int SortingOrderOf(Vector2Int origin, Vector2Int size)
         {
-            var far = origin + size - Vector2Int.one;
-            return far.x + far.y;
+            var centre = 2 * (origin.x + origin.y) + size.x + size.y;
+            var tieBreak = Mathf.Clamp((origin.y - origin.x) * Mathf.Clamp(size.x - size.y, -1, 1), -TieBreakReach, TieBreakReach);
+            return centre * (2 * TieBreakReach + 2) + tieBreak + TieBreakReach;
         }
+
+        private const int TieBreakReach = 7;
     }
 }

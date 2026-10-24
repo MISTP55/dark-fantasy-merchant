@@ -18,7 +18,7 @@ paths:
 
 ## Projection
 
-- `IsoProjection` (Core): cell (0, 0) is at the top of the screen, x goes to the lower right and y to the lower left. `CellAt` is the exact inverse of `CenterOf` on every point of a cell's diamond. The sorting order of a building is x + y of its far (last covered) cell: the larger, the later it is drawn.
+- `IsoProjection` (Core): cell (0, 0) is at the top of the screen, x goes to the lower right and y to the lower left. `CellAt` is the exact inverse of `CenterOf` on every point of a cell's diamond. The sorting order of a building is its centre (`2 * (origin.x + origin.y) + size.x + size.y`, not its far cell, which ties for neighbours of different sizes), then a clamped tie-break on the origin's side of the diagonal (same-shape neighbours tie on the centre): the larger, the later it is drawn. `SortingOrderOf_NeverTiesOrInvertsAFrontBlockAndTheOneBehindIt` brute-forces 1×1, 2×1, 1×2 and 2×2 blocks; a new footprint size needs it extended.
 - `PlacementCursor` (Core): the footprint being placed; `Start` always begins `Along`, `Rotate` does nothing when not placing or for a square footprint.
 
 ## The market on its grid
