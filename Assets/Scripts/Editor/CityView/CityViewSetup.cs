@@ -123,11 +123,11 @@ namespace DarkFantasyMerchant.Editor
             int groundHeight = (sizeX + sizeY) * quarterCellWidth;
             int height = groundHeight + heightPixels;
 
-            // The corners of the footprint on the ground.
-            var top = new Vector2(sizeY * halfCellWidth, groundHeight);
-            var right = new Vector2(width, sizeY * quarterCellWidth);
-            var bottom = new Vector2(sizeX * halfCellWidth, 0f);
-            var left = new Vector2(0f, sizeX * quarterCellWidth);
+            // The corners of the footprint on the ground: x goes to the upper right, y to the upper left.
+            var top = new Vector2(sizeX * halfCellWidth, groundHeight);
+            var right = new Vector2(width, sizeX * quarterCellWidth);
+            var bottom = new Vector2(sizeY * halfCellWidth, 0f);
+            var left = new Vector2(0f, sizeY * quarterCellWidth);
             var up = new Vector2(0f, heightPixels);
 
             const int empty = 0;

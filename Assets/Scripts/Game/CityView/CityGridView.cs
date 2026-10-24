@@ -65,11 +65,11 @@ namespace DarkFantasyMerchant.Game
         /// <summary>The rectangle, in world units, that holds every cell's diamond.</summary>
         public static Rect WorldBoundsOf(CityGrid grid)
         {
-            // The grid is a diamond: its top is the top corner of cell (0, 0), its sides and bottom the far corners.
+            // The grid is a diamond: its bottom is the bottom corner of cell (0, 0), its sides and top the far corners.
             float halfCellWidth = IsoProjection.CellWidth * 0.5f;
             float halfCellHeight = IsoProjection.CellHeight * 0.5f;
-            float top = halfCellHeight;
-            float bottom = top - (grid.Width + grid.Height) * halfCellHeight;
+            float bottom = -halfCellHeight;
+            float top = bottom + (grid.Width + grid.Height) * halfCellHeight;
             float left = -grid.Height * halfCellWidth;
             float right = grid.Width * halfCellWidth;
             return Rect.MinMaxRect(left, bottom, right, top);

@@ -21,9 +21,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void Insert_PutsABuildingInFrontAfterTheOneBehindIt()
         {
             var order = new BuildingDrawOrder();
-            order.Insert(new Vector2Int(0, 0), House);
+            order.Insert(new Vector2Int(4, 4), House);
 
-            Assert.AreEqual(1, order.Insert(new Vector2Int(4, 4), House));
+            Assert.AreEqual(1, order.Insert(new Vector2Int(0, 0), House));
         }
 
         [Test]
@@ -31,9 +31,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var order = new BuildingDrawOrder();
             order.Insert(new Vector2Int(4, 4), House);
-            order.Insert(new Vector2Int(8, 8), House);
+            order.Insert(new Vector2Int(0, 0), House);
 
-            Assert.AreEqual(0, order.Insert(new Vector2Int(0, 0), House));
+            Assert.AreEqual(0, order.Insert(new Vector2Int(8, 8), House));
             Assert.AreEqual(3, order.Count);
         }
 

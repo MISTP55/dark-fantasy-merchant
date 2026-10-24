@@ -13,15 +13,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void CenterOf_GoesRightAndDownAlongX()
+        public void CenterOf_GoesRightAndUpAlongX()
         {
-            Assert.AreEqual(new Vector2(0.5f, -0.25f), IsoProjection.CenterOf(new Vector2Int(1, 0)));
+            Assert.AreEqual(new Vector2(0.5f, 0.25f), IsoProjection.CenterOf(new Vector2Int(1, 0)));
         }
 
         [Test]
-        public void CenterOf_GoesLeftAndDownAlongY()
+        public void CenterOf_GoesLeftAndUpAlongY()
         {
-            Assert.AreEqual(new Vector2(-0.5f, -0.25f), IsoProjection.CenterOf(new Vector2Int(0, 1)));
+            Assert.AreEqual(new Vector2(-0.5f, 0.25f), IsoProjection.CenterOf(new Vector2Int(0, 1)));
         }
 
         [Test]
@@ -59,24 +59,24 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var one = Vector2Int.one;
             Assert.Greater(
-                IsoProjection.DrawKeyOf(new Vector2Int(5, 5), one),
-                IsoProjection.DrawKeyOf(new Vector2Int(4, 4), one));
+                IsoProjection.DrawKeyOf(new Vector2Int(4, 4), one),
+                IsoProjection.DrawKeyOf(new Vector2Int(5, 5), one));
         }
 
         [Test]
         public void DrawKeyOf_A1x2IsInFrontOfAnAdjacent2x2()
         {
             Assert.Greater(
-                IsoProjection.DrawKeyOf(new Vector2Int(2, 0), new Vector2Int(1, 2)),
-                IsoProjection.DrawKeyOf(new Vector2Int(0, 1), new Vector2Int(2, 2)));
+                IsoProjection.DrawKeyOf(new Vector2Int(3, 4), new Vector2Int(1, 2)),
+                IsoProjection.DrawKeyOf(new Vector2Int(4, 3), new Vector2Int(2, 2)));
         }
 
         [Test]
         public void DrawKeyOf_A2x1IsInFrontOfAnAdjacent2x2()
         {
             Assert.Greater(
-                IsoProjection.DrawKeyOf(new Vector2Int(0, 2), new Vector2Int(2, 1)),
-                IsoProjection.DrawKeyOf(new Vector2Int(1, 0), new Vector2Int(2, 2)));
+                IsoProjection.DrawKeyOf(new Vector2Int(4, 3), new Vector2Int(2, 1)),
+                IsoProjection.DrawKeyOf(new Vector2Int(3, 4), new Vector2Int(2, 2)));
         }
 
         [Test]
@@ -96,15 +96,16 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void DrawKeyOf_KeepsItsOrderOnA1000x1000Grid()
         {
-            var behind = IsoProjection.DrawKeyOf(new Vector2Int(998, 998), Vector2Int.one);
-            var front = IsoProjection.DrawKeyOf(new Vector2Int(999, 999), Vector2Int.one);
+            var behind = IsoProjection.DrawKeyOf(new Vector2Int(999, 999), Vector2Int.one);
+            var front = IsoProjection.DrawKeyOf(new Vector2Int(998, 998), Vector2Int.one);
             Assert.Greater(front, behind);
             Assert.Greater(behind, 0L);
         }
 
         /// <summary>
         /// Over every non-overlapping pair of 1x1, 2x1, 1x2 and 2x2 blocks with origins in the given ranges: when one
-        /// is beyond the other on an axis and they can be drawn over one another on screen, it has the larger key.
+        /// is nearer than the other on an axis (of smaller x or y, beyond the other's extent on that axis) and they can
+        /// be drawn over one another on screen, it has the larger key.
         /// </summary>
         private static void AssertFrontBlocksDrawnLater(int minX, int maxX, int minY, int maxY)
         {
@@ -127,8 +128,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 {
                     var aMax = a.origin + a.size - Vector2Int.one;
                     var bMax = b.origin + b.size - Vector2Int.one;
-                    var aInFront = a.origin.x > bMax.x || a.origin.y > bMax.y;
-                    var bInFront = b.origin.x > aMax.x || b.origin.y > aMax.y;
+                    var aInFront = aMax.x < b.origin.x || aMax.y < b.origin.y;
+                    var bInFront = bMax.x < a.origin.x || bMax.y < a.origin.y;
                     if (!aInFront || bInFront)
                     {
                         continue; // not separated with a beyond, or separated both ways (not a plain front/behind pair)
