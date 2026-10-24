@@ -148,6 +148,14 @@ namespace DarkFantasyMerchant.Game
         {
             lastPointer = screenPosition;
             hasPointer = true;
+
+            // A build may stop placing (Refresh finds the next one cannot be paid for): no ghost is left behind.
+            if (!cursor.IsPlacing)
+            {
+                gridView.HideGhost();
+                return;
+            }
+
             bool onGrid = TryGetHoveredCell(screenPosition, out Vector2Int cell, out CityMarket market);
 
             if (road != null)

@@ -46,7 +46,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 Button offer = offers.Q<Button>();
                 Assert.AreEqual("Route", offer.text);
                 Assert.IsFalse(offer.enabledSelf);
-                Assert.AreEqual("50 or par case", BuildBarController.PerCellText(road.CostText));
+                Assert.AreEqual("50 or par case", bar.CostTipAt(0));
             }
             finally
             {

@@ -75,14 +75,19 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>
         /// When true, the left button traces (<see cref="TraceStarted"/>, <see cref="TraceMoved"/>,
-        /// <see cref="TraceEnded"/>) instead of clicking and panning; the middle button pans either way. Setting it
-        /// drops the gestures in progress.
+        /// <see cref="TraceEnded"/>) instead of clicking and panning; the middle button pans either way. Changing it
+        /// drops the gestures in progress; setting the value it has changes nothing.
         /// </summary>
         public bool TracesWithLeftButton
         {
             get => tracesWithLeftButton;
             set
             {
+                if (value == tracesWithLeftButton)
+                {
+                    return;
+                }
+
                 CancelGestures();
                 tracesWithLeftButton = value;
             }

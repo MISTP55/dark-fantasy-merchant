@@ -331,7 +331,7 @@ namespace DarkFantasyMerchant.Game
 
         private void ShowCostTip(Offer offer, VisualElement area)
         {
-            costTip.text = builder != null && builder.IsFree ? FreeText : offer.CostText;
+            costTip.text = CostTipOf(offer);
             costTip.style.display = DisplayStyle.Flex;
 
             VisualElement parent = costTip.parent;
@@ -345,6 +345,17 @@ namespace DarkFantasyMerchant.Game
             Rect bounds = parent.WorldToLocal(area.worldBound);
             costTip.style.left = bounds.xMin;
             costTip.style.bottom = parent.layout.height - bounds.yMin + CostTipGap;
+        }
+
+        /// <summary>The cost tip of the shown offer at this index, in the order the bar lists them.</summary>
+        internal string CostTipAt(int index)
+        {
+            return CostTipOf(offers[index]);
+        }
+
+        private string CostTipOf(Offer offer)
+        {
+            return builder != null && builder.IsFree ? FreeText : offer.CostText;
         }
 
         private void HideCostTip()
