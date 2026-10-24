@@ -107,7 +107,40 @@ namespace DarkFantasyMerchant.Tests.EditMode
             }
 
             var grid = GridWithHall(14, 12, 4, 5, forbidden.ToArray());
+            roads.Add(new Vector2Int(1, 1));
             Assert.IsFalse(new RoadsidePlacement(new System.Random(1)).TryChoose(grid, House, out _, roads));
+            Assert.AreEqual(0, roads.Count);
+        }
+
+        [Test]
+        public void WhenTheCheapestRouteCrossesTheHouse_ReturnsTheExactRoads()
+        {
+            // The only place is (3, 0)-(4, 0), touching the hall. Its nearest touching cell, (5, 1), is 3 roads away
+            // through the house's own cells, but with those blocked the way round takes 4.
+            var free = new HashSet<Vector2Int>
+            {
+                new Vector2Int(3, 0), new Vector2Int(4, 0), new Vector2Int(2, 2),
+                new Vector2Int(3, 3), new Vector2Int(4, 2), new Vector2Int(5, 1),
+            };
+            var forbidden = new List<Vector2Int>();
+            for (int y = 0; y < 4; y++)
+            {
+                for (int x = 0; x < 6; x++)
+                {
+                    var cell = new Vector2Int(x, y);
+                    if (!free.Contains(cell) && !(x <= 2 && y <= 1))
+                    {
+                        forbidden.Add(cell);
+                    }
+                }
+            }
+
+            CityGrid grid = GridWithHall(6, 4, 0, 0, forbidden.ToArray());
+
+            Assert.IsTrue(new RoadsidePlacement(new System.Random(1)).TryChoose(grid, House, out GridPlace place, roads));
+            Assert.AreEqual(new Vector2Int(3, 0), place.Origin);
+            CollectionAssert.AreEqual(
+                new[] { new Vector2Int(2, 2), new Vector2Int(3, 3), new Vector2Int(4, 2), new Vector2Int(5, 1) }, roads);
         }
 
         [Test]

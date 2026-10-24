@@ -15,6 +15,8 @@ namespace DarkFantasyMerchant.Core
         private readonly List<Vector2Int> cells = new List<Vector2Int>();
         private int[] distances = new int[0];
         private int[] costs = new int[0];
+        private bool[] remaining = new bool[0];
+        private readonly List<int> indices = new List<int>();
 
         public RoadsidePlacement(System.Random random)
         {
@@ -53,7 +55,11 @@ namespace DarkFantasyMerchant.Core
                 costs[i] = CostOf(grid, footprint, places[i]);
             }
 
-            var remaining = new bool[places.Count];
+            if (remaining.Length < places.Count)
+            {
+                remaining = new bool[places.Count];
+            }
+
             for (int i = 0; i < places.Count; i++)
             {
                 remaining[i] = costs[i] != int.MaxValue;
@@ -72,10 +78,11 @@ namespace DarkFantasyMerchant.Core
 
                 if (best == int.MaxValue)
                 {
+                    roads.Clear();
                     return false;
                 }
 
-                var indices = new List<int>();
+                indices.Clear();
                 for (int i = 0; i < places.Count; i++)
                 {
                     if (remaining[i] && costs[i] == best)
@@ -89,13 +96,21 @@ namespace DarkFantasyMerchant.Core
                     int pick = random.Next(indices.Count);
                     int chosen = indices[pick];
                     indices.RemoveAt(pick);
-                    remaining[chosen] = false;
 
                     FillCells(footprint, places[chosen]);
-                    if (RoadPlanner.TryFindRoads(grid, cells, roads) && roads.Count == best)
+                    if (!RoadPlanner.TryFindRoads(grid, cells, roads))
+                    {
+                        remaining[chosen] = false;
+                    }
+                    else if (roads.Count == best)
                     {
                         place = places[chosen];
                         return true;
+                    }
+                    else
+                    {
+                        // The bound was out of reach: the place stays, ranked at its exact cost.
+                        costs[chosen] = roads.Count;
                     }
                 }
             }
