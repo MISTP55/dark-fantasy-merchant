@@ -33,5 +33,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 }
             }
         }
+
+        [Test]
+        public void CityViewMap_HasMiddlePanOnMiddleButton()
+        {
+            InputActionMap map = InputSystem.actions.FindActionMap("CityView", true);
+
+            InputAction middlePan = map.FindAction("MiddlePan");
+            Assert.IsNotNull(middlePan, "MiddlePan action");
+            Assert.AreEqual(InputActionType.Button, middlePan.type);
+            Assert.AreEqual(1, middlePan.bindings.Count);
+            Assert.AreEqual("<Mouse>/middleButton", middlePan.bindings[0].path);
+        }
     }
 }

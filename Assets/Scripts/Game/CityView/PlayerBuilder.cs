@@ -7,7 +7,7 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// The one place through which the player builds: quotes a building in a city, builds it at a
-    /// place of the city's grid, pays from the treasury and, first, from the hold of the player's
+    /// place of the city's grid or lays the roads of a trace, pays from the treasury and, first, from the hold of the player's
     /// ship docked in the city, announces it and tells the debug tools of each material bought.
     /// The debug tools can make every building free (<see cref="SetFree"/>).
     /// </summary>
@@ -111,6 +111,75 @@ namespace DarkFantasyMerchant.Game
             }
 
             return built;
+        }
+
+        /// <summary>
+        /// What one new cell of road in the city would cost now, wherever it is laid; impossible without a market,
+        /// an offer with a cost or a treasury.
+        /// </summary>
+        public ConstructionQuote QuoteRoadCell(CityDefinition city, RoadOffer offer)
+        {
+            if (!TryGetContext(city, out CityMarket market, out Treasury treasury) || offer?.CostPerCell == null)
+            {
+                return default;
+            }
+
+            return Construction.QuoteRoadCell(market, HoldIn(city), treasury, offer.CostPerCell, IsFree);
+        }
+
+        /// <summary>
+        /// What laying the roads of a trace in the city would cost now: its new cells only; impossible without a
+        /// market, an offer with a cost or a treasury, when a cell cannot hold a road or none is new.
+        /// </summary>
+        public ConstructionQuote QuoteRoads(CityDefinition city, RoadOffer offer, IReadOnlyList<Vector2Int> cells)
+        {
+            if (!TryGetContext(city, out CityMarket market, out Treasury treasury) || offer?.CostPerCell == null)
+            {
+                return default;
+            }
+
+            return Construction.QuoteRoads(market, HoldIn(city), treasury, offer.CostPerCell, cells, IsFree);
+        }
+
+        /// <summary>Lays the roads of a trace in the city, announced once for the whole trace.</summary>
+        /// <returns>True when they were laid; nothing was paid otherwise.</returns>
+        public bool TryBuildRoads(CityDefinition city, RoadOffer offer, IReadOnlyList<Vector2Int> cells)
+        {
+            if (!TryGetContext(city, out CityMarket market, out Treasury treasury))
+            {
+                return false;
+            }
+
+            NotificationFeed feed = playerNotifications != null && playerNotifications.IsReady ? playerNotifications.Feed : null;
+            return TryBuildRoads(
+                market, HoldIn(city), treasury, feed, city.DisplayName, offer, cells,
+                (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold), IsFree);
+        }
+
+        /// <summary>
+        /// Lays the roads of a trace through <see cref="Construction.TryBuildRoads"/> and, when they are laid, posts
+        /// one notification for the trace to the feed (none when it is null). <paramref name="hold"/> may be null.
+        /// </summary>
+        /// <returns>True when they were laid; nothing was paid otherwise, nor an offer without a cost.</returns>
+        internal static bool TryBuildRoads(
+            CityMarket market,
+            CargoHold hold,
+            Treasury treasury,
+            NotificationFeed feed,
+            string cityName,
+            RoadOffer offer,
+            IReadOnlyList<Vector2Int> cells,
+            Action<int, int, long> materialBought,
+            bool isFree)
+        {
+            if (offer?.CostPerCell == null
+                || !Construction.TryBuildRoads(market, hold, treasury, offer.CostPerCell, cells, materialBought, isFree))
+            {
+                return false;
+            }
+
+            feed?.Post(BuildingBuiltText(cityName, offer.Name));
+            return true;
         }
 
         private bool TryGetContext(CityDefinition city, out CityMarket market, out Treasury treasury)

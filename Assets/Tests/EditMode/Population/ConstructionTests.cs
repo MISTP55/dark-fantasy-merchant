@@ -518,6 +518,20 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void QuoteRoadCell_QuotesOneCellWherever_ItIsLaid()
+        {
+            CityMarket market = RoadMarket(out _);
+
+            ConstructionQuote quote = Construction.QuoteRoadCell(market, null, new Treasury(1000), RoadCost);
+
+            Assert.IsTrue(quote.IsPossible);
+            Assert.AreEqual(50, quote.Gold);
+            Assert.IsFalse(Construction.QuoteRoadCell(market, null, new Treasury(49), RoadCost).IsPossible);
+            Assert.IsTrue(Construction.QuoteRoadCell(market, null, new Treasury(-10), RoadCost, isFree: true).IsPossible);
+            Assert.AreEqual(0, Construction.QuoteRoadCell(market, null, new Treasury(-10), RoadCost, isFree: true).Gold);
+        }
+
+        [Test]
         public void TryBuildRoads_PaysAndPlacesTheNewCells()
         {
             CityMarket market = RoadMarket(out CityGrid grid);

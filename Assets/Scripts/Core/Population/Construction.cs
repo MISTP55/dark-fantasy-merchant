@@ -310,6 +310,19 @@ namespace DarkFantasyMerchant.Core
                 : Quote(market, hold, treasury, costPerCell.Times(count), true, isFree);
         }
 
+        /// <summary>
+        /// Quotes one new cell of road, wherever it would be laid: what the player is offered before tracing.
+        /// <paramref name="hold"/> may be null.
+        /// </summary>
+        /// <param name="isFree">For the debug tools: the quote is possible at 0 gold.</param>
+        public static ConstructionQuote QuoteRoadCell(
+            CityMarket market, CargoHold hold, Treasury treasury, BuildingCost costPerCell, bool isFree = false)
+        {
+            Require(market, treasury, costPerCell);
+
+            return Quote(market, hold, treasury, costPerCell, true, isFree);
+        }
+
         /// <summary>Pays for and lays the new roads of a trace, all or nothing.</summary>
         /// <param name="materialBought">Told, for the debug tools, of each material bought from the market: its good, units and gold.</param>
         /// <param name="isFree">For the debug tools: nothing is taken, nothing is bought.</param>

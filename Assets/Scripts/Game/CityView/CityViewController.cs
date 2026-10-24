@@ -62,6 +62,7 @@ namespace DarkFantasyMerchant.Game
             backButton.clicked += OnBackClicked;
             buildBar.HouseChosen += placement.StartPlacing;
             buildBar.WorkshopChosen += placement.StartPlacing;
+            buildBar.RoadChosen += placement.StartPlacing;
             buildBar.Refreshed += placement.Refresh;
             isBound = true;
 
@@ -82,6 +83,7 @@ namespace DarkFantasyMerchant.Game
             backButton.clicked -= OnBackClicked;
             buildBar.HouseChosen -= placement.StartPlacing;
             buildBar.WorkshopChosen -= placement.StartPlacing;
+            buildBar.RoadChosen -= placement.StartPlacing;
             buildBar.Refreshed -= placement.Refresh;
             buildBar.Hide();
             isBound = false;

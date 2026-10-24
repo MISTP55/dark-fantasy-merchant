@@ -9,6 +9,7 @@
         <ui:VisualElement name="build-categories" picking-mode="Ignore" class="build-bar__categories">
             <ui:Button name="houses-button" class="build-bar__category" />
             <ui:Button name="workshops-button" class="build-bar__category" />
+            <ui:Button name="roads-button" class="build-bar__category" />
         </ui:VisualElement>
     </ui:VisualElement>
     <ui:Label name="build-cost-tip" picking-mode="Ignore" class="build-bar__cost-tip" />

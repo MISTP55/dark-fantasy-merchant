@@ -7,16 +7,18 @@ using UnityEngine.UIElements;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The build bar of the city view, over its document: two categories at the bottom, and above them the offers
-    /// of the chosen one in the alphabetical order of their names, each with what it would cost now. Only the
-    /// workshops of the goods the city produces are offered; an offer that cannot be built now is disabled. The
-    /// pointer over an offer, enabled or not, shows its full cost in a tip. Follows the market, the treasury, the hold the
-    /// materials come from and the debug tools' free building while it is shown, never every frame.
+    /// The build bar of the city view, over its document: three categories at the bottom (houses, workshops, roads),
+    /// and above them the offers of the chosen one in the alphabetical order of their names, each with what it would
+    /// cost now, the road for one cell. Only the workshops of the goods the city produces are offered; an offer that
+    /// cannot be built now is disabled. The pointer over an offer, enabled or not, shows its full cost in a tip.
+    /// Follows the market, the treasury, the hold the materials come from and the debug tools' free building while it
+    /// is shown, never every frame.
     /// </summary>
     public sealed class BuildBarController
     {
         public const string HousesText = "Maisons";
         public const string WorkshopsText = "Ateliers";
+        public const string RoadsText = "Routes";
 
         /// <summary>The cost tip while the debug tools make every building free.</summary>
         public const string FreeText = "Gratuit (débogage)";
@@ -28,28 +30,33 @@ namespace DarkFantasyMerchant.Game
         // Between the tip and the offer it is about.
         private const float CostTipGap = 4f;
 
-        private enum Category
+        internal enum Category
         {
             None,
             Houses,
             Workshops,
+            Roads,
         }
 
         private sealed class Offer
         {
-            // One of the two, the other null.
+            // One of the three, the others null.
             public HouseOffer House;
             public WorkshopOffer Workshop;
+            public RoadOffer Road;
             public Button Button;
 
-            public string Name => House != null ? House.Name : Workshop.Name;
+            public string Name => House != null ? House.Name : Workshop != null ? Workshop.Name : Road.Name;
 
-            public string CostText => House != null ? House.CostText : Workshop.CostText;
+            public string CostText => House != null ? House.CostText
+                : Workshop != null ? Workshop.CostText
+                : PerCellText(Road.CostText);
         }
 
         private readonly VisualElement offerContainer;
         private readonly Button housesButton;
         private readonly Button workshopsButton;
+        private readonly Button roadsButton;
         private readonly Label costTip;
         private readonly List<Offer> offers = new List<Offer>();
 
@@ -62,6 +69,7 @@ namespace DarkFantasyMerchant.Game
         private ShipDocking<CityDefinition> docking;
         private IReadOnlyList<HouseOffer> houseOffers;
         private IReadOnlyList<WorkshopOffer> workshopOffers;
+        private RoadOffer roadOffer;
 
         /// <param name="root">The city view's document root, which holds the bar's elements.</param>
         /// <exception cref="ArgumentException">An element of the bar is missing.</exception>
@@ -75,21 +83,25 @@ namespace DarkFantasyMerchant.Game
             offerContainer = root.Q<VisualElement>("build-offers");
             housesButton = root.Q<Button>("houses-button");
             workshopsButton = root.Q<Button>("workshops-button");
+            roadsButton = root.Q<Button>("roads-button");
             costTip = root.Q<Label>("build-cost-tip");
 
-            if (offerContainer == null || housesButton == null || workshopsButton == null || costTip == null)
+            if (offerContainer == null || housesButton == null || workshopsButton == null || roadsButton == null || costTip == null)
             {
                 throw new ArgumentException("CityView.uxml is missing an element of the build bar.", nameof(root));
             }
 
             housesButton.text = HousesText;
             workshopsButton.text = WorkshopsText;
+            roadsButton.text = RoadsText;
 
             // Clicked, not navigated.
             housesButton.focusable = false;
             workshopsButton.focusable = false;
+            roadsButton.focusable = false;
             housesButton.clicked += () => Choose(Category.Houses);
             workshopsButton.clicked += () => Choose(Category.Workshops);
+            roadsButton.clicked += () => Choose(Category.Roads);
 
             // The grid under the tip stays reachable.
             costTip.pickingMode = PickingMode.Ignore;
@@ -102,6 +114,9 @@ namespace DarkFantasyMerchant.Game
         /// <summary>Raised when the player picks a workshop to place.</summary>
         public event Action<WorkshopOffer> WorkshopChosen;
 
+        /// <summary>Raised when the player picks the road to trace.</summary>
+        public event Action<RoadOffer> RoadChosen;
+
         /// <summary>
         /// Raised each time the bar quotes its offers again, while it follows a city, whether a category is open
         /// or not: what the player can pay for may have changed.
@@ -112,6 +127,12 @@ namespace DarkFantasyMerchant.Game
         public static string OfferText(string name, long gold)
         {
             return $"{name}\n{TreasuryHudController.FormatGold(gold)}";
+        }
+
+        /// <summary>"50 or par case": the road's cost tip, the cost of one cell.</summary>
+        public static string PerCellText(string costText)
+        {
+            return $"{costText} par case";
         }
 
         /// <summary>Shows the offers of the city, in place of those shown; no category is open.</summary>
@@ -126,15 +147,46 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
+            Show(
+                shownCity,
+                services.PlayerBuilder,
+                economy.MarketOf(shownCity),
+                services.PlayerTreasury != null && services.PlayerTreasury.IsReady ? services.PlayerTreasury.Treasury : null,
+                services.ShipsView != null ? services.ShipsView.Docking : null,
+                economy.HouseOffers,
+                economy.WorkshopOffers,
+                economy.RoadOffer);
+        }
+
+        /// <summary>
+        /// Shows the offers given, quoted through the builder, in place of those shown; no category is open. The
+        /// market, the treasury and the docking are followed when not null.
+        /// </summary>
+        internal void Show(
+            CityDefinition shownCity,
+            PlayerBuilder shownBuilder,
+            CityMarket shownMarket,
+            Treasury shownTreasury,
+            ShipDocking<CityDefinition> shownDocking,
+            IReadOnlyList<HouseOffer> shownHouseOffers,
+            IReadOnlyList<WorkshopOffer> shownWorkshopOffers,
+            RoadOffer shownRoadOffer)
+        {
+            Hide();
+
+            if (shownCity == null || shownBuilder == null)
+            {
+                return;
+            }
+
             city = shownCity;
-            builder = services.PlayerBuilder;
-            market = economy.MarketOf(city);
-            houseOffers = economy.HouseOffers;
-            workshopOffers = economy.WorkshopOffers;
-            treasury = services.PlayerTreasury != null && services.PlayerTreasury.IsReady
-                ? services.PlayerTreasury.Treasury
-                : null;
-            docking = services.ShipsView != null ? services.ShipsView.Docking : null;
+            builder = shownBuilder;
+            market = shownMarket;
+            houseOffers = shownHouseOffers;
+            workshopOffers = shownWorkshopOffers;
+            roadOffer = shownRoadOffer;
+            treasury = shownTreasury;
+            docking = shownDocking;
 
             if (market != null)
             {
@@ -189,11 +241,12 @@ namespace DarkFantasyMerchant.Game
             docking = null;
             houseOffers = null;
             workshopOffers = null;
+            roadOffer = null;
             ShowCategory(Category.None);
         }
 
-        // The category's button opens it, or closes it when it is open.
-        private void Choose(Category chosen)
+        /// <summary>The category's button opens it, or closes it when it is open.</summary>
+        internal void Choose(Category chosen)
         {
             ShowCategory(chosen == category ? Category.None : chosen);
         }
@@ -203,6 +256,7 @@ namespace DarkFantasyMerchant.Game
             category = city != null ? shown : Category.None;
             housesButton.EnableInClassList(ChosenCategoryClass, category == Category.Houses);
             workshopsButton.EnableInClassList(ChosenCategoryClass, category == Category.Workshops);
+            roadsButton.EnableInClassList(ChosenCategoryClass, category == Category.Roads);
 
             HideCostTip();
             offerContainer.Clear();
@@ -225,6 +279,10 @@ namespace DarkFantasyMerchant.Game
                         offers.Add(new Offer { Workshop = workshop });
                     }
                 }
+            }
+            else if (category == Category.Roads && roadOffer != null)
+            {
+                offers.Add(new Offer { Road = roadOffer });
             }
 
             NameOrder.Sort(offers, offer => offer.Name);
@@ -261,9 +319,13 @@ namespace DarkFantasyMerchant.Game
             {
                 HouseChosen?.Invoke(offer.House);
             }
-            else
+            else if (offer.Workshop != null)
             {
                 WorkshopChosen?.Invoke(offer.Workshop);
+            }
+            else
+            {
+                RoadChosen?.Invoke(offer.Road);
             }
         }
 
@@ -341,9 +403,9 @@ namespace DarkFantasyMerchant.Game
 
             foreach (Offer offer in offers)
             {
-                ConstructionQuote quote = offer.House != null
-                    ? builder.QuoteHouse(city, offer.House)
-                    : builder.QuoteWorkshop(city, offer.Workshop);
+                ConstructionQuote quote = offer.House != null ? builder.QuoteHouse(city, offer.House)
+                    : offer.Workshop != null ? builder.QuoteWorkshop(city, offer.Workshop)
+                    : builder.QuoteRoadCell(city, offer.Road);
 
                 // An impossible quote's gold means nothing: the offer shows its name alone.
                 offer.Button.text = quote.IsPossible ? OfferText(offer.Name, quote.Gold) : offer.Name;

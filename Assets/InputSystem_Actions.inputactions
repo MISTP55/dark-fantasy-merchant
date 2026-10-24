@@ -1288,6 +1288,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "MiddlePan",
+                    "type": "Button",
+                    "id": "bb167c4b-beab-441c-82cf-6c44fe99467e",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Cancel",
                     "type": "Button",
                     "id": "86614ffb-8fca-4afb-b943-74366bbbedac",
@@ -1361,6 +1370,17 @@
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "Cancel",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ce12f7db-a806-441e-93a9-88694affe3bd",
+                    "path": "<Mouse>/middleButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "MiddlePan",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

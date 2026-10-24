@@ -78,7 +78,7 @@ There is no CLI build or lint step; compilation happens in the Unity Editor. The
 ## Project configuration
 
 - **Rendering**: URP with the **2D Renderer**: sprites are lit by 2D lights (`Light2D`, a global one in the scene); 3D lights and 3D-only URP features do not apply.
-- **Input**: the new Input System is the only active handler — the legacy `UnityEngine.Input` API will throw. The game uses two action maps of `Assets/InputSystem_Actions.inputactions`: `WorldMap` on the map, whose `Command` action is the right mouse button, which gives orders and never pans; and `CityView` in the city view, whose `Click` and `PanDrag` are both the left button (a press released where it started clicks, one moved pans), `Zoom` the wheel, `Rotate` the R key and `Cancel` the right button. The `Player` map is the template's and is unused.
+- **Input**: the new Input System is the only active handler — the legacy `UnityEngine.Input` API will throw. The game uses two action maps of `Assets/InputSystem_Actions.inputactions`: `WorldMap` on the map, whose `Command` action is the right mouse button, which gives orders and never pans; and `CityView` in the city view, whose `Click` and `PanDrag` are both the left button (a press released where it started clicks, one moved pans; while a road is traced, the left button traces instead), `MiddlePan` the middle button, which always pans, `Zoom` the wheel, `Rotate` the R key and `Cancel` the right button. The `Player` map is the template's and is unused.
 - **Build scenes**: `Assets/Scenes/WorldMap.unity`, first, and `Assets/Scenes/CityView.unity`, loaded additively over it.
 
 ## Unity conventions
