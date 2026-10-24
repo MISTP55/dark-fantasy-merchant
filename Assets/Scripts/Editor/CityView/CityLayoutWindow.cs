@@ -53,6 +53,7 @@ namespace DarkFantasyMerchant.Editor
         private int heightField;
         private CityLayoutDefinition shownLayout;
         private Vector2 scroll;
+        private int lastUnconnected;
 
         // Every city asset, in the alphabetical order of their names, and those names for the drop-down.
         private readonly List<CityDefinition> cities = new List<CityDefinition>();
@@ -150,6 +151,7 @@ namespace DarkFantasyMerchant.Editor
             if (layout != shownLayout)
             {
                 shownLayout = layout;
+                lastUnconnected = 0;
                 widthField = layout.Width;
                 heightField = layout.Height;
             }
@@ -161,12 +163,11 @@ namespace DarkFantasyMerchant.Editor
             if (!layout.HasTownHall)
             {
                 EditorGUILayout.HelpBox("The layout has no town hall: place one with the Town hall tool, or use the Town hall and roads button.", MessageType.Warning);
-                return;
             }
 
-            if (!layout.TryCreateGrid(buildings, out CityGrid grid, out string problem))
+            if (!CityLayoutEditing.TryMakeGrid(layout, buildings, out CityGrid grid))
             {
-                EditorGUILayout.HelpBox("The layout cannot make its grid: " + problem, MessageType.Error);
+                EditorGUILayout.HelpBox("Something in the layout cannot stand: a town hall, a road or a house is outside the grid, on a forbidden cell or on another building.", MessageType.Error);
                 return;
             }
 
@@ -222,7 +223,12 @@ namespace DarkFantasyMerchant.Editor
         {
             if (GUILayout.Button("Town hall and roads"))
             {
-                CityLayoutEditing.AutoConnect(layout, buildings);
+                lastUnconnected = CityLayoutEditing.AutoConnect(layout, buildings);
+            }
+
+            if (lastUnconnected > 0)
+            {
+                EditorGUILayout.HelpBox($"{lastUnconnected} starting house(s) stay unconnected: no road can reach them.", MessageType.Warning);
             }
         }
 

@@ -210,7 +210,7 @@ namespace DarkFantasyMerchant.Editor
 
                 foreach (Vector2Int road in roads)
                 {
-                    bare.Place(BuildingKind.Road(), BuildingOwner.City, new Footprint(1, 1), new GridPlace(road, BuildingOrientation.Along));
+                    PlaceRoad(bare, road);
                 }
 
                 if (!TownHallPlacement.TryNear(bare, buildings.TownHall.Footprint, centre, out GridPlace nearest))
@@ -226,7 +226,7 @@ namespace DarkFantasyMerchant.Editor
 
             foreach (Vector2Int road in roads)
             {
-                grid.Place(BuildingKind.Road(), BuildingOwner.City, new Footprint(1, 1), new GridPlace(road, BuildingOrientation.Along));
+                PlaceRoad(grid, road);
             }
 
             var placed = new List<PlacedBuilding>();
@@ -267,7 +267,7 @@ namespace DarkFantasyMerchant.Editor
 
                 foreach (Vector2Int road in found)
                 {
-                    grid.Place(BuildingKind.Road(), BuildingOwner.City, new Footprint(1, 1), new GridPlace(road, BuildingOrientation.Along));
+                    PlaceRoad(grid, road);
                     roads.Add(road);
                 }
             }
@@ -417,8 +417,23 @@ namespace DarkFantasyMerchant.Editor
             Apply(layout, "Remove starting houses", layout.Width, layout.Height, layout.ForbiddenCells, houses);
         }
 
-        // The grid of the layout's content, without requiring a town hall (a layout being edited may have none yet).
-        private static bool TryMakeGrid(CityLayoutDefinition layout, BuildingsDefinition buildings, out CityGrid grid)
+        private static readonly Footprint RoadFootprint = new Footprint(1, 1);
+
+        private static GridPlace RoadPlaceAt(Vector2Int cell)
+        {
+            return new GridPlace(cell, BuildingOrientation.Along);
+        }
+
+        private static void PlaceRoad(CityGrid grid, Vector2Int cell)
+        {
+            grid.Place(BuildingKind.Road(), BuildingOwner.City, RoadFootprint, RoadPlaceAt(cell));
+        }
+
+        /// <summary>
+        /// The grid of the layout's content, without requiring a town hall (a layout being edited may have none yet);
+        /// false when something in it cannot stand.
+        /// </summary>
+        public static bool TryMakeGrid(CityLayoutDefinition layout, BuildingsDefinition buildings, out CityGrid grid)
         {
             grid = new CityGrid(layout.Width, layout.Height, layout.ForbiddenCells);
 
@@ -436,14 +451,12 @@ namespace DarkFantasyMerchant.Editor
 
             foreach (Vector2Int road in layout.Roads)
             {
-                var roadPlace = new GridPlace(road, BuildingOrientation.Along);
-
-                if (!grid.CanPlace(new Footprint(1, 1), roadPlace))
+                if (!grid.CanPlace(RoadFootprint, RoadPlaceAt(road)))
                 {
                     return false;
                 }
 
-                grid.Place(BuildingKind.Road(), BuildingOwner.City, new Footprint(1, 1), roadPlace);
+                PlaceRoad(grid, road);
             }
 
             foreach (CityLayoutDefinition.StartingHouse house in layout.StartingHouses)
