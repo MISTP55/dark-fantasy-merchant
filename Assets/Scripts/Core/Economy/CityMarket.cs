@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace DarkFantasyMerchant.Core
 {
@@ -31,6 +32,7 @@ namespace DarkFantasyMerchant.Core
         private readonly double[] leakCounters;
         private readonly List<PlayerWorkshop> playerWorkshops = new List<PlayerWorkshop>();
         private readonly IPlacementStrategy placement;
+        private readonly List<Vector2Int> roadsToLay = new List<Vector2Int>();
         private readonly ThresholdRule thresholdRule;
         private readonly WorkforceRule workforce;
         private readonly MarketPricing pricing;
@@ -865,7 +867,7 @@ namespace DarkFantasyMerchant.Core
             // With a grid the house needs a place, found before anything is taken.
             GridPlace place = default;
 
-            if (Grid != null && !placement.TryChoose(Grid, rule.Footprint.Value, out place))
+            if (Grid != null && !placement.TryChoose(Grid, rule.Footprint.Value, out place, roadsToLay))
             {
                 return;
             }

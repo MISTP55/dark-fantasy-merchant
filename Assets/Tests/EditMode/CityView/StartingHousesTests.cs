@@ -36,5 +36,24 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsFalse(placed);
             Assert.AreEqual(2, grid.Buildings.Count);
         }
+
+        [Test]
+        public void WithRoadsidePlacement_EveryHouseIsConnected()
+        {
+            var grid = new CityGrid(30, 30, new Vector2Int[0]);
+            grid.Place(BuildingKind.TownHall(), BuildingOwner.City, new Footprint(3, 2),
+                new GridPlace(new Vector2Int(13, 14), BuildingOrientation.Along));
+
+            bool placed = StartingHouses.TryPlace(
+                grid, new PerClass<int>(2, 4, 8), Footprints(), new RoadsidePlacement(new System.Random(5)));
+
+            Assert.IsTrue(placed);
+            Assert.AreEqual(14, grid.ConnectedHousesOf(SocialClass.Rich) + grid.ConnectedHousesOf(SocialClass.Wealthy)
+                + grid.ConnectedHousesOf(SocialClass.Poor));
+            foreach (PlacedBuilding building in grid.Buildings)
+            {
+                Assert.AreEqual(BuildingOwner.City, building.Owner);
+            }
+        }
     }
 }
