@@ -380,12 +380,5 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 "Riches\u00A0:\u00A00\u00A0\u00B7 Aisés\u00A0:\u00A00\u00A0\u00B7 Pauvres\u00A0:\u00A00\u00A0\u00B7 Mendiants\u00A0:\u00A00",
                 CityInfoPanelController.FormatPopulation(0, 0, 0, 0));
         }
-
-        [Test]
-        public void BuildingBuiltText_NamesTheCityAndTheBuilding()
-        {
-            Assert.AreEqual("Construction achevée à Lübeck : Bûcheron.", CityInfoPanelController.BuildingBuiltText("Lübeck", "Bûcheron"));
-            Assert.AreEqual("Construction achevée à Riga : Maison d'aisés.", CityInfoPanelController.BuildingBuiltText("Riga", "Maison d'aisés"));
-        }
     }
 }

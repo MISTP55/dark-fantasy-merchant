@@ -371,6 +371,7 @@ namespace DarkFantasyMerchant.Editor
             AddExpensesToScene(mapSceneHadUnsavedChanges);
             AddEconomyToScene(mapSceneHadUnsavedChanges);
             AddAiMerchantsToScene(mapSceneHadUnsavedChanges);
+            AddPlayerBuilderToScene(mapSceneHadUnsavedChanges);
             AddSimulationServicesToScene(mapSceneHadUnsavedChanges);
             AddDebugToolsToScene(mapSceneHadUnsavedChanges);
             AssetDatabase.SaveAssets();
@@ -1907,7 +1908,6 @@ namespace DarkFantasyMerchant.Editor
             {
                 changed |= FillReference(cityPanel, "worldEconomy", worldEconomy);
                 changed |= FillReference(cityPanel, "playerTreasury", FindInScene<PlayerTreasury>(scene));
-                changed |= FillReference(cityPanel, "playerNotifications", FindInScene<PlayerNotifications>(scene));
             }
 
             // The ship panel names the goods of the hold.
@@ -1978,6 +1978,51 @@ namespace DarkFantasyMerchant.Editor
             }
         }
 
+        // The one component through which the player builds, added to a scene built before it existed.
+        private static void AddPlayerBuilderToScene(bool sceneHadUnsavedChanges)
+        {
+            if (!TryOpenMapScene("The player builder", out Scene scene))
+            {
+                return;
+            }
+
+            var worldEconomy = FindInScene<WorldEconomy>(scene);
+            var playerTreasury = FindInScene<PlayerTreasury>(scene);
+            var playerNotifications = FindInScene<PlayerNotifications>(scene);
+            var shipsView = FindInScene<ShipsView>(scene);
+
+            // It builds in the markets with the player's gold; the notifications and the ships
+            // (whose hold pays first) are optional.
+            if (worldEconomy == null || playerTreasury == null)
+            {
+                Debug.LogWarning(
+                    $"{ScenePath} has no WorldEconomy or PlayerTreasury; player builder not added.");
+                return;
+            }
+
+            bool changed = false;
+            var builder = FindInScene<PlayerBuilder>(scene);
+
+            if (builder == null)
+            {
+                GameObject builderObject = CreateInGroup(scene, SimulationGroup, "Player Builder");
+
+                builder = builderObject.AddComponent<PlayerBuilder>();
+                changed = true;
+            }
+
+            // Also for a scene in which one of them was deleted and made again.
+            changed |= FillReference(builder, "worldEconomy", worldEconomy);
+            changed |= FillReference(builder, "playerTreasury", playerTreasury);
+            changed |= FillReference(builder, "playerNotifications", playerNotifications);
+            changed |= FillReference(builder, "shipsView", shipsView);
+
+            if (changed)
+            {
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The player builder");
+            }
+        }
+
         // After every component it gives access to, so that it finds them all, also in a scene
         // built before it existed.
         private static void AddSimulationServicesToScene(bool sceneHadUnsavedChanges)
@@ -1993,15 +2038,16 @@ namespace DarkFantasyMerchant.Editor
             var worldEconomy = FindInScene<WorldEconomy>(scene);
             var shipsView = FindInScene<ShipsView>(scene);
             var aiMerchants = FindInScene<AiMerchants>(scene);
+            var playerBuilder = FindInScene<PlayerBuilder>(scene);
 
             // Added all the same: the services the scene has are reachable, the others filled in
             // by a later run.
             if (worldClock == null || playerTreasury == null || playerNotifications == null
-                || worldEconomy == null || shipsView == null || aiMerchants == null)
+                || worldEconomy == null || shipsView == null || aiMerchants == null || playerBuilder == null)
             {
                 Debug.LogWarning(
                     $"{ScenePath} lacks a WorldClock, PlayerTreasury, PlayerNotifications, WorldEconomy, "
-                    + "ShipsView or AiMerchants; the simulation services miss it.");
+                    + "ShipsView, AiMerchants or PlayerBuilder; the simulation services miss it.");
             }
 
             bool changed = false;
@@ -2022,6 +2068,7 @@ namespace DarkFantasyMerchant.Editor
             changed |= FillReference(services, "worldEconomy", worldEconomy);
             changed |= FillReference(services, "shipsView", shipsView);
             changed |= FillReference(services, "aiMerchants", aiMerchants);
+            changed |= FillReference(services, "playerBuilder", playerBuilder);
 
             if (changed)
             {
@@ -2103,6 +2150,7 @@ namespace DarkFantasyMerchant.Editor
             changed |= FillReference(recorder, "worldClock", FindInScene<WorldClock>(scene));
             changed |= FillReference(recorder, "aiMerchants", FindInScene<AiMerchants>(scene));
             changed |= FillReference(recorder, "cityPanel", FindInScene<CityInfoPanelController>(scene));
+            changed |= FillReference(recorder, "playerBuilder", FindInScene<PlayerBuilder>(scene));
             changed |= FillReference(panel, "recorder", recorder);
 
             if (changed)

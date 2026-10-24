@@ -156,6 +156,7 @@ Transform:
   - {fileID: 1809179066}
   - {fileID: 1991110006}
   - {fileID: 927664970}
+  - {fileID: 1311519475}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &250353677
@@ -358,6 +359,7 @@ MonoBehaviour:
   worldEconomy: {fileID: 1991110005}
   shipsView: {fileID: 948842205}
   aiMerchants: {fileID: 1729984784}
+  playerBuilder: {fileID: 1311519476}
 --- !u!1 &935350157
 GameObject:
   m_ObjectHideFlags: 0
@@ -533,7 +535,6 @@ MonoBehaviour:
   shipsView: {fileID: 948842205}
   worldEconomy: {fileID: 1991110005}
   playerTreasury: {fileID: 516856359}
-  playerNotifications: {fileID: 1513224809}
   hoverLabelOffset: {x: 14, y: -30}
 --- !u!114 &950679377
 MonoBehaviour:
@@ -883,6 +884,54 @@ Transform:
   m_Children: []
   m_Father: {fileID: 190532898}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1311519474
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1311519475}
+  - component: {fileID: 1311519476}
+  m_Layer: 0
+  m_Name: Player Builder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1311519475
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1311519474}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 190532898}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1311519476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1311519474}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22469ae924b44d54c91113a0e8e62f76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.PlayerBuilder
+  worldEconomy: {fileID: 1991110005}
+  playerTreasury: {fileID: 516856359}
+  playerNotifications: {fileID: 1513224809}
+  shipsView: {fileID: 948842205}
 --- !u!1 &1415343337
 GameObject:
   m_ObjectHideFlags: 0
@@ -1152,6 +1201,7 @@ MonoBehaviour:
   worldClock: {fileID: 1809179065}
   aiMerchants: {fileID: 1729984784}
   cityPanel: {fileID: 950679376}
+  playerBuilder: {fileID: 1311519476}
 --- !u!4 &1543484806
 Transform:
   m_ObjectHideFlags: 0

@@ -1,0 +1,132 @@
+using System;
+using System.Collections.Generic;
+using DarkFantasyMerchant.Core;
+using UnityEngine;
+
+namespace DarkFantasyMerchant.Game
+{
+    /// <summary>
+    /// The one place through which the player builds: quotes a building in a city, builds it at a
+    /// place of the city's grid, pays from the treasury and, first, from the hold of the player's
+    /// ship docked in the city, announces it and tells the debug tools of each material bought.
+    /// </summary>
+    public sealed class PlayerBuilder : MonoBehaviour
+    {
+        [SerializeField] private WorldEconomy worldEconomy;
+        [SerializeField] private PlayerTreasury playerTreasury;
+        [SerializeField] private PlayerNotifications playerNotifications;
+        [SerializeField] private ShipsView shipsView;
+
+        // Reused: asked for at each quote.
+        private readonly List<Ship> shipsInPort = new List<Ship>();
+
+        /// <summary>Raised for each material a building bought from the market: its good, units and gold. For the debug tools.</summary>
+        public event Action<CityDefinition, int, int, long> MaterialBought;
+
+        /// <summary>"Construction achevée à Lübeck : Bûcheron.": a building's name has no known gender, the sentence needs none.</summary>
+        public static string BuildingBuiltText(string city, string building)
+        {
+            return $"Construction achevée à {city} : {building}.";
+        }
+
+        /// <summary>What building a house in the city would cost now; impossible without a market, an offer with a cost or a treasury.</summary>
+        public ConstructionQuote QuoteHouse(CityDefinition city, HouseOffer offer)
+        {
+            if (!TryGetContext(city, out CityMarket market, out Treasury treasury) || offer?.Cost == null)
+            {
+                return default;
+            }
+
+            return Construction.QuoteHouse(market, HoldIn(city), treasury, offer.Cost);
+        }
+
+        /// <summary>What building a workshop in the city would cost now; impossible without a market, an offer with a cost or a treasury.</summary>
+        public ConstructionQuote QuoteWorkshop(CityDefinition city, WorkshopOffer offer)
+        {
+            if (!TryGetContext(city, out CityMarket market, out Treasury treasury) || offer?.Cost == null)
+            {
+                return default;
+            }
+
+            return Construction.QuoteWorkshop(market, HoldIn(city), treasury, offer.Cost, offer.Good);
+        }
+
+        /// <returns>True when the house was built at the place; nothing was paid otherwise.</returns>
+        public bool TryBuildHouse(CityDefinition city, HouseOffer offer, GridPlace place)
+        {
+            if (!TryGetContext(city, out CityMarket market, out Treasury treasury) || offer?.Cost == null)
+            {
+                return false;
+            }
+
+            bool built = Construction.TryBuildHouse(
+                market, HoldIn(city), treasury, offer.Cost, offer.HousedClass, offer.Room, offer.Footprint, place,
+                (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold));
+
+            if (built)
+            {
+                Announce(city, offer.Name);
+            }
+
+            return built;
+        }
+
+        /// <returns>True when the workshop was built at the place; nothing was paid otherwise.</returns>
+        public bool TryBuildWorkshop(CityDefinition city, WorkshopOffer offer, GridPlace place)
+        {
+            if (!TryGetContext(city, out CityMarket market, out Treasury treasury) || offer?.Cost == null)
+            {
+                return false;
+            }
+
+            bool built = Construction.TryBuildWorkshop(
+                market, HoldIn(city), treasury, offer.Cost, offer.Good, offer.Jobs, offer.Footprint, place,
+                (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold));
+
+            if (built)
+            {
+                Announce(city, offer.Name);
+            }
+
+            return built;
+        }
+
+        private bool TryGetContext(CityDefinition city, out CityMarket market, out Treasury treasury)
+        {
+            market = null;
+            treasury = null;
+
+            if (city == null || worldEconomy == null || !worldEconomy.IsReady
+                || playerTreasury == null || !playerTreasury.IsReady)
+            {
+                return false;
+            }
+
+            market = worldEconomy.MarketOf(city);
+            treasury = playerTreasury.Treasury;
+            return market != null;
+        }
+
+        // The hold of the player's ship that trades in the city's port, or null: everything is then bought.
+        private CargoHold HoldIn(CityDefinition city)
+        {
+            if (shipsView == null)
+            {
+                return null;
+            }
+
+            shipsView.Docking.GetShipsIn(city, shipsInPort);
+            NameOrder.Sort(shipsInPort, shipsView.DisplayNameOf);
+
+            return TradingShipChoice.Choose(shipsInPort, shipsView.IsPlayerShip, null)?.Cargo;
+        }
+
+        private void Announce(CityDefinition city, string building)
+        {
+            if (playerNotifications != null && playerNotifications.IsReady)
+            {
+                playerNotifications.Feed.Post(BuildingBuiltText(city.DisplayName, building));
+            }
+        }
+    }
+}

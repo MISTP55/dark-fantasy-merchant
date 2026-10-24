@@ -158,7 +158,6 @@
 }
 
 .market,
-.buildings,
 .city-panel__ships-scroll {
     flex-grow: 1;
     min-height: 0;
@@ -317,89 +316,4 @@
 
 .market--trading .market__cell--trade {
     display: flex;
-}
-
-/* The player's buildings: a text and the button that builds, one row each. The rows scroll
-   when they do not fit in the tab. */
-.buildings > .buildings__scroll {
-    flex-grow: 1;
-    flex-shrink: 1;
-    min-height: 0;
-}
-
-.buildings__title {
-    margin: 12px 0 4px 0;
-    padding-bottom: 2px;
-    border-bottom-width: 1px;
-    border-bottom-color: rgb(110, 84, 52);
-    color: rgb(240, 226, 196);
-    font-size: 16px;
-    -unity-font-style: bold;
-}
-
-/* The first title is at the top of the tab. */
-.buildings__title:first-child {
-    margin-top: 0;
-}
-
-/* Padded rather than spaced, so that the stripes of the rows touch. */
-.buildings__row {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 2px 4px;
-}
-
-.buildings__text {
-    flex-shrink: 1;
-    margin: 0;
-    padding: 0;
-    color: rgb(222, 210, 188);
-    font-size: 14px;
-    white-space: normal;
-}
-
-.buildings__button {
-    margin: 0 0 0 8px;
-    padding: 2px 8px;
-    color: rgb(222, 210, 188);
-    background-color: rgba(60, 44, 30, 0.9);
-    border-width: 1px;
-    border-radius: 0;
-    border-color: rgb(110, 84, 52);
-    font-size: 14px;
-}
-
-.buildings__button:hover {
-    background-color: rgb(84, 62, 40);
-}
-
-.buildings__button:active {
-    background-color: rgb(110, 84, 52);
-}
-
-.buildings__button:disabled,
-.buildings__button:disabled:hover {
-    color: rgb(140, 124, 100);
-    background-color: rgba(60, 44, 30, 0.5);
-    opacity: 1;
-}
-
-/* The area that takes the pointer for its button, enabled or not. */
-.buildings__button-area {
-    flex-shrink: 0;
-}
-
-/* The cost of the building whose button the pointer is over, laid over the rows. */
-.buildings__cost-tip {
-    position: absolute;
-    display: none;
-    margin: 0;
-    padding: 4px 6px;
-    color: rgb(240, 226, 196);
-    font-size: 13px;
-    white-space: nowrap;
-    background-color: rgba(24, 17, 12, 0.94);
-    border-width: 1px;
-    border-color: rgb(110, 84, 52);
 }

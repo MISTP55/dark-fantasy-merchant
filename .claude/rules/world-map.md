@@ -21,6 +21,6 @@ paths:
 
 ## City panel
 
-- `CityInfoPanelController` hosts the market (`CityMarketSection`, see `economy.md`), the buildings (`CityBuildingsSection`, see `population.md`) and the ships in port.
+- `CityInfoPanelController` hosts the market (`CityMarketSection`, see `economy.md`) and the ships in port, in two tabs: Marché and Navires. It has no building tab: the player builds only from the city view (`PlayerBuilder`, see `population.md`). Its "Voir la ville" button, in the header beside the close button, raises `ViewCityRequested` with the shown city.
 - Each tab's page wraps the element its section shows and hides, so the tabs and the sections never write the same `display`.
 - Its sections listen to the market, the hold and the treasury only while they are shown.

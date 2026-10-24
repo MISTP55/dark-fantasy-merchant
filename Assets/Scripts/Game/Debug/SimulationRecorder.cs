@@ -20,8 +20,11 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Optional. Without it, no AI trade is recorded and nothing is under way.")]
         [SerializeField] private AiMerchants aiMerchants;
 
-        [Tooltip("Optional. Without it, no trade of the player is recorded.")]
+        [Tooltip("Optional. Without it, no trade of the player in the market is recorded.")]
         [SerializeField] private CityInfoPanelController cityPanel;
+
+        [Tooltip("Optional. Without it, the materials bought by the player's constructions are not recorded.")]
+        [SerializeField] private PlayerBuilder playerBuilder;
 
         private readonly List<CityDefinition> cities = new List<CityDefinition>();
         private readonly List<GoodDefinition> goods = new List<GoodDefinition>();
@@ -96,6 +99,11 @@ namespace DarkFantasyMerchant.Game
             {
                 cityPanel.PlayerTraded -= OnPlayerTraded;
             }
+
+            if (playerBuilder != null)
+            {
+                playerBuilder.MaterialBought -= OnMaterialBought;
+            }
         }
 
         // Only to start: once started, the record follows the days of the economy.
@@ -149,6 +157,11 @@ namespace DarkFantasyMerchant.Game
                 cityPanel.PlayerTraded += OnPlayerTraded;
             }
 
+            if (playerBuilder != null)
+            {
+                playerBuilder.MaterialBought += OnMaterialBought;
+            }
+
             Started?.Invoke();
         }
 
@@ -171,6 +184,11 @@ namespace DarkFantasyMerchant.Game
         private void OnPlayerTraded(CityDefinition city, int good, int units, long gold, PlayerTradeKind kind)
         {
             Record.AddPlayerTrade(Record.History.LastDay, worldEconomy.MarketOf(city), good, units, kind);
+        }
+
+        private void OnMaterialBought(CityDefinition city, int good, int units, long gold)
+        {
+            OnPlayerTraded(city, good, units, gold, PlayerTradeKind.Construction);
         }
     }
 }

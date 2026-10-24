@@ -15,6 +15,7 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private WorldEconomy worldEconomy;
         [SerializeField] private ShipsView shipsView;
         [SerializeField] private AiMerchants aiMerchants;
+        [SerializeField] private PlayerBuilder playerBuilder;
 
         /// <summary>
         /// The services of the loaded world, null when there is none. A service missing from the
@@ -34,6 +35,8 @@ namespace DarkFantasyMerchant.Game
 
         public AiMerchants AiMerchants => aiMerchants;
 
+        public PlayerBuilder PlayerBuilder => playerBuilder;
+
         // Play mode is entered without a domain reload: a static left by the last session
         // would outlive its objects.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -52,11 +55,12 @@ namespace DarkFantasyMerchant.Game
             }
 
             if (worldClock == null || playerTreasury == null || playerNotifications == null
-                || worldEconomy == null || shipsView == null || aiMerchants == null)
+                || worldEconomy == null || shipsView == null || aiMerchants == null
+                || playerBuilder == null)
             {
                 Debug.LogError(
                     "SimulationServices needs the world clock, the player's treasury and notifications, "
-                    + "the world economy, the ships view and the AI merchants.",
+                    + "the world economy, the ships view, the AI merchants and the player builder.",
                     this);
             }
 
