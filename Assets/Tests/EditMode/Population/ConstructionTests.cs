@@ -44,16 +44,18 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryBuildHouse_PlacesThePlayersHouse()
         {
-            var grid = new CityGrid(4, 4, new Vector2Int[0]);
+            // The house touches the road at (3, 0), which joins the town hall: it is connected and gives its room.
+            CityGrid grid = TestMarkets.GridWithTownHall(6, 4);
+            grid.PlaceRoads(new[] { new Vector2Int(3, 0) }, BuildingOwner.City);
             CityMarket market = GridMarket(grid);
             var treasury = new Treasury(10000);
-            var place = new GridPlace(new Vector2Int(1, 1), BuildingOrientation.Along);
+            var place = new GridPlace(new Vector2Int(4, 1), BuildingOrientation.Along);
 
             bool built = Construction.TryBuildHouse(market, HoldWith(3), treasury, Cost(), SocialClass.Poor, 100, new Footprint(1, 1), place);
 
             Assert.IsTrue(built);
             Assert.AreEqual(1, grid.HousesOf(SocialClass.Poor));
-            Assert.AreEqual(BuildingOwner.Player, grid.BuildingAt(new Vector2Int(1, 1)).Owner);
+            Assert.AreEqual(BuildingOwner.Player, grid.BuildingAt(new Vector2Int(4, 1)).Owner);
             Assert.AreEqual(200, market.Population.RoomOf(SocialClass.Poor));
             Assert.AreEqual(9900, treasury.Gold);
         }
@@ -462,6 +464,128 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(stock, market.AvailableOf(0));
             Assert.AreEqual(0, market.PlayerHousesOf(SocialClass.Poor));
             Assert.AreEqual(0, market.PlayerWorkshopsOf(1));
+        }
+
+        // A road costs 50 gold a cell; the grid has a town hall at (0, 0) and roads at (3, 0) and (4, 0).
+        private static CityMarket RoadMarket(out CityGrid grid)
+        {
+            grid = TestMarkets.GridWithTownHall(10, 6);
+            CityMarket market = GridMarket(grid);
+            market.AddPlayerRoads(new[] { new Vector2Int(3, 0), new Vector2Int(4, 0) });
+            return market;
+        }
+
+        private static readonly BuildingCost RoadCost = new BuildingCost(50, Array.Empty<MaterialCost>());
+
+        // Five cells along y = 0, the first two already roads.
+        private static readonly Vector2Int[] Trace =
+        {
+            new Vector2Int(3, 0), new Vector2Int(4, 0), new Vector2Int(5, 0), new Vector2Int(6, 0), new Vector2Int(7, 0),
+        };
+
+        [Test]
+        public void QuoteRoads_ChargesOnlyNewCells()
+        {
+            CityMarket market = RoadMarket(out _);
+
+            ConstructionQuote quote = Construction.QuoteRoads(market, null, new Treasury(10000), RoadCost, Trace);
+
+            Assert.AreEqual(3, Construction.NewRoadCellsOf(market, Trace));
+            Assert.IsTrue(quote.IsPossible);
+            Assert.AreEqual(150, quote.Gold);
+        }
+
+        [Test]
+        public void QuoteRoads_OnlyExistingRoads_IsImpossible()
+        {
+            CityMarket market = RoadMarket(out _);
+            var existing = new[] { new Vector2Int(4, 0), new Vector2Int(3, 0) };
+
+            Assert.AreEqual(0, Construction.NewRoadCellsOf(market, existing));
+            Assert.IsFalse(Construction.QuoteRoads(market, null, new Treasury(10000), RoadCost, existing).IsPossible);
+            Assert.IsFalse(Construction.QuoteRoads(market, null, new Treasury(10000), RoadCost, existing, isFree: true).IsPossible);
+        }
+
+        [Test]
+        public void QuoteRoads_ACellThatCannotHoldARoad_IsImpossible()
+        {
+            CityMarket market = RoadMarket(out _);
+            var underTheHall = new[] { new Vector2Int(5, 0), new Vector2Int(2, 0) };
+
+            Assert.AreEqual(-1, Construction.NewRoadCellsOf(market, underTheHall));
+            Assert.AreEqual(-1, Construction.NewRoadCellsOf(market, new[] { new Vector2Int(5, 0), new Vector2Int(10, 0) }));
+            Assert.IsFalse(Construction.QuoteRoads(market, null, new Treasury(10000), RoadCost, underTheHall).IsPossible);
+        }
+
+        [Test]
+        public void TryBuildRoads_PaysAndPlacesTheNewCells()
+        {
+            CityMarket market = RoadMarket(out CityGrid grid);
+            var treasury = new Treasury(1000);
+
+            Assert.IsTrue(Construction.TryBuildRoads(market, null, treasury, RoadCost, Trace));
+
+            Assert.AreEqual(850, treasury.Gold);
+            Assert.IsTrue(grid.IsNetworkRoad(new Vector2Int(7, 0)));
+            Assert.AreEqual(BuildingOwner.Player, grid.BuildingAt(new Vector2Int(7, 0)).Owner);
+        }
+
+        [Test]
+        public void TryBuildRoads_GoldShort_TakesNothing()
+        {
+            CityMarket market = RoadMarket(out CityGrid grid);
+            var treasury = new Treasury(149);
+
+            Assert.IsFalse(Construction.TryBuildRoads(market, null, treasury, RoadCost, Trace));
+
+            Assert.AreEqual(149, treasury.Gold);
+            Assert.IsNull(grid.BuildingAt(new Vector2Int(5, 0)));
+            Assert.AreEqual(3, grid.Buildings.Count);
+        }
+
+        [Test]
+        public void TryBuildRoads_Free_TakesNothingAndBuilds()
+        {
+            CityMarket market = RoadMarket(out CityGrid grid);
+            var treasury = new Treasury(-500);
+            CargoHold hold = HoldWith(3);
+            int stock = market.AvailableOf(0);
+            var cost = new BuildingCost(50, new[] { new MaterialCost(0, 1) });
+
+            Assert.IsTrue(Construction.TryBuildRoads(market, hold, treasury, cost, Trace, isFree: true));
+
+            Assert.AreEqual(-500, treasury.Gold);
+            Assert.AreEqual(3, hold.UnitsOf(0));
+            Assert.AreEqual(stock, market.AvailableOf(0));
+            Assert.AreEqual(6, grid.Buildings.Count);
+        }
+
+        [Test]
+        public void TryBuildRoads_TakesTheMaterialsOfEveryNewCell()
+        {
+            CityMarket market = RoadMarket(out _);
+            CargoHold hold = HoldWith(2);
+            int stock = market.AvailableOf(0);
+            var cost = new BuildingCost(50, new[] { new MaterialCost(0, 1) });
+
+            Assert.IsTrue(Construction.TryBuildRoads(market, hold, new Treasury(10000), cost, Trace));
+
+            Assert.AreEqual(0, hold.UnitsOf(0));
+            Assert.AreEqual(stock - 1, market.AvailableOf(0));
+        }
+
+        [Test]
+        public void Times_MultipliesGoldAndMaterials()
+        {
+            var cost = new BuildingCost(50, new[] { new MaterialCost(0, 3), new MaterialCost(1, 2) });
+
+            BuildingCost times = cost.Times(4);
+
+            Assert.AreEqual(200, times.Gold);
+            Assert.AreEqual(2, times.Materials.Count);
+            Assert.AreEqual((0, 12), (times.Materials[0].Good, times.Materials[0].Units));
+            Assert.AreEqual((1, 8), (times.Materials[1].Good, times.Materials[1].Units));
+            Assert.Throws<ArgumentOutOfRangeException>(() => cost.Times(0));
         }
 
         [Test]

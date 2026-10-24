@@ -168,5 +168,63 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(int.MaxValue, distances[0]);
             Assert.AreEqual(int.MaxValue, distances[4]);
         }
+
+        // The hall covers (0, 0)-(1, 1); the building is the cell (5, 0).
+        [Test]
+        public void Connects_RoadsFromTheHallToTheBuilding()
+        {
+            var grid = Grid(8, 8);
+            Hall(grid, 0, 0);
+
+            Assert.IsTrue(RoadPlanner.Connects(grid, Cells((5, 0)), Cells((2, 0), (3, 1), (4, 1))));
+        }
+
+        [Test]
+        public void Connects_NoRoads_IsWhetherTheBuildingTouchesTheNetwork()
+        {
+            var grid = Grid(8, 8);
+            Hall(grid, 0, 0);
+
+            Assert.IsFalse(RoadPlanner.Connects(grid, Cells((2, 0)), Cells()));
+
+            grid.PlaceRoads(Cells((2, 0)), BuildingOwner.City);
+
+            Assert.IsTrue(RoadPlanner.Connects(grid, Cells((3, 0)), Cells()));
+        }
+
+        [Test]
+        public void Connects_ARoadThatJoinsNothing_IsFalse()
+        {
+            var grid = Grid(8, 8);
+            Hall(grid, 0, 0);
+
+            // (4, 1) is listed before the road it would touch.
+            Assert.IsFalse(RoadPlanner.Connects(grid, Cells((5, 0)), Cells((2, 0), (4, 1), (3, 1))));
+            Assert.IsFalse(RoadPlanner.Connects(grid, Cells((5, 0)), Cells((4, 0))));
+        }
+
+        [Test]
+        public void Connects_RoadsThatStopShortOfTheBuilding_IsFalse()
+        {
+            var grid = Grid(8, 8);
+            Hall(grid, 0, 0);
+
+            Assert.IsFalse(RoadPlanner.Connects(grid, Cells((6, 0)), Cells((2, 0), (3, 0))));
+        }
+
+        [Test]
+        public void Connects_ARoadThatCannotBeLaid_IsFalse()
+        {
+            var grid = Grid(8, 8, new Vector2Int(3, 0));
+            Hall(grid, 0, 0);
+            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, One, At(3, 1));
+
+            // Forbidden, under a building, under the building itself, twice, off the grid.
+            Assert.IsFalse(RoadPlanner.Connects(grid, Cells((4, 0)), Cells((2, 0), (3, 0))));
+            Assert.IsFalse(RoadPlanner.Connects(grid, Cells((4, 1)), Cells((2, 1), (3, 1))));
+            Assert.IsFalse(RoadPlanner.Connects(grid, Cells((2, 0)), Cells((2, 0))));
+            Assert.IsFalse(RoadPlanner.Connects(grid, Cells((3, 2)), Cells((2, 2), (2, 2))));
+            Assert.IsFalse(RoadPlanner.Connects(grid, Cells((0, 2)), Cells((-1, 2))));
+        }
     }
 }

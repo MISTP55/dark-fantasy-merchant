@@ -1,4 +1,5 @@
 using DarkFantasyMerchant.Core;
+using UnityEngine;
 
 namespace DarkFantasyMerchant.Tests.EditMode
 {
@@ -30,5 +31,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public static PriceCurve SellCurve => new PriceCurve(2, 1.4, 1, 0.7, 0.5);
 
         public static MarketPricing Pricing => new MarketPricing(BuyCurve, SellCurve);
+
+        /// <summary>
+        /// A grid with no forbidden cell and a 3 by 2 town hall at (0, 0), covering x 0 to 2 and y 0 and 1, and no
+        /// road yet: a road at (3, 0) joins the network.
+        /// </summary>
+        public static CityGrid GridWithTownHall(int width, int height)
+        {
+            var grid = new CityGrid(width, height, new Vector2Int[0]);
+            grid.Place(BuildingKind.TownHall(), BuildingOwner.City, new Footprint(3, 2),
+                new GridPlace(Vector2Int.zero, BuildingOrientation.Along));
+            return grid;
+        }
     }
 }

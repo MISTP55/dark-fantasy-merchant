@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace DarkFantasyMerchant.Core
 {
@@ -62,6 +63,26 @@ namespace DarkFantasyMerchant.Core
         public long Gold { get; }
 
         public IReadOnlyList<MaterialCost> Materials { get; }
+
+        /// <summary>The cost of count buildings at once: the gold and every material's units times count.</summary>
+        /// <exception cref="ArgumentOutOfRangeException">count under 1.</exception>
+        /// <exception cref="OverflowException">A figure too large to be held.</exception>
+        public BuildingCost Times(int count)
+        {
+            if (count < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
+
+            var materials = new List<MaterialCost>(Materials.Count);
+
+            foreach (MaterialCost material in Materials)
+            {
+                materials.Add(new MaterialCost(material.Good, checked(material.Units * count)));
+            }
+
+            return new BuildingCost(checked(Gold * count), materials);
+        }
     }
 
     /// <summary>
@@ -84,7 +105,7 @@ namespace DarkFantasyMerchant.Core
     }
 
     /// <summary>
-    /// Quotes and pays for a player's building (a house or a workshop): the materials come first
+    /// Quotes and pays for a player's building (a house, a workshop or a trace of roads): the materials come first
     /// from a ship's hold, the rest is bought from the city's market, and the gold is taken from
     /// the treasury, all or nothing. What is bought does not pass through a hold. The purchase is
     /// priced with the market as it is before anything is taken, and exactly that is paid. A free
@@ -250,6 +271,67 @@ namespace DarkFantasyMerchant.Core
 
             Pay(market, hold, treasury, cost, quote, materialBought, isFree);
             market.AddPlayerWorkshop(good, jobs, footprint, place);
+            return true;
+        }
+
+        /// <summary>
+        /// The cells of a trace that are not roads yet, each counted once; -1 when one cannot hold a road (off the
+        /// grid, forbidden, under a building that is not a road) or the market has no grid.
+        /// </summary>
+        public static int NewRoadCellsOf(CityMarket market, IReadOnlyList<Vector2Int> cells)
+        {
+            if (market == null)
+            {
+                throw new ArgumentNullException(nameof(market));
+            }
+
+            if (market.Grid == null)
+            {
+                return -1;
+            }
+
+            var newCells = new List<Vector2Int>();
+            return CityMarket.TryCollectNewRoads(market.Grid, cells, newCells) ? newCells.Count : -1;
+        }
+
+        /// <summary>
+        /// Quotes the roads of a trace: each new cell at <paramref name="costPerCell"/>, the cells already roads free;
+        /// impossible when a cell cannot hold a road or none is new. <paramref name="hold"/> may be null.
+        /// </summary>
+        /// <param name="isFree">For the debug tools: the quote is possible at 0 gold when the trace can be laid.</param>
+        public static ConstructionQuote QuoteRoads(
+            CityMarket market, CargoHold hold, Treasury treasury, BuildingCost costPerCell, IReadOnlyList<Vector2Int> cells, bool isFree = false)
+        {
+            Require(market, treasury, costPerCell);
+            int count = NewRoadCellsOf(market, cells);
+
+            return count < 1
+                ? Quote(market, hold, treasury, costPerCell, false, isFree)
+                : Quote(market, hold, treasury, costPerCell.Times(count), true, isFree);
+        }
+
+        /// <summary>Pays for and lays the new roads of a trace, all or nothing.</summary>
+        /// <param name="materialBought">Told, for the debug tools, of each material bought from the market: its good, units and gold.</param>
+        /// <param name="isFree">For the debug tools: nothing is taken, nothing is bought.</param>
+        /// <returns>False when the quote is impossible; nothing was taken then.</returns>
+        public static bool TryBuildRoads(
+            CityMarket market,
+            CargoHold hold,
+            Treasury treasury,
+            BuildingCost costPerCell,
+            IReadOnlyList<Vector2Int> cells,
+            Action<int, int, long> materialBought = null,
+            bool isFree = false)
+        {
+            ConstructionQuote quote = QuoteRoads(market, hold, treasury, costPerCell, cells, isFree);
+
+            if (!quote.IsPossible)
+            {
+                return false;
+            }
+
+            Pay(market, hold, treasury, costPerCell.Times(NewRoadCellsOf(market, cells)), quote, materialBought, isFree);
+            market.AddPlayerRoads(cells);
             return true;
         }
 

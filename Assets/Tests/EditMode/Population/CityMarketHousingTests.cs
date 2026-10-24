@@ -234,14 +234,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void BuildCityHouses_PlacesTheHouseOnTheGrid()
         {
-            CityGrid grid = Grid(5, 5);
-            CityMarket market = GridMarket(new CityPopulation(960, 0, 1000), grid, new RandomPlacement(new System.Random(1)));
+            CityGrid grid = TestMarkets.GridWithTownHall(5, 5);
+            CityMarket market = GridMarket(new CityPopulation(960, 0, 1000), grid, new RoadsidePlacement(new System.Random(1)));
             Stock(market, 25, 12);
 
             market.StartDay();
 
             Assert.AreEqual(1, grid.HousesOf(SocialClass.Poor));
-            Assert.AreEqual(BuildingOwner.City, grid.Buildings[0].Owner);
+            Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Poor));
+            Assert.AreEqual(BuildingOwner.City, grid.Buildings[1].Owner);
             Assert.AreEqual(1, market.CityHouses);
             Assert.AreEqual(1140, market.Population.Room);
         }
@@ -282,23 +283,28 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void Room_IsAlwaysTheHousesOnTheGrid()
+        public void Room_IsAlwaysTheConnectedHousesOnTheGrid()
         {
-            CityGrid grid = Grid(6, 6);
+            // A road along x = 3 joins the town hall; the two starting houses touch it, a third does not yet.
+            CityGrid grid = TestMarkets.GridWithTownHall(8, 8);
+            grid.PlaceRoads(new[] { new Vector2Int(3, 0), new Vector2Int(3, 1), new Vector2Int(3, 2) }, BuildingOwner.City);
             grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, HouseFootprint,
-                new GridPlace(Vector2Int.zero, BuildingOrientation.Along));
+                new GridPlace(new Vector2Int(4, 0), BuildingOrientation.Along));
             grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, HouseFootprint,
-                new GridPlace(new Vector2Int(1, 0), BuildingOrientation.Along));
+                new GridPlace(new Vector2Int(4, 1), BuildingOrientation.Along));
+            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, HouseFootprint,
+                new GridPlace(new Vector2Int(7, 7), BuildingOrientation.Along));
             var population = new CityPopulation(new PerClass<int>(0, 0, 270), 0, new PerClass<int>(0, 0, 280));
-            CityMarket market = GridMarket(population, grid, new RandomPlacement(new System.Random(1)));
+            CityMarket market = GridMarket(population, grid, new RoadsidePlacement(new System.Random(1)));
             Stock(market, 10, 10);
 
             market.StartDay();
-            market.AddPlayerHouse(SocialClass.Poor, 140, HouseFootprint, new GridPlace(new Vector2Int(5, 5), BuildingOrientation.Along));
+            market.AddPlayerHouse(SocialClass.Poor, 140, HouseFootprint, new GridPlace(new Vector2Int(4, 3), BuildingOrientation.Along));
 
             Assert.AreEqual(1, market.CityHouses);
-            Assert.AreEqual(4, grid.HousesOf(SocialClass.Poor));
-            Assert.AreEqual(grid.HousesOf(SocialClass.Poor) * 140, market.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(5, grid.HousesOf(SocialClass.Poor));
+            Assert.AreEqual(4, grid.ConnectedHousesOf(SocialClass.Poor));
+            Assert.AreEqual(grid.ConnectedHousesOf(SocialClass.Poor) * 140, market.Population.RoomOf(SocialClass.Poor));
         }
 
         [Test]

@@ -24,7 +24,7 @@ paths:
 
 ## The market on its grid
 
-- A class's room is its houses on the grid × the room of a house of the class; never `AddRoom` outside a placed house when the market has a grid. The city's houses (`CityMarket.BuildCityHouse`, materials checked, then a place found, then taken) and the player's (`Construction.TryBuildHouse`/`TryBuildWorkshop` with a place, checked before anything is paid) are the only ways to build.
+- A class's room is its connected houses on the grid × the room of a house of the class; never `AddRoom` outside a placed house when the market has a grid. `CityMarket` listens to `CityGrid.BuildingConnected`: a house gives its room when it connects (at once when it touches a network road), and keeps it waiting until then (the player's: the room it was built with; the city's and the starting ones: its class's housing rule, which a grid holding an unconnected house must have). Only the houses the market places, or that are on the grid at its creation, give room: a house placed on the grid directly afterwards gives none. A player's workshop on the grid hires only while connected. The city's houses (`CityMarket.BuildCityHouse`, materials checked, then a place found, then taken) and the player's (`Construction.TryBuildHouse`/`TryBuildWorkshop` with a place, checked before anything is paid) are the only ways to build.
 - A market with a grid needs a placement strategy and a footprint on every housing rule (`CityHousingRule.Footprint` is nullable, required only then); without a grid the placeless `AddPlayerHouse`/`AddPlayerWorkshop` apply, and with one they throw.
 
 ## Grid data (Game)
@@ -32,7 +32,7 @@ paths:
 - A building asset has a `footprint` (Along: x = width, y = depth), each side at least 1 (`TryValidate`); the scene setup fills an unset (0, 0) one: 2 by 1 for houses, 2 by 2 for workshops. Never build a `Footprint` from it without validating (`default(Footprint)` is 0 by 0 and skips validation).
 - `BuildingsDefinition.PlacementStrategy` (a `PlacementStrategyDefinition`, `Assets/Data/Buildings/Placement/`) is required: `WorldEconomy` makes one strategy for the whole world from it.
 - `CityLayoutDefinition` (`CityDefinition.Layout`) is a city's grid: size, forbidden cells, starting houses with their place. `TryCreateGrid` gives the grid; a city without a usable layout gets a market without grid and one warning at the start. `WorldEconomy.GridOf` returns the grid.
-- With a grid, the room of a class at the start is its houses on the grid × the room of a house (`EconomyDefinition.CreateMarket`); `StartingRoomOf` is the room a grid should give at least.
+- With a grid, the room of a class at the start is its connected houses on the grid × the room of a house (`EconomyDefinition.CreateMarket`); `StartingRoomOf` is the room a grid should give at least.
 - The scene setup gives a city without a layout (`Assets/Data/CityLayouts/<city>Layout.asset`) a 40 by 40 grid (`CityLayoutDefinition.DefaultSize`) with just the starting houses `StartingRoomOf` asks for, placed at random with the city's index in the map as seed; a city with a layout is never touched. A layout asset already at that path (a link lost) is linked to the city, never rewritten; the layout window's "Create layout" does the same.
 
 ## The city view scene

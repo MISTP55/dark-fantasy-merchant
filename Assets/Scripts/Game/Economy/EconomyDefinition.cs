@@ -603,7 +603,7 @@ namespace DarkFantasyMerchant.Game
         /// <param name="roomPerHouse">Places of a house of each class, each at least 1 with a labour rule: the city starts with as many houses as each class needs.</param>
         /// <param name="housing">When the city builds a house of its own for each class, only with a labour rule; null for never.</param>
         /// <param name="social">The satisfaction and moves of the classes, only with a labour rule; null for classes that never move.</param>
-        /// <param name="grid">The city's grid, only with a labour rule: its houses give the room of each class (instead of the whole houses the population needs). With a placement strategy and a footprint on every housing rule.</param>
+        /// <param name="grid">The city's grid, only with a labour rule: its connected houses give the room of each class (instead of the whole houses the population needs); the others give theirs when they connect. With a placement strategy and a footprint on every housing rule.</param>
         /// <param name="placement">Where the city's buildings are put on the grid; comes with the grid.</param>
         public CityMarket CreateMarket(
             CityDefinition city,
@@ -647,9 +647,9 @@ namespace DarkFantasyMerchant.Game
                     grid == null
                         ? CityPopulation.RoomAtStart(workers, inhabitantsPerWorker, roomPerHouse)
                         : new PerClass<int>(
-                            grid.HousesOf(SocialClass.Rich) * roomPerHouse.Rich,
-                            grid.HousesOf(SocialClass.Wealthy) * roomPerHouse.Wealthy,
-                            grid.HousesOf(SocialClass.Poor) * roomPerHouse.Poor));
+                            grid.ConnectedHousesOf(SocialClass.Rich) * roomPerHouse.Rich,
+                            grid.ConnectedHousesOf(SocialClass.Wealthy) * roomPerHouse.Wealthy,
+                            grid.ConnectedHousesOf(SocialClass.Poor) * roomPerHouse.Poor));
 
             return new CityMarket(
                 marketGoods,

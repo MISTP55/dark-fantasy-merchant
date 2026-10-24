@@ -396,9 +396,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityDefinition city = City(new[] { wheat }, new[] { fish });
             var roomPerHouse = new PerClass<int>(40, 70, 140);
             var footprints = new PerClass<Footprint>(new Footprint(2, 1), new Footprint(2, 1), new Footprint(2, 1));
-            var grid = new CityGrid(10, 10, new Vector2Int[0]);
-            var placement = new RandomPlacement(new System.Random(1));
+            var grid = new CityGrid(20, 20, new Vector2Int[0]);
+            grid.Place(BuildingKind.TownHall(), BuildingOwner.City, new Footprint(3, 2),
+                new GridPlace(new Vector2Int(8, 9), BuildingOrientation.Along));
+            var placement = new RoadsidePlacement(new System.Random(1));
             Assert.IsTrue(StartingHouses.TryPlace(grid, new PerClass<int>(2, 3, 5), footprints, placement));
+
+            // A house off the network: its room comes only when it connects.
+            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, footprints.Poor,
+                new GridPlace(new Vector2Int(0, 0), BuildingOrientation.Along));
             var housing = new List<CityHousingRule>();
             foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
             {

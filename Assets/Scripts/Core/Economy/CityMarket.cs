@@ -19,7 +19,8 @@ namespace DarkFantasyMerchant.Core
     /// <see cref="SocialRule"/> with the labour, its classes have a satisfaction that follows
     /// the goods, the poor rise into the other classes and fall back, the beggars are hired only
     /// while the poor are satisfied, and the poor without room or unhappy leave with their jobs;
-    /// without one, the classes never move.
+    /// without one, the classes never move. On a grid, a house gives its room and a player's
+    /// workshop hires only once connected to the road network.
     /// </summary>
     public sealed class CityMarket
     {
@@ -33,6 +34,13 @@ namespace DarkFantasyMerchant.Core
         private readonly List<PlayerWorkshop> playerWorkshops = new List<PlayerWorkshop>();
         private readonly IPlacementStrategy placement;
         private readonly List<Vector2Int> roadsToLay = new List<Vector2Int>();
+        private readonly List<Vector2Int> houseCells = new List<Vector2Int>();
+
+        // The room of each house on the grid that is not connected yet, given to its class when it connects.
+        private readonly Dictionary<PlacedBuilding, int> roomUntilConnected = new Dictionary<PlacedBuilding, int>();
+
+        // The room of the house the market is placing, set only for the time of the placement.
+        private int roomOfPlacedHouse;
         private readonly ThresholdRule thresholdRule;
         private readonly WorkforceRule workforce;
         private readonly MarketPricing pricing;
@@ -56,7 +64,7 @@ namespace DarkFantasyMerchant.Core
         /// <param name="labour">How the workshops take their workers from the population; null for immediate hiring and a population that stays.</param>
         /// <param name="housing">When the city builds a house of its own for a class, each class once at most, only with labour; null for a city that never does.</param>
         /// <param name="social">The satisfaction and the moves of the classes, only with labour; null for classes that never move.</param>
-        /// <param name="grid">The city grid the houses stand on, with its placement strategy (both or neither); null for a city whose houses have no place. Every housing rule then has a footprint.</param>
+        /// <param name="grid">The city grid the houses stand on, with its placement strategy (both or neither); null for a city whose houses have no place. Every housing rule then has a footprint. The houses already connected are in the population's room; one not connected yet gives the room of its class's housing rule when it connects, and needs that rule.</param>
         /// <param name="placement">Where the city builds its own houses on the grid.</param>
         public CityMarket(
             IReadOnlyList<MarketGood> goods,
@@ -114,6 +122,17 @@ namespace DarkFantasyMerchant.Core
                     if (rule.Footprint == null)
                     {
                         throw new ArgumentException("A market with a grid needs a footprint for every housing rule.", nameof(housing));
+                    }
+                }
+
+                foreach (PlacedBuilding building in grid.Buildings)
+                {
+                    if (building.Kind.IsHouse && !building.IsConnected)
+                    {
+                        CityHousingRule rule = RuleOf(Housing, building.Kind.HousedClass)
+                            ?? throw new ArgumentException(
+                                "A house of the grid is not connected and its class has no housing rule to give its room.", nameof(grid));
+                        roomUntilConnected[building] = rule.Room;
                     }
                 }
             }
@@ -174,6 +193,12 @@ namespace DarkFantasyMerchant.Core
                     Population.SetSatisfaction(housedClass, social.StartingSatisfaction);
                 }
             }
+
+            if (grid != null)
+            {
+                grid.BuildingPlaced += OnBuildingPlaced;
+                grid.BuildingConnected += OnBuildingConnected;
+            }
         }
 
         public int GoodCount => goods.Length;
@@ -209,7 +234,7 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// Raised once by a day that starts, once when units were taken or put, and once by
-        /// <see cref="AddPlayerWorkshop"/> and by <see cref="AddPlayerHouse"/>.
+        /// <see cref="AddPlayerWorkshop"/>, by <see cref="AddPlayerHouse"/> and by <see cref="AddPlayerRoads"/>.
         /// </summary>
         public event Action Changed;
 
@@ -389,14 +414,17 @@ namespace DarkFantasyMerchant.Core
             Changed?.Invoke();
         }
 
-        /// <summary>Adds a workshop of the player on the grid, as <see cref="AddPlayerWorkshop(int, int)"/> does.</summary>
+        /// <summary>
+        /// Adds a workshop of the player on the grid, as <see cref="AddPlayerWorkshop(int, int)"/> does; it fills its
+        /// vacancies only while it is connected to the road network.
+        /// </summary>
         /// <exception cref="InvalidOperationException">The market has no grid, or the footprint cannot stand at the place; nothing has changed then.</exception>
         public void AddPlayerWorkshop(int good, int jobs, Footprint footprint, GridPlace place)
         {
             RequireStandable(footprint, place);
             RequireWorkshop(good, jobs);
-            Grid.Place(BuildingKind.Workshop(good), BuildingOwner.Player, footprint, place);
-            playerWorkshops.Add(new PlayerWorkshop(good, jobs));
+            PlacedBuilding building = Grid.Place(BuildingKind.Workshop(good), BuildingOwner.Player, footprint, place);
+            playerWorkshops.Add(new PlayerWorkshop(good, jobs, building));
             Changed?.Invoke();
         }
 
@@ -409,7 +437,10 @@ namespace DarkFantasyMerchant.Core
             Changed?.Invoke();
         }
 
-        /// <summary>Adds a house of the player on the grid, as <see cref="AddPlayerHouse(SocialClass, int)"/> does.</summary>
+        /// <summary>
+        /// Adds a house of the player on the grid, as <see cref="AddPlayerHouse(SocialClass, int)"/> does, except that
+        /// its room is given only when it connects to the road network: at once when it touches a network road.
+        /// </summary>
         /// <exception cref="InvalidOperationException">The market has no grid, or the footprint cannot stand at the place; nothing has changed then.</exception>
         public void AddPlayerHouse(SocialClass housedClass, int room, Footprint footprint, GridPlace place)
         {
@@ -425,10 +456,120 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentOutOfRangeException(nameof(room));
             }
 
-            Grid.Place(BuildingKind.House(housedClass), BuildingOwner.Player, footprint, place);
-            Population.AddRoom(housedClass, room);
+            PlaceHouse(housedClass, BuildingOwner.Player, room, footprint, place);
             playerHouses[(int)housedClass]++;
             Changed?.Invoke();
+        }
+
+        /// <summary>
+        /// Lays the player's roads on every cell that is not a road already, all at once; the houses they connect
+        /// give their room.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The market has no grid, a cell is off the grid, forbidden or under a building that is not a road, or no
+        /// cell is new; nothing has changed then.
+        /// </exception>
+        public void AddPlayerRoads(IReadOnlyList<Vector2Int> cells)
+        {
+            if (Grid == null)
+            {
+                throw new InvalidOperationException("The market has no grid.");
+            }
+
+            var newCells = new List<Vector2Int>();
+
+            if (!TryCollectNewRoads(Grid, cells, newCells))
+            {
+                throw new InvalidOperationException("A cell cannot hold a road.");
+            }
+
+            if (newCells.Count == 0)
+            {
+                throw new InvalidOperationException("Every cell is a road already.");
+            }
+
+            Grid.PlaceRoads(newCells, BuildingOwner.Player);
+            Changed?.Invoke();
+        }
+
+        /// <summary>
+        /// Fills newCells (cleared first) with the distinct cells that are not roads yet, in their order. False, and
+        /// newCells empty, when a cell cannot hold a road: off the grid, forbidden or under a building that is not a road.
+        /// </summary>
+        internal static bool TryCollectNewRoads(CityGrid grid, IReadOnlyList<Vector2Int> cells, List<Vector2Int> newCells)
+        {
+            if (cells == null)
+            {
+                throw new ArgumentNullException(nameof(cells));
+            }
+
+            newCells.Clear();
+
+            foreach (Vector2Int cell in cells)
+            {
+                PlacedBuilding there = grid.BuildingAt(cell);
+
+                if (!grid.Contains(cell) || grid.IsForbidden(cell) || (there != null && !there.Kind.IsRoad))
+                {
+                    newCells.Clear();
+                    return false;
+                }
+
+                if (there == null && !newCells.Contains(cell))
+                {
+                    newCells.Add(cell);
+                }
+            }
+
+            return true;
+        }
+
+        // Places a house whose room waits for its connection, which may come at once.
+        private void PlaceHouse(SocialClass housedClass, BuildingOwner owner, int room, Footprint footprint, GridPlace place)
+        {
+            roomOfPlacedHouse = room;
+
+            try
+            {
+                Grid.Place(BuildingKind.House(housedClass), owner, footprint, place);
+            }
+            finally
+            {
+                roomOfPlacedHouse = 0;
+            }
+        }
+
+        // Before the house can connect: the grid raises BuildingPlaced first.
+        private void OnBuildingPlaced(PlacedBuilding building)
+        {
+            // Only the houses the market places: their room is known.
+            if (building.Kind.IsHouse && roomOfPlacedHouse > 0)
+            {
+                roomUntilConnected[building] = roomOfPlacedHouse;
+                roomOfPlacedHouse = 0;
+            }
+        }
+
+        private void OnBuildingConnected(PlacedBuilding building)
+        {
+            if (roomUntilConnected.TryGetValue(building, out int room))
+            {
+                roomUntilConnected.Remove(building);
+                Population.AddRoom(building.Kind.HousedClass, room);
+            }
+        }
+
+        private static CityHousingRule RuleOf(IReadOnlyList<CityHousingRule> housing, SocialClass housedClass)
+        {
+            foreach (CityHousingRule rule in housing)
+            {
+                if (rule.HousedClass == housedClass)
+                {
+                    return rule;
+                }
+            }
+
+            return null;
         }
 
         private void RequireNoGrid()
@@ -822,7 +963,7 @@ namespace DarkFantasyMerchant.Core
         }
 
         // The second hiring: the beggars fill the player's workshops in the order
-        // they were built, each up to its jobs.
+        // they were built, each up to its jobs; a workshop of the grid only while it is connected.
         private void FillVacancies()
         {
             int fillable = Labour.VacanciesFillable(Population.Beggars, Population.FreeRoomOf(SocialClass.Poor));
@@ -832,6 +973,11 @@ namespace DarkFantasyMerchant.Core
                 if (fillable == 0)
                 {
                     break;
+                }
+
+                if (workshop.Building != null && !workshop.Building.IsConnected)
+                {
+                    continue;
                 }
 
                 int hired = Math.Min(fillable, workshop.Jobs - workshop.Workers);
@@ -864,12 +1010,23 @@ namespace DarkFantasyMerchant.Core
                 }
             }
 
-            // With a grid the house needs a place, found before anything is taken.
+            // With a grid the house needs a place and the roads that connect it, found before anything is taken:
+            // a place off the network, without the roads to join it, builds nothing.
             GridPlace place = default;
 
-            if (Grid != null && !placement.TryChoose(Grid, rule.Footprint.Value, out place, roadsToLay))
+            if (Grid != null)
             {
-                return;
+                if (!placement.TryChoose(Grid, rule.Footprint.Value, out place, roadsToLay))
+                {
+                    return;
+                }
+
+                CellsOf(rule.Footprint.Value, place, houseCells);
+
+                if (!Grid.CanPlace(rule.Footprint.Value, place) || !RoadPlanner.Connects(Grid, houseCells, roadsToLay))
+                {
+                    return;
+                }
             }
 
             foreach (MaterialCost material in rule.Materials)
@@ -880,11 +1037,30 @@ namespace DarkFantasyMerchant.Core
 
             if (Grid != null)
             {
-                Grid.Place(BuildingKind.House(rule.HousedClass), BuildingOwner.City, rule.Footprint.Value, place);
+                // Its room comes when it connects: at once or through its roads.
+                PlaceHouse(rule.HousedClass, BuildingOwner.City, rule.Room, rule.Footprint.Value, place);
+                Grid.PlaceRoads(roadsToLay, BuildingOwner.City);
+            }
+            else
+            {
+                Population.AddRoom(rule.HousedClass, rule.Room);
             }
 
-            Population.AddRoom(rule.HousedClass, rule.Room);
             CityHouses++;
+        }
+
+        private static void CellsOf(Footprint footprint, GridPlace place, List<Vector2Int> cells)
+        {
+            cells.Clear();
+            Vector2Int size = footprint.SizeFor(place.Orientation);
+
+            for (int y = 0; y < size.y; y++)
+            {
+                for (int x = 0; x < size.x; x++)
+                {
+                    cells.Add(new Vector2Int(place.Origin.x + x, place.Origin.y + y));
+                }
+            }
         }
 
         // Each class's satisfaction takes a step towards the target the stocks of the goods it
@@ -1061,14 +1237,18 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
-        /// <summary>A workshop the player has built: its good, its jobs and the workers it has.</summary>
+        /// <summary>A workshop the player has built: its good, its jobs, the workers it has and its building on the grid.</summary>
         private sealed class PlayerWorkshop
         {
-            public PlayerWorkshop(int good, int jobs)
+            public PlayerWorkshop(int good, int jobs, PlacedBuilding building = null)
             {
                 Good = good;
                 Jobs = jobs;
+                Building = building;
             }
+
+            /// <summary>Null for a workshop of a market without grid.</summary>
+            public PlacedBuilding Building { get; }
 
             public int Good { get; }
 

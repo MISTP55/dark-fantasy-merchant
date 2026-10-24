@@ -145,6 +145,69 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
+        /// <summary>
+        /// Whether laying the roads, in their order, would connect a building covering buildingCells: every road is a
+        /// distinct free cell outside the building that joins the network or touches (8 neighbours) a road laid
+        /// before it, and the building touches a network road or one of the roads. With no road, whether the
+        /// building already touches the network.
+        /// </summary>
+        public static bool Connects(CityGrid grid, IReadOnlyCollection<Vector2Int> buildingCells, IReadOnlyList<Vector2Int> roads)
+        {
+            if (roads.Count == 0)
+            {
+                return grid.TouchesNetwork(buildingCells);
+            }
+
+            var building = new HashSet<Vector2Int>(buildingCells);
+            var laid = new HashSet<Vector2Int>();
+            foreach (Vector2Int road in roads)
+            {
+                if (!IsOpen(grid, building, road) || laid.Contains(road))
+                {
+                    return false;
+                }
+
+                if (!grid.JoinsNetwork(road) && !TouchesAny(road, laid))
+                {
+                    return false;
+                }
+
+                laid.Add(road);
+            }
+
+            if (grid.TouchesNetwork(buildingCells))
+            {
+                return true;
+            }
+
+            foreach (Vector2Int cell in buildingCells)
+            {
+                if (TouchesAny(cell, laid))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Whether one of the cells is among the 8 neighbours of the cell.
+        private static bool TouchesAny(Vector2Int cell, HashSet<Vector2Int> cells)
+        {
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    if ((dx != 0 || dy != 0) && cells.Contains(new Vector2Int(cell.x + dx, cell.y + dy)))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         private static bool IsOpen(CityGrid grid, HashSet<Vector2Int> blocked, Vector2Int cell)
         {
             return grid.Contains(cell)
