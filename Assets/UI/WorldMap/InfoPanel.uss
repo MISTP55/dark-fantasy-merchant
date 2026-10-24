@@ -1,4 +1,4 @@
-/* The frame, title and close button shared by the city panel and the ship panel. */
+/* The frame, title and header buttons shared by the city panel, the ship panel and the debug panel. */
 .info-panel {
     width: 340px;
     padding: 16px;
@@ -40,6 +40,30 @@
     height: 28px;
     margin: 0;
     padding: 0;
+}
+
+/* In the colours of the panels, not the theme's grey. Prefixed by the panel: the theme's own
+   hover and active rules add :enabled and would win otherwise. */
+.info-panel .info-panel__action,
+.info-panel .info-panel__close {
+    color: rgb(222, 210, 188);
+    background-color: rgba(60, 44, 30, 0.9);
+    border-width: 1px;
+    border-radius: 0;
+    border-color: rgb(110, 84, 52);
+    font-size: 14px;
+}
+
+.info-panel .info-panel__action:hover:enabled,
+.info-panel .info-panel__close:hover:enabled {
+    color: rgb(240, 226, 196);
+    background-color: rgb(84, 62, 40);
+    border-color: rgb(110, 84, 52);
+}
+
+.info-panel .info-panel__action:active:enabled,
+.info-panel .info-panel__close:active:enabled {
+    background-color: rgb(110, 84, 52);
 }
 
 /* Every other row of a list, from the second, is slightly lighter (set by ListStripes: USS
