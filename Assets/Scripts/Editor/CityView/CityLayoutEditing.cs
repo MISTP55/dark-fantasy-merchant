@@ -8,24 +8,18 @@ namespace DarkFantasyMerchant.Editor
 {
     /// <summary>
     /// The editing operations of a city's layout. Each records an undo and marks the asset dirty.
-    /// Where the footprint of a house matters, the catalogue gives it; without one, a house is 2 by 1.
+    /// The footprint of a house is the catalogue's, so the operations that need it take the catalogue.
     /// </summary>
     public static class CityLayoutEditing
     {
-        private static readonly Footprint DefaultHouseFootprint = new Footprint(2, 1);
-
-        /// <summary>The footprint of the house of the class: the catalogue's, or 2 by 1 when it has none.</summary>
+        /// <summary>The footprint of the house of the class in the catalogue.</summary>
         public static Footprint HouseFootprint(BuildingsDefinition buildings, SocialClass housedClass)
         {
-            HouseDefinition house = buildings != null ? buildings.HouseOf(housedClass) : null;
-
-            return house != null && house.FootprintSize.x >= 1 && house.FootprintSize.y >= 1
-                ? house.Footprint
-                : DefaultHouseFootprint;
+            return buildings.HouseOf(housedClass).Footprint;
         }
 
         /// <summary>Gives the layout the size; the forbidden cells and the houses that fall outside are dropped.</summary>
-        public static void Resize(CityLayoutDefinition layout, int width, int height, BuildingsDefinition buildings = null)
+        public static void Resize(CityLayoutDefinition layout, BuildingsDefinition buildings, int width, int height)
         {
             width = Mathf.Max(1, width);
             height = Mathf.Max(1, height);
@@ -56,9 +50,9 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <summary>Forbids the cell or frees it. Refused on a cell a house covers, and outside the grid.</summary>
-        public static void ToggleForbidden(CityLayoutDefinition layout, Vector2Int cell, BuildingsDefinition buildings = null)
+        public static void ToggleForbidden(CityLayoutDefinition layout, BuildingsDefinition buildings, Vector2Int cell)
         {
-            if (!IsInside(layout, cell) || HouseIndexAt(layout, cell, buildings) >= 0)
+            if (!IsInside(layout, cell) || HouseIndexAt(layout, buildings, cell) >= 0)
             {
                 return;
             }
@@ -92,9 +86,9 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <summary>Removes the starting house covering the cell, whichever of its cells it is.</summary>
-        public static void RemoveHouseAt(CityLayoutDefinition layout, Vector2Int cell, BuildingsDefinition buildings = null)
+        public static void RemoveHouseAt(CityLayoutDefinition layout, BuildingsDefinition buildings, Vector2Int cell)
         {
-            int index = HouseIndexAt(layout, cell, buildings);
+            int index = HouseIndexAt(layout, buildings, cell);
 
             if (index < 0)
             {
@@ -107,7 +101,7 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <summary>The index of the starting house covering the cell; -1 when there is none.</summary>
-        public static int HouseIndexAt(CityLayoutDefinition layout, Vector2Int cell, BuildingsDefinition buildings = null)
+        public static int HouseIndexAt(CityLayoutDefinition layout, BuildingsDefinition buildings, Vector2Int cell)
         {
             for (int i = 0; i < layout.StartingHouses.Count; i++)
             {

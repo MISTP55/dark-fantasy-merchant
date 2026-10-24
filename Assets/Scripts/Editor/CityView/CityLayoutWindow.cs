@@ -33,6 +33,9 @@ namespace DarkFantasyMerchant.Editor
         private const float MinCell = 4f;
         private const float MaxCell = 24f;
 
+        // Room above the grid for the fields, the tools and the rooms lines.
+        private const float HeaderHeight = 190f;
+
         private CityDefinition city;
         private EconomyDefinition economy;
         private BuildingsDefinition buildings;
@@ -67,6 +70,7 @@ namespace DarkFantasyMerchant.Editor
         {
             economy = FindAsset<EconomyDefinition>();
             buildings = FindAsset<BuildingsDefinition>();
+            wantsMouseMove = true;
             OnSelectionChange();
         }
 
@@ -139,7 +143,7 @@ namespace DarkFantasyMerchant.Editor
 
                 if (GUILayout.Button("Resize", GUILayout.Width(70f)))
                 {
-                    CityLayoutEditing.Resize(layout, widthField, heightField, buildings);
+                    CityLayoutEditing.Resize(layout, buildings, widthField, heightField);
                     widthField = layout.Width;
                     heightField = layout.Height;
                 }
@@ -189,7 +193,7 @@ namespace DarkFantasyMerchant.Editor
 
         private void DrawGrid(CityLayoutDefinition layout, CityGrid grid)
         {
-            float available = Mathf.Min(position.width - 30f, position.height - 190f);
+            float available = Mathf.Min(position.width - 30f, position.height - HeaderHeight);
             float cell = Mathf.Clamp(Mathf.Floor(available / Mathf.Max(layout.Width, layout.Height)), MinCell, MaxCell);
             float gridWidth = cell * layout.Width;
             float gridHeight = cell * layout.Height;
@@ -306,18 +310,18 @@ namespace DarkFantasyMerchant.Editor
 
                 if (forbidden != forbidTarget)
                 {
-                    CityLayoutEditing.ToggleForbidden(layout, hovered, buildings);
+                    CityLayoutEditing.ToggleForbidden(layout, buildings, hovered);
                 }
             }
             else
             {
                 if (grid.IsForbidden(hovered))
                 {
-                    CityLayoutEditing.ToggleForbidden(layout, hovered, buildings);
+                    CityLayoutEditing.ToggleForbidden(layout, buildings, hovered);
                 }
                 else
                 {
-                    CityLayoutEditing.RemoveHouseAt(layout, hovered, buildings);
+                    CityLayoutEditing.RemoveHouseAt(layout, buildings, hovered);
                 }
             }
 

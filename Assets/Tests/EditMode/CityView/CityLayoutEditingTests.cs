@@ -52,7 +52,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(3, 2)));
             Assert.AreEqual(1, layout.StartingHouses.Count);
 
-            CityLayoutEditing.ToggleForbidden(layout, new Vector2Int(6, 6));
+            CityLayoutEditing.ToggleForbidden(layout, buildings, new Vector2Int(6, 6));
             Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(5, 6)));
             Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(9, 9)));
             Assert.AreEqual(1, layout.StartingHouses.Count);
@@ -63,12 +63,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(2, 2));
 
-            CityLayoutEditing.ToggleForbidden(layout, new Vector2Int(3, 2), buildings);
+            CityLayoutEditing.ToggleForbidden(layout, buildings, new Vector2Int(3, 2));
             Assert.AreEqual(0, layout.ForbiddenCells.Count);
 
-            CityLayoutEditing.ToggleForbidden(layout, new Vector2Int(5, 5), buildings);
+            CityLayoutEditing.ToggleForbidden(layout, buildings, new Vector2Int(5, 5));
             Assert.AreEqual(1, layout.ForbiddenCells.Count);
-            CityLayoutEditing.ToggleForbidden(layout, new Vector2Int(5, 5), buildings);
+            CityLayoutEditing.ToggleForbidden(layout, buildings, new Vector2Int(5, 5));
             Assert.AreEqual(0, layout.ForbiddenCells.Count);
         }
 
@@ -77,11 +77,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(0, 0));
             CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(7, 7));
-            CityLayoutEditing.ToggleForbidden(layout, new Vector2Int(9, 9));
-            CityLayoutEditing.ToggleForbidden(layout, new Vector2Int(1, 5));
+            CityLayoutEditing.ToggleForbidden(layout, buildings, new Vector2Int(9, 9));
+            CityLayoutEditing.ToggleForbidden(layout, buildings, new Vector2Int(1, 5));
 
             // The house at (7, 7) covers x 7 and 8: it no longer fits in 8 cells.
-            CityLayoutEditing.Resize(layout, 8, 8, buildings);
+            CityLayoutEditing.Resize(layout, buildings, 8, 8);
 
             Assert.AreEqual(8, layout.Width);
             Assert.AreEqual(8, layout.Height);
@@ -97,12 +97,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(2, 2));
             CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(5, 5));
 
-            CityLayoutEditing.RemoveHouseAt(layout, new Vector2Int(3, 2), buildings);
+            CityLayoutEditing.RemoveHouseAt(layout, buildings, new Vector2Int(3, 2));
 
             Assert.AreEqual(1, layout.StartingHouses.Count);
             Assert.AreEqual(SocialClass.Rich, layout.StartingHouses[0].socialClass);
 
-            CityLayoutEditing.RemoveHouseAt(layout, new Vector2Int(5, 5), buildings);
+            CityLayoutEditing.RemoveHouseAt(layout, buildings, new Vector2Int(5, 5));
             Assert.AreEqual(0, layout.StartingHouses.Count);
         }
     }
