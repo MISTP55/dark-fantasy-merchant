@@ -123,6 +123,7 @@ namespace DarkFantasyMerchant.Core
             Action<int, int, long> materialBought = null)
         {
             RequireAtLeastOne(room, nameof(room));
+            RequireNoGrid(market);
 
             ConstructionQuote quote = QuoteHouse(market, hold, treasury, cost);
 
@@ -149,6 +150,7 @@ namespace DarkFantasyMerchant.Core
             Action<int, int, long> materialBought = null)
         {
             RequireAtLeastOne(jobs, nameof(jobs));
+            RequireNoGrid(market);
 
             ConstructionQuote quote = QuoteWorkshop(market, hold, treasury, cost, good);
 
@@ -189,6 +191,7 @@ namespace DarkFantasyMerchant.Core
             Action<int, int, long> materialBought = null)
         {
             RequireAtLeastOne(room, nameof(room));
+            RequireClass(housedClass);
 
             if (!CanStand(market, footprint, place))
             {
@@ -308,6 +311,23 @@ namespace DarkFantasyMerchant.Core
             int fromHold = hold == null ? 0 : Math.Min(hold.UnitsOf(material.Good), material.Units);
 
             return material.Units - fromHold;
+        }
+
+        // A placeless building on a market with a grid has no place: refused before anything is taken.
+        private static void RequireNoGrid(CityMarket market)
+        {
+            if (market != null && market.Grid != null)
+            {
+                throw new InvalidOperationException("A market with a grid builds at a place.");
+            }
+        }
+
+        private static void RequireClass(SocialClass housedClass)
+        {
+            if (housedClass < SocialClass.Rich || housedClass > SocialClass.Poor)
+            {
+                throw new ArgumentOutOfRangeException(nameof(housedClass));
+            }
         }
 
         private static void RequireAtLeastOne(int value, string name)

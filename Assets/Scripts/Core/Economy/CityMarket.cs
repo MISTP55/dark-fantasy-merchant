@@ -411,6 +411,11 @@ namespace DarkFantasyMerchant.Core
         /// <exception cref="InvalidOperationException">The market has no grid, or the footprint cannot stand at the place; nothing has changed then.</exception>
         public void AddPlayerHouse(SocialClass housedClass, int room, Footprint footprint, GridPlace place)
         {
+            if (housedClass < SocialClass.Rich || housedClass > SocialClass.Poor)
+            {
+                throw new ArgumentOutOfRangeException(nameof(housedClass));
+            }
+
             RequireStandable(footprint, place);
 
             if (room < 1)

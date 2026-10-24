@@ -80,6 +80,79 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void TryBuildWorkshop_TakesNothing_WhenThePlaceIsTaken()
+        {
+            var grid = new CityGrid(4, 4, new Vector2Int[0]);
+            var place = new GridPlace(new Vector2Int(1, 1), BuildingOrientation.Along);
+            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, new Footprint(1, 1), place);
+            CityMarket market = GridMarket(grid);
+            var treasury = new Treasury(10000);
+            CargoHold hold = HoldWith(3);
+            double stock = market.AvailableOf(0);
+
+            bool built = Construction.TryBuildWorkshop(market, hold, treasury, Cost(), 1, 5, new Footprint(2, 2), place);
+
+            Assert.IsFalse(built);
+            Assert.AreEqual(10000, treasury.Gold);
+            Assert.AreEqual(3, hold.UnitsOf(0));
+            Assert.AreEqual(stock, market.AvailableOf(0));
+            Assert.AreEqual(0, market.PlayerWorkshopsOf(1));
+        }
+
+        [Test]
+        public void TryBuildHouse_WithAPlace_ReturnsFalseAndPaysNothing_WhenTheMarketHasNoGrid()
+        {
+            CityMarket market = Market();
+            var treasury = new Treasury(10000);
+            CargoHold hold = HoldWith(3);
+            double stock = market.AvailableOf(0);
+            var place = new GridPlace(Vector2Int.zero, BuildingOrientation.Along);
+
+            bool built = Construction.TryBuildHouse(market, hold, treasury, Cost(), SocialClass.Poor, 100, new Footprint(1, 1), place);
+
+            Assert.IsFalse(built);
+            Assert.AreEqual(10000, treasury.Gold);
+            Assert.AreEqual(3, hold.UnitsOf(0));
+            Assert.AreEqual(stock, market.AvailableOf(0));
+        }
+
+        [Test]
+        public void PlacelessBuilds_Throw_AndPayNothing_WhenTheMarketHasAGrid()
+        {
+            CityMarket market = GridMarket(new CityGrid(4, 4, new Vector2Int[0]));
+            var treasury = new Treasury(10000);
+            CargoHold hold = HoldWith(3);
+            double stock = market.AvailableOf(0);
+
+            Assert.Throws<InvalidOperationException>(
+                () => Construction.TryBuildHouse(market, hold, treasury, Cost(), SocialClass.Poor, 100));
+            Assert.Throws<InvalidOperationException>(
+                () => Construction.TryBuildWorkshop(market, hold, treasury, Cost(), 1, 5));
+
+            Assert.AreEqual(10000, treasury.Gold);
+            Assert.AreEqual(3, hold.UnitsOf(0));
+            Assert.AreEqual(stock, market.AvailableOf(0));
+            Assert.AreEqual(100, market.Population.RoomOf(SocialClass.Poor));
+        }
+
+        [Test]
+        public void PlacedHouse_OfAnUnknownClass_Throws_AndPaysNothing()
+        {
+            var grid = new CityGrid(4, 4, new Vector2Int[0]);
+            CityMarket market = GridMarket(grid);
+            var treasury = new Treasury(10000);
+            var place = new GridPlace(Vector2Int.zero, BuildingOrientation.Along);
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => Construction.TryBuildHouse(market, HoldWith(3), treasury, Cost(), (SocialClass)9, 100, new Footprint(1, 1), place));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => market.AddPlayerHouse((SocialClass)9, 100, new Footprint(1, 1), place));
+
+            Assert.AreEqual(10000, treasury.Gold);
+            Assert.AreEqual(0, grid.Buildings.Count);
+        }
+
+        [Test]
         public void TryBuildWorkshop_PlacesA2x2Workshop()
         {
             var grid = new CityGrid(4, 4, new Vector2Int[0]);
