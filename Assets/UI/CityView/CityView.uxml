@@ -4,4 +4,12 @@
         <ui:Label name="city-name" picking-mode="Ignore" class="city-view__name" />
         <ui:Button name="back-button" text="Retour à la carte" class="city-view__back" />
     </ui:VisualElement>
+    <ui:VisualElement name="build-bar" picking-mode="Ignore" class="build-bar">
+        <ui:VisualElement name="build-offers" class="build-bar__offers" />
+        <ui:VisualElement name="build-categories" picking-mode="Ignore" class="build-bar__categories">
+            <ui:Button name="houses-button" class="build-bar__category" />
+            <ui:Button name="workshops-button" class="build-bar__category" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+    <ui:Label name="build-cost-tip" picking-mode="Ignore" class="build-bar__cost-tip" />
 </ui:UXML>

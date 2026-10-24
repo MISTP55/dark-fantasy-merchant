@@ -311,6 +311,15 @@ namespace DarkFantasyMerchant.Editor
                 changed = true;
             }
 
+            var placement = WorldMapSetup.FindInScene<CityPlacementController>(scene);
+
+            if (placement == null)
+            {
+                placement = WorldMapSetup.CreateInGroup(scene, WorldMapSetup.WorldGroup, "City Placement")
+                    .AddComponent<CityPlacementController>();
+                changed = true;
+            }
+
             var controller = WorldMapSetup.FindInScene<CityViewController>(scene);
 
             if (controller == null)
@@ -330,6 +339,10 @@ namespace DarkFantasyMerchant.Editor
             changed |= WorldMapSetup.FillReference(input, "document", controller.GetComponent<UIDocument>());
             changed |= WorldMapSetup.FillReference(controller, "gridView", gridView);
             changed |= WorldMapSetup.FillReference(controller, "viewCamera", viewCamera);
+            changed |= WorldMapSetup.FillReference(controller, "placement", placement);
+            changed |= WorldMapSetup.FillReference(placement, "input", input);
+            changed |= WorldMapSetup.FillReference(placement, "viewCamera", viewCamera);
+            changed |= WorldMapSetup.FillReference(placement, "gridView", gridView);
             changed |= WorldMapSetup.FillReference(gridView, "spriteMaterial", AssetDatabase.LoadAssetAtPath<Material>(MaterialPath));
             changed |= WorldMapSetup.FillReference(gridView, "cellSprite", AssetDatabase.LoadAssetAtPath<Sprite>(CellSpritePath));
             changed |= WorldMapSetup.FillReference(gridView, "block2x1Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block2x1SpritePath));

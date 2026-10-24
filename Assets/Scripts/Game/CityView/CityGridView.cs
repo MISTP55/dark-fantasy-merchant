@@ -15,6 +15,9 @@ namespace DarkFantasyMerchant.Game
         private const int GroundSortingOrder = 0;
         private const int FirstBuildingSortingOrder = 1;
 
+        // Above every building: a sortingOrder is a 16-bit value.
+        private const int GhostSortingOrder = short.MaxValue;
+
         [Tooltip("Unlit: the city view has no light.")]
         [SerializeField] private Material spriteMaterial;
 
@@ -33,6 +36,8 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private Color forbiddenCellColor = new Color32(0x24, 0x43, 0x5E, 0xFF);
         [SerializeField] private Color playerBuildingColor = new Color32(0x3D, 0x5F, 0x9B, 0xFF);
         [SerializeField] private Color cityBuildingColor = new Color32(0x7A, 0x5A, 0x3A, 0xFF);
+        [SerializeField] private Color validGhostColor = new Color32(0x6F, 0xBF, 0x73, 0x99);
+        [SerializeField] private Color invalidGhostColor = new Color32(0xD0, 0x50, 0x50, 0x99);
 
         private readonly List<SpriteRenderer> cellRenderers = new List<SpriteRenderer>();
 
@@ -43,6 +48,8 @@ namespace DarkFantasyMerchant.Game
         private CityGrid grid;
         private Transform cellRoot;
         private Transform buildingRoot;
+        private SpriteRenderer ghostRenderer;
+        private Vector2Int ghostSize;
 
         /// <summary>The grid shown, or null.</summary>
         public CityGrid Grid => grid;
@@ -51,6 +58,9 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>The buildings' renderers, in drawing order.</summary>
         public IReadOnlyList<SpriteRenderer> BuildingRenderers => buildingRenderers;
+
+        /// <summary>The block of the building being placed, or null before one is shown; off when hidden.</summary>
+        public SpriteRenderer GhostRenderer => ghostRenderer;
 
         /// <summary>The rectangle, in world units, that holds every cell's diamond.</summary>
         public static Rect WorldBoundsOf(CityGrid grid)
@@ -100,6 +110,38 @@ namespace DarkFantasyMerchant.Game
             grid.BuildingPlaced += AddBuilding;
         }
 
+        /// <summary>
+        /// Shows the block of the building being placed over the footprint at the origin, above every building,
+        /// green where it can stand and red where it cannot.
+        /// </summary>
+        public void ShowGhost(Vector2Int origin, Vector2Int size, bool canStand)
+        {
+            if (ghostRenderer == null)
+            {
+                ghostRenderer = CreateRenderer("Ghost", transform, null);
+                ghostRenderer.sortingOrder = GhostSortingOrder;
+            }
+
+            // Shown every frame while placing: the sprite is looked up only when the size changes.
+            if (ghostRenderer.sprite == null || size != ghostSize)
+            {
+                ghostRenderer.sprite = BlockSpriteOf(size);
+                ghostSize = size;
+            }
+
+            ghostRenderer.transform.localPosition = IsoProjection.CenterOf(origin, size);
+            ghostRenderer.color = canStand ? validGhostColor : invalidGhostColor;
+            ghostRenderer.enabled = true;
+        }
+
+        public void HideGhost()
+        {
+            if (ghostRenderer != null)
+            {
+                ghostRenderer.enabled = false;
+            }
+        }
+
         private void OnDestroy()
         {
             if (grid != null)
@@ -132,6 +174,7 @@ namespace DarkFantasyMerchant.Game
 
             cellRoot = null;
             buildingRoot = null;
+            HideGhost();
         }
 
         private void AddBuilding(PlacedBuilding building)

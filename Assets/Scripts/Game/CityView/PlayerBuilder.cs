@@ -107,8 +107,11 @@ namespace DarkFantasyMerchant.Game
             return market != null;
         }
 
-        // The hold of the player's ship that trades in the city's port, or null: everything is then bought.
-        private CargoHold HoldIn(CityDefinition city)
+        /// <summary>
+        /// The hold the materials come from first: that of the player's ship that trades in the city's
+        /// port (the first by name), or null when none lies there: everything is then bought.
+        /// </summary>
+        public CargoHold HoldIn(CityDefinition city)
         {
             if (shipsView == null)
             {

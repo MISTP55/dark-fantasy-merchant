@@ -6,18 +6,20 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// The city view scene's entry point: <see cref="CityViewLoader"/> hands it the city to show. It writes the
-    /// city's name, draws its grid, frames the camera over it, and its back button asks the loader to close the
-    /// view. It reaches the world only through <see cref="SimulationServices.Current"/>.
+    /// city's name, draws its grid, frames the camera over it, shows the build bar and hands what the player
+    /// chooses in it to the placement; its back button asks the loader to close the view. It reaches the world only through <see cref="SimulationServices.Current"/>.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class CityViewController : MonoBehaviour
     {
         [SerializeField] private CityGridView gridView;
         [SerializeField] private CityViewCamera viewCamera;
+        [SerializeField] private CityPlacementController placement;
 
         private Label nameLabel;
         private Button backButton;
         private CityViewLoader loader;
+        private BuildBarController buildBar;
         private bool isBound;
 
         /// <summary>The city shown, or null before the loader shows one.</summary>
@@ -27,9 +29,9 @@ namespace DarkFantasyMerchant.Game
         {
             VisualElement root = GetComponent<UIDocument>().rootVisualElement;
 
-            if (root == null || gridView == null || viewCamera == null)
+            if (root == null || gridView == null || viewCamera == null || placement == null)
             {
-                Debug.LogError("CityViewController needs a UIDocument with a source asset, a grid view and a camera.", this);
+                Debug.LogError("CityViewController needs a UIDocument with a source asset, a grid view, a camera and a placement.", this);
                 return;
             }
 
@@ -42,17 +44,30 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
+            try
+            {
+                buildBar = new BuildBarController(root);
+            }
+            catch (System.ArgumentException exception)
+            {
+                Debug.LogError(exception.Message, this);
+                return;
+            }
+
             // Only the view's own elements block the pointer, not the full-screen root.
             root.pickingMode = PickingMode.Ignore;
 
             // Clicked, not navigated.
             backButton.focusable = false;
             backButton.clicked += OnBackClicked;
+            buildBar.HouseChosen += placement.StartPlacing;
+            buildBar.WorkshopChosen += placement.StartPlacing;
             isBound = true;
 
             if (City != null)
             {
                 nameLabel.text = City.DisplayName;
+                buildBar.Show(City, SimulationServices.Current);
             }
         }
 
@@ -64,6 +79,9 @@ namespace DarkFantasyMerchant.Game
             }
 
             backButton.clicked -= OnBackClicked;
+            buildBar.HouseChosen -= placement.StartPlacing;
+            buildBar.WorkshopChosen -= placement.StartPlacing;
+            buildBar.Hide();
             isBound = false;
         }
 
@@ -89,6 +107,16 @@ namespace DarkFantasyMerchant.Game
             }
 
             gridView.Show(grid);
+
+            if (placement != null)
+            {
+                placement.Show(city);
+            }
+
+            if (buildBar != null)
+            {
+                buildBar.Show(city, services);
+            }
 
             if (grid != null)
             {

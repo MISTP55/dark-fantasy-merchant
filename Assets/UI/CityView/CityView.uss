@@ -36,3 +36,87 @@
 .city-view__back:active {
     background-color: rgb(110, 84, 52);
 }
+
+/* At the bottom, centred: the categories, and above them the offers of the chosen one. */
+.build-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 16px;
+    align-items: center;
+}
+
+.build-bar__offers {
+    display: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 90%;
+    margin-bottom: 6px;
+    padding: 4px;
+    background-color: rgba(24, 17, 12, 0.94);
+    border-width: 2px;
+    border-color: rgb(110, 84, 52);
+}
+
+.build-bar__categories {
+    flex-direction: row;
+}
+
+.build-bar__category,
+.build-bar__offer {
+    margin: 0 3px;
+    padding: 4px 14px;
+    color: rgb(222, 210, 188);
+    background-color: rgba(60, 44, 30, 0.9);
+    border-width: 1px;
+    border-radius: 0;
+    border-color: rgb(110, 84, 52);
+    font-size: 15px;
+}
+
+.build-bar__offer {
+    margin: 2px;
+    padding: 4px 10px;
+    font-size: 14px;
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+}
+
+.build-bar__category:hover,
+.build-bar__offer:hover {
+    background-color: rgb(84, 62, 40);
+}
+
+.build-bar__category:active,
+.build-bar__offer:active,
+.build-bar__category--chosen,
+.build-bar__category--chosen:hover {
+    background-color: rgb(110, 84, 52);
+}
+
+.build-bar__offer:disabled,
+.build-bar__offer:disabled:hover {
+    color: rgb(140, 124, 100);
+    background-color: rgba(60, 44, 30, 0.5);
+    opacity: 1;
+}
+
+/* The area that takes the pointer for its offer's button, enabled or not: a disabled button takes none. */
+.build-bar__offer-area {
+    flex-shrink: 0;
+}
+
+/* The cost of the offer the pointer is over, above it. */
+.build-bar__cost-tip {
+    position: absolute;
+    display: none;
+    margin: 0;
+    padding: 4px 6px;
+    color: rgb(240, 226, 196);
+    font-size: 13px;
+    white-space: nowrap;
+    background-color: rgba(24, 17, 12, 0.94);
+    border-width: 1px;
+    border-color: rgb(110, 84, 52);
+}
