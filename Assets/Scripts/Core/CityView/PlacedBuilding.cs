@@ -21,6 +21,12 @@ namespace DarkFantasyMerchant.Core
 
         public GridPlace Place { get; }
 
+        /// <summary>
+        /// Whether a house or workshop touches a road of the network. Always false for roads and the town hall,
+        /// which are the network, not its users.
+        /// </summary>
+        public bool IsConnected { get; internal set; }
+
         /// <summary>The cells covered on x and y, in the orientation of the place.</summary>
         public Vector2Int Size => Footprint.SizeFor(Place.Orientation);
     }

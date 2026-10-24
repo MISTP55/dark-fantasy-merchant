@@ -12,6 +12,7 @@ namespace DarkFantasyMerchant.Core
         private readonly bool[] forbidden;
         private readonly PlacedBuilding[] occupancy;
         private readonly List<PlacedBuilding> buildings = new List<PlacedBuilding>();
+        private readonly bool[] network;
 
         public CityGrid(int width, int height, IEnumerable<Vector2Int> forbidden)
         {
@@ -29,6 +30,7 @@ namespace DarkFantasyMerchant.Core
             Height = height;
             this.forbidden = new bool[width * height];
             occupancy = new PlacedBuilding[width * height];
+            network = new bool[width * height];
             foreach (Vector2Int cell in forbidden)
             {
                 if (!Contains(cell))
@@ -47,7 +49,16 @@ namespace DarkFantasyMerchant.Core
         /// <summary>Buildings in the order they were placed.</summary>
         public IReadOnlyList<PlacedBuilding> Buildings => buildings;
 
+        /// <summary>The town hall; null when none is placed.</summary>
+        public PlacedBuilding TownHall { get; private set; }
+
         public event Action<PlacedBuilding> BuildingPlaced;
+
+        /// <summary>
+        /// Raised once per house or workshop when it becomes connected, after the <see cref="BuildingPlaced"/> of the
+        /// building that caused it (itself, a road or the town hall), in the order the buildings were placed.
+        /// </summary>
+        public event Action<PlacedBuilding> BuildingConnected;
 
         public bool Contains(Vector2Int cell)
         {
@@ -98,6 +109,51 @@ namespace DarkFantasyMerchant.Core
 
         public PlacedBuilding Place(BuildingKind kind, BuildingOwner owner, Footprint footprint, GridPlace place)
         {
+            PlacedBuilding building = PlaceWithoutNetwork(kind, owner, footprint, place);
+            UpdateNetwork(building);
+            return building;
+        }
+
+        /// <summary>
+        /// Places a road on each cell, then updates the network once: a trace of n roads floods the grid once,
+        /// not n times. The cells must be free and distinct, or nothing is placed.
+        /// </summary>
+        internal void PlaceRoads(IReadOnlyList<Vector2Int> cells, BuildingOwner owner)
+        {
+            var road = new Footprint(1, 1);
+            var seen = new HashSet<Vector2Int>();
+            foreach (Vector2Int cell in cells)
+            {
+                if (!seen.Add(cell) || !CanPlace(road, new GridPlace(cell, BuildingOrientation.Along)))
+                {
+                    throw new InvalidOperationException("A road does not fit at this cell.");
+                }
+            }
+
+            foreach (Vector2Int cell in cells)
+            {
+                PlaceWithoutNetwork(BuildingKind.Road(), owner, road, new GridPlace(cell, BuildingOrientation.Along));
+            }
+
+            if (cells.Count > 0)
+            {
+                FloodNetwork();
+                ConnectTouchingBuildings();
+            }
+        }
+
+        private PlacedBuilding PlaceWithoutNetwork(BuildingKind kind, BuildingOwner owner, Footprint footprint, GridPlace place)
+        {
+            if (kind.IsRoad && (footprint.Width != 1 || footprint.Depth != 1))
+            {
+                throw new ArgumentException("A road covers exactly one cell.", nameof(footprint));
+            }
+
+            if (kind.IsTownHall && TownHall != null)
+            {
+                throw new InvalidOperationException("The grid already has a town hall.");
+            }
+
             if (!CanPlace(footprint, place))
             {
                 throw new InvalidOperationException("The footprint does not fit at this place.");
@@ -114,8 +170,178 @@ namespace DarkFantasyMerchant.Core
             }
 
             buildings.Add(building);
+            if (kind.IsTownHall)
+            {
+                TownHall = building;
+            }
+
             BuildingPlaced?.Invoke(building);
             return building;
+        }
+
+        private void UpdateNetwork(PlacedBuilding placed)
+        {
+            if (placed.Kind.IsRoad || placed.Kind.IsTownHall)
+            {
+                FloodNetwork();
+                ConnectTouchingBuildings();
+            }
+            else if (TouchesNetwork(CellsOf(placed)))
+            {
+                Connect(placed);
+            }
+        }
+
+        private void Connect(PlacedBuilding building)
+        {
+            building.IsConnected = true;
+            BuildingConnected?.Invoke(building);
+        }
+
+        private void ConnectTouchingBuildings()
+        {
+            // Index-based: a handler of the events may place buildings, which appends to the list.
+            for (int i = 0; i < buildings.Count; i++)
+            {
+                PlacedBuilding building = buildings[i];
+                if (!building.IsConnected
+                    && (building.Kind.IsHouse || building.Kind.IsWorkshop)
+                    && TouchesNetwork(CellsOf(building)))
+                {
+                    Connect(building);
+                }
+            }
+        }
+
+        /// <summary>Marks every road joined to the town hall, through the 8 neighbours.</summary>
+        private void FloodNetwork()
+        {
+            Array.Clear(network, 0, network.Length);
+            if (TownHall == null)
+            {
+                return;
+            }
+
+            var queue = new Queue<Vector2Int>();
+            foreach (Vector2Int cell in CellsOf(TownHall))
+            {
+                Spread(cell, queue);
+            }
+
+            while (queue.Count > 0)
+            {
+                Spread(queue.Dequeue(), queue);
+            }
+        }
+
+        private void Spread(Vector2Int from, Queue<Vector2Int> queue)
+        {
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    var cell = new Vector2Int(from.x + dx, from.y + dy);
+                    if (!Contains(cell) || network[Index(cell)])
+                    {
+                        continue;
+                    }
+
+                    PlacedBuilding there = occupancy[Index(cell)];
+                    if (there != null && there.Kind.IsRoad)
+                    {
+                        network[Index(cell)] = true;
+                        queue.Enqueue(cell);
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<Vector2Int> CellsOf(PlacedBuilding building)
+        {
+            Vector2Int size = building.Size;
+            for (int y = 0; y < size.y; y++)
+            {
+                for (int x = 0; x < size.x; x++)
+                {
+                    yield return new Vector2Int(building.Place.Origin.x + x, building.Place.Origin.y + y);
+                }
+            }
+        }
+
+        /// <summary>A road of the network: a road joined to the town hall.</summary>
+        public bool IsNetworkRoad(Vector2Int cell)
+        {
+            return Contains(cell) && network[Index(cell)];
+        }
+
+        /// <summary>
+        /// Whether one of the cells is a network road or has one among its 8 neighbours. The cells are not counted
+        /// as roads themselves.
+        /// </summary>
+        public bool TouchesNetwork(IEnumerable<Vector2Int> cells)
+        {
+            foreach (Vector2Int cell in cells)
+            {
+                if (IsNetworkRoad(cell) || HasNeighbour(cell, false))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Whether a road placed on the cell would be a network road: it touches the town hall or a network road.</summary>
+        public bool JoinsNetwork(Vector2Int cell)
+        {
+            return HasNeighbour(cell, true) || HasNeighbour(cell, false);
+        }
+
+        /// <summary>Whether a building with this footprint, placed here, would be connected.</summary>
+        public bool WouldConnect(Footprint footprint, GridPlace place)
+        {
+            Vector2Int size = footprint.SizeFor(place.Orientation);
+            var cells = new List<Vector2Int>(Math.Max(0, size.x * size.y));
+            for (int y = 0; y < size.y; y++)
+            {
+                for (int x = 0; x < size.x; x++)
+                {
+                    cells.Add(new Vector2Int(place.Origin.x + x, place.Origin.y + y));
+                }
+            }
+
+            return TouchesNetwork(cells);
+        }
+
+        // Among the 8 neighbours of the cell: a cell of the town hall, or a network road.
+        private bool HasNeighbour(Vector2Int cell, bool townHall)
+        {
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    var other = new Vector2Int(cell.x + dx, cell.y + dy);
+                    if ((dx == 0 && dy == 0) || !Contains(other))
+                    {
+                        continue;
+                    }
+
+                    if (townHall)
+                    {
+                        PlacedBuilding there = occupancy[Index(other)];
+                        if (there != null && there.Kind.IsTownHall)
+                        {
+                            return true;
+                        }
+                    }
+                    else if (network[Index(other)])
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -156,6 +382,21 @@ namespace DarkFantasyMerchant.Core
             foreach (PlacedBuilding building in buildings)
             {
                 if (building.Kind.IsHouse && building.Kind.HousedClass == housedClass)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>The houses of the class that touch a road of the network.</summary>
+        public int ConnectedHousesOf(SocialClass housedClass)
+        {
+            int count = 0;
+            foreach (PlacedBuilding building in buildings)
+            {
+                if (building.Kind.IsHouse && building.Kind.HousedClass == housedClass && building.IsConnected)
                 {
                     count++;
                 }
