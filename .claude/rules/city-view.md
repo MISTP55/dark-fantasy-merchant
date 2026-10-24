@@ -16,6 +16,11 @@ paths:
 - `BuildingKind.HousedClass` throws for a workshop and `Good` for a house: test `IsHouse` first.
 - `GetPlaces` lists by x then y, `Along` before `Across`; callers that pick "the first place" rely on that order.
 
+## Projection
+
+- `IsoProjection` (Core): cell (0, 0) is at the top of the screen, x goes to the lower right and y to the lower left. `CellAt` is the exact inverse of `CenterOf` on every point of a cell's diamond. The sorting order of a building is x + y of its far (last covered) cell: the larger, the later it is drawn.
+- `PlacementCursor` (Core): the footprint being placed; `Start` always begins `Along`, `Rotate` does nothing when not placing or for a square footprint.
+
 ## The market on its grid
 
 - A class's room is its houses on the grid × the room of a house of the class; never `AddRoom` outside a placed house when the market has a grid. The city's houses (`CityMarket.BuildCityHouse`, materials checked, then a place found, then taken) and the player's (`Construction.TryBuildHouse`/`TryBuildWorkshop` with a place, checked before anything is paid) are the only ways to build.
