@@ -6,7 +6,8 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// Draws a city's grid in placeholder shapes: a diamond per cell, tinted free or forbidden, and a block per
-    /// building, tinted by owner. A building placed while the grid is shown gets its block then; nothing is
+    /// building, a house tinted by the class it shelters (<see cref="HouseColors"/>, as in the layout window), a
+    /// workshop by owner. A building placed while the grid is shown gets its block then; nothing is
     /// redrawn every frame. Every sprite is on this object's layer, which only the city view's camera draws.
     /// </summary>
     public sealed class CityGridView : MonoBehaviour
@@ -34,7 +35,10 @@ namespace DarkFantasyMerchant.Game
 
         [SerializeField] private Color freeCellColor = new Color32(0x3B, 0x4A, 0x3A, 0xFF);
         [SerializeField] private Color forbiddenCellColor = new Color32(0x24, 0x43, 0x5E, 0xFF);
+        [Tooltip("The colour of the player's workshops; a house takes the colour of its class.")]
         [SerializeField] private Color playerBuildingColor = new Color32(0x3D, 0x5F, 0x9B, 0xFF);
+
+        [Tooltip("The colour of the city's workshops; a house takes the colour of its class.")]
         [SerializeField] private Color cityBuildingColor = new Color32(0x7A, 0x5A, 0x3A, 0xFF);
         [SerializeField] private Color validGhostColor = new Color32(0x6F, 0xBF, 0x73, 0x99);
         [SerializeField] private Color invalidGhostColor = new Color32(0xD0, 0x50, 0x50, 0x99);
@@ -184,7 +188,9 @@ namespace DarkFantasyMerchant.Game
             SpriteRenderer buildingRenderer = CreateRenderer(
                 $"{building.Owner} {(building.Kind.IsHouse ? "House" : "Workshop")} {origin.x},{origin.y}", buildingRoot, BlockSpriteOf(size));
             buildingRenderer.transform.localPosition = IsoProjection.CenterOf(origin, size);
-            buildingRenderer.color = building.Owner == BuildingOwner.Player ? playerBuildingColor : cityBuildingColor;
+            buildingRenderer.color = building.Kind.IsHouse ? HouseColors.Of(building.Kind.HousedClass)
+                : building.Owner == BuildingOwner.Player ? playerBuildingColor
+                : cityBuildingColor;
 
             // The buildings at and above the new one's rank move up by one.
             int rank = drawOrder.Insert(origin, size);

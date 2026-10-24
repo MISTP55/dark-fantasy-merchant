@@ -56,19 +56,6 @@ namespace DarkFantasyMerchant.Editor
             GetWindow<CityLayoutWindow>("City Layout");
         }
 
-        private static Color ColorOf(SocialClass housedClass)
-        {
-            switch (housedClass)
-            {
-                case SocialClass.Rich:
-                    return new Color32(0xC9, 0xA2, 0x27, 0xFF);
-                case SocialClass.Wealthy:
-                    return new Color32(0xB8, 0x6E, 0x9E, 0xFF);
-                default:
-                    return new Color32(0x9A, 0x7B, 0x5B, 0xFF);
-            }
-        }
-
         private void OnEnable()
         {
             economy = FindAsset<EconomyDefinition>();
@@ -246,7 +233,7 @@ namespace DarkFantasyMerchant.Editor
                 Vector2Int origin = building.Place.Origin;
                 Vector2Int size = building.Size;
                 var rect = new Rect(area.x + origin.x * cell, area.yMax - (origin.y + size.y) * cell, size.x * cell, size.y * cell);
-                EditorGUI.DrawRect(rect, ColorOf(building.Kind.HousedClass));
+                EditorGUI.DrawRect(rect, HouseColors.Of(building.Kind.HousedClass));
             }
 
             for (int x = 0; x <= layout.Width; x++)
