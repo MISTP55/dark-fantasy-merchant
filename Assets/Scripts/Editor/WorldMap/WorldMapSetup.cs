@@ -2110,14 +2110,11 @@ namespace DarkFantasyMerchant.Editor
 
             var worldEconomy = FindInScene<WorldEconomy>(scene);
             var mapView = FindInScene<WorldMapView>(scene);
-            var input = FindInScene<WorldMapInput>(scene);
 
-            // The panel lists the cities of the map with their markets, and the input opens it.
-            // Its ships tab is optional.
-            if (worldEconomy == null || mapView == null || input == null)
+            // The panel lists the cities of the map with their markets. Its ships tab is optional.
+            if (worldEconomy == null || mapView == null)
             {
-                Debug.LogWarning(
-                    $"{ScenePath} has no WorldEconomy, WorldMapView or WorldMapInput; debug panel not added.");
+                Debug.LogWarning($"{ScenePath} has no WorldEconomy or WorldMapView; debug panel not added.");
                 return;
             }
 
@@ -2149,7 +2146,6 @@ namespace DarkFantasyMerchant.Editor
             // Also for a scene in which one of them was deleted and made again.
             changed |= FillReference(panel, "worldEconomy", worldEconomy);
             changed |= FillReference(panel, "mapView", mapView);
-            changed |= FillReference(panel, "input", input);
 
             // The ships tab lists the ships, with the profit of the merchants that trade on their own.
             changed |= FillReference(panel, "shipsView", FindInScene<ShipsView>(scene));

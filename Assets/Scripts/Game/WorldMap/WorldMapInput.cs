@@ -8,14 +8,11 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// Single reader of the "WorldMap" action map. Turns raw input into map gestures
-    /// and drops pointer input that starts over the UI. Also reads the key of the debug tools.
+    /// and drops pointer input that starts over the UI.
     /// </summary>
     public sealed class WorldMapInput : MonoBehaviour
     {
         private const string ActionMapName = "WorldMap";
-
-        // Opens and closes the debug tools. Not an action of the map: it is not a part of the game.
-        private const Key DebugKey = Key.F1;
 
         [SerializeField] private CityInfoPanelController ui;
 
@@ -60,9 +57,6 @@ namespace DarkFantasyMerchant.Game
         /// The debug key is not such an input: the debug tools are also watched in fast forward.
         /// </summary>
         public event Action AnyInput;
-
-        /// <summary>Raised when the key that opens and closes the debug tools is pressed.</summary>
-        public event Action DebugToggled;
 
         public Vector2 PointerPosition { get; private set; }
 
@@ -135,11 +129,6 @@ namespace DarkFantasyMerchant.Game
                 AnyInput?.Invoke();
             }
 
-            if (WasDebugKeyPressedThisFrame())
-            {
-                DebugToggled?.Invoke();
-            }
-
             // A consumed press is not a click, but the button it holds can still drag the map.
             UpdateGesture(clickAction, clickGesture, Clicked, !inputConsumed);
             UpdateGesture(panDragAction, panGesture, null, !inputConsumed);
@@ -199,20 +188,13 @@ namespace DarkFantasyMerchant.Game
 
             foreach (KeyControl key in keyboard.allKeys)
             {
-                if (key != null && key.keyCode != DebugKey && key.wasPressedThisFrame)
+                if (key != null && key.keyCode != DebugKey.Toggle && key.wasPressedThisFrame)
                 {
                     return true;
                 }
             }
 
             return false;
-        }
-
-        private static bool WasDebugKeyPressedThisFrame()
-        {
-            Keyboard keyboard = Keyboard.current;
-
-            return keyboard != null && keyboard[DebugKey].wasPressedThisFrame;
         }
 
         private void UpdateGesture(InputAction button, PointerGesture gesture, Action<Vector2> clicked, bool canClick)

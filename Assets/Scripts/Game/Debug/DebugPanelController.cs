@@ -9,10 +9,10 @@ namespace DarkFantasyMerchant.Game
     /// The debug tools' panel, in four tabs: the cities as they are, the curves of their past, the
     /// flows of the trades in their markets, and the ships, the player's and the others, with what
     /// they are doing and carrying. The header chooses how far back the record
-    /// goes and speeds the world's normal speed up. Opened and closed with the debug key of the
-    /// map's input; exists only in the Editor and in development builds. Reads the simulation and
-    /// changes nothing, but for the buttons of the ships tab, which add and remove the ships of
-    /// the AI merchants, and the slider of the header.
+    /// goes and speeds the world's normal speed up. Opened and closed with the debug key, on the
+    /// map and in the city view; exists only in the Editor and in development builds. Reads the
+    /// simulation and changes nothing, but for the buttons of the ships tab, which add and remove
+    /// the ships of the AI merchants, and the slider of the header.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class DebugPanelController : MonoBehaviour
@@ -26,7 +26,6 @@ namespace DarkFantasyMerchant.Game
 
         [SerializeField] private WorldEconomy worldEconomy;
         [SerializeField] private WorldMapView mapView;
-        [SerializeField] private WorldMapInput input;
 
         [Tooltip("Optional. Without it, the panel has no ships tab.")]
         [SerializeField] private ShipsView shipsView;
@@ -113,9 +112,9 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            if (worldEconomy == null || mapView == null || input == null)
+            if (worldEconomy == null || mapView == null)
             {
-                Debug.LogError("DebugPanelController needs a world economy, a map view and an input component.", this);
+                Debug.LogError("DebugPanelController needs a world economy and a map view.", this);
                 root.style.display = DisplayStyle.None;
                 return;
             }
@@ -182,7 +181,6 @@ namespace DarkFantasyMerchant.Game
 
             closeButton.clicked += Close;
             addShipButton.clicked += AddShip;
-            input.DebugToggled += Toggle;
             isBound = true;
         }
 
@@ -195,7 +193,6 @@ namespace DarkFantasyMerchant.Game
 
             closeButton.clicked -= Close;
             addShipButton.clicked -= AddShip;
-            input.DebugToggled -= Toggle;
 
             if (clock != null)
             {
@@ -225,7 +222,18 @@ namespace DarkFantasyMerchant.Game
         // views are rewritten at most once a frame, when the record has new days.
         private void Update()
         {
-            if (!isBound || !isOpen)
+            if (!isBound)
+            {
+                return;
+            }
+
+            // Read here, not by the map's input, which the city view switches off.
+            if (DebugKey.WasPressedThisFrame())
+            {
+                Toggle();
+            }
+
+            if (!isOpen)
             {
                 return;
             }
