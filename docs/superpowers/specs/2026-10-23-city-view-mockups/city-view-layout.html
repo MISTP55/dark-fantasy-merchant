@@ -1,0 +1,113 @@
+<h2>Vue de ville : où va le menu de construction ?</h2>
+<p class="subtitle">Trois dispositions de l'écran. La grille isométrique occupe le reste ; l'heure et le trésor restent en haut, comme sur la carte. Clique celle qui te parle, puis réponds dans le terminal.</p>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <pattern id="iso" width="40" height="20" patternUnits="userSpaceOnUse">
+      <path d="M0 10 L20 0 L40 10 L20 20 Z" fill="#3b4a3a" stroke="#5c6e58" stroke-width="1"/>
+    </pattern>
+    <g id="house">
+      <path d="M0 10 L20 0 L40 10 L20 20 Z" fill="#7a5a3a"/>
+      <path d="M0 10 L0 -6 L20 4 L20 20 Z" fill="#5e4329"/>
+      <path d="M40 10 L40 -6 L20 4 L20 20 Z" fill="#8c6a47"/>
+      <path d="M0 -6 L20 -16 L40 -6 L20 4 Z" fill="#9b3d2e"/>
+    </g>
+    <g id="ghost">
+      <path d="M0 10 L20 0 L40 10 L20 20 Z" fill="#6fbf73" opacity="0.55" stroke="#9fe0a2"/>
+    </g>
+  </defs>
+</svg>
+
+<div class="options">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Barre en bas</h3>
+      <p>Une barre de catégories en bas de l'écran (Maisons, Ateliers…), qui déplie une rangée de bâtiments au-dessus d'elle. La grille garde toute la largeur.</p>
+      <div class="mockup">
+        <div class="mockup-header">Port-Sombre</div>
+        <div class="mockup-body" style="padding:0;position:relative;height:300px;background:#1d241c">
+          <div style="position:absolute;top:6px;left:8px;right:8px;display:flex;justify-content:space-between;font-size:12px;color:#ddd">
+            <span>◀ Carte</span><span>12 mars 1302 ▶▶</span><span>4 250 or</span>
+          </div>
+          <svg width="100%" height="220" style="position:absolute;top:24px">
+            <rect width="100%" height="100%" fill="url(#iso)"/>
+            <use href="#house" x="120" y="80"/><use href="#house" x="160" y="100"/><use href="#house" x="200" y="80"/>
+            <use href="#house" x="280" y="120"/><use href="#ghost" x="240" y="140"/>
+          </svg>
+          <div style="position:absolute;bottom:34px;left:50%;transform:translateX(-50%);display:flex;gap:6px;background:#2b2b2b;padding:6px;border-radius:4px;font-size:11px;color:#eee">
+            <span style="border:1px solid #888;padding:4px">Maison pauvre<br>800 or</span>
+            <span style="border:1px solid #6fbf73;padding:4px">Maison aisée<br>1 500 or</span>
+            <span style="border:1px solid #888;padding:4px">Maison riche<br>3 000 or</span>
+          </div>
+          <div style="position:absolute;bottom:0;left:0;right:0;height:30px;background:#222;display:flex;gap:16px;align-items:center;justify-content:center;font-size:12px;color:#eee">
+            <b>Maisons</b><span>Ateliers</span><span>Démolir</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Colonne à gauche</h3>
+      <p>Une colonne fixe à gauche avec la liste des bâtiments, leur coût et un aperçu de celui qui est survolé. Plus de place pour le texte, moins pour la grille.</p>
+      <div class="mockup">
+        <div class="mockup-header">Port-Sombre</div>
+        <div class="mockup-body" style="padding:0;position:relative;height:300px;background:#1d241c;display:flex">
+          <div style="width:150px;background:#262626;color:#eee;font-size:11px;padding:8px;display:flex;flex-direction:column;gap:6px">
+            <b>◀ Carte</b>
+            <span style="color:#aaa">MAISONS</span>
+            <span>Maison aisée — 1 500 or</span>
+            <span style="background:#2f3d2f">Maison pauvre — 800 or</span>
+            <span>Maison riche — 3 000 or</span>
+            <span style="color:#aaa">ATELIERS</span>
+            <span>Brasserie — 2 200 or</span>
+            <span>Tuilerie — 2 600 or</span>
+            <div style="margin-top:auto;border-top:1px solid #444;padding-top:6px;color:#bbb">Maison pauvre : 140 places<br>40 bois, 10 fer, 40 tuiles</div>
+          </div>
+          <div style="flex:1;position:relative">
+            <div style="position:absolute;top:6px;right:8px;font-size:12px;color:#ddd">12 mars 1302 ▶▶ · 4 250 or</div>
+            <svg width="100%" height="270" style="position:absolute;top:24px">
+              <rect width="100%" height="100%" fill="url(#iso)"/>
+              <use href="#house" x="80" y="80"/><use href="#house" x="120" y="100"/><use href="#house" x="160" y="80"/>
+              <use href="#ghost" x="200" y="140"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Le panneau de ville actuel, à droite</h3>
+      <p>On réutilise le panneau de ville qui existe (Marché, Bâtiments, Navires) : son onglet Bâtiments devient le menu de construction, et la grille remplace la carte derrière lui.</p>
+      <div class="mockup">
+        <div class="mockup-header">Port-Sombre</div>
+        <div class="mockup-body" style="padding:0;position:relative;height:300px;background:#1d241c;display:flex">
+          <div style="flex:1;position:relative">
+            <div style="position:absolute;top:6px;left:8px;font-size:12px;color:#ddd">◀ Carte · 12 mars 1302 ▶▶ · 4 250 or</div>
+            <svg width="100%" height="270" style="position:absolute;top:24px">
+              <rect width="100%" height="100%" fill="url(#iso)"/>
+              <use href="#house" x="80" y="80"/><use href="#house" x="120" y="100"/><use href="#house" x="160" y="80"/>
+              <use href="#ghost" x="200" y="140"/>
+            </svg>
+          </div>
+          <div style="width:170px;background:#262626;color:#eee;font-size:11px;padding:8px;display:flex;flex-direction:column;gap:6px">
+            <b>Port-Sombre ✕</b>
+            <div style="display:flex;gap:6px;color:#aaa"><span>Marché</span><b style="color:#eee">Bâtiments</b><span>Navires</span></div>
+            <span>Maison aisée <span style="float:right">[Placer]</span></span>
+            <span>Maison pauvre <span style="float:right">[Placer]</span></span>
+            <span>Maison riche <span style="float:right">[Placer]</span></span>
+            <span>Brasserie <span style="float:right">[Placer]</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
