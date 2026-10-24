@@ -156,5 +156,132 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(1, layout.StartingHouses.Count);
             Assert.AreEqual(SocialClass.Poor, layout.StartingHouses[0].socialClass);
         }
+
+        [Test]
+        public void SetTownHall_MovesIt()
+        {
+            Assert.IsTrue(CityLayoutEditing.SetTownHall(layout, buildings, Along(5, 0)));
+            Assert.IsTrue(layout.HasTownHall);
+            Assert.AreEqual(new Vector2Int(5, 0), layout.TownHallPlace.Origin);
+
+            // Its old place does not count: it may overlap where it stood.
+            Assert.IsTrue(CityLayoutEditing.SetTownHall(layout, buildings, Along(6, 0)));
+            Assert.AreEqual(new Vector2Int(6, 0), layout.TownHallPlace.Origin);
+
+            // Across, it is 2 on x and 3 on y.
+            Assert.IsTrue(CityLayoutEditing.SetTownHall(layout, buildings, new GridPlace(new Vector2Int(8, 7), BuildingOrientation.Across)));
+            Assert.IsFalse(CityLayoutEditing.SetTownHall(layout, buildings, new GridPlace(new Vector2Int(9, 7), BuildingOrientation.Across)));
+            Assert.AreEqual(new Vector2Int(8, 7), layout.TownHallPlace.Origin);
+        }
+
+        [Test]
+        public void SetTownHall_OnAHouse_ReturnsFalse()
+        {
+            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(2, 5));
+
+            Assert.IsFalse(CityLayoutEditing.SetTownHall(layout, buildings, Along(1, 4)));
+            Assert.AreEqual(new Vector2Int(4, 0), layout.TownHallPlace.Origin);
+
+            Forbid(new Vector2Int(7, 7));
+            Assert.IsFalse(CityLayoutEditing.SetTownHall(layout, buildings, Along(6, 6)));
+        }
+
+        [Test]
+        public void RemoveTownHall_TakesItAway()
+        {
+            CityLayoutEditing.RemoveTownHall(layout);
+
+            Assert.IsFalse(layout.HasTownHall);
+        }
+
+        [Test]
+        public void SetRoads_SkipsHousesAndForbidden()
+        {
+            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(2, 5));
+            Forbid(new Vector2Int(0, 0));
+
+            CityLayoutEditing.SetRoads(
+                layout, buildings,
+                new[]
+                {
+                    new Vector2Int(2, 5), new Vector2Int(0, 0), new Vector2Int(4, 0), new Vector2Int(10, 3),
+                    new Vector2Int(1, 1), new Vector2Int(1, 1),
+                },
+                true);
+
+            CollectionAssert.AreEqual(new[] { new Vector2Int(1, 1) }, layout.Roads);
+
+            CityLayoutEditing.SetRoads(layout, buildings, new[] { new Vector2Int(1, 1) }, false);
+            Assert.AreEqual(0, layout.Roads.Count);
+        }
+
+        [Test]
+        public void AutoConnect_PlacesTownHallAndConnectsEveryHouse()
+        {
+            CityLayoutEditing.RemoveTownHall(layout);
+            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(1, 1));
+            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(7, 7));
+            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Wealthy, Along(1, 8));
+
+            int left = CityLayoutEditing.AutoConnect(layout, buildings);
+
+            Assert.AreEqual(0, left);
+            Assert.IsTrue(layout.HasTownHall);
+            Assert.IsTrue(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem), problem);
+            Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Poor));
+            Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Rich));
+            Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Wealthy));
+        }
+
+        [Test]
+        public void AutoConnect_WalledInHouse_IsCounted()
+        {
+            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(1, 5));
+
+            for (int x = 0; x <= 3; x++)
+            {
+                for (int y = 4; y <= 6; y++)
+                {
+                    if (x < 1 || x > 2 || y != 5)
+                    {
+                        Forbid(new Vector2Int(x, y));
+                    }
+                }
+            }
+
+            Assert.AreEqual(1, CityLayoutEditing.AutoConnect(layout, buildings));
+            Assert.AreEqual(0, layout.Roads.Count);
+        }
+
+        [Test]
+        public void AutoConnect_Twice_ChangesNothing()
+        {
+            CityLayoutEditing.RemoveTownHall(layout);
+            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(1, 1));
+            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(7, 7));
+            CityLayoutEditing.AutoConnect(layout, buildings);
+
+            GridPlace hall = layout.TownHallPlace;
+            var roads = new List<Vector2Int>(layout.Roads);
+
+            Assert.AreEqual(0, CityLayoutEditing.AutoConnect(layout, buildings));
+
+            Assert.AreEqual(hall, layout.TownHallPlace);
+            CollectionAssert.AreEqual(roads, layout.Roads);
+        }
+
+        [Test]
+        public void Resize_DropsRoadsAndTownHallOutside()
+        {
+            CityLayoutEditing.SetRoads(layout, buildings, new[] { new Vector2Int(1, 1), new Vector2Int(8, 8) }, true);
+
+            CityLayoutEditing.Resize(layout, buildings, 8, 9);
+            Assert.IsTrue(layout.HasTownHall);
+            CollectionAssert.AreEqual(new[] { new Vector2Int(1, 1) }, layout.Roads);
+
+            // The town hall covers x 4 to 6: it no longer fits in 6 cells.
+            CityLayoutEditing.Resize(layout, buildings, 6, 9);
+            Assert.IsFalse(layout.HasTownHall);
+        }
     }
 }

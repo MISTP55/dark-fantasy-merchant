@@ -19,15 +19,19 @@ namespace DarkFantasyMerchant.Editor
             RichHouse,
             WealthyHouse,
             PoorHouse,
+            TownHall,
+            Road,
             Erase,
         }
 
-        private static readonly string[] ToolLabels = { "Water", "Rich house", "Wealthy house", "Poor house", "Erase" };
+        private static readonly string[] ToolLabels = { "Water", "Rich house", "Wealthy house", "Poor house", "Town hall", "Road", "Erase" };
 
         private static readonly Color FreeCell = new Color32(0x3B, 0x4A, 0x3A, 0xFF);
         private static readonly Color ForbiddenCell = new Color32(0x24, 0x43, 0x5E, 0xFF);
         private static readonly Color ValidGhost = new Color32(0x6F, 0xBF, 0x73, 0x99);
         private static readonly Color InvalidGhost = new Color32(0xD0, 0x50, 0x50, 0x99);
+        private static readonly Color TownHallColor = new Color32(0xC9, 0xA2, 0x27, 0xFF);
+        private static readonly Color RoadColor = new Color32(0x8A, 0x7B, 0x62, 0xFF);
         private static readonly Color ShortageColor = new Color32(0xD0, 0x50, 0x50, 0xFF);
         private static readonly Color GridLine = new Color(0f, 0f, 0f, 0.35f);
 
@@ -36,7 +40,7 @@ namespace DarkFantasyMerchant.Editor
         private const int MaxBrush = 15;
 
         // Room above the grid for the fields, the tools and the rooms lines.
-        private const float HeaderHeight = 230f;
+        private const float HeaderHeight = 270f;
 
         private CityDefinition city;
         private EconomyDefinition economy;
@@ -152,6 +156,13 @@ namespace DarkFantasyMerchant.Editor
 
             DrawSizeFields(layout);
             DrawTools();
+            DrawAutoConnect(layout);
+
+            if (!layout.HasTownHall)
+            {
+                EditorGUILayout.HelpBox("The layout has no town hall: place one with the Town hall tool, or use the Town hall and roads button.", MessageType.Warning);
+                return;
+            }
 
             if (!layout.TryCreateGrid(buildings, out CityGrid grid, out string problem))
             {
@@ -187,14 +198,14 @@ namespace DarkFantasyMerchant.Editor
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    brushSize = EditorGUILayout.IntSlider("Brush (Water, Erase)", brushSize, 1, MaxBrush);
+                    brushSize = EditorGUILayout.IntSlider("Brush (Water, Road, Erase)", brushSize, 1, MaxBrush);
                     roundBrush = GUILayout.Toggle(roundBrush, "Round", GUILayout.Width(60f));
                 }
             }
 
             EditorGUILayout.LabelField("Left click paints, right click erases only what the selected tool paints.", EditorStyles.miniLabel);
 
-            bool across = GUILayout.Toggle(orientation == BuildingOrientation.Across, "Across (R turns the house)");
+            bool across = GUILayout.Toggle(orientation == BuildingOrientation.Across, "Across (R turns the house or the town hall)");
             orientation = across ? BuildingOrientation.Across : BuildingOrientation.Along;
 
             Event current = Event.current;
@@ -207,15 +218,42 @@ namespace DarkFantasyMerchant.Editor
             }
         }
 
+        private void DrawAutoConnect(CityLayoutDefinition layout)
+        {
+            if (GUILayout.Button("Town hall and roads"))
+            {
+                CityLayoutEditing.AutoConnect(layout, buildings);
+            }
+        }
+
         private void DrawRooms(CityGrid grid)
         {
             PerClass<int> roomPerHouse = buildings.HouseRooms;
             PerClass<int> needed = economy.StartingRoomOf(city, roomPerHouse);
 
+            int unconnected = 0;
+
+            foreach (PlacedBuilding building in grid.Buildings)
+            {
+                if (building.Kind.IsHouse && !building.IsConnected)
+                {
+                    unconnected++;
+                }
+            }
+
+            var unconnectedStyle = new GUIStyle(EditorStyles.label);
+
+            if (unconnected > 0)
+            {
+                unconnectedStyle.normal.textColor = ShortageColor;
+            }
+
+            EditorGUILayout.LabelField($"Starting houses not connected to the town hall: {unconnected}", unconnectedStyle);
+
             foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
             {
                 int perHouse = roomPerHouse[housedClass];
-                int placed = grid.HousesOf(housedClass) * perHouse;
+                int placed = grid.ConnectedHousesOf(housedClass) * perHouse;
                 int need = needed[housedClass];
                 int housesNeeded = perHouse > 0 ? need / perHouse : 0;
                 bool isShort = placed < need;
@@ -272,7 +310,24 @@ namespace DarkFantasyMerchant.Editor
                 Vector2Int origin = building.Place.Origin;
                 Vector2Int size = building.Size;
                 var rect = new Rect(area.x + origin.x * cell, area.yMax - (origin.y + size.y) * cell, size.x * cell, size.y * cell);
-                EditorGUI.DrawRect(rect, HouseColors.Of(building.Kind.HousedClass));
+
+                if (building.Kind.IsRoad)
+                {
+                    EditorGUI.DrawRect(rect, RoadColor);
+                }
+                else if (building.Kind.IsTownHall)
+                {
+                    EditorGUI.DrawRect(rect, TownHallColor);
+                }
+                else
+                {
+                    EditorGUI.DrawRect(rect, HouseColors.Of(building.Kind.HousedClass));
+
+                    if (!building.IsConnected)
+                    {
+                        DrawOutline(rect, ShortageColor);
+                    }
+                }
             }
 
             for (int x = 0; x <= layout.Width; x++)
@@ -305,6 +360,15 @@ namespace DarkFantasyMerchant.Editor
             }
         }
 
+        private static void DrawOutline(Rect rect, Color color)
+        {
+            const float thickness = 2f;
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, thickness), color);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - thickness, rect.width, thickness), color);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, thickness, rect.height), color);
+            EditorGUI.DrawRect(new Rect(rect.xMax - thickness, rect.y, thickness, rect.height), color);
+        }
+
         private void DrawGhost(CityLayoutDefinition layout, CityGrid grid, Vector2Int hovered, System.Func<int, int, Rect> cellRect)
         {
             if (Event.current.type != EventType.Repaint)
@@ -317,6 +381,15 @@ namespace DarkFantasyMerchant.Editor
                 Footprint footprint = CityLayoutEditing.HouseFootprint(buildings, housedClass);
                 Vector2Int size = footprint.SizeFor(orientation);
                 bool valid = grid.CanPlace(footprint, new GridPlace(hovered, orientation));
+                Rect low = cellRect(hovered.x, hovered.y);
+                var rect = new Rect(low.x, low.yMax - size.y * low.height, size.x * low.width, size.y * low.height);
+                EditorGUI.DrawRect(rect, valid ? ValidGhost : InvalidGhost);
+            }
+            else if (tool == Tool.TownHall)
+            {
+                var place = new GridPlace(hovered, orientation);
+                Vector2Int size = CityLayoutEditing.TownHallSize(buildings, place);
+                bool valid = CityLayoutEditing.CanPlaceTownHall(layout, buildings, place);
                 Rect low = cellRect(hovered.x, hovered.y);
                 var rect = new Rect(low.x, low.yMax - size.y * low.height, size.x * low.width, size.y * low.height);
                 EditorGUI.DrawRect(rect, valid ? ValidGhost : InvalidGhost);
@@ -353,11 +426,29 @@ namespace DarkFantasyMerchant.Editor
                     CityLayoutEditing.TryAddHouse(layout, buildings, housedClass, new GridPlace(hovered, orientation));
                 }
             }
+            else if (tool == Tool.TownHall)
+            {
+                if (erases)
+                {
+                    if (CityLayoutEditing.IsUnderTownHall(layout, buildings, hovered))
+                    {
+                        CityLayoutEditing.RemoveTownHall(layout);
+                    }
+                }
+                else if (down)
+                {
+                    CityLayoutEditing.SetTownHall(layout, buildings, new GridPlace(hovered, orientation));
+                }
+            }
             else
             {
                 List<Vector2Int> cells = BrushCells(layout, hovered);
 
-                if (tool == Tool.Water)
+                if (tool == Tool.Road)
+                {
+                    CityLayoutEditing.SetRoads(layout, buildings, cells, paints);
+                }
+                else if (tool == Tool.Water)
                 {
                     // Painting water never frees a cell: only the right click does.
                     CityLayoutEditing.SetForbidden(layout, buildings, cells, paints);
@@ -366,6 +457,7 @@ namespace DarkFantasyMerchant.Editor
                 {
                     CityLayoutEditing.SetForbidden(layout, buildings, cells, false);
                     CityLayoutEditing.RemoveHouses(layout, buildings, cells);
+                    CityLayoutEditing.SetRoads(layout, buildings, cells, false);
                 }
             }
 
@@ -375,7 +467,7 @@ namespace DarkFantasyMerchant.Editor
 
         private static bool UsesBrush(Tool tool)
         {
-            return tool == Tool.Water || tool == Tool.Erase;
+            return tool == Tool.Water || tool == Tool.Road || tool == Tool.Erase;
         }
 
         private List<Vector2Int> BrushCells(CityLayoutDefinition layout, Vector2Int hovered)

@@ -60,8 +60,45 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 foreach (SocialClass housedClass in Classes)
                 {
                     Assert.GreaterOrEqual(
-                        grid.HousesOf(housedClass) * roomPerHouse[housedClass], needed[housedClass],
+                        grid.ConnectedHousesOf(housedClass) * roomPerHouse[housedClass], needed[housedClass],
                         $"{entry.City.name}, {housedClass}");
+                }
+            }
+        }
+
+        [Test]
+        public void EveryLayout_HasATownHall()
+        {
+            foreach (string guid in AssetDatabase.FindAssets("t:" + nameof(CityLayoutDefinition), new[] { "Assets/Data/CityLayouts" }))
+            {
+                var layout = AssetDatabase.LoadAssetAtPath<CityLayoutDefinition>(AssetDatabase.GUIDToAssetPath(guid));
+
+                Assert.IsTrue(layout.HasTownHall, layout.name);
+            }
+        }
+
+        [Test]
+        public void EveryStartingHouse_IsConnected()
+        {
+            var buildings = Load<BuildingsDefinition>(BuildingsPath);
+
+            foreach (MapCity entry in Load<WorldMapDefinition>(MapPath).MapCities)
+            {
+                if (!entry.Active)
+                {
+                    continue;
+                }
+
+                Assert.IsTrue(entry.City.Layout.TryCreateGrid(buildings, out CityGrid grid, out string problem), $"{entry.City.name}: {problem}");
+
+                foreach (PlacedBuilding building in grid.Buildings)
+                {
+                    if (building.Kind.IsHouse)
+                    {
+                        Assert.IsTrue(
+                            building.IsConnected,
+                            $"{entry.City.name}: the {building.Kind.HousedClass} house at {building.Place.Origin}");
+                    }
                 }
             }
         }
