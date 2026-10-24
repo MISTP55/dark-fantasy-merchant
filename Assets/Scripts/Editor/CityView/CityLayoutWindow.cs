@@ -9,19 +9,20 @@ namespace DarkFantasyMerchant.Editor
     /// <summary>
     /// Designs the grid of a city: its size, its forbidden cells and its starting houses, seen from
     /// above, with whether the houses shelter the starting population. Edits go through <see cref="CityLayoutEditing"/>.
+    /// A left click paints what the tool paints; a right click erases it, and only it.
     /// </summary>
     public sealed class CityLayoutWindow : EditorWindow
     {
         private enum Tool
         {
-            Forbidden,
+            Water,
             RichHouse,
             WealthyHouse,
             PoorHouse,
             Erase,
         }
 
-        private static readonly string[] ToolLabels = { "Forbidden", "Rich house", "Wealthy house", "Poor house", "Erase" };
+        private static readonly string[] ToolLabels = { "Water", "Rich house", "Wealthy house", "Poor house", "Erase" };
 
         private static readonly Color FreeCell = new Color32(0x3B, 0x4A, 0x3A, 0xFF);
         private static readonly Color ForbiddenCell = new Color32(0x24, 0x43, 0x5E, 0xFF);
@@ -32,19 +33,20 @@ namespace DarkFantasyMerchant.Editor
 
         private const float MinCell = 4f;
         private const float MaxCell = 24f;
+        private const int MaxBrush = 15;
 
         // Room above the grid for the fields, the tools and the rooms lines.
-        private const float HeaderHeight = 190f;
+        private const float HeaderHeight = 230f;
 
         private CityDefinition city;
         private EconomyDefinition economy;
         private BuildingsDefinition buildings;
-        private Tool tool = Tool.Forbidden;
+        private Tool tool = Tool.Water;
         private BuildingOrientation orientation = BuildingOrientation.Along;
+        private int brushSize = 1;
         private int widthField;
         private int heightField;
         private CityLayoutDefinition shownLayout;
-        private bool forbidTarget;
         private Vector2 scroll;
 
         [MenuItem("Tools/Dark Fantasy Merchant/City Layout")]
@@ -154,6 +156,13 @@ namespace DarkFantasyMerchant.Editor
         {
             tool = (Tool)GUILayout.Toolbar((int)tool, ToolLabels);
 
+            using (new EditorGUI.DisabledScope(!UsesBrush(tool)))
+            {
+                brushSize = EditorGUILayout.IntSlider("Brush (Water, Erase)", brushSize, 1, MaxBrush);
+            }
+
+            EditorGUILayout.LabelField("Left click paints, right click erases only what the selected tool paints.", EditorStyles.miniLabel);
+
             bool across = GUILayout.Toggle(orientation == BuildingOrientation.Across, "Across (R turns the house)");
             orientation = across ? BuildingOrientation.Across : BuildingOrientation.Along;
 
@@ -199,7 +208,14 @@ namespace DarkFantasyMerchant.Editor
             float gridHeight = cell * layout.Height;
 
             scroll = EditorGUILayout.BeginScrollView(scroll);
-            Rect area = GUILayoutUtility.GetRect(gridWidth, gridHeight);
+
+            // The grid is centred in the room left to it; it scrolls once larger than that room.
+            Rect room = GUILayoutUtility.GetRect(gridWidth, gridHeight, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            var area = new Rect(
+                room.x + Mathf.Max(0f, Mathf.Floor((room.width - gridWidth) / 2f)),
+                room.y + Mathf.Max(0f, Mathf.Floor((room.height - gridHeight) / 2f)),
+                gridWidth,
+                gridHeight);
 
             // Top-down view with y up: row 0 is drawn at the bottom.
             Rect CellRect(int x, int y)
@@ -207,7 +223,7 @@ namespace DarkFantasyMerchant.Editor
                 return new Rect(area.x + x * cell, area.yMax - (y + 1) * cell, cell, cell);
             }
 
-            EditorGUI.DrawRect(new Rect(area.x, area.y, gridWidth, gridHeight), FreeCell);
+            EditorGUI.DrawRect(area, FreeCell);
 
             for (int y = 0; y < layout.Height; y++)
             {
@@ -239,16 +255,15 @@ namespace DarkFantasyMerchant.Editor
             }
 
             Event current = Event.current;
-            bool inside = area.Contains(current.mousePosition)
-                && current.mousePosition.x < area.x + gridWidth && current.mousePosition.y > area.yMax - gridHeight;
+            bool inside = area.Contains(current.mousePosition);
             var hovered = new Vector2Int(
                 Mathf.FloorToInt((current.mousePosition.x - area.x) / cell),
                 Mathf.FloorToInt((area.yMax - current.mousePosition.y) / cell));
 
             if (inside && hovered.x >= 0 && hovered.y >= 0 && hovered.x < layout.Width && hovered.y < layout.Height)
             {
-                DrawGhost(grid, hovered, CellRect);
-                HandleMouse(layout, grid, hovered, current);
+                DrawGhost(layout, grid, hovered, CellRect);
+                HandleMouse(layout, hovered, current);
             }
 
             EditorGUILayout.EndScrollView();
@@ -259,7 +274,7 @@ namespace DarkFantasyMerchant.Editor
             }
         }
 
-        private void DrawGhost(CityGrid grid, Vector2Int hovered, System.Func<int, int, Rect> cellRect)
+        private void DrawGhost(CityLayoutDefinition layout, CityGrid grid, Vector2Int hovered, System.Func<int, int, Rect> cellRect)
         {
             if (Event.current.type != EventType.Repaint)
             {
@@ -277,56 +292,84 @@ namespace DarkFantasyMerchant.Editor
             }
             else
             {
-                EditorGUI.DrawRect(cellRect(hovered.x, hovered.y), ValidGhost);
+                BrushBounds(layout, hovered, out Vector2Int low, out Vector2Int high);
+                Rect lowCell = cellRect(low.x, low.y);
+                Rect highCell = cellRect(high.x, high.y);
+                EditorGUI.DrawRect(Rect.MinMaxRect(lowCell.xMin, highCell.yMin, highCell.xMax, lowCell.yMax), ValidGhost);
             }
         }
 
-        private void HandleMouse(CityLayoutDefinition layout, CityGrid grid, Vector2Int hovered, Event current)
+        private void HandleMouse(CityLayoutDefinition layout, Vector2Int hovered, Event current)
         {
-            bool down = current.type == EventType.MouseDown && current.button == 0;
-            bool drag = current.type == EventType.MouseDrag && current.button == 0;
+            bool paints = current.button == 0;
+            bool erases = current.button == 1;
+            bool down = current.type == EventType.MouseDown;
+            bool drag = current.type == EventType.MouseDrag;
 
-            if (!down && !drag)
+            if ((!paints && !erases) || (!down && !drag))
             {
                 return;
             }
 
             if (HouseClassOf(tool, out SocialClass housedClass))
             {
-                if (down)
+                if (erases)
+                {
+                    CityLayoutEditing.RemoveHouses(layout, buildings, new[] { hovered }, housedClass);
+                }
+                else if (down)
                 {
                     CityLayoutEditing.TryAddHouse(layout, buildings, housedClass, new GridPlace(hovered, orientation));
                 }
             }
-            else if (tool == Tool.Forbidden)
-            {
-                // A drag paints what the first cell became.
-                bool forbidden = grid.IsForbidden(hovered);
-
-                if (down)
-                {
-                    forbidTarget = !forbidden;
-                }
-
-                if (forbidden != forbidTarget)
-                {
-                    CityLayoutEditing.ToggleForbidden(layout, buildings, hovered);
-                }
-            }
             else
             {
-                if (grid.IsForbidden(hovered))
+                List<Vector2Int> cells = BrushCells(layout, hovered);
+
+                if (tool == Tool.Water)
                 {
-                    CityLayoutEditing.ToggleForbidden(layout, buildings, hovered);
+                    // Painting water never frees a cell: only the right click does.
+                    CityLayoutEditing.SetForbidden(layout, buildings, cells, paints);
                 }
                 else
                 {
-                    CityLayoutEditing.RemoveHouseAt(layout, buildings, hovered);
+                    CityLayoutEditing.SetForbidden(layout, buildings, cells, false);
+                    CityLayoutEditing.RemoveHouses(layout, buildings, cells);
                 }
             }
 
             current.Use();
             Repaint();
+        }
+
+        private static bool UsesBrush(Tool tool)
+        {
+            return tool == Tool.Water || tool == Tool.Erase;
+        }
+
+        // The square of the brush around the hovered cell (one cell more on the low side when even), cut to the grid.
+        private void BrushBounds(CityLayoutDefinition layout, Vector2Int hovered, out Vector2Int low, out Vector2Int high)
+        {
+            int below = brushSize / 2;
+            int above = brushSize - 1 - below;
+            low = Vector2Int.Max(hovered - new Vector2Int(below, below), Vector2Int.zero);
+            high = Vector2Int.Min(hovered + new Vector2Int(above, above), new Vector2Int(layout.Width - 1, layout.Height - 1));
+        }
+
+        private List<Vector2Int> BrushCells(CityLayoutDefinition layout, Vector2Int hovered)
+        {
+            BrushBounds(layout, hovered, out Vector2Int low, out Vector2Int high);
+            var cells = new List<Vector2Int>();
+
+            for (int y = low.y; y <= high.y; y++)
+            {
+                for (int x = low.x; x <= high.x; x++)
+                {
+                    cells.Add(new Vector2Int(x, y));
+                }
+            }
+
+            return cells;
         }
 
         private static bool HouseClassOf(Tool tool, out SocialClass housedClass)

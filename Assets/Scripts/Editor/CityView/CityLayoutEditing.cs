@@ -49,22 +49,37 @@ namespace DarkFantasyMerchant.Editor
             Apply(layout, "Resize city layout", width, height, forbidden, houses);
         }
 
-        /// <summary>Forbids the cell or frees it. Refused on a cell a house covers, and outside the grid.</summary>
-        public static void ToggleForbidden(CityLayoutDefinition layout, BuildingsDefinition buildings, Vector2Int cell)
+        /// <summary>
+        /// Forbids the cells or frees them. The cells outside the grid, and when forbidding those a house covers, are
+        /// skipped. Records nothing when no cell changes.
+        /// </summary>
+        public static void SetForbidden(CityLayoutDefinition layout, BuildingsDefinition buildings, IEnumerable<Vector2Int> cells, bool forbid)
         {
-            if (!IsInside(layout, cell) || HouseIndexAt(layout, buildings, cell) >= 0)
-            {
-                return;
-            }
-
             var forbidden = new List<Vector2Int>(layout.ForbiddenCells);
+            bool changed = false;
 
-            if (!forbidden.Remove(cell))
+            foreach (Vector2Int cell in cells)
             {
-                forbidden.Add(cell);
+                if (!IsInside(layout, cell))
+                {
+                    continue;
+                }
+
+                if (!forbid)
+                {
+                    changed |= forbidden.Remove(cell);
+                }
+                else if (!forbidden.Contains(cell) && HouseIndexAt(layout, buildings, cell) < 0)
+                {
+                    forbidden.Add(cell);
+                    changed = true;
+                }
             }
 
-            Apply(layout, "Toggle forbidden cell", layout.Width, layout.Height, forbidden, layout.StartingHouses);
+            if (changed)
+            {
+                Apply(layout, forbid ? "Forbid cells" : "Free cells", layout.Width, layout.Height, forbidden, layout.StartingHouses);
+            }
         }
 
         /// <summary>Adds a starting house; false when it does not fit, or the layout cannot make its grid.</summary>
@@ -85,19 +100,41 @@ namespace DarkFantasyMerchant.Editor
             return true;
         }
 
-        /// <summary>Removes the starting house covering the cell, whichever of its cells it is.</summary>
-        public static void RemoveHouseAt(CityLayoutDefinition layout, BuildingsDefinition buildings, Vector2Int cell)
+        /// <summary>
+        /// Removes the starting houses covering any of the cells, whichever of their cells it is; only those of
+        /// <paramref name="onlyClass"/> when it is given. Records nothing when no house is removed.
+        /// </summary>
+        public static void RemoveHouses(
+            CityLayoutDefinition layout, BuildingsDefinition buildings, IEnumerable<Vector2Int> cells, SocialClass? onlyClass = null)
         {
-            int index = HouseIndexAt(layout, buildings, cell);
+            var removed = new HashSet<int>();
 
-            if (index < 0)
+            foreach (Vector2Int cell in cells)
+            {
+                int index = HouseIndexAt(layout, buildings, cell);
+
+                if (index >= 0 && (onlyClass == null || layout.StartingHouses[index].socialClass == onlyClass.Value))
+                {
+                    removed.Add(index);
+                }
+            }
+
+            if (removed.Count == 0)
             {
                 return;
             }
 
-            var houses = new List<CityLayoutDefinition.StartingHouse>(layout.StartingHouses);
-            houses.RemoveAt(index);
-            Apply(layout, "Remove starting house", layout.Width, layout.Height, layout.ForbiddenCells, houses);
+            var houses = new List<CityLayoutDefinition.StartingHouse>();
+
+            for (int i = 0; i < layout.StartingHouses.Count; i++)
+            {
+                if (!removed.Contains(i))
+                {
+                    houses.Add(layout.StartingHouses[i]);
+                }
+            }
+
+            Apply(layout, "Remove starting houses", layout.Width, layout.Height, layout.ForbiddenCells, houses);
         }
 
         /// <summary>The index of the starting house covering the cell; -1 when there is none.</summary>

@@ -39,6 +39,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return instance;
         }
 
+        private void Forbid(Vector2Int cell)
+        {
+            CityLayoutEditing.SetForbidden(layout, buildings, new[] { cell }, true);
+        }
+
         private static GridPlace Along(int x, int y)
         {
             return new GridPlace(new Vector2Int(x, y), BuildingOrientation.Along);
@@ -52,23 +57,27 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(3, 2)));
             Assert.AreEqual(1, layout.StartingHouses.Count);
 
-            CityLayoutEditing.ToggleForbidden(layout, buildings, new Vector2Int(6, 6));
+            Forbid(new Vector2Int(6, 6));
             Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(5, 6)));
             Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(9, 9)));
             Assert.AreEqual(1, layout.StartingHouses.Count);
         }
 
         [Test]
-        public void ToggleForbidden_IsRefusedUnderAHouse()
+        public void SetForbidden_SkipsTheCellsUnderAHouseAndOutsideTheGrid()
         {
             CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(2, 2));
 
-            CityLayoutEditing.ToggleForbidden(layout, buildings, new Vector2Int(3, 2));
-            Assert.AreEqual(0, layout.ForbiddenCells.Count);
-
-            CityLayoutEditing.ToggleForbidden(layout, buildings, new Vector2Int(5, 5));
+            CityLayoutEditing.SetForbidden(
+                layout, buildings, new[] { new Vector2Int(3, 2), new Vector2Int(5, 5), new Vector2Int(10, 5) }, true);
             Assert.AreEqual(1, layout.ForbiddenCells.Count);
-            CityLayoutEditing.ToggleForbidden(layout, buildings, new Vector2Int(5, 5));
+            Assert.AreEqual(new Vector2Int(5, 5), layout.ForbiddenCells[0]);
+
+            // Forbidding again changes nothing: a cell is never listed twice.
+            Forbid(new Vector2Int(5, 5));
+            Assert.AreEqual(1, layout.ForbiddenCells.Count);
+
+            CityLayoutEditing.SetForbidden(layout, buildings, new[] { new Vector2Int(5, 5), new Vector2Int(6, 6) }, false);
             Assert.AreEqual(0, layout.ForbiddenCells.Count);
         }
 
@@ -77,8 +86,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(0, 0));
             CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(7, 7));
-            CityLayoutEditing.ToggleForbidden(layout, buildings, new Vector2Int(9, 9));
-            CityLayoutEditing.ToggleForbidden(layout, buildings, new Vector2Int(1, 5));
+            Forbid(new Vector2Int(9, 9));
+            Forbid(new Vector2Int(1, 5));
 
             // The house at (7, 7) covers x 7 and 8: it no longer fits in 8 cells.
             CityLayoutEditing.Resize(layout, buildings, 8, 8);
@@ -92,18 +101,31 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void RemoveHouseAt_RemovesTheHouseCoveringTheCell()
+        public void RemoveHouses_RemovesTheHousesCoveringTheCells()
         {
             CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(2, 2));
             CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(5, 5));
+            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(0, 8));
 
-            CityLayoutEditing.RemoveHouseAt(layout, buildings, new Vector2Int(3, 2));
+            CityLayoutEditing.RemoveHouses(layout, buildings, new[] { new Vector2Int(3, 2), new Vector2Int(1, 8) });
 
             Assert.AreEqual(1, layout.StartingHouses.Count);
             Assert.AreEqual(SocialClass.Rich, layout.StartingHouses[0].socialClass);
 
-            CityLayoutEditing.RemoveHouseAt(layout, buildings, new Vector2Int(5, 5));
+            CityLayoutEditing.RemoveHouses(layout, buildings, new[] { new Vector2Int(5, 5) });
             Assert.AreEqual(0, layout.StartingHouses.Count);
+        }
+
+        [Test]
+        public void RemoveHouses_OfAClassLeavesTheOthers()
+        {
+            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(2, 2));
+            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(4, 2));
+
+            CityLayoutEditing.RemoveHouses(layout, buildings, new[] { new Vector2Int(3, 2), new Vector2Int(4, 2) }, SocialClass.Rich);
+
+            Assert.AreEqual(1, layout.StartingHouses.Count);
+            Assert.AreEqual(SocialClass.Poor, layout.StartingHouses[0].socialClass);
         }
     }
 }
