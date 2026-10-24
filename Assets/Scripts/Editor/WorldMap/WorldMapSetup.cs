@@ -683,9 +683,11 @@ namespace DarkFantasyMerchant.Editor
             var timber = AssetDatabase.LoadAssetAtPath<GoodDefinition>(GoodPath("Timber"));
             var metal = AssetDatabase.LoadAssetAtPath<GoodDefinition>(GoodPath("Metal"));
 
-            if (timber == null || metal == null)
+            var tiles = AssetDatabase.LoadAssetAtPath<GoodDefinition>(GoodPath("Tiles"));
+
+            if (timber == null || metal == null || tiles == null)
             {
-                throw new FileNotFoundException("The timber or the metal could not be loaded.", GoodsFolder);
+                throw new FileNotFoundException("The timber, the metal or the tiles could not be loaded.", GoodsFolder);
             }
 
             var buildings = AssetDatabase.LoadAssetAtPath<BuildingsDefinition>(BuildingsPath);
@@ -713,7 +715,7 @@ namespace DarkFantasyMerchant.Editor
 
             CompleteBuildings(
                 buildings, isNew, goods,
-                housedClass => LoadOrCreateHouse(housedClass, timber, metal),
+                housedClass => LoadOrCreateHouse(housedClass, timber, metal, tiles),
                 good => LoadOrCreateWorkshop(samples[good], good, timber, metal));
             EditorUtility.SetDirty(buildings);
             return buildings;
@@ -786,16 +788,16 @@ namespace DarkFantasyMerchant.Editor
         }
 
         private static (HouseDefinition house, bool created) LoadOrCreateHouse(
-            SocialClass housedClass, GoodDefinition timber, GoodDefinition metal)
+            SocialClass housedClass, GoodDefinition timber, GoodDefinition metal, GoodDefinition tiles)
         {
             switch (housedClass)
             {
                 case SocialClass.Rich:
-                    return LoadOrCreateHouse("RichHouse", "Maison de riches", housedClass, 40, 25000, timber, 25, metal, 30);
+                    return LoadOrCreateHouse("RichHouse", "Maison de riches", housedClass, 40, 25000, timber, 25, metal, 30, tiles, 50);
                 case SocialClass.Wealthy:
-                    return LoadOrCreateHouse("WealthyHouse", "Maison d'aisés", housedClass, 70, 10000, timber, 15, metal, 20);
+                    return LoadOrCreateHouse("WealthyHouse", "Maison d'aisés", housedClass, 70, 10000, timber, 15, metal, 20, tiles, 50);
                 case SocialClass.Poor:
-                    return LoadOrCreateHouse("PoorHouse", "Maison de pauvres", housedClass, 140, 5000, timber, 10, metal, 10);
+                    return LoadOrCreateHouse("PoorHouse", "Maison de pauvres", housedClass, 140, 5000, timber, 10, metal, 10, tiles, 40);
                 default:
                     throw new System.ArgumentOutOfRangeException(nameof(housedClass));
             }
@@ -803,7 +805,8 @@ namespace DarkFantasyMerchant.Editor
 
         private static (HouseDefinition house, bool created) LoadOrCreateHouse(
             string assetName, string displayName, SocialClass housedClass, int room,
-            long gold, GoodDefinition timber, int timberUnits, GoodDefinition metal, int metalUnits)
+            long gold, GoodDefinition timber, int timberUnits, GoodDefinition metal, int metalUnits,
+            GoodDefinition tiles, int tilesUnits)
         {
             string path = $"{HousesFolder}/{assetName}.asset";
             var existing = AssetDatabase.LoadAssetAtPath<HouseDefinition>(path);
@@ -818,7 +821,7 @@ namespace DarkFantasyMerchant.Editor
             var serialized = new SerializedObject(house);
             serialized.FindProperty("socialClass").enumValueIndex = (int)housedClass;
             serialized.FindProperty("room").intValue = room;
-            FillBuilding(serialized, displayName, gold, timber, timberUnits, metal, metalUnits);
+            FillBuilding(serialized, displayName, gold, (timber, timberUnits), (metal, metalUnits), (tiles, tilesUnits));
             AssetDatabase.CreateAsset(house, path);
             return (house, true);
         }
@@ -838,27 +841,26 @@ namespace DarkFantasyMerchant.Editor
             var serialized = new SerializedObject(workshop);
             serialized.FindProperty("good").objectReferenceValue = good;
             serialized.FindProperty("jobs").intValue = 30;
-            FillBuilding(serialized, sample.WorkshopName, 10000, timber, 10, metal, 30);
+            FillBuilding(serialized, sample.WorkshopName, 10000, (timber, 10), (metal, 30));
             AssetDatabase.CreateAsset(workshop, path);
             return (workshop, true);
         }
 
         private static void FillBuilding(
-            SerializedObject building, string displayName, long gold,
-            GoodDefinition timber, int timberUnits, GoodDefinition metal, int metalUnits)
+            SerializedObject building, string displayName, long gold, params (GoodDefinition good, int units)[] costs)
         {
             building.FindProperty("displayName").stringValue = displayName;
             building.FindProperty("gold").longValue = gold;
             SerializedProperty materials = building.FindProperty("materials");
-            materials.arraySize = 2;
+            materials.arraySize = costs.Length;
 
-            SerializedProperty first = materials.GetArrayElementAtIndex(0);
-            first.FindPropertyRelative("good").objectReferenceValue = timber;
-            first.FindPropertyRelative("units").intValue = timberUnits;
+            for (int i = 0; i < costs.Length; i++)
+            {
+                SerializedProperty material = materials.GetArrayElementAtIndex(i);
+                material.FindPropertyRelative("good").objectReferenceValue = costs[i].good;
+                material.FindPropertyRelative("units").intValue = costs[i].units;
+            }
 
-            SerializedProperty second = materials.GetArrayElementAtIndex(1);
-            second.FindPropertyRelative("good").objectReferenceValue = metal;
-            second.FindPropertyRelative("units").intValue = metalUnits;
             building.ApplyModifiedPropertiesWithoutUndo();
         }
 
