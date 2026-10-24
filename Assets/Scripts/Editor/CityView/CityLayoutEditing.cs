@@ -155,6 +155,40 @@ namespace DarkFantasyMerchant.Editor
             return -1;
         }
 
+        /// <summary>
+        /// The cells of a brush of <paramref name="size"/> cells across around the cell (one cell more on the low side when
+        /// the size is even), cut to a grid of the size given. A round brush keeps the cells whose centre is close enough
+        /// to the brush's: 3 across is a cross, 2 across a full square.
+        /// </summary>
+        public static List<Vector2Int> BrushCells(Vector2Int centre, int size, bool round, int width, int height)
+        {
+            size = Mathf.Max(1, size);
+            int below = size / 2;
+
+            // The brush's centre, in cells from its low corner; a cell is in when its centre is within the reach of it.
+            float radius = (size - 1) / 2f;
+            float reach = radius * radius + radius / 2f;
+            var cells = new List<Vector2Int>();
+
+            for (int dy = 0; dy < size; dy++)
+            {
+                for (int dx = 0; dx < size; dx++)
+                {
+                    var cell = new Vector2Int(centre.x - below + dx, centre.y - below + dy);
+                    float offX = dx - radius;
+                    float offY = dy - radius;
+
+                    if (cell.x >= 0 && cell.y >= 0 && cell.x < width && cell.y < height
+                        && (!round || offX * offX + offY * offY <= reach))
+                    {
+                        cells.Add(cell);
+                    }
+                }
+            }
+
+            return cells;
+        }
+
         private static bool IsInside(CityLayoutDefinition layout, Vector2Int cell)
         {
             return cell.x >= 0 && cell.y >= 0 && cell.x < layout.Width && cell.y < layout.Height;

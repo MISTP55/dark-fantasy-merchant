@@ -44,6 +44,7 @@ namespace DarkFantasyMerchant.Editor
         private Tool tool = Tool.Water;
         private BuildingOrientation orientation = BuildingOrientation.Along;
         private int brushSize = 1;
+        private bool roundBrush;
         private int widthField;
         private int heightField;
         private CityLayoutDefinition shownLayout;
@@ -158,7 +159,11 @@ namespace DarkFantasyMerchant.Editor
 
             using (new EditorGUI.DisabledScope(!UsesBrush(tool)))
             {
-                brushSize = EditorGUILayout.IntSlider("Brush (Water, Erase)", brushSize, 1, MaxBrush);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    brushSize = EditorGUILayout.IntSlider("Brush (Water, Erase)", brushSize, 1, MaxBrush);
+                    roundBrush = GUILayout.Toggle(roundBrush, "Round", GUILayout.Width(60f));
+                }
             }
 
             EditorGUILayout.LabelField("Left click paints, right click erases only what the selected tool paints.", EditorStyles.miniLabel);
@@ -292,10 +297,10 @@ namespace DarkFantasyMerchant.Editor
             }
             else
             {
-                BrushBounds(layout, hovered, out Vector2Int low, out Vector2Int high);
-                Rect lowCell = cellRect(low.x, low.y);
-                Rect highCell = cellRect(high.x, high.y);
-                EditorGUI.DrawRect(Rect.MinMaxRect(lowCell.xMin, highCell.yMin, highCell.xMax, lowCell.yMax), ValidGhost);
+                foreach (Vector2Int cell in BrushCells(layout, hovered))
+                {
+                    EditorGUI.DrawRect(cellRect(cell.x, cell.y), ValidGhost);
+                }
             }
         }
 
@@ -347,29 +352,9 @@ namespace DarkFantasyMerchant.Editor
             return tool == Tool.Water || tool == Tool.Erase;
         }
 
-        // The square of the brush around the hovered cell (one cell more on the low side when even), cut to the grid.
-        private void BrushBounds(CityLayoutDefinition layout, Vector2Int hovered, out Vector2Int low, out Vector2Int high)
-        {
-            int below = brushSize / 2;
-            int above = brushSize - 1 - below;
-            low = Vector2Int.Max(hovered - new Vector2Int(below, below), Vector2Int.zero);
-            high = Vector2Int.Min(hovered + new Vector2Int(above, above), new Vector2Int(layout.Width - 1, layout.Height - 1));
-        }
-
         private List<Vector2Int> BrushCells(CityLayoutDefinition layout, Vector2Int hovered)
         {
-            BrushBounds(layout, hovered, out Vector2Int low, out Vector2Int high);
-            var cells = new List<Vector2Int>();
-
-            for (int y = low.y; y <= high.y; y++)
-            {
-                for (int x = low.x; x <= high.x; x++)
-                {
-                    cells.Add(new Vector2Int(x, y));
-                }
-            }
-
-            return cells;
+            return CityLayoutEditing.BrushCells(hovered, brushSize, roundBrush, layout.Width, layout.Height);
         }
 
         private static bool HouseClassOf(Tool tool, out SocialClass housedClass)
