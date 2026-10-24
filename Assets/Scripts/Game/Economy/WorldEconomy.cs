@@ -31,6 +31,9 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         public IReadOnlyList<HouseOffer> HouseOffers { get; private set; }
 
+        /// <summary>The road the player can build, with the cost of a cell; a null cost when it cannot be built.</summary>
+        public RoadOffer RoadOffer { get; private set; }
+
         /// <summary>
         /// The player's workshops, but for those of a good that is not active. A workshop that
         /// cannot be built (a negative gold) has a null cost; a material that is not an active good
@@ -92,6 +95,7 @@ namespace DarkFantasyMerchant.Game
             // A cost that cannot be worked out only takes that building away from the player.
             HouseOffers = buildings.CreateHouseOffers(economy, WarnUnavailable);
             WorkshopOffers = buildings.CreateWorkshopOffers(economy, WarnUnavailable);
+            RoadOffer = buildings.CreateRoadOffer(economy, WarnUnavailable);
 
             if (!TryCreateMarkets())
             {
@@ -200,7 +204,7 @@ namespace DarkFantasyMerchant.Game
 
             foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
             {
-                int room = grid.HousesOf(housedClass) * roomPerHouse[housedClass];
+                int room = grid.ConnectedHousesOf(housedClass) * roomPerHouse[housedClass];
 
                 if (room < needed[housedClass])
                 {

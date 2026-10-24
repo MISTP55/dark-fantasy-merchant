@@ -17,6 +17,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private Dictionary<SocialClass, HouseDefinition> houses;
         private Dictionary<GoodDefinition, WorkshopDefinition> workshops;
         private BuildingsDefinition buildings;
+        private RoadDefinition road;
+        private TownHallDefinition townHall;
         private int loads;
 
         [SetUp]
@@ -37,6 +39,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             };
             buildings = Track(ScriptableObject.CreateInstance<BuildingsDefinition>());
             TestBuildings.SetPlacement(buildings, Track(ScriptableObject.CreateInstance<RandomPlacementDefinition>()));
+            road = Track(TestBuildings.CreateRoad());
+            townHall = Track(TestBuildings.CreateTownHall());
             loads = 0;
         }
 
@@ -89,7 +93,43 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 {
                     loads++;
                     return (workshops[good], false);
-                });
+                },
+                () => road,
+                () => townHall);
+        }
+
+        [Test]
+        public void CompleteBuildings_AddsRoadAndTownHall()
+        {
+            Complete(false);
+
+            Assert.AreSame(road, buildings.Road);
+            Assert.AreSame(townHall, buildings.TownHall);
+        }
+
+        [Test]
+        public void CompleteBuildings_KeepsTheRoadAndTownHallItHolds()
+        {
+            RoadDefinition other = Track(TestBuildings.CreateRoad("Chemin"));
+            TestBuildings.SetRoadAndTownHall(buildings, other, null);
+
+            Complete(false);
+
+            Assert.AreSame(other, buildings.Road);
+            Assert.AreSame(townHall, buildings.TownHall);
+        }
+
+        [Test]
+        public void CompletePlacement_ReplacesRandomByRoadside()
+        {
+            WorldMapSetup.CompletePlacement(buildings);
+
+            Assert.IsInstanceOf<RoadsidePlacementDefinition>(buildings.PlacementStrategy);
+            var roadside = buildings.PlacementStrategy;
+
+            WorldMapSetup.CompletePlacement(buildings);
+
+            Assert.AreSame(roadside, buildings.PlacementStrategy);
         }
 
         [Test]
@@ -136,7 +176,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             WorldMapSetup.CompleteBuildings(
                 buildings, false, new[] { wheat, timber },
                 housedClass => (rebuilt, true),
-                good => (rebuiltWorkshop, true));
+                good => (rebuiltWorkshop, true),
+                () => road,
+                () => townHall);
 
             Assert.AreEqual(3, buildings.Houses.Count);
             Assert.AreSame(rebuilt, buildings.HouseOf(SocialClass.Wealthy));

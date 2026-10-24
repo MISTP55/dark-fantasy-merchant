@@ -199,7 +199,8 @@ namespace DarkFantasyMerchant.Editor
             IEnumerable<Vector2Int> forbidden, IEnumerable<CityLayoutDefinition.StartingHouse> houses)
         {
             Undo.RecordObject(layout, undoName);
-            layout.SetContent(width, height, forbidden, houses);
+            GridPlace? townHall = layout.HasTownHall ? layout.TownHallPlace : (GridPlace?)null;
+            layout.SetContent(width, height, forbidden, houses, townHall, new List<Vector2Int>(layout.Roads));
             EditorUtility.SetDirty(layout);
         }
     }

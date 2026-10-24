@@ -7,7 +7,8 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// Static definition of a building the player can build: its name and what it costs. Each
+    /// Static definition of a building: its name and what it costs. Not every building is the player's: the
+    /// town hall is placed by the city's layout and costs nothing. Each
     /// kind of building adds what it gives. Holds no runtime state: what a city has built is in its
     /// <see cref="CityMarket"/>.
     /// </summary>

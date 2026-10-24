@@ -39,6 +39,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             buildings = Track(ScriptableObject.CreateInstance<BuildingsDefinition>());
             buildings.name = "Buildings";
             TestBuildings.SetPlacement(buildings, Track(ScriptableObject.CreateInstance<RandomPlacementDefinition>()));
+            TestBuildings.SetRoadAndTownHall(buildings, Track(TestBuildings.CreateRoad()), Track(TestBuildings.CreateTownHall()));
             SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse }, new[] { farm, lumberjack });
         }
 
@@ -83,6 +84,53 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TryValidate_AcceptsOneHousePerClass()
         {
             Assert.IsTrue(buildings.TryValidate(out string problem), problem);
+        }
+
+        [Test]
+        public void NoRoad_IsInvalid()
+        {
+            TestBuildings.SetRoadAndTownHall(buildings, null, Track(TestBuildings.CreateTownHall()));
+
+            Assert.IsFalse(buildings.TryValidate(out string problem));
+            StringAssert.Contains("no road", problem);
+        }
+
+        [Test]
+        public void NoTownHall_IsInvalid()
+        {
+            TestBuildings.SetRoadAndTownHall(buildings, Track(TestBuildings.CreateRoad()), null);
+
+            Assert.IsFalse(buildings.TryValidate(out string problem));
+            StringAssert.Contains("no town hall", problem);
+        }
+
+        [Test]
+        public void RoadOfTwoCells_IsInvalid()
+        {
+            RoadDefinition wide = Track(TestBuildings.CreateRoad());
+            TestBuildings.SetFootprint(wide, new Vector2Int(2, 1));
+            TestBuildings.SetRoadAndTownHall(buildings, wide, Track(TestBuildings.CreateTownHall()));
+
+            Assert.IsFalse(buildings.TryValidate(out string problem));
+            StringAssert.Contains("one cell", problem);
+        }
+
+        [Test]
+        public void CreateRoadOffer_CostIsGoldOnly()
+        {
+            TestBuildings.SetCost(buildings.Road, 50, (timber, 5));
+
+            RoadOffer offer = buildings.CreateRoadOffer(economy, null);
+
+            Assert.AreEqual("Route", offer.Name);
+            Assert.AreEqual(50, offer.CostPerCell.Gold);
+            Assert.AreEqual(1, offer.CostPerCell.Materials.Count);
+            Assert.AreEqual(buildings.Road.CostText(economy), offer.CostText);
+
+            TestBuildings.SetCost(buildings.Road, 50);
+            offer = buildings.CreateRoadOffer(economy, null);
+            Assert.AreEqual(0, offer.CostPerCell.Materials.Count);
+            Assert.AreEqual("50 or", offer.CostText);
         }
 
         [Test]

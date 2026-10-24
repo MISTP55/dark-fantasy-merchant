@@ -36,7 +36,38 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return house;
         }
 
-        /// <summary>A valid catalogue: a house per class (40, 70 and 140 places, 2 by 1 cells) and a random placement strategy.</summary>
+        /// <summary>A road costing 50 gold, one cell.</summary>
+        public static RoadDefinition CreateRoad(string name = "Route", long gold = 50)
+        {
+            var road = ScriptableObject.CreateInstance<RoadDefinition>();
+            road.name = name;
+            var serialized = new SerializedObject(road);
+            serialized.FindProperty("footprint").vector2IntValue = new Vector2Int(1, 1);
+            SetBuilding(serialized, name, gold, new (GoodDefinition good, int units)[0]);
+            return road;
+        }
+
+        /// <summary>A free town hall of 3 by 2 cells.</summary>
+        public static TownHallDefinition CreateTownHall(string name = "Hôtel de ville")
+        {
+            var townHall = ScriptableObject.CreateInstance<TownHallDefinition>();
+            townHall.name = name;
+            var serialized = new SerializedObject(townHall);
+            serialized.FindProperty("footprint").vector2IntValue = new Vector2Int(3, 2);
+            SetBuilding(serialized, name, 0, new (GoodDefinition good, int units)[0]);
+            return townHall;
+        }
+
+        /// <summary>Gives a catalogue its road and its town hall; null takes one away.</summary>
+        public static void SetRoadAndTownHall(BuildingsDefinition buildings, RoadDefinition road, TownHallDefinition townHall)
+        {
+            var serialized = new SerializedObject(buildings);
+            serialized.FindProperty("road").objectReferenceValue = road;
+            serialized.FindProperty("townHall").objectReferenceValue = townHall;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>A valid catalogue: a house per class (40, 70 and 140 places, 2 by 1 cells), a road, a town hall and a random placement strategy.</summary>
         public static BuildingsDefinition CreateCatalogue()
         {
             var buildings = ScriptableObject.CreateInstance<BuildingsDefinition>();
@@ -51,6 +82,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             houses.GetArrayElementAtIndex(1).objectReferenceValue = wealthy;
             houses.GetArrayElementAtIndex(2).objectReferenceValue = poor;
             serialized.ApplyModifiedPropertiesWithoutUndo();
+            SetRoadAndTownHall(buildings, CreateRoad(), CreateTownHall());
             SetPlacement(buildings, ScriptableObject.CreateInstance<RandomPlacementDefinition>());
             return buildings;
         }

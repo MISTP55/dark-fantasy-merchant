@@ -35,6 +35,16 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
+        /// <summary>Where the city's town hall stands.</summary>
+        [Serializable]
+        public struct TownHallSite
+        {
+            [Tooltip("The covered cell of smallest x and y.")]
+            public Vector2Int origin;
+
+            public BuildingOrientation orientation;
+        }
+
         /// <summary>Cells on each side of a new layout, and of the default grids the scene setup makes.</summary>
         public const int DefaultSize = 40;
 
@@ -47,6 +57,14 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Cells nothing can cover (water, rock, fixed scenery), inside the grid.")]
         [SerializeField] private List<Vector2Int> forbiddenCells = new List<Vector2Int>();
 
+        [SerializeField] private bool hasTownHall;
+
+        [Tooltip("Where the town hall stands, with the footprint of the catalogue's. Used only when the layout has one.")]
+        [SerializeField] private TownHallSite townHall;
+
+        [Tooltip("The roads the city starts with, one cell each, inside the grid.")]
+        [SerializeField] private List<Vector2Int> roads = new List<Vector2Int>();
+
         [Tooltip("The houses the city starts with, each with the footprint of its class's house.")]
         [SerializeField] private List<StartingHouse> startingHouses = new List<StartingHouse>();
 
@@ -58,11 +76,18 @@ namespace DarkFantasyMerchant.Game
 
         public IReadOnlyList<StartingHouse> StartingHouses => startingHouses;
 
+        public bool HasTownHall => hasTownHall;
+
+        /// <summary>Where the town hall stands; meaningful only when <see cref="HasTownHall"/>.</summary>
+        public GridPlace TownHallPlace => new GridPlace(townHall.origin, townHall.orientation);
+
+        public IReadOnlyList<Vector2Int> Roads => roads;
+
         /// <summary>
-        /// The grid with the starting houses placed as the city's, with the footprint of each class's
-        /// house of the catalogue, which <see cref="BuildingsDefinition.TryValidate"/> accepts.
+        /// The grid with the town hall, then the roads, then the starting houses placed as the city's, with
+        /// the footprints of the catalogue's buildings, which <see cref="BuildingsDefinition.TryValidate"/> accepts.
         /// </summary>
-        /// <param name="problem">What is wrong, for the logs: a size under 1, a forbidden cell outside, a house that cannot stand; null when nothing is.</param>
+        /// <param name="problem">What is wrong, for the logs: a size under 1, a forbidden cell outside, no town hall, a town hall, a road or a house that cannot stand; null when nothing is.</param>
         public bool TryCreateGrid(BuildingsDefinition buildings, out CityGrid grid, out string problem)
         {
             grid = null;
@@ -91,6 +116,41 @@ namespace DarkFantasyMerchant.Game
 
             var created = new CityGrid(width, height, forbiddenCells);
 
+            if (!hasTownHall)
+            {
+                problem = "it has no town hall";
+                return false;
+            }
+
+            TownHallDefinition hall = buildings.TownHall;
+
+            if (hall == null || hall.FootprintSize.x < 1 || hall.FootprintSize.y < 1)
+            {
+                problem = "the buildings have no town hall with a footprint";
+                return false;
+            }
+
+            if (!created.CanPlace(hall.Footprint, TownHallPlace))
+            {
+                problem = $"the town hall cannot stand at ({townHall.origin.x}, {townHall.origin.y}): it is outside the grid or on a forbidden cell";
+                return false;
+            }
+
+            created.Place(BuildingKind.TownHall(), BuildingOwner.City, hall.Footprint, TownHallPlace);
+
+            foreach (Vector2Int cell in roads)
+            {
+                var roadPlace = new GridPlace(cell, BuildingOrientation.Along);
+
+                if (!created.CanPlace(new Footprint(1, 1), roadPlace))
+                {
+                    problem = $"the road at ({cell.x}, {cell.y}) cannot stand: it is outside the grid or on a forbidden cell or another building";
+                    return false;
+                }
+
+                created.Place(BuildingKind.Road(), BuildingOwner.City, new Footprint(1, 1), roadPlace);
+            }
+
             foreach (StartingHouse house in startingHouses)
             {
                 HouseDefinition definition = buildings.HouseOf(house.socialClass);
@@ -117,12 +177,20 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>Editor and setup only: replaces the whole content.</summary>
-        public void SetContent(int width, int height, IEnumerable<Vector2Int> forbidden, IEnumerable<StartingHouse> houses)
+        /// <param name="townHall">Where the town hall stands; null for a layout without one.</param>
+        public void SetContent(
+            int width, int height, IEnumerable<Vector2Int> forbidden, IEnumerable<StartingHouse> houses,
+            GridPlace? townHall, IEnumerable<Vector2Int> roads)
         {
             this.width = width;
             this.height = height;
             forbiddenCells = new List<Vector2Int>(forbidden);
             startingHouses = new List<StartingHouse>(houses);
+            hasTownHall = townHall.HasValue;
+            this.townHall = townHall.HasValue
+                ? new TownHallSite { origin = townHall.Value.Origin, orientation = townHall.Value.Orientation }
+                : default;
+            this.roads = new List<Vector2Int>(roads);
         }
     }
 }

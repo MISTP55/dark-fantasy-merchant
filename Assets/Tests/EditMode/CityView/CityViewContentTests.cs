@@ -83,9 +83,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void TheCatalogue_PlacesAtRandom()
+        public void TheCatalogue_PlacesAlongTheRoads()
         {
-            Assert.IsInstanceOf<RandomPlacementDefinition>(Load<BuildingsDefinition>(BuildingsPath).PlacementStrategy);
+            Assert.IsInstanceOf<RoadsidePlacementDefinition>(Load<BuildingsDefinition>(BuildingsPath).PlacementStrategy);
         }
     }
 }

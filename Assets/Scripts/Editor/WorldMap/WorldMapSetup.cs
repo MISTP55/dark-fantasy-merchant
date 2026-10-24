@@ -63,9 +63,14 @@ namespace DarkFantasyMerchant.Editor
         private const string WorkshopsFolder = BuildingsFolder + "/Workshops";
         private const string PlacementFolder = BuildingsFolder + "/Placement";
         private const string CityLayoutsFolder = "Assets/Data/CityLayouts";
+        private const string RoadPath = BuildingsFolder + "/Road.asset";
+        private const string TownHallPath = BuildingsFolder + "/TownHall.asset";
         private const string RandomPlacementPath = PlacementFolder + "/RandomPlacement.asset";
+        private const string RoadsidePlacementPath = PlacementFolder + "/RoadsidePlacement.asset";
         private static readonly Vector2Int HouseFootprint = new Vector2Int(2, 1);
         private static readonly Vector2Int WorkshopFootprint = new Vector2Int(2, 2);
+        private static readonly Vector2Int RoadFootprint = new Vector2Int(1, 1);
+        private static readonly Vector2Int TownHallFootprint = new Vector2Int(3, 2);
         private const string GoodsFolder = "Assets/Data/Goods";
         private const string GoodIconsFolder = "Assets/Art/Goods/Icons";
 
@@ -725,7 +730,9 @@ namespace DarkFantasyMerchant.Editor
             CompleteBuildings(
                 buildings, isNew, goods,
                 housedClass => LoadOrCreateHouse(housedClass, timber, metal, tiles),
-                good => LoadOrCreateWorkshop(samples[good], good, timber, metal));
+                good => LoadOrCreateWorkshop(samples[good], good, timber, metal),
+                LoadOrCreateRoad,
+                LoadOrCreateTownHall);
             CompletePlacement(buildings);
             EditorUtility.SetDirty(buildings);
             return buildings;
@@ -736,16 +743,21 @@ namespace DarkFantasyMerchant.Editor
         /// class without a house, or a good without a workshop, gets the one <paramref name="houseOf"/>
         /// or <paramref name="workshopOf"/> gives, when that one was just created or the catalogue
         /// itself is new. A definition that exists and was taken out of the catalogue by hand stays
-        /// out, and one the catalogue holds is never looked for, whatever its asset is called.
+        /// out, and one the catalogue holds is never looked for, whatever its asset is called. The road and
+        /// the town hall are single fields: each is filled when null.
         /// </summary>
         /// <param name="houseOf">The house of a class, and whether it was just created; null when there is none.</param>
         /// <param name="workshopOf">The workshop of a good, and whether it was just created; null when there is none.</param>
+        /// <param name="roadOf">The road, made when missing.</param>
+        /// <param name="townHallOf">The town hall, made when missing.</param>
         public static void CompleteBuildings(
             BuildingsDefinition buildings,
             bool isNew,
             IEnumerable<GoodDefinition> goods,
             System.Func<SocialClass, (HouseDefinition house, bool created)> houseOf,
-            System.Func<GoodDefinition, (WorkshopDefinition workshop, bool created)> workshopOf)
+            System.Func<GoodDefinition, (WorkshopDefinition workshop, bool created)> workshopOf,
+            System.Func<RoadDefinition> roadOf,
+            System.Func<TownHallDefinition> townHallOf)
         {
             var catalogue = new SerializedObject(buildings);
             SerializedProperty houses = catalogue.FindProperty("houses");
@@ -772,33 +784,50 @@ namespace DarkFantasyMerchant.Editor
                 }
             }
 
+            SerializedProperty road = catalogue.FindProperty("road");
+            SerializedProperty townHall = catalogue.FindProperty("townHall");
+
+            if (road.objectReferenceValue == null)
+            {
+                road.objectReferenceValue = roadOf();
+            }
+
+            if (townHall.objectReferenceValue == null)
+            {
+                townHall.objectReferenceValue = townHallOf();
+            }
+
             catalogue.ApplyModifiedPropertiesWithoutUndo();
             CompleteFootprints(buildings.Houses, HouseFootprint);
             CompleteFootprints(buildings.Workshops, WorkshopFootprint);
+            CompleteFootprints(new BuildingDefinition[] { buildings.Road }, RoadFootprint);
+            CompleteFootprints(new BuildingDefinition[] { buildings.TownHall }, TownHallFootprint);
         }
 
         /// <summary>
-        /// Gives the catalogue a placement strategy when it has none: the random one, made when missing.
+        /// Gives the catalogue the roadside placement strategy, made when missing, when it has none or the random
+        /// one, which stays an asset but is no longer used.
         /// </summary>
         public static void CompletePlacement(BuildingsDefinition buildings)
         {
             var catalogue = new SerializedObject(buildings);
             SerializedProperty strategy = catalogue.FindProperty("placementStrategy");
 
-            if (strategy.objectReferenceValue != null)
+            if (strategy.objectReferenceValue != null && !(strategy.objectReferenceValue is RandomPlacementDefinition))
             {
                 return;
             }
 
-            var random = AssetDatabase.LoadAssetAtPath<RandomPlacementDefinition>(RandomPlacementPath);
+            var roadside = AssetDatabase.LoadAssetAtPath<RoadsidePlacementDefinition>(RoadsidePlacementPath);
 
-            if (random == null)
+            if (roadside == null)
             {
-                random = ScriptableObject.CreateInstance<RandomPlacementDefinition>();
-                AssetDatabase.CreateAsset(random, RandomPlacementPath);
+                Directory.CreateDirectory(PlacementFolder);
+                roadside = ScriptableObject.CreateInstance<RoadsidePlacementDefinition>();
+                AssetDatabase.CreateAsset(roadside, RoadsidePlacementPath);
             }
 
-            strategy.objectReferenceValue = random;
+            strategy.objectReferenceValue = roadside;
             catalogue.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -882,6 +911,40 @@ namespace DarkFantasyMerchant.Editor
             FillBuilding(serialized, displayName, gold, (timber, timberUnits), (metal, metalUnits), (tiles, tilesUnits));
             AssetDatabase.CreateAsset(house, path);
             return (house, true);
+        }
+
+        private static RoadDefinition LoadOrCreateRoad()
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<RoadDefinition>(RoadPath);
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var road = ScriptableObject.CreateInstance<RoadDefinition>();
+            var serialized = new SerializedObject(road);
+            serialized.FindProperty("footprint").vector2IntValue = RoadFootprint;
+            FillBuilding(serialized, "Route", 50);
+            AssetDatabase.CreateAsset(road, RoadPath);
+            return road;
+        }
+
+        private static TownHallDefinition LoadOrCreateTownHall()
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<TownHallDefinition>(TownHallPath);
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var townHall = ScriptableObject.CreateInstance<TownHallDefinition>();
+            var serialized = new SerializedObject(townHall);
+            serialized.FindProperty("footprint").vector2IntValue = TownHallFootprint;
+            FillBuilding(serialized, "Hôtel de ville", 0);
+            AssetDatabase.CreateAsset(townHall, TownHallPath);
+            return townHall;
         }
 
         private static (WorkshopDefinition workshop, bool created) LoadOrCreateWorkshop(
@@ -1066,23 +1129,41 @@ namespace DarkFantasyMerchant.Editor
                 room[SocialClass.Wealthy] / roomPerHouse[SocialClass.Wealthy],
                 room[SocialClass.Poor] / roomPerHouse[SocialClass.Poor]);
             var grid = new CityGrid(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, System.Array.Empty<Vector2Int>());
+            Footprint townHallFootprint = buildings.TownHall.Footprint;
+            float centre = CityLayoutDefinition.DefaultSize / 2f;
 
-            if (!StartingHouses.TryPlace(grid, houses, footprints, new RandomPlacement(new System.Random(seed))))
+            if (!TownHallPlacement.TryNear(grid, townHallFootprint, new Vector2(centre, centre), out GridPlace townHallPlace))
+            {
+                Debug.LogError($"CityDefinition '{city.name}': its town hall does not fit on a {CityLayoutDefinition.DefaultSize} by {CityLayoutDefinition.DefaultSize} grid; no layout was made.", city);
+                return false;
+            }
+
+            grid.Place(BuildingKind.TownHall(), BuildingOwner.City, townHallFootprint, townHallPlace);
+
+            if (!StartingHouses.TryPlace(grid, houses, footprints, new RoadsidePlacement(new System.Random(seed))))
             {
                 Debug.LogError($"CityDefinition '{city.name}': its starting houses do not fit on a {CityLayoutDefinition.DefaultSize} by {CityLayoutDefinition.DefaultSize} grid; no layout was made.", city);
                 return false;
             }
 
             var startingHouses = new List<CityLayoutDefinition.StartingHouse>();
+            var roads = new List<Vector2Int>();
 
             foreach (PlacedBuilding building in grid.Buildings)
             {
-                startingHouses.Add(new CityLayoutDefinition.StartingHouse(
-                    building.Kind.HousedClass, building.Place.Origin, building.Place.Orientation));
+                if (building.Kind.IsHouse)
+                {
+                    startingHouses.Add(new CityLayoutDefinition.StartingHouse(
+                        building.Kind.HousedClass, building.Place.Origin, building.Place.Orientation));
+                }
+                else if (building.Kind.IsRoad)
+                {
+                    roads.Add(building.Place.Origin);
+                }
             }
 
             var layout = ScriptableObject.CreateInstance<CityLayoutDefinition>();
-            layout.SetContent(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, System.Array.Empty<Vector2Int>(), startingHouses);
+            layout.SetContent(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, System.Array.Empty<Vector2Int>(), startingHouses, townHallPlace, roads);
             Directory.CreateDirectory(CityLayoutsFolder);
             AssetDatabase.CreateAsset(layout, path);
             LinkLayout(city, layout);

@@ -19,7 +19,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             buildings = Track(TestBuildings.CreateCatalogue());
             layout = Track(ScriptableObject.CreateInstance<CityLayoutDefinition>());
-            layout.SetContent(10, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0]);
+            layout.SetContent(10, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], Along(4, 0), new Vector2Int[0]);
         }
 
         [TearDown]

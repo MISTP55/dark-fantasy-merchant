@@ -42,6 +42,68 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return new CityLayoutDefinition.StartingHouse(socialClass, new Vector2Int(x, y), orientation);
         }
 
+        // The 3 by 2 town hall covers x 7..9, y 0..1 in the corner of the grid, away from the houses of the tests.
+        private static readonly GridPlace TownHall = new GridPlace(new Vector2Int(7, 0), BuildingOrientation.Along);
+
+        [Test]
+        public void NoTownHall_IsUnusable()
+        {
+            layout.SetContent(10, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], null, new Vector2Int[0]);
+
+            Assert.IsFalse(layout.HasTownHall);
+            Assert.IsFalse(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem));
+            Assert.IsNull(grid);
+            StringAssert.Contains("no town hall", problem);
+        }
+
+        [Test]
+        public void TownHallAndRoads_AreOnTheGrid()
+        {
+            layout.SetContent(10, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], TownHall,
+                new[] { new Vector2Int(6, 0), new Vector2Int(5, 0) });
+
+            Assert.IsTrue(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem), problem);
+
+            Assert.IsTrue(layout.HasTownHall);
+            Assert.AreSame(grid.TownHall, grid.BuildingAt(new Vector2Int(9, 1)));
+            Assert.AreEqual(new Vector2Int(3, 2), grid.TownHall.Size);
+            Assert.IsTrue(grid.BuildingAt(new Vector2Int(6, 0)).Kind.IsRoad);
+            Assert.IsTrue(grid.IsNetworkRoad(new Vector2Int(6, 0)));
+            Assert.IsTrue(grid.IsNetworkRoad(new Vector2Int(5, 0)));
+            Assert.AreEqual(BuildingOwner.City, grid.BuildingAt(new Vector2Int(5, 0)).Owner);
+        }
+
+        [Test]
+        public void ARoadOnTheTownHall_IsUnusable()
+        {
+            layout.SetContent(10, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], TownHall,
+                new[] { new Vector2Int(8, 0) });
+
+            Assert.IsFalse(layout.TryCreateGrid(buildings, out _, out string problem));
+            StringAssert.Contains("road at (8, 0)", problem);
+        }
+
+        [Test]
+        public void StartingHouseOnARoad_IsUnusable()
+        {
+            layout.SetContent(10, 10, new Vector2Int[0], new[] { House(SocialClass.Poor, 0, 0, BuildingOrientation.Along) }, TownHall,
+                new[] { new Vector2Int(1, 0) });
+
+            Assert.IsFalse(layout.TryCreateGrid(buildings, out _, out string problem));
+            StringAssert.Contains("poor", problem);
+        }
+
+        [Test]
+        public void StartingHouseTouchingRoads_IsConnected()
+        {
+            layout.SetContent(10, 10, new Vector2Int[0], new[] { House(SocialClass.Poor, 0, 0, BuildingOrientation.Along) }, TownHall,
+                new[] { new Vector2Int(6, 0), new Vector2Int(5, 0), new Vector2Int(4, 0), new Vector2Int(3, 0), new Vector2Int(2, 0) });
+
+            Assert.IsTrue(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem), problem);
+
+            Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Poor));
+        }
+
         [Test]
         public void TryCreateGrid_PlacesTheStartingHousesAsTheCitys()
         {
@@ -49,14 +111,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
             {
                 House(SocialClass.Poor, 0, 0, BuildingOrientation.Along),
                 House(SocialClass.Rich, 5, 5, BuildingOrientation.Across),
-            });
+            }, TownHall, new Vector2Int[0]);
 
             Assert.IsTrue(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem), problem);
 
             Assert.AreEqual(10, grid.Width);
             Assert.AreEqual(10, grid.Height);
             Assert.IsTrue(grid.IsForbidden(new Vector2Int(9, 9)));
-            Assert.AreEqual(2, grid.Buildings.Count);
+            Assert.AreEqual(3, grid.Buildings.Count);
             Assert.AreEqual(1, grid.HousesOf(SocialClass.Poor));
             Assert.AreEqual(1, grid.HousesOf(SocialClass.Rich));
             Assert.AreEqual(0, grid.HousesOf(SocialClass.Wealthy));
@@ -77,7 +139,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             {
                 House(SocialClass.Poor, 0, 0, BuildingOrientation.Along),
                 House(SocialClass.Wealthy, 1, 0, BuildingOrientation.Along),
-            });
+            }, TownHall, new Vector2Int[0]);
 
             Assert.IsFalse(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem));
             Assert.IsNull(grid);
@@ -88,7 +150,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryCreateGrid_Fails_ForAHouseOnAForbiddenCell()
         {
-            layout.SetContent(10, 10, new[] { new Vector2Int(1, 0) }, new[] { House(SocialClass.Poor, 0, 0, BuildingOrientation.Along) });
+            layout.SetContent(10, 10, new[] { new Vector2Int(1, 0) }, new[] { House(SocialClass.Poor, 0, 0, BuildingOrientation.Along) }, TownHall, new Vector2Int[0]);
 
             Assert.IsFalse(layout.TryCreateGrid(buildings, out _, out string problem));
             StringAssert.Contains("house", problem);
@@ -98,7 +160,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryCreateGrid_Fails_ForASizeUnderOne()
         {
-            layout.SetContent(0, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0]);
+            layout.SetContent(0, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], TownHall, new Vector2Int[0]);
 
             Assert.IsFalse(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem));
             Assert.IsNull(grid);
@@ -108,7 +170,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryCreateGrid_Fails_ForAForbiddenCellOutside()
         {
-            layout.SetContent(4, 4, new[] { new Vector2Int(4, 0) }, new CityLayoutDefinition.StartingHouse[0]);
+            layout.SetContent(4, 4, new[] { new Vector2Int(4, 0) }, new CityLayoutDefinition.StartingHouse[0], TownHall, new Vector2Int[0]);
 
             Assert.IsFalse(layout.TryCreateGrid(buildings, out _, out string problem));
             StringAssert.Contains("forbidden", problem);

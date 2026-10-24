@@ -21,10 +21,20 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("The workshops, one per good at most. A workshop of a good that is not active is ignored.")]
         [SerializeField] private List<WorkshopDefinition> workshops = new List<WorkshopDefinition>();
 
+        [Tooltip("The road, which the player and the cities lay cell by cell.")]
+        [SerializeField] private RoadDefinition road;
+
+        [Tooltip("The town hall every city has, placed by its layout.")]
+        [SerializeField] private TownHallDefinition townHall;
+
         [Tooltip("How the buildings choose their place on a city's grid, for the whole world.")]
         [SerializeField] private PlacementStrategyDefinition placementStrategy;
 
         public PlacementStrategyDefinition PlacementStrategy => placementStrategy;
+
+        public RoadDefinition Road => road;
+
+        public TownHallDefinition TownHall => townHall;
 
         public IReadOnlyList<HouseDefinition> Houses => houses;
 
@@ -59,6 +69,30 @@ namespace DarkFantasyMerchant.Game
 
             if (problem != null)
             {
+                return false;
+            }
+
+            if (road == null)
+            {
+                problem = "it has no road";
+                return false;
+            }
+
+            if (!road.TryValidate(out string roadProblem))
+            {
+                problem = $"'{road.name}': {roadProblem}";
+                return false;
+            }
+
+            if (townHall == null)
+            {
+                problem = "it has no town hall";
+                return false;
+            }
+
+            if (!townHall.TryValidate(out string townHallProblem))
+            {
+                problem = $"'{townHall.name}': {townHallProblem}";
                 return false;
             }
 
@@ -112,6 +146,13 @@ namespace DarkFantasyMerchant.Game
             }
 
             return offers;
+        }
+
+        /// <summary>The road as the player can build it. Only for a catalogue that <see cref="TryValidate"/> accepts.</summary>
+        /// <param name="unavailable">Told when the road's cost cannot be worked out, with why; may be null.</param>
+        public RoadOffer CreateRoadOffer(EconomyDefinition economy, Action<BuildingDefinition, string> unavailable)
+        {
+            return new RoadOffer(road.DisplayName, CostOf(road, economy, unavailable), road.CostText(economy));
         }
 
         /// <summary>

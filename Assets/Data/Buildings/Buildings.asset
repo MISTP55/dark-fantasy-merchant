@@ -37,4 +37,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 60452d97a2611a34f963cffb6438e380, type: 2}
   - {fileID: 11400000, guid: 65c16bb66f743e14b934d49141f26a05, type: 2}
   - {fileID: 11400000, guid: 3c25ea605d0a40043838ce79507f650c, type: 2}
-  placementStrategy: {fileID: 11400000, guid: 034fbca3b195c9044b989272a8c070d9, type: 2}
+  road: {fileID: 11400000, guid: 1a44d32081b5df04296612ff2872f474, type: 2}
+  townHall: {fileID: 11400000, guid: a5cc6fe5c7432674e8a16d0f5b4c7c11, type: 2}
+  placementStrategy: {fileID: 11400000, guid: 82c45b07cac851d4ca8f7df2ee9cdd4b, type: 2}

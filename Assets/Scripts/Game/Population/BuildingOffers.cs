@@ -30,6 +30,25 @@ namespace DarkFantasyMerchant.Game
         public string CostText { get; }
     }
 
+    /// <summary>The road the player can build, as the city view shows it: a cost per cell. A null cost: it cannot be built.</summary>
+    public sealed class RoadOffer
+    {
+        public RoadOffer(string name, BuildingCost costPerCell, string costText)
+        {
+            Name = name;
+            CostPerCell = costPerCell;
+            CostText = costText;
+        }
+
+        public string Name { get; }
+
+        /// <summary>The cost of one cell of road.</summary>
+        public BuildingCost CostPerCell { get; }
+
+        /// <summary>The cost of one cell, "50 or", or "indisponible".</summary>
+        public string CostText { get; }
+    }
+
     /// <summary>A workshop the player can build, as the city panel shows it. A null cost: it cannot be built.</summary>
     public sealed class WorkshopOffer
     {
