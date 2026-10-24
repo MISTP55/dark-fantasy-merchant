@@ -124,6 +124,7 @@ namespace DarkFantasyMerchant.Game
             {
                 ghostRenderer = CreateRenderer("Ghost", transform, null);
                 ghostRenderer.sortingOrder = GhostSortingOrder;
+                ghostRenderer.transform.localScale = BuildingScaleVector;
             }
 
             // Shown every frame while placing: the sprite is looked up only when the size changes.
@@ -188,7 +189,7 @@ namespace DarkFantasyMerchant.Game
             SpriteRenderer buildingRenderer = CreateRenderer(
                 $"{building.Owner} {(building.Kind.IsHouse ? "House" : "Workshop")} {origin.x},{origin.y}", buildingRoot, BlockSpriteOf(size));
             buildingRenderer.transform.localPosition = IsoProjection.CenterOf(origin, size);
-            buildingRenderer.transform.localScale = new Vector3(buildingScale, buildingScale, 1f);
+            buildingRenderer.transform.localScale = BuildingScaleVector;
             buildingRenderer.color = building.Kind.IsHouse ? HouseColors.Of(building.Kind.HousedClass) : workshopColor;
 
             // The buildings at and above the new one's rank move up by one.
@@ -200,6 +201,9 @@ namespace DarkFantasyMerchant.Game
                 buildingRenderers[i].sortingOrder = FirstBuildingSortingOrder + i;
             }
         }
+
+        // The scale of a building's block, and of the ghost, which shows the building as it will stand.
+        private Vector3 BuildingScaleVector => new Vector3(buildingScale, buildingScale, 1f);
 
         private Sprite BlockSpriteOf(Vector2Int size)
         {
