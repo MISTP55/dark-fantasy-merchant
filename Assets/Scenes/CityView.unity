@@ -286,10 +286,17 @@ MonoBehaviour:
   block2x1Sprite: {fileID: 21300000, guid: 453a25679bb87754bbc56befa257a716, type: 3}
   block1x2Sprite: {fileID: 21300000, guid: 64a6048c286e3bc4fbc70c4be44ac4e5, type: 3}
   block2x2Sprite: {fileID: 21300000, guid: 6cca30dcf65eff74b8f0a7d588c92237, type: 3}
+  block3x2Sprite: {fileID: 21300000, guid: bbda398459f370c47a9e3a6c274b6142, type: 3}
+  block2x3Sprite: {fileID: 21300000, guid: 6ce706a0f2da74c4791b92889e2276c2, type: 3}
   freeCellColor: {r: 0.23137255, g: 0.2901961, b: 0.22745098, a: 1}
   forbiddenCellColor: {r: 0.14117648, g: 0.2627451, b: 0.36862746, a: 1}
   workshopColor: {r: 0.8392157, g: 0.22745098, b: 0.76862746, a: 1}
+  townHallColor: {r: 0.7882353, g: 0.63529414, b: 0.15294118, a: 1}
+  roadColor: {r: 0.5411765, g: 0.48235294, b: 0.38431373, a: 1}
+  inactiveShade: 0.45
+  buildingScale: 0.85
   validGhostColor: {r: 0.43529412, g: 0.7490196, b: 0.4509804, a: 0.6}
+  unconnectedGhostColor: {r: 0.8784314, g: 0.7529412, b: 0.2509804, a: 0.6}
   invalidGhostColor: {r: 0.8156863, g: 0.3137255, b: 0.3137255, a: 0.6}
 --- !u!1 &864136041
 GameObject:

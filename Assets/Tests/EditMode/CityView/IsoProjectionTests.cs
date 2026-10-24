@@ -103,13 +103,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         /// <summary>
-        /// Over every non-overlapping pair of 1x1, 2x1, 1x2 and 2x2 blocks with origins in the given ranges: when one
+        /// Over every non-overlapping pair of 1x1, 2x1, 1x2, 2x2, 3x2 and 2x3 blocks with origins in the given ranges: when one
         /// is nearer than the other on an axis (of smaller x or y, beyond the other's extent on that axis) and they can
         /// be drawn over one another on screen, it has the larger key.
         /// </summary>
         private static void AssertFrontBlocksDrawnLater(int minX, int maxX, int minY, int maxY)
         {
-            var sizes = new[] { new Vector2Int(1, 1), new Vector2Int(2, 1), new Vector2Int(1, 2), new Vector2Int(2, 2) };
+            var sizes = new[]
+            {
+                new Vector2Int(1, 1), new Vector2Int(2, 1), new Vector2Int(1, 2), new Vector2Int(2, 2),
+                new Vector2Int(3, 2), new Vector2Int(2, 3),
+            };
             var blocks = new System.Collections.Generic.List<(Vector2Int origin, Vector2Int size)>();
             for (var x = minX; x <= maxX; x++)
             {

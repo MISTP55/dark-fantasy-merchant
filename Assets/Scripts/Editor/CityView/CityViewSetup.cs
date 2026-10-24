@@ -28,6 +28,8 @@ namespace DarkFantasyMerchant.Editor
         private const string Block2x1SpritePath = ArtFolder + "/Block2x1.png";
         private const string Block1x2SpritePath = ArtFolder + "/Block1x2.png";
         private const string Block2x2SpritePath = ArtFolder + "/Block2x2.png";
+        private const string Block3x2SpritePath = ArtFolder + "/Block3x2.png";
+        private const string Block2x3SpritePath = ArtFolder + "/Block2x3.png";
 
         // A cell is 1 world unit across (IsoProjection.CellWidth): 64 by 32 pixels.
         private const int PixelsPerUnit = 64;
@@ -54,6 +56,8 @@ namespace DarkFantasyMerchant.Editor
             CreateSprite(Block2x1SpritePath, 2, 1, BlockHeightPixels);
             CreateSprite(Block1x2SpritePath, 1, 2, BlockHeightPixels);
             CreateSprite(Block2x2SpritePath, 2, 2, BlockHeightPixels);
+            CreateSprite(Block3x2SpritePath, 3, 2, BlockHeightPixels);
+            CreateSprite(Block2x3SpritePath, 2, 3, BlockHeightPixels);
             CreateMaterial();
             AssetDatabase.SaveAssets();
 
@@ -348,6 +352,8 @@ namespace DarkFantasyMerchant.Editor
             changed |= WorldMapSetup.FillReference(gridView, "block2x1Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block2x1SpritePath));
             changed |= WorldMapSetup.FillReference(gridView, "block1x2Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block1x2SpritePath));
             changed |= WorldMapSetup.FillReference(gridView, "block2x2Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block2x2SpritePath));
+            changed |= WorldMapSetup.FillReference(gridView, "block3x2Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block3x2SpritePath));
+            changed |= WorldMapSetup.FillReference(gridView, "block2x3Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block2x3SpritePath));
             return changed;
         }
     }

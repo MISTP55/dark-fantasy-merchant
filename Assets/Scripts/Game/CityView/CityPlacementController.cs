@@ -109,8 +109,10 @@ namespace DarkFantasyMerchant.Game
             }
 
             GridPlace place = cursor.PlaceAt(cell);
-            bool canBuild = Construction.CanStand(market, cursor.Footprint, place) && CanPay();
-            gridView.ShowGhost(cell, cursor.Footprint.SizeFor(cursor.Orientation), canBuild);
+            GhostState state = !Construction.CanStand(market, cursor.Footprint, place) || !CanPay() ? GhostState.Impossible
+                : gridView.Grid.WouldConnect(cursor.Footprint, place) ? GhostState.Connected
+                : GhostState.Unconnected;
+            gridView.ShowGhost(cell, cursor.Footprint.SizeFor(cursor.Orientation), state);
         }
 
         /// <summary>
