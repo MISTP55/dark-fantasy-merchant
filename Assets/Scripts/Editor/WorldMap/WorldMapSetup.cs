@@ -1015,12 +1015,6 @@ namespace DarkFantasyMerchant.Editor
                 return;
             }
 
-            PerClass<int> roomPerHouse = buildings.HouseRooms;
-            var footprints = new PerClass<Footprint>(
-                buildings.HouseOf(SocialClass.Rich).Footprint,
-                buildings.HouseOf(SocialClass.Wealthy).Footprint,
-                buildings.HouseOf(SocialClass.Poor).Footprint);
-
             for (int index = 0; index < definition.MapCities.Count; index++)
             {
                 CityDefinition city = definition.MapCities[index].City;
@@ -1030,36 +1024,53 @@ namespace DarkFantasyMerchant.Editor
                     continue;
                 }
 
-                PerClass<int> room = economy.StartingRoomOf(city, roomPerHouse);
-                var houses = new PerClass<int>(
-                    room[SocialClass.Rich] / roomPerHouse[SocialClass.Rich],
-                    room[SocialClass.Wealthy] / roomPerHouse[SocialClass.Wealthy],
-                    room[SocialClass.Poor] / roomPerHouse[SocialClass.Poor]);
-                var grid = new CityGrid(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, System.Array.Empty<Vector2Int>());
-
-                if (!StartingHouses.TryPlace(grid, houses, footprints, new RandomPlacement(new System.Random(index))))
-                {
-                    Debug.LogError($"CityDefinition '{city.name}': its starting houses do not fit on a {CityLayoutDefinition.DefaultSize} by {CityLayoutDefinition.DefaultSize} grid; no layout was made.", city);
-                    continue;
-                }
-
-                var startingHouses = new List<CityLayoutDefinition.StartingHouse>();
-
-                foreach (PlacedBuilding building in grid.Buildings)
-                {
-                    startingHouses.Add(new CityLayoutDefinition.StartingHouse(
-                        building.Kind.HousedClass, building.Place.Origin, building.Place.Orientation));
-                }
-
-                var layout = ScriptableObject.CreateInstance<CityLayoutDefinition>();
-                layout.SetContent(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, System.Array.Empty<Vector2Int>(), startingHouses);
-                AssetDatabase.CreateAsset(layout, $"{CityLayoutsFolder}/{city.name}Layout.asset");
-
-                var serialized = new SerializedObject(city);
-                serialized.FindProperty("layout").objectReferenceValue = layout;
-                serialized.ApplyModifiedPropertiesWithoutUndo();
-                EditorUtility.SetDirty(city);
+                TryCreateLayout(city, economy, buildings, index);
             }
+        }
+
+        /// <summary>
+        /// Makes the default layout asset of a city and links it: a grid with just the houses its
+        /// starting population needs, placed at random with the seed. False (and an error logged) when
+        /// they do not fit. The caller checks that the city has no layout.
+        /// </summary>
+        internal static bool TryCreateLayout(CityDefinition city, EconomyDefinition economy, BuildingsDefinition buildings, int seed)
+        {
+            PerClass<int> roomPerHouse = buildings.HouseRooms;
+            var footprints = new PerClass<Footprint>(
+                buildings.HouseOf(SocialClass.Rich).Footprint,
+                buildings.HouseOf(SocialClass.Wealthy).Footprint,
+                buildings.HouseOf(SocialClass.Poor).Footprint);
+            PerClass<int> room = economy.StartingRoomOf(city, roomPerHouse);
+            var houses = new PerClass<int>(
+                room[SocialClass.Rich] / roomPerHouse[SocialClass.Rich],
+                room[SocialClass.Wealthy] / roomPerHouse[SocialClass.Wealthy],
+                room[SocialClass.Poor] / roomPerHouse[SocialClass.Poor]);
+            var grid = new CityGrid(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, System.Array.Empty<Vector2Int>());
+
+            if (!StartingHouses.TryPlace(grid, houses, footprints, new RandomPlacement(new System.Random(seed))))
+            {
+                Debug.LogError($"CityDefinition '{city.name}': its starting houses do not fit on a {CityLayoutDefinition.DefaultSize} by {CityLayoutDefinition.DefaultSize} grid; no layout was made.", city);
+                return false;
+            }
+
+            var startingHouses = new List<CityLayoutDefinition.StartingHouse>();
+
+            foreach (PlacedBuilding building in grid.Buildings)
+            {
+                startingHouses.Add(new CityLayoutDefinition.StartingHouse(
+                    building.Kind.HousedClass, building.Place.Origin, building.Place.Orientation));
+            }
+
+            var layout = ScriptableObject.CreateInstance<CityLayoutDefinition>();
+            layout.SetContent(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, System.Array.Empty<Vector2Int>(), startingHouses);
+            Directory.CreateDirectory(CityLayoutsFolder);
+            AssetDatabase.CreateAsset(layout, $"{CityLayoutsFolder}/{city.name}Layout.asset");
+
+            var serialized = new SerializedObject(city);
+            serialized.FindProperty("layout").objectReferenceValue = layout;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(city);
+            return true;
         }
 
         // A city that produces nothing has no economy yet: one made before the economy existed, or
