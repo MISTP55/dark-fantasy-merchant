@@ -10,6 +10,7 @@ namespace DarkFantasyMerchant.Editor
     /// Designs the grid of a city: its size, its forbidden cells and its starting houses, seen from
     /// above, with whether the houses shelter the starting population. Edits go through <see cref="CityLayoutEditing"/>.
     /// A left click paints what the tool paints; a right click erases it, and only it.
+    /// The Road tool traces an L from the pressed cell, as the city view does, laid or removed on release.
     /// </summary>
     public sealed class CityLayoutWindow : EditorWindow
     {
@@ -35,6 +36,8 @@ namespace DarkFantasyMerchant.Editor
         private static readonly Color ShortageColor = new Color32(0xD0, 0x50, 0x50, 0xFF);
         private static readonly Color GridLine = new Color(0f, 0f, 0f, 0.35f);
 
+        private static readonly int TraceHint = "CityLayoutRoadTrace".GetHashCode();
+
         private const float MinCell = 4f;
         private const float MaxCell = 24f;
         private const int MaxBrush = 15;
@@ -54,6 +57,16 @@ namespace DarkFantasyMerchant.Editor
         private CityLayoutDefinition shownLayout;
         private Vector2 scroll;
         private int lastUnconnected;
+
+        // The Road tool's trace, as in the city view: an L from the pressed cell to the one under the pointer, laid
+        // (left button) or removed (right button) in one edit on release.
+        private bool tracing;
+        private int traceButton;
+        private int traceControl;
+        private bool traceErases;
+        private Vector2Int traceStart;
+        private Vector2Int traceEnd;
+        private readonly List<Vector2Int> traceCells = new List<Vector2Int>();
 
         // Every city asset, in the alphabetical order of their names, and those names for the drop-down.
         private readonly List<CityDefinition> cities = new List<CityDefinition>();
@@ -103,10 +116,26 @@ namespace DarkFantasyMerchant.Editor
             return string.IsNullOrEmpty(definition.DisplayName) ? definition.name : definition.DisplayName;
         }
 
+        private void OnLostFocus()
+        {
+            CancelTrace();
+            Repaint();
+        }
+
+        private void OnDisable()
+        {
+            CancelTrace();
+        }
+
         private void OnSelectionChange()
         {
             if (Selection.activeObject is CityDefinition selected)
             {
+                if (selected != city)
+                {
+                    CancelTrace();
+                }
+
                 city = selected;
                 Repaint();
             }
@@ -123,12 +152,14 @@ namespace DarkFantasyMerchant.Editor
 
             if (city == null)
             {
+                CancelTrace();
                 EditorGUILayout.HelpBox(cities.Count > 0 ? "Choose a city." : "There is no city asset.", MessageType.Info);
                 return;
             }
 
             if (economy == null || buildings == null)
             {
+                CancelTrace();
                 EditorGUILayout.HelpBox("The economy or the buildings asset is missing: build the scene first.", MessageType.Warning);
                 return;
             }
@@ -137,6 +168,7 @@ namespace DarkFantasyMerchant.Editor
 
             if (layout == null)
             {
+                CancelTrace();
                 EditorGUILayout.HelpBox("This city has no layout.", MessageType.Info);
 
                 if (GUILayout.Button("Create layout"))
@@ -150,6 +182,7 @@ namespace DarkFantasyMerchant.Editor
 
             if (layout != shownLayout)
             {
+                CancelTrace();
                 shownLayout = layout;
                 lastUnconnected = 0;
                 widthField = layout.Width;
@@ -167,6 +200,7 @@ namespace DarkFantasyMerchant.Editor
 
             if (!CityLayoutEditing.TryMakeGrid(layout, buildings, out CityGrid grid))
             {
+                CancelTrace();
                 EditorGUILayout.HelpBox("Something in the layout cannot stand: a town hall, a road or a house is outside the grid, on a forbidden cell or on another building.", MessageType.Error);
                 return;
             }
@@ -199,12 +233,12 @@ namespace DarkFantasyMerchant.Editor
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    brushSize = EditorGUILayout.IntSlider("Brush (Water, Road, Erase)", brushSize, 1, MaxBrush);
+                    brushSize = EditorGUILayout.IntSlider("Brush (Water, Erase)", brushSize, 1, MaxBrush);
                     roundBrush = GUILayout.Toggle(roundBrush, "Round", GUILayout.Width(60f));
                 }
             }
 
-            EditorGUILayout.LabelField("Left click paints, right click erases only what the selected tool paints.", EditorStyles.miniLabel);
+            EditorGUILayout.LabelField("Left click paints, right click erases only what the selected tool paints. Road: drag an L.", EditorStyles.miniLabel);
 
             bool across = GUILayout.Toggle(orientation == BuildingOrientation.Across, "Across (R turns the house or the town hall)");
             orientation = across ? BuildingOrientation.Across : BuildingOrientation.Along;
@@ -351,8 +385,18 @@ namespace DarkFantasyMerchant.Editor
             var hovered = new Vector2Int(
                 Mathf.FloorToInt((current.mousePosition.x - area.x) / cell),
                 Mathf.FloorToInt((area.yMax - current.mousePosition.y) / cell));
+            bool onGrid = inside && hovered.x >= 0 && hovered.y >= 0 && hovered.x < layout.Width && hovered.y < layout.Height;
 
-            if (inside && hovered.x >= 0 && hovered.y >= 0 && hovered.x < layout.Width && hovered.y < layout.Height)
+            if (tool == Tool.Road)
+            {
+                HandleTrace(layout, onGrid, hovered, current, CellRect);
+            }
+            else
+            {
+                CancelTrace();
+            }
+
+            if (tool != Tool.Road && onGrid)
             {
                 DrawGhost(layout, grid, hovered, CellRect);
                 HandleMouse(layout, hovered, current);
@@ -450,11 +494,7 @@ namespace DarkFantasyMerchant.Editor
             {
                 List<Vector2Int> cells = BrushCells(layout, hovered);
 
-                if (tool == Tool.Road)
-                {
-                    CityLayoutEditing.SetRoads(layout, buildings, cells, paints);
-                }
-                else if (tool == Tool.Water)
+                if (tool == Tool.Water)
                 {
                     // Painting water never frees a cell: only the right click does.
                     CityLayoutEditing.SetForbidden(layout, buildings, cells, paints);
@@ -471,9 +511,85 @@ namespace DarkFantasyMerchant.Editor
             Repaint();
         }
 
+        // The Road tool: the press starts the L, the drag moves its end (kept on the last cell of the grid the pointer
+        // was on), the release lays or removes it. The window keeps the mouse while tracing, so a release outside it
+        // still ends the trace.
+        private void HandleTrace(
+            CityLayoutDefinition layout, bool onGrid, Vector2Int hovered, Event current, System.Func<int, int, Rect> cellRect)
+        {
+            int control = GUIUtility.GetControlID(TraceHint, FocusType.Passive);
+
+            // On Layout the grid's rect is a placeholder: the hovered cell means nothing.
+            if (current.type == EventType.Layout)
+            {
+                return;
+            }
+
+            // The mouse was taken from the trace (focus lost, another control): it is dropped, never laid later.
+            if (tracing && GUIUtility.hotControl != control)
+            {
+                CancelTrace();
+            }
+
+            EventType type = current.GetTypeForControl(control);
+            bool owns = tracing && current.button == traceButton;
+
+            if (onGrid)
+            {
+                traceEnd = hovered;
+            }
+
+            if (!tracing && type == EventType.MouseDown && onGrid && (current.button == 0 || current.button == 1))
+            {
+                tracing = true;
+                traceButton = current.button;
+                traceErases = current.button == 1;
+                traceStart = hovered;
+                traceControl = control;
+                GUIUtility.hotControl = control;
+                current.Use();
+            }
+            else if (owns && type == EventType.MouseDrag)
+            {
+                current.Use();
+                Repaint();
+            }
+            else if (owns && type == EventType.MouseUp)
+            {
+                CancelTrace();
+                RoadTrace.Of(traceStart, traceEnd, traceCells);
+                CityLayoutEditing.SetRoads(layout, buildings, traceCells, !traceErases);
+                current.Use();
+                Repaint();
+            }
+
+            if (current.type != EventType.Repaint || (!tracing && !onGrid))
+            {
+                return;
+            }
+
+            RoadTrace.Of(tracing ? traceStart : traceEnd, traceEnd, traceCells);
+
+            foreach (Vector2Int traced in traceCells)
+            {
+                EditorGUI.DrawRect(cellRect(traced.x, traced.y), tracing && traceErases ? InvalidGhost : ValidGhost);
+            }
+        }
+
+        // Drops the trace in progress without laying it, and gives the mouse back.
+        private void CancelTrace()
+        {
+            if (tracing && GUIUtility.hotControl == traceControl)
+            {
+                GUIUtility.hotControl = 0;
+            }
+
+            tracing = false;
+        }
+
         private static bool UsesBrush(Tool tool)
         {
-            return tool == Tool.Water || tool == Tool.Road || tool == Tool.Erase;
+            return tool == Tool.Water || tool == Tool.Erase;
         }
 
         private List<Vector2Int> BrushCells(CityLayoutDefinition layout, Vector2Int hovered)
