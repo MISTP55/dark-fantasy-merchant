@@ -59,12 +59,12 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// The text of a ship that entered a city's queue: "Navire marchand attend une place au port de Bruges.",
-        /// written as <see cref="FormatArrival"/> is.
+        /// The text of a ship that entered a city's queue: "Navire marchand attend une place à quai à Bruges.",
+        /// written as <see cref="FormatArrival"/> is: nothing elides before the city's name.
         /// </summary>
         public static string FormatQueued(string shipName, string cityName)
         {
-            return $"{shipName} attend une place au port de {cityName}.";
+            return $"{shipName} attend une place à quai à {cityName}.";
         }
 
         private void OnShipQueued(Ship ship, CityDefinition city)

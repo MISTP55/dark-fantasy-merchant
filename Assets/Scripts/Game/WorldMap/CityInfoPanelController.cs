@@ -280,10 +280,10 @@ namespace DarkFantasyMerchant.Game
             return labels;
         }
 
-        /// <summary>The title of the ships tab: "Navires au port (3)".</summary>
+        /// <summary>The title of the ships tab, which counts every ship in the city: "Navires (3)".</summary>
         public static string ShipsTabText(int shipCount)
         {
-            return $"Navires au port ({TreasuryHudController.FormatNumber(shipCount)})";
+            return $"Navires ({TreasuryHudController.FormatNumber(shipCount)})";
         }
 
         /// <summary>Where a ship of the ships tab stands in the city: "à quai", "en attente", "arrive", "repart".</summary>

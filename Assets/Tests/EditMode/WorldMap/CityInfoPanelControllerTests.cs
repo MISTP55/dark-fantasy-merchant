@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using DarkFantasyMerchant.Game;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace DarkFantasyMerchant.Tests.EditMode
 {
@@ -80,10 +82,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void ShipsTabText_CountsTheShipsInPort()
+        public void ShipsTabText_CountsTheShipsInTheCity()
         {
-            Assert.AreEqual("Navires au port (3)", CityInfoPanelController.ShipsTabText(3));
-            Assert.AreEqual("Navires au port (0)", CityInfoPanelController.ShipsTabText(0));
+            Assert.AreEqual("Navires (3)", CityInfoPanelController.ShipsTabText(3));
+            Assert.AreEqual("Navires (0)", CityInfoPanelController.ShipsTabText(0));
+        }
+
+        [Test]
+        public void TheShipsTab_WithoutAShip_ReadsAucunNavire()
+        {
+            var uxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/UI/WorldMap/CityInfoPanel.uxml");
+            Assert.IsNotNull(uxml);
+
+            VisualElement tree = uxml.CloneTree();
+
+            Assert.AreEqual("Aucun navire", tree.Q<Label>("no-ship-label").text);
         }
 
         [Test]

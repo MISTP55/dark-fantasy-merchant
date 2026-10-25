@@ -26,7 +26,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void FormatQueued_NamesTheShipAndTheCity()
         {
             Assert.AreEqual(
-                "Navire marchand attend une place au port de Sparia.",
+                "Navire marchand attend une place à quai à Sparia.",
                 ShipArrivalNotifier.FormatQueued("Navire marchand", "Sparia"));
         }
     }

@@ -49,7 +49,7 @@
                     </ui:VisualElement>
                     <ui:VisualElement name="ships-page" class="city-panel__page">
                         <ui:ScrollView class="city-panel__ships-scroll">
-                            <ui:Label name="no-ship-label" text="Aucun navire au port" class="city-panel__empty" />
+                            <ui:Label name="no-ship-label" text="Aucun navire" class="city-panel__empty" />
                             <ui:VisualElement name="ship-list" />
                         </ui:ScrollView>
                     </ui:VisualElement>
