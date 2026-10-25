@@ -1997,12 +1997,13 @@ namespace DarkFantasyMerchant.Editor
             changed |= FillReference(worldEconomy, "mapView", mapView);
             changed |= FillReference(worldEconomy, "worldClock", worldClock);
 
-            // Ships take the room of a unit of each good from the economy.
+            // Ships take the room of a unit of each good from the economy, and cross the harbours it makes.
             var shipsView = FindInScene<ShipsView>(scene);
 
             if (shipsView != null)
             {
                 changed |= FillReference(shipsView, "economy", economy);
+                changed |= FillReference(shipsView, "worldEconomy", worldEconomy);
             }
 
             // The city panel shows the market and trades with the player's gold.

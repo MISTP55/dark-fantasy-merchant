@@ -473,7 +473,7 @@ namespace DarkFantasyMerchant.Game
             // The player's ship is the first of the map's.
             foreach (Ship ship in shipsView.Ships)
             {
-                CityDefinition port = shipsView.Docking.PortOf(ship);
+                CityDefinition city = shipsView.Docking.CityOf(ship);
                 CityDefinition destination = shipsView.Docking.DestinationPortOf(ship);
                 long? profit = aiMerchants != null && aiMerchants.TryGetProfit(ship, out long gold) ? gold : (long?)null;
                 CityDefinition home = null;
@@ -488,11 +488,12 @@ namespace DarkFantasyMerchant.Game
                     shipsView.DisplayNameOf(ship),
                     shipsView.IsPlayerShip(ship),
                     ship,
-                    port != null ? port.DisplayName : null,
+                    city != null ? city.DisplayName : null,
                     destination != null ? destination.DisplayName : null,
                     profit,
                     home != null ? home.DisplayName : null,
-                    finalDestination != null ? finalDestination.DisplayName : null));
+                    finalDestination != null ? finalDestination.DisplayName : null,
+                    shipsView.Docking.StateOf(ship)));
             }
 
             shipsTable.Refresh(shipInfos);

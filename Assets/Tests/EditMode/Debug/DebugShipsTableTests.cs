@@ -142,6 +142,20 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void AShipInACityHarbour_ShowsItsStateAndTheCity()
+        {
+            ships.Add(new DebugShipInfo("A", false, CreateShip(), "Elforth", null, 0, harbourState: HarbourState.Waiting));
+            ships.Add(new DebugShipInfo("B", false, CreateShip(), "Sparia", null, 0, harbourState: HarbourState.Leaving));
+
+            table.Refresh(ships);
+
+            Assert.AreEqual("En attente", Text(0, StateCell));
+            Assert.AreEqual("Elforth", Text(0, PlaceCell));
+            Assert.AreEqual("Repart", Text(1, StateCell));
+            Assert.AreEqual("Sparia", Text(1, PlaceCell));
+        }
+
+        [Test]
         public void Refresh_FollowsTheShips_AndTheirNumber()
         {
             Ship ship = CreateShip();
@@ -169,9 +183,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             Assert.AreEqual("Joueur", DebugShipsTable.FormatOwner(true));
             Assert.AreEqual("IA", DebugShipsTable.FormatOwner(false));
-            Assert.AreEqual("Au port", DebugShipsTable.FormatState(true, false));
-            Assert.AreEqual("En mer", DebugShipsTable.FormatState(false, true));
-            Assert.AreEqual("À l'arrêt", DebugShipsTable.FormatState(false, false));
+            Assert.AreEqual("Au port", DebugShipsTable.FormatState(HarbourState.Docked, false));
+            Assert.AreEqual("En attente", DebugShipsTable.FormatState(HarbourState.Waiting, false));
+            Assert.AreEqual("Arrive", DebugShipsTable.FormatState(HarbourState.Arriving, false));
+            Assert.AreEqual("Repart", DebugShipsTable.FormatState(HarbourState.Leaving, true));
+            Assert.AreEqual("En mer", DebugShipsTable.FormatState(HarbourState.AtSea, true));
+            Assert.AreEqual("À l'arrêt", DebugShipsTable.FormatState(HarbourState.AtSea, false));
             Assert.AreEqual("0,412 ; 0,733", DebugShipsTable.FormatPosition(new Vector2(0.4124f, 0.7331f)));
             Assert.AreEqual("12 / 28", DebugShipsTable.FormatCrew(new ShipCrew(28, 12)));
             Assert.AreEqual("50\u00A0%", DebugShipsTable.FormatSpeed(0.5f));

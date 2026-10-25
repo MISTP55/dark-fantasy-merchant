@@ -10,11 +10,12 @@ namespace DarkFantasyMerchant.Game
     /// <summary>What the ships debug table writes of one ship.</summary>
     public readonly struct DebugShipInfo
     {
-        /// <param name="portName">Name of the city whose port the ship lies in; null at sea.</param>
+        /// <param name="portName">Name of the city the ship is in, in its queue, its harbour or its port; null at sea.</param>
         /// <param name="destinationName">Name of the city whose port the ship will enter; null for none.</param>
         /// <param name="profit">Cumulated profit of a merchant that trades on its own; null for the player's ships.</param>
         /// <param name="homeName">Name of the city a merchant that trades on its own is homed in; null for none.</param>
         /// <param name="finalDestinationName">Name of the city a merchant that trades on its own sails to for its tour; null for none.</param>
+        /// <param name="harbourState">Where the ship stands in its city; null for in port when a city is named, at sea otherwise.</param>
         public DebugShipInfo(
             string name,
             bool isPlayer,
@@ -23,7 +24,8 @@ namespace DarkFantasyMerchant.Game
             string destinationName,
             long? profit,
             string homeName = null,
-            string finalDestinationName = null)
+            string finalDestinationName = null,
+            HarbourState? harbourState = null)
         {
             Name = name;
             IsPlayer = isPlayer;
@@ -33,6 +35,7 @@ namespace DarkFantasyMerchant.Game
             Profit = profit;
             HomeName = homeName;
             FinalDestinationName = finalDestinationName;
+            HarbourState = harbourState ?? (portName != null ? HarbourState.Docked : HarbourState.AtSea);
         }
 
         public string Name { get; }
@@ -50,6 +53,8 @@ namespace DarkFantasyMerchant.Game
         public string HomeName { get; }
 
         public string FinalDestinationName { get; }
+
+        public HarbourState HarbourState { get; }
     }
 
     /// <summary>
@@ -166,15 +171,25 @@ namespace DarkFantasyMerchant.Game
             return isPlayer ? "Joueur" : "IA";
         }
 
-        /// <summary>What a ship is doing: "Au port", "En mer" under way, "À l'arrêt" idle at sea.</summary>
-        public static string FormatState(bool isDocked, bool isMoving)
+        /// <summary>
+        /// What a ship is doing: "Au port", "En attente", "Arrive", "Repart" in a city; at sea, "En mer"
+        /// under way, "À l'arrêt" idle.
+        /// </summary>
+        public static string FormatState(HarbourState state, bool isMoving)
         {
-            if (isDocked)
+            switch (state)
             {
-                return "Au port";
+                case HarbourState.Docked:
+                    return "Au port";
+                case HarbourState.Waiting:
+                    return "En attente";
+                case HarbourState.Arriving:
+                    return "Arrive";
+                case HarbourState.Leaving:
+                    return "Repart";
+                default:
+                    return isMoving ? "En mer" : "À l'arrêt";
             }
-
-            return isMoving ? "En mer" : "À l'arrêt";
         }
 
         /// <summary>A normalized map position: "0,412 ; 0,733".</summary>
@@ -262,7 +277,7 @@ namespace DarkFantasyMerchant.Game
         private void Write(Row row, DebugShipInfo info)
         {
             Ship ship = info.Ship;
-            bool isDocked = info.PortName != null;
+            bool isInCity = info.HarbourState != HarbourState.AtSea;
 
             row.Ship = ship;
 
@@ -273,8 +288,8 @@ namespace DarkFantasyMerchant.Game
 
             row.Name.text = info.Name;
             row.Owner.text = FormatOwner(info.IsPlayer);
-            row.State.text = FormatState(isDocked, ship.IsMoving);
-            row.Place.text = isDocked ? info.PortName : FormatPosition(ship.Position);
+            row.State.text = FormatState(info.HarbourState, ship.IsMoving);
+            row.Place.text = isInCity && info.PortName != null ? info.PortName : FormatPosition(ship.Position);
             row.Destination.text = DestinationOf(info);
             row.Home.text = info.HomeName ?? NoValue;
             row.FinalDestination.text = info.FinalDestinationName ?? NoValue;

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using DarkFantasyMerchant.Core;
 using NUnit.Framework;
 using UnityEngine;
@@ -618,6 +619,127 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(5, ship.Cargo.Used);
             Assert.AreEqual(0, markets[D].AvailableOf(Fish));
             Assert.AreEqual(0, fleet.ProfitOf(ship));
+        }
+
+        // A harbour of one berth, crossed in 1 second either way, for each port of the given ones.
+        private Dictionary<Port, Harbour> UseHarbours()
+        {
+            var harbours = new Dictionary<Port, Harbour>();
+            docking = new ShipDocking<Port>(where =>
+            {
+                if (!harbours.TryGetValue(where, out Harbour harbour))
+                {
+                    harbour = TestHarbours.OneBerth(2f);
+                    harbours.Add(where, harbour);
+                }
+
+                return harbour;
+            });
+            return harbours;
+        }
+
+        // One step of ShipsView: the ships in a city do not sail.
+        private void Step(float seconds, params Ship[] ships)
+        {
+            foreach (Ship ship in ships)
+            {
+                if (!docking.IsInCity(ship))
+                {
+                    ship.Advance(seconds);
+                }
+            }
+
+            docking.Update(seconds);
+        }
+
+        [Test]
+        public void Advance_ShipInAHarbour_IsNotSentBack()
+        {
+            UseHarbours();
+            CreateOutAndBack();
+            Ship ship = AddShip(H);
+            Step(1f, ship);
+            Assert.IsTrue(docking.IsDocked(ship));
+            Depart();
+            Assert.AreSame(ports[D], docking.DestinationPortOf(ship));
+
+            // Another ship holds the only berth of D: the fleet's ship queues there.
+            var blocker = new Ship(projection, positions[D], Speed, TestCrew.Full, navigation, new CargoHold(200));
+            docking.OrderToPort(blocker, ports[D], positions[D]);
+            docking.Update(0f);
+            Step(1f, ship);
+            Step(1000f, ship);
+            Assert.AreEqual(HarbourState.Waiting, docking.StateOf(ship));
+
+            fleet.Advance(Stopover * 3d);
+            fleet.Advance(Stopover * 3d);
+
+            Assert.AreEqual(HarbourState.Waiting, docking.StateOf(ship));
+            Assert.AreSame(ports[D], docking.CityOf(ship));
+            Assert.IsNull(docking.DestinationPortOf(ship));
+            Assert.IsFalse(ship.IsMoving);
+
+            // The blocker leaves: the fleet's ship crosses the grid, still not sent back.
+            docking.OrderToPoint(blocker, GridAssert.CellCenter(grid, 4, 3));
+            Step(1.1f, ship, blocker);
+            Assert.AreEqual(HarbourState.Arriving, docking.StateOf(ship));
+
+            fleet.Advance(Stopover * 3d);
+
+            Assert.AreEqual(HarbourState.Arriving, docking.StateOf(ship));
+            Assert.IsNull(docking.DestinationPortOf(ship));
+            Assert.IsFalse(ship.IsMoving);
+
+            Step(1f, ship, blocker);
+
+            Assert.AreSame(ports[D], docking.PortOf(ship));
+        }
+
+        [Test]
+        public void Depart_FromAHarbour_SailsTheCachedRouteAfterTheEdge()
+        {
+            routes = new PortTravelTable(
+                new[] { GridAssert.CellCenter(grid, 0, 3), GridAssert.CellCenter(grid, 5, 0), GridAssert.CellCenter(grid, 0, 0) },
+                navigation,
+                projection,
+                5d);
+
+            while (!routes.IsComplete)
+            {
+                routes.MeasureNext();
+            }
+
+            UseHarbours();
+            CreateOutAndBack();
+
+            // Without a pathfinder, a ship would sail straight through the wall.
+            var ship = new Ship(projection, positions[H], Speed, TestCrew.Full, null, new CargoHold(200));
+            fleet.Add(ship, H);
+            Step(0f, ship);
+            Step(1f, ship);
+            Assert.IsTrue(docking.IsDocked(ship));
+            Vector2 anchorage = ship.Position;
+
+            Depart();
+
+            Assert.AreEqual(HarbourState.Leaving, docking.StateOf(ship));
+            Assert.AreSame(ports[D], docking.DestinationPortOf(ship));
+            CollectionAssert.AreEqual(routes.RouteBetween(H, D), ship.RemainingWaypoints);
+
+            Step(0.5f, ship);
+
+            Assert.AreEqual(anchorage, ship.Position);
+            CollectionAssert.AreEqual(routes.RouteBetween(H, D), ship.RemainingWaypoints);
+
+            Step(0.6f, ship);
+
+            Assert.IsFalse(docking.IsInCity(ship));
+            CollectionAssert.AreEqual(routes.RouteBetween(H, D), ship.RemainingWaypoints);
+
+            Step(1000f, ship);
+
+            Assert.AreEqual(HarbourState.Arriving, docking.StateOf(ship));
+            Assert.AreSame(ports[D], docking.CityOf(ship));
         }
 
         [Test]

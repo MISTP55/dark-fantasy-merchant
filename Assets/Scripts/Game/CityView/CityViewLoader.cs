@@ -280,7 +280,7 @@ namespace DarkFantasyMerchant.Game
             Ship ship = shipsView != null ? shipsView.Selection.Selected : null;
 
             // Only a ship of the player is awaited: the others arrive all the time.
-            return ship != null && ship.IsMoving && shipsView.IsPlayerShip(ship) ? ship : null;
+            return ship != null && shipsView.Docking.IsUnderWay(ship) && shipsView.IsPlayerShip(ship) ? ship : null;
         }
 
         private void SwitchMap(bool on)

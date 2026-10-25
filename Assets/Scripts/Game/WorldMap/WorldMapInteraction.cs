@@ -7,13 +7,13 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// Turns the cursor and clicks into hover and selection of ships and cities, and
     /// right clicks into move orders for the player's ships. At most one thing is hovered,
-    /// and one selected, except that a ship in port is selected together with the city it lies in.
+    /// and one selected, except that a ship in a city is selected together with that city.
     /// During fast forward nothing is hovered, selected or ordered, and any input goes
     /// back to normal speed, as does the arrival of the ship that was selected and under
-    /// way when it started, which the camera then shows in close-up, or whose port's city view
-    /// opens. Started from a city view, the ship that was selected and under way when the view
-    /// opened stands for the selected one. The ship that was selected is selected again
-    /// afterwards, or the city it has entered meanwhile.
+    /// way when it started: stopped at sea, the camera shows it in close-up; at its berth,
+    /// its city's view opens; in a city's queue, that city is selected. Started from a city view,
+    /// the ship that was selected and under way when the view opened stands for the selected one.
+    /// The ship that was selected is selected again afterwards, or the city it has entered meanwhile.
     /// </summary>
     public sealed class WorldMapInteraction : MonoBehaviour
     {
@@ -64,7 +64,7 @@ namespace DarkFantasyMerchant.Game
 
             if (shipsView != null)
             {
-                shipsView.Docking.Undocked += OnShipUndocked;
+                shipsView.Docking.CityStateChanged += OnShipCityStateChanged;
             }
 
             if (worldClock != null && worldClock.IsReady)
@@ -99,7 +99,7 @@ namespace DarkFantasyMerchant.Game
 
             if (shipsView != null)
             {
-                shipsView.Docking.Undocked -= OnShipUndocked;
+                shipsView.Docking.CityStateChanged -= OnShipCityStateChanged;
             }
 
             if (clock != null)
@@ -110,14 +110,19 @@ namespace DarkFantasyMerchant.Game
 
         private void Update()
         {
-            // A ship that enters a port has arrived too.
-            if (awaitedShip != null && !awaitedShip.IsMoving)
+            if (awaitedShip != null && HasArrived(awaitedShip, out HarbourState arrivedState))
             {
                 // Read before the end of the fast forward forgets the ship.
                 Ship arrivedShip = awaitedShip;
                 clock.SetFastForward(false);
 
-                if (cityViewLoader != null && shipsView != null && shipsView.Docking.IsDocked(arrivedShip))
+                // In a queue: the ship is selected again as its city, whose panel shows it waiting.
+                if (arrivedState == HarbourState.Waiting)
+                {
+                    return;
+                }
+
+                if (cityViewLoader != null && arrivedState == HarbourState.Docked)
                 {
                     // The selection is back (the port's city); opening clears it and switches this
                     // component off, so nothing more is picked this frame.
@@ -233,15 +238,16 @@ namespace DarkFantasyMerchant.Game
                 shipsView.Docking.OrderToPoint(ship, mapView.Projection.WorldToNormalized(worldPosition));
             }
 
-            // A ship that left its port is on the map again: its city's panel closes,
-            // which leaves the ship alone selected.
-            if (!shipsView.Docking.IsDocked(ship))
+            // A ship that left its city (from the queue, at once) is on the map again: its city's
+            // panel closes, which leaves the ship alone selected. One that crosses the harbour
+            // out stays in the panel until it is back at sea.
+            if (!shipsView.Docking.IsInCity(ship))
             {
                 mapView.Selection.ClearSelection();
             }
         }
 
-        // A ship in port is only selected while the panel of its city is open.
+        // A ship in a city is only selected while the panel of its city is open.
         private void OnCitySelected(CityDefinition city)
         {
             if (shipsView == null)
@@ -251,20 +257,39 @@ namespace DarkFantasyMerchant.Game
 
             Ship ship = shipsView.Selection.Selected;
 
-            if (ship != null && shipsView.Docking.IsDocked(ship)
-                && !ReferenceEquals(shipsView.Docking.PortOf(ship), city))
+            if (ship != null && shipsView.Docking.IsInCity(ship)
+                && !ReferenceEquals(shipsView.Docking.CityOf(ship), city))
             {
                 shipsView.Selection.ClearSelection();
             }
         }
 
-        // A ship that leaves its port by itself is on the map again, like one that is
+        // A ship that leaves its city by itself is on the map again, like one that is
         // ordered out: its city's panel closes, which leaves the ship alone selected.
-        private void OnShipUndocked(Ship ship, CityDefinition city)
+        private void OnShipCityStateChanged(Ship ship, CityDefinition city)
         {
-            if (ReferenceEquals(shipsView.Selection.Selected, ship) && ReferenceEquals(mapView.Selection.Selected, city))
+            if (shipsView.Docking.StateOf(ship) == HarbourState.AtSea
+                && ReferenceEquals(shipsView.Selection.Selected, ship) && ReferenceEquals(mapView.Selection.Selected, city))
             {
                 mapView.Selection.ClearSelection();
+            }
+        }
+
+        // The awaited ship has arrived at its berth, in a city's queue, or stopped at sea. Crossing
+        // a harbour, or lying still at the anchorage while it does, it has not.
+        private bool HasArrived(Ship ship, out HarbourState state)
+        {
+            state = shipsView.Docking.StateOf(ship);
+
+            switch (state)
+            {
+                case HarbourState.Docked:
+                case HarbourState.Waiting:
+                    return true;
+                case HarbourState.AtSea:
+                    return !ship.IsMoving;
+                default:
+                    return false;
             }
         }
 
@@ -297,14 +322,14 @@ namespace DarkFantasyMerchant.Game
             Ship shipOfView = cityViewLoader != null ? cityViewLoader.TakeShipUnderWay() : null;
             shipBeforeFastForward = shipsView != null ? shipsView.Selection.Selected : null;
 
-            if (shipBeforeFastForward == null && shipOfView != null && shipOfView.IsMoving
-                && shipsView != null && shipsView.Contains(shipOfView))
+            if (shipBeforeFastForward == null && shipOfView != null && shipsView != null
+                && shipsView.Contains(shipOfView) && shipsView.Docking.IsUnderWay(shipOfView))
             {
                 shipBeforeFastForward = shipOfView;
             }
 
             // Only a ship of the player is awaited: the others arrive all the time.
-            awaitedShip = shipBeforeFastForward != null && shipBeforeFastForward.IsMoving
+            awaitedShip = shipBeforeFastForward != null && shipsView.Docking.IsUnderWay(shipBeforeFastForward)
                 && shipsView.IsPlayerShip(shipBeforeFastForward)
                 ? shipBeforeFastForward
                 : null;
@@ -320,7 +345,7 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        // A ship that entered a port during the fast forward is not on the map any more:
+        // A ship that entered a city during the fast forward is not on the map any more:
         // its city is selected in its place.
         private void SelectAgain(Ship ship)
         {
@@ -330,9 +355,9 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            if (shipsView.Docking.IsDocked(ship))
+            if (shipsView.Docking.IsInCity(ship))
             {
-                mapView.Selection.Select(shipsView.Docking.PortOf(ship));
+                mapView.Selection.Select(shipsView.Docking.CityOf(ship));
             }
             else
             {

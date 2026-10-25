@@ -485,6 +485,7 @@ MonoBehaviour:
   shipScreenPixelsPerUnit: 32
   routeView: {fileID: 1824036736}
   worldClock: {fileID: 1809179065}
+  worldEconomy: {fileID: 1991110005}
   economy: {fileID: 11400000, guid: 004dcabd3ae3f0646992f6e3f1fa345a, type: 2}
 --- !u!4 &948842206
 Transform:

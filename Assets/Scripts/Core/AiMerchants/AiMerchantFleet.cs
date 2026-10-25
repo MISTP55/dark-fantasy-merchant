@@ -235,7 +235,10 @@ namespace DarkFantasyMerchant.Core
             return true;
         }
 
-        /// <summary>Counts the stopovers down and sends off the ships whose stopover is over.</summary>
+        /// <summary>
+        /// Counts the stopovers down and sends off the ships whose stopover is over. A ship in a city's
+        /// queue or crossing its harbour is on its way: its stopover starts when it docks.
+        /// </summary>
         /// <param name="seconds">Seconds of the world since the last call.</param>
         public void Advance(double seconds)
         {
@@ -258,7 +261,8 @@ namespace DarkFantasyMerchant.Core
                         Depart(merchant);
                     }
                 }
-                else if (!ship.IsMoving && docking.DestinationPortOf(ship) == null && !merchant.IsStranded)
+                else if (!ship.IsMoving && docking.DestinationPortOf(ship) == null && !merchant.IsStranded
+                    && !docking.IsInCity(ship))
                 {
                     // Idle at sea, which its own orders never leave it: back to a port it knows.
                     merchant.IsStranded = !SendTo(merchant, merchant.LastPort);

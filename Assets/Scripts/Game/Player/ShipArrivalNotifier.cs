@@ -4,7 +4,8 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// Tells the player when one of their ships reaches the end of its route, in a port or at sea.
+    /// Tells the player when one of their ships reaches the end of its route, at its berth or at sea,
+    /// and when it waits for a berth in a city's queue.
     /// </summary>
     public sealed class ShipArrivalNotifier : MonoBehaviour
     {
@@ -28,6 +29,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             shipsView.ShipArrived += OnShipArrived;
+            shipsView.ShipQueued += OnShipQueued;
             isBound = true;
         }
 
@@ -39,6 +41,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             shipsView.ShipArrived -= OnShipArrived;
+            shipsView.ShipQueued -= OnShipQueued;
             isBound = false;
         }
 
@@ -53,6 +56,30 @@ namespace DarkFantasyMerchant.Game
             return string.IsNullOrEmpty(cityName)
                 ? $"{shipName} a atteint sa destination."
                 : $"{shipName} a jeté l'ancre à {cityName}.";
+        }
+
+        /// <summary>
+        /// The text of a ship that entered a city's queue: "Navire marchand attend une place au port de Bruges.",
+        /// written as <see cref="FormatArrival"/> is.
+        /// </summary>
+        public static string FormatQueued(string shipName, string cityName)
+        {
+            return $"{shipName} attend une place au port de {cityName}.";
+        }
+
+        private void OnShipQueued(Ship ship, CityDefinition city)
+        {
+            if (city == null || !shipsView.IsPlayerShip(ship))
+            {
+                return;
+            }
+
+            string shipName = shipsView.DisplayNameOf(ship);
+
+            if (!string.IsNullOrEmpty(shipName))
+            {
+                playerNotifications.Feed.Post(FormatQueued(shipName, city.DisplayName));
+            }
         }
 
         private void OnShipArrived(Ship ship, CityDefinition city)

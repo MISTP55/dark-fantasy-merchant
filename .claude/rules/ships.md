@@ -25,9 +25,11 @@ paths:
 - At its anchorage, a ship enters the city (`StateOf`, `CityOf`, `IsInCity`): it queues or crosses the grid to its berth, and is docked (`IsDocked`, `PortOf`, `GetShipsIn`, `Docked`/`Undocked`) only at the berth. `GetShipsInCity` lists every state. A ship in a city keeps its map position at the anchorage and does not sail: its route is sailed only once it is back at sea, so `ShipsView` must advance only the ships not `IsInCity`.
 - Orders in a city: the route is worked out first from the anchorage, so an order the ship ignores changes nothing. A queued ship sails at once; an arriving or docked ship leaves (`Undocked` at once if it was docked) and sails its route when it reaches the edge; a leaving ship keeps leaving with the new route. An order to its own city changes nothing, except for a leaving ship, which turns back to its berth and drops its route (`Ship.Stop`). `Remove` takes a ship out of a city at once, whatever its state.
 - `CityStateChanged` is raised after every change of `StateOf`, the harbour's own (entered from the queue, berthed, exited) included, with the city.
-- A ship in port is not on the map: its view is inactive, its entry in `ShipWorldPositions` is NaN (which `CityPicker` skips), and it is deselected when it arrives.
+- A ship in a city, in any state, is not on the map: its view is inactive, its entry in `ShipWorldPositions` is NaN (which `CityPicker` skips), and it is deselected when it enters the city from the sea, not on its later changes of state (a ship selected from the city panel stays selected while it leaves). `ShipsView` follows this on `CityStateChanged` alone.
+- `ShipsView.Docking` is made on first use: other components listen to it in their `OnEnable`, which can come before `ShipsView.Awake`. Its harbours are `WorldEconomy.HarbourOf`, made with the grids in the economy's `Start`, before any ship can enter a city; without the economy, ports are entered at once.
 - `ShipArrivals` reports an arrival when a ship docks at its berth, or stops at sea; a route ending at an anchorage that leads into a queue or a grid is not an arrival. It reports the tracked ships that entered a queue, and are still in it, through `Queued`.
-- Selecting a ship from the city panel's "ships in port" tab keeps the city selected: the only case of two selections. `WorldMapInteraction` clears it as soon as another city, or none, is selected, and the panel follows a selected AI ship that leaves by itself (`ShipDocking.Undocked`).
+- Selecting a ship from the city panel's ships tab (every ship in the city, in every state) keeps the city selected: the only case of two selections. `WorldMapInteraction` tests "in a city" with `IsInCity`/`CityOf`, never `IsDocked`: it clears the ship as soon as another city, or none, is selected, and clears the city when the selected ship is back at sea (`CityStateChanged` to `AtSea`), by an order from the queue or at the edge of the harbour. Only docked ships trade (`GetShipsIn`).
+- `ShipDocking.LeaveCity` undocks before it raises `CityStateChanged`: a listener never sees a leaving ship counted as docked.
 
 ## Harbour traffic
 
@@ -35,3 +37,4 @@ paths:
 - A berth is reserved from the moment its ship enters the grid until it has left it by the edge, so a ship leaving (or turning round) still holds it. Turning round (`Leave`, `Return`) keeps the berth and only changes the direction.
 - Ships that find no free berth queue, first come first served; a queued ship enters on `Advance` or `Remove`, one per free berth.
 - The rest of a step is not carried over: a ship that docks or exits mid-step does not use the leftover distance.
+- The crossing speed is `PortDefinition.ShipCellsPerSecond`, in cells per second of world time, the same for every ship whatever its crew.

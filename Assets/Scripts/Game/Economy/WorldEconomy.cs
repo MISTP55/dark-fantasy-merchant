@@ -18,6 +18,7 @@ namespace DarkFantasyMerchant.Game
 
         private readonly Dictionary<CityDefinition, CityMarket> markets = new Dictionary<CityDefinition, CityMarket>();
         private readonly Dictionary<CityDefinition, CityGrid> grids = new Dictionary<CityDefinition, CityGrid>();
+        private readonly Dictionary<CityDefinition, Harbour> harbours = new Dictionary<CityDefinition, Harbour>();
 
         private GameClock clock;
 
@@ -57,6 +58,15 @@ namespace DarkFantasyMerchant.Game
         public CityGrid GridOf(CityDefinition city)
         {
             return city != null && grids.TryGetValue(city, out CityGrid grid) ? grid : null;
+        }
+
+        /// <returns>
+        /// The ships' traffic on a city's grid, made with the grid: the same for a city all game long. Null for a
+        /// city without a grid, whose port ships enter at once, and before the markets exist.
+        /// </returns>
+        public Harbour HarbourOf(CityDefinition city)
+        {
+            return city != null && harbours.TryGetValue(city, out Harbour harbour) ? harbour : null;
         }
 
         // Start, not Awake: WorldMapView lists its cities in its Awake.
@@ -101,6 +111,7 @@ namespace DarkFantasyMerchant.Game
             {
                 markets.Clear();
                 grids.Clear();
+                harbours.Clear();
                 return;
             }
 
@@ -159,6 +170,7 @@ namespace DarkFantasyMerchant.Game
                     {
                         grids[city] = grid;
                         WarnAboutRoom(city, grid, rooms);
+                        CreateHarbourOf(city, grid);
                     }
 
                     markets[city] = grid == null
@@ -195,6 +207,20 @@ namespace DarkFantasyMerchant.Game
             }
 
             return grid;
+        }
+
+        // A grid whose berths have no way out is refused by the map before it gets here; should one
+        // come, its port is entered at once rather than the game stopping.
+        private void CreateHarbourOf(CityDefinition city, CityGrid grid)
+        {
+            try
+            {
+                harbours[city] = new Harbour(grid, buildings.Port.ShipCellsPerSecond);
+            }
+            catch (ArgumentException exception)
+            {
+                Debug.LogWarning($"CityDefinition '{city.name}' has no usable harbour ({exception.Message}); ships enter its port at once.", city);
+            }
         }
 
         // The grid's room is kept, but a class short of the room its inhabitants need starts crowded.

@@ -14,4 +14,5 @@ paths:
 - The list's `top` in `NotificationsHud.uss` follows the height of the treasury label: change them together.
 - Notification texts have no article and nothing that agrees with the ship's name or elides before the city's; keep new ones that way.
 - `Ship.Arrived` is raised when a ship reaches the end of its route, not when an order replaces it. `ShipArrivals<TPort>` also counts a ship that enters a port without sailing, and `ShipsView` calls its `Report` after `Docking.Update`, so that the port is known.
+- `ShipArrivalNotifier` also posts, for the player's ships, the entry into a city's queue (`ShipsView.ShipQueued`, from `ShipArrivals.Queued`); entering the grid is not announced, docking at the berth is the arrival.
 - `PlayerExpenses` drives `WeeklyBilling` (Core) with `GameClock.DayStarted`; a new recurring expense is a new amount of `WeeklyBill`.

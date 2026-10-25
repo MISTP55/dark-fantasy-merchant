@@ -8,8 +8,8 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// Presents the hovered city's name and the selected city's information panel: the city
-    /// on the left, and on the right its market and the ships in its
-    /// port in two tabs, and a button that asks for the city view. The market trades with the player's ship chosen in its drop-down
+    /// on the left, and on the right its market and the ships in the city (waiting,
+    /// crossing its harbour or in port) in two tabs, and a button that asks for the city view. The market trades with the player's ship chosen in its drop-down
     /// list; clicking a ship in the ships tab selects it, so that it can be ordered out.
     /// Reads the map's selection state; knows nothing about markers.
     /// </summary>
@@ -89,6 +89,9 @@ namespace DarkFantasyMerchant.Game
         // Ship of each row of the ship list, in the same order.
         private readonly List<Ship> listedShips = new List<Ship>();
 
+        // The ships in port in the shown city: only they can trade.
+        private readonly List<Ship> dockedShips = new List<Ship>();
+
         // The player's ships in the shown port, in the order of the drop-down list.
         private readonly List<Ship> tradingShips = new List<Ship>();
 
@@ -163,8 +166,7 @@ namespace DarkFantasyMerchant.Game
 
             if (shipsView != null)
             {
-                shipsView.Docking.Docked += OnDockingChanged;
-                shipsView.Docking.Undocked += OnDockingChanged;
+                shipsView.Docking.CityStateChanged += OnCityStateChanged;
                 shipsView.Selection.SelectedChanged += OnShipSelected;
             }
 
@@ -194,8 +196,7 @@ namespace DarkFantasyMerchant.Game
 
             if (shipsView != null)
             {
-                shipsView.Docking.Docked -= OnDockingChanged;
-                shipsView.Docking.Undocked -= OnDockingChanged;
+                shipsView.Docking.CityStateChanged -= OnCityStateChanged;
                 shipsView.Selection.SelectedChanged -= OnShipSelected;
             }
 
@@ -283,6 +284,28 @@ namespace DarkFantasyMerchant.Game
         public static string ShipsTabText(int shipCount)
         {
             return $"Navires au port ({TreasuryHudController.FormatNumber(shipCount)})";
+        }
+
+        /// <summary>Where a ship of the ships tab stands in the city: "à quai", "en attente", "arrive", "repart".</summary>
+        public static string ShipStateText(HarbourState state)
+        {
+            switch (state)
+            {
+                case HarbourState.Waiting:
+                    return "en attente";
+                case HarbourState.Arriving:
+                    return "arrive";
+                case HarbourState.Leaving:
+                    return "repart";
+                default:
+                    return "à quai";
+            }
+        }
+
+        /// <summary>A row of the ships tab: "Aurore — à quai".</summary>
+        public static string ShipRowText(string name, HarbourState state)
+        {
+            return $"{name} — {ShipStateText(state)}";
         }
 
         private void ShowHovered(CityDefinition city)
@@ -384,11 +407,14 @@ namespace DarkFantasyMerchant.Game
         {
             shipList.Clear();
             listedShips.Clear();
+            dockedShips.Clear();
 
             if (shipsView != null)
             {
-                shipsView.Docking.GetShipsIn(city, listedShips);
+                shipsView.Docking.GetShipsInCity(city, listedShips);
                 NameOrder.Sort(listedShips, shipsView.DisplayNameOf);
+                shipsView.Docking.GetShipsIn(city, dockedShips);
+                NameOrder.Sort(dockedShips, shipsView.DisplayNameOf);
             }
 
             foreach (Ship ship in listedShips)
@@ -396,7 +422,7 @@ namespace DarkFantasyMerchant.Game
                 // Clicking the selected ship again deselects it.
                 var row = new Button(() => shipsView.Selection.Select(
                     ReferenceEquals(shipsView.Selection.Selected, ship) ? null : ship));
-                row.text = shipsView.DisplayNameOf(ship);
+                row.text = ShipRowText(shipsView.DisplayNameOf(ship), shipsView.Docking.StateOf(ship));
 
                 // Rows are clicked, not navigated: the keyboard pans the map.
                 row.focusable = false;
@@ -412,13 +438,13 @@ namespace DarkFantasyMerchant.Game
             ChooseTradingShip(keptTradingShip);
         }
 
-        // After the ship list: the ships that can trade are among the ships listed.
+        // After the ship list: the ships that can trade are among the ships in port.
         private void ChooseTradingShip(Ship current)
         {
             if (shipsView != null)
             {
-                TradingShipChoice.PlayerShipsAmong(listedShips, shipsView.IsPlayerShip, tradingShips);
-                tradingShip = TradingShipChoice.Choose(listedShips, shipsView.IsPlayerShip, current);
+                TradingShipChoice.PlayerShipsAmong(dockedShips, shipsView.IsPlayerShip, tradingShips);
+                tradingShip = TradingShipChoice.Choose(dockedShips, shipsView.IsPlayerShip, current);
             }
             else
             {
@@ -469,7 +495,7 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        private void OnDockingChanged(Ship ship, CityDefinition city)
+        private void OnCityStateChanged(Ship ship, CityDefinition city)
         {
             if (ReferenceEquals(city, mapView.Selection.Selected))
             {
@@ -484,7 +510,7 @@ namespace DarkFantasyMerchant.Game
 
             // A ship of the player picked in the ships tab also becomes the one that trades;
             // any other selection leaves the market as it is.
-            if (mapView.Selection.Selected != null && shipsView.IsPlayerShip(ship) && listedShips.Contains(ship))
+            if (mapView.Selection.Selected != null && shipsView.IsPlayerShip(ship) && dockedShips.Contains(ship))
             {
                 ChooseTradingShip(ship);
                 ShowMarketOf(mapView.Selection.Selected);
