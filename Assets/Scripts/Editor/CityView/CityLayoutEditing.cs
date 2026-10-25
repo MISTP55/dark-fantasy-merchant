@@ -18,7 +18,7 @@ namespace DarkFantasyMerchant.Editor
             return buildings.HouseOf(housedClass).Footprint;
         }
 
-        /// <summary>Gives the layout the size; the forbidden cells and the houses that fall outside are dropped.</summary>
+        /// <summary>Gives the layout the size; the water cells, the houses, the town hall, the port and the roads that fall outside are dropped.</summary>
         public static void Resize(CityLayoutDefinition layout, BuildingsDefinition buildings, int width, int height)
         {
             width = Mathf.Max(1, width);
@@ -59,6 +59,19 @@ namespace DarkFantasyMerchant.Editor
                 }
             }
 
+            PortSite? port = null;
+
+            if (layout.HasPort)
+            {
+                PortSite site = layout.PortSite;
+                Vector2Int portSize = PortSize(buildings, site);
+
+                if (site.Origin.x + portSize.x <= width && site.Origin.y + portSize.y <= height)
+                {
+                    port = site;
+                }
+            }
+
             var roads = new List<Vector2Int>();
 
             foreach (Vector2Int road in layout.Roads)
@@ -69,7 +82,7 @@ namespace DarkFantasyMerchant.Editor
                 }
             }
 
-            Apply(layout, "Resize city layout", width, height, forbidden, houses, townHall, roads);
+            Apply(layout, "Resize city layout", width, height, forbidden, houses, townHall, roads, port);
         }
 
         /// <summary>The cells the town hall covers when placed with this orientation.</summary>
@@ -79,7 +92,7 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <summary>
-        /// Whether the town hall can stand at the place: inside the grid, on no forbidden cell, road or house. Its
+        /// Whether the town hall can stand at the place: inside the grid, on no water cell, road, house or port. Its
         /// own current place does not count.
         /// </summary>
         public static bool CanPlaceTownHall(CityLayoutDefinition layout, BuildingsDefinition buildings, GridPlace place)
@@ -98,7 +111,8 @@ namespace DarkFantasyMerchant.Editor
                     var cell = new Vector2Int(place.Origin.x + x, place.Origin.y + y);
 
                     if (!IsInside(layout, cell) || IsForbiddenIn(layout, cell)
-                        || HouseIndexAt(layout, buildings, cell) >= 0 || IsRoadIn(layout, cell))
+                        || HouseIndexAt(layout, buildings, cell) >= 0 || IsRoadIn(layout, cell)
+                        || IsUnderPort(layout, buildings, cell))
                     {
                         return false;
                     }
@@ -121,7 +135,7 @@ namespace DarkFantasyMerchant.Editor
                 return true;
             }
 
-            Apply(layout, "Place town hall", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, place, layout.Roads);
+            Apply(layout, "Place town hall", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, place, layout.Roads, PortOf(layout));
             return true;
         }
 
@@ -133,11 +147,75 @@ namespace DarkFantasyMerchant.Editor
                 return;
             }
 
-            Apply(layout, "Remove town hall", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, null, layout.Roads);
+            Apply(layout, "Remove town hall", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, null, layout.Roads, PortOf(layout));
+        }
+
+        /// <summary>The port's footprint split into water and land rows, from the catalogue.</summary>
+        public static PortFootprint PortFootprintOf(BuildingsDefinition buildings)
+        {
+            return buildings.Port.PortFootprint;
+        }
+
+        /// <summary>The cells the port covers when it stands at the site.</summary>
+        public static Vector2Int PortSize(BuildingsDefinition buildings, PortSite site)
+        {
+            return buildings.Port.Footprint.SizeFor(site.Place.Orientation);
         }
 
         /// <summary>
-        /// Adds roads or removes them. The cells outside the grid, forbidden, or under the town hall or a house are
+        /// Whether the port can stand at the site: inside the grid, on no building, its front rows on water and its
+        /// back rows on land. Its own current place does not count.
+        /// </summary>
+        public static bool CanPlacePort(CityLayoutDefinition layout, BuildingsDefinition buildings, PortSite site)
+        {
+            return TryMakeGrid(layout, buildings, false, out CityGrid grid) && grid.CanPlacePort(PortFootprintOf(buildings), site);
+        }
+
+        /// <summary>Places the port or moves it; false, and nothing recorded, when it cannot stand there.</summary>
+        public static bool SetPort(CityLayoutDefinition layout, BuildingsDefinition buildings, PortSite site)
+        {
+            if (!CanPlacePort(layout, buildings, site))
+            {
+                return false;
+            }
+
+            if (layout.HasPort && layout.PortSite.Origin == site.Origin && layout.PortSite.Facing == site.Facing)
+            {
+                return true;
+            }
+
+            Apply(layout, "Place port", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, TownHallOf(layout), layout.Roads, site);
+            return true;
+        }
+
+        /// <summary>Takes the port away; records nothing when there is none.</summary>
+        public static void RemovePort(CityLayoutDefinition layout)
+        {
+            if (!layout.HasPort)
+            {
+                return;
+            }
+
+            Apply(layout, "Remove port", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, TownHallOf(layout), layout.Roads, null);
+        }
+
+        /// <summary>Whether the layout's port covers the cell.</summary>
+        public static bool IsUnderPort(CityLayoutDefinition layout, BuildingsDefinition buildings, Vector2Int cell)
+        {
+            if (!layout.HasPort)
+            {
+                return false;
+            }
+
+            PortSite site = layout.PortSite;
+            Vector2Int size = PortSize(buildings, site);
+
+            return cell.x >= site.Origin.x && cell.x < site.Origin.x + size.x
+                && cell.y >= site.Origin.y && cell.y < site.Origin.y + size.y;
+        }
+
+        /// <summary>
+        /// Adds roads or removes them. The cells outside the grid, on water, or under the town hall, the port or a house are
         /// skipped. Records nothing when no cell changes.
         /// </summary>
         public static void SetRoads(CityLayoutDefinition layout, BuildingsDefinition buildings, IEnumerable<Vector2Int> cells, bool add)
@@ -157,7 +235,8 @@ namespace DarkFantasyMerchant.Editor
                     changed |= roads.Remove(cell);
                 }
                 else if (!roads.Contains(cell) && !IsForbiddenIn(layout, cell)
-                    && HouseIndexAt(layout, buildings, cell) < 0 && !IsUnderTownHall(layout, buildings, cell))
+                    && HouseIndexAt(layout, buildings, cell) < 0 && !IsUnderTownHall(layout, buildings, cell)
+                    && !IsUnderPort(layout, buildings, cell))
                 {
                     roads.Add(cell);
                     changed = true;
@@ -168,7 +247,7 @@ namespace DarkFantasyMerchant.Editor
             {
                 Apply(
                     layout, add ? "Lay roads" : "Remove roads", layout.Width, layout.Height,
-                    layout.ForbiddenCells, layout.StartingHouses, TownHallOf(layout), roads);
+                    layout.ForbiddenCells, layout.StartingHouses, TownHallOf(layout), roads, PortOf(layout));
             }
         }
 
@@ -192,6 +271,7 @@ namespace DarkFantasyMerchant.Editor
             if (townHall == null)
             {
                 var bare = new CityGrid(layout.Width, layout.Height, layout.ForbiddenCells, buildings.RoadContact);
+                PlacePortOf(layout, buildings, bare);
                 var centre = new Vector2(layout.Width / 2f, layout.Height / 2f);
 
                 if (layout.StartingHouses.Count > 0)
@@ -229,6 +309,7 @@ namespace DarkFantasyMerchant.Editor
 
             var grid = new CityGrid(layout.Width, layout.Height, layout.ForbiddenCells, buildings.RoadContact);
             grid.Place(BuildingKind.TownHall(), BuildingOwner.City, buildings.TownHall.Footprint, townHall.Value);
+            PlacePortOf(layout, buildings, grid);
 
             foreach (Vector2Int road in roads)
             {
@@ -282,10 +363,19 @@ namespace DarkFantasyMerchant.Editor
             {
                 Apply(
                     layout, "Town hall and roads", layout.Width, layout.Height,
-                    layout.ForbiddenCells, layout.StartingHouses, townHall, roads);
+                    layout.ForbiddenCells, layout.StartingHouses, townHall, roads, PortOf(layout));
             }
 
             return unconnected;
+        }
+
+        // Only for a layout whose content stands (TryMakeGrid).
+        private static void PlacePortOf(CityLayoutDefinition layout, BuildingsDefinition buildings, CityGrid grid)
+        {
+            if (layout.HasPort)
+            {
+                grid.PlacePort(PortFootprintOf(buildings), layout.PortSite);
+            }
         }
 
         /// <summary>Whether the layout's town hall covers the cell.</summary>
@@ -306,6 +396,11 @@ namespace DarkFantasyMerchant.Editor
         private static GridPlace? TownHallOf(CityLayoutDefinition layout)
         {
             return layout.HasTownHall ? layout.TownHallPlace : (GridPlace?)null;
+        }
+
+        private static PortSite? PortOf(CityLayoutDefinition layout)
+        {
+            return layout.HasPort ? layout.PortSite : (PortSite?)null;
         }
 
         private static bool IsForbiddenIn(CityLayoutDefinition layout, Vector2Int cell)
@@ -335,8 +430,9 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <summary>
-        /// Forbids the cells or frees them. The cells outside the grid, and when forbidding those a house covers, are
-        /// skipped. Records nothing when no cell changes.
+        /// Makes the cells water or frees them. The cells outside the grid or under the port, and when making water
+        /// those a house, the town hall or a road covers, are skipped. Records nothing when no cell changes.
+        /// The port's cells are left as they are, so that it never ends up standing wrong.
         /// </summary>
         public static void SetForbidden(CityLayoutDefinition layout, BuildingsDefinition buildings, IEnumerable<Vector2Int> cells, bool forbid)
         {
@@ -345,7 +441,7 @@ namespace DarkFantasyMerchant.Editor
 
             foreach (Vector2Int cell in cells)
             {
-                if (!IsInside(layout, cell))
+                if (!IsInside(layout, cell) || IsUnderPort(layout, buildings, cell))
                 {
                     continue;
                 }
@@ -436,10 +532,15 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <summary>
-        /// The grid of the layout's content, without requiring a town hall (a layout being edited may have none yet);
-        /// false when something in it cannot stand.
+        /// The grid of the layout's content, without requiring a town hall or a port (a layout being edited may have
+        /// none yet); false when something in it cannot stand.
         /// </summary>
         public static bool TryMakeGrid(CityLayoutDefinition layout, BuildingsDefinition buildings, out CityGrid grid)
+        {
+            return TryMakeGrid(layout, buildings, true, out grid);
+        }
+
+        private static bool TryMakeGrid(CityLayoutDefinition layout, BuildingsDefinition buildings, bool withPort, out CityGrid grid)
         {
             grid = new CityGrid(layout.Width, layout.Height, layout.ForbiddenCells, buildings.RoadContact);
 
@@ -453,6 +554,16 @@ namespace DarkFantasyMerchant.Editor
                 }
 
                 grid.Place(BuildingKind.TownHall(), BuildingOwner.City, hall, layout.TownHallPlace);
+            }
+
+            if (withPort && layout.HasPort)
+            {
+                if (!grid.CanPlacePort(PortFootprintOf(buildings), layout.PortSite))
+                {
+                    return false;
+                }
+
+                grid.PlacePort(PortFootprintOf(buildings), layout.PortSite);
             }
 
             foreach (Vector2Int road in layout.Roads)
@@ -542,16 +653,16 @@ namespace DarkFantasyMerchant.Editor
             CityLayoutDefinition layout, string undoName, int width, int height,
             IEnumerable<Vector2Int> forbidden, IEnumerable<CityLayoutDefinition.StartingHouse> houses)
         {
-            Apply(layout, undoName, width, height, forbidden, houses, TownHallOf(layout), layout.Roads);
+            Apply(layout, undoName, width, height, forbidden, houses, TownHallOf(layout), layout.Roads, PortOf(layout));
         }
 
         private static void Apply(
             CityLayoutDefinition layout, string undoName, int width, int height,
             IEnumerable<Vector2Int> forbidden, IEnumerable<CityLayoutDefinition.StartingHouse> houses,
-            GridPlace? townHall, IEnumerable<Vector2Int> roads)
+            GridPlace? townHall, IEnumerable<Vector2Int> roads, PortSite? port)
         {
             Undo.RecordObject(layout, undoName);
-            layout.SetContent(width, height, forbidden, houses, townHall, new List<Vector2Int>(roads));
+            layout.SetContent(width, height, forbidden, houses, townHall, new List<Vector2Int>(roads), port);
             EditorUtility.SetDirty(layout);
         }
     }

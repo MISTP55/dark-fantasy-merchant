@@ -21,18 +21,23 @@ namespace DarkFantasyMerchant.Editor
             WealthyHouse,
             PoorHouse,
             TownHall,
+            Port,
             Road,
             Erase,
         }
 
-        private static readonly string[] ToolLabels = { "Water", "Rich house", "Wealthy house", "Poor house", "Town hall", "Road", "Erase" };
+        private static readonly string[] ToolLabels = { "Water", "Rich house", "Wealthy house", "Poor house", "Town hall", "Port", "Road", "Erase" };
 
         private static readonly Color FreeCell = new Color32(0x3B, 0x4A, 0x3A, 0xFF);
         private static readonly Color ForbiddenCell = new Color32(0x24, 0x43, 0x5E, 0xFF);
         private static readonly Color ValidGhost = new Color32(0x6F, 0xBF, 0x73, 0x99);
         private static readonly Color InvalidGhost = new Color32(0xD0, 0x50, 0x50, 0x99);
+        private static readonly Color ValidWaterGhost = new Color32(0x4F, 0x9F, 0xC8, 0x99);
+        private static readonly Color InvalidWaterGhost = new Color32(0x90, 0x30, 0x60, 0x99);
         private static readonly Color TownHallColor = new Color32(0xC9, 0xA2, 0x27, 0xFF);
         private static readonly Color RoadColor = new Color32(0x8A, 0x7B, 0x62, 0xFF);
+        private static readonly Color PortColor = new Color32(0x7A, 0x4E, 0x2E, 0xFF);
+        private static readonly Color PortWaterColor = new Color32(0xB0, 0x8A, 0x5C, 0xFF);
         private static readonly Color ShortageColor = new Color32(0xD0, 0x50, 0x50, 0xFF);
         private static readonly Color GridLine = new Color(0f, 0f, 0f, 0.35f);
 
@@ -43,13 +48,14 @@ namespace DarkFantasyMerchant.Editor
         private const int MaxBrush = 15;
 
         // Room above the grid for the fields, the tools and the rooms lines.
-        private const float HeaderHeight = 270f;
+        private const float HeaderHeight = 310f;
 
         private CityDefinition city;
         private EconomyDefinition economy;
         private BuildingsDefinition buildings;
         private Tool tool = Tool.Water;
         private BuildingOrientation orientation = BuildingOrientation.Along;
+        private PortFacing portFacing = PortFacing.North;
         private int brushSize = 1;
         private bool roundBrush;
         private int widthField;
@@ -198,10 +204,15 @@ namespace DarkFantasyMerchant.Editor
                 EditorGUILayout.HelpBox("The layout has no town hall: place one with the Town hall tool, or use the Town hall and roads button.", MessageType.Warning);
             }
 
+            if (!layout.HasPort)
+            {
+                EditorGUILayout.HelpBox("The layout has no port: paint water, then place one with the Port tool.", MessageType.Warning);
+            }
+
             if (!CityLayoutEditing.TryMakeGrid(layout, buildings, out CityGrid grid))
             {
                 CancelTrace();
-                EditorGUILayout.HelpBox("Something in the layout cannot stand: a town hall, a road or a house is outside the grid, on a forbidden cell or on another building.", MessageType.Error);
+                EditorGUILayout.HelpBox("Something in the layout cannot stand: a town hall, a port, a road or a house is outside the grid, on a wrong cell or on another building.", MessageType.Error);
                 return;
             }
 
@@ -240,14 +251,29 @@ namespace DarkFantasyMerchant.Editor
 
             EditorGUILayout.LabelField("Left click paints, right click erases only what the selected tool paints. Road: drag an L.", EditorStyles.miniLabel);
 
-            bool across = GUILayout.Toggle(orientation == BuildingOrientation.Across, "Across (R turns the house or the town hall)");
-            orientation = across ? BuildingOrientation.Across : BuildingOrientation.Along;
+            if (tool == Tool.Port)
+            {
+                EditorGUILayout.LabelField($"Port facing: {portFacing} (R turns it a quarter turn; its water rows are on that side)");
+            }
+            else
+            {
+                bool across = GUILayout.Toggle(orientation == BuildingOrientation.Across, "Across (R turns the house or the town hall)");
+                orientation = across ? BuildingOrientation.Across : BuildingOrientation.Along;
+            }
 
             Event current = Event.current;
 
             if (current.type == EventType.KeyDown && current.keyCode == KeyCode.R)
             {
-                orientation = orientation == BuildingOrientation.Along ? BuildingOrientation.Across : BuildingOrientation.Along;
+                if (tool == Tool.Port)
+                {
+                    portFacing = PortFacings.Turned(portFacing);
+                }
+                else
+                {
+                    orientation = orientation == BuildingOrientation.Along ? BuildingOrientation.Across : BuildingOrientation.Along;
+                }
+
                 current.Use();
                 Repaint();
             }
@@ -359,6 +385,19 @@ namespace DarkFantasyMerchant.Editor
                 {
                     EditorGUI.DrawRect(rect, TownHallColor);
                 }
+                else if (building.Kind.IsPort)
+                {
+                    var site = new PortSite(origin, building.PortFacing);
+                    PortFootprint port = CityLayoutEditing.PortFootprintOf(buildings);
+
+                    for (int y = origin.y; y < origin.y + size.y; y++)
+                    {
+                        for (int x = origin.x; x < origin.x + size.x; x++)
+                        {
+                            EditorGUI.DrawRect(CellRect(x, y), port.IsWater(site, new Vector2Int(x, y)) ? PortWaterColor : PortColor);
+                        }
+                    }
+                }
                 else
                 {
                     EditorGUI.DrawRect(rect, HouseColors.Of(building.Kind.HousedClass));
@@ -444,6 +483,24 @@ namespace DarkFantasyMerchant.Editor
                 var rect = new Rect(low.x, low.yMax - size.y * low.height, size.x * low.width, size.y * low.height);
                 EditorGUI.DrawRect(rect, valid ? ValidGhost : InvalidGhost);
             }
+            else if (tool == Tool.Port)
+            {
+                // Cell by cell, so that the water rows show which way the port faces.
+                var site = new PortSite(hovered, portFacing);
+                PortFootprint port = CityLayoutEditing.PortFootprintOf(buildings);
+                Vector2Int size = CityLayoutEditing.PortSize(buildings, site);
+                bool valid = CityLayoutEditing.CanPlacePort(layout, buildings, site);
+
+                for (int y = hovered.y; y < hovered.y + size.y; y++)
+                {
+                    for (int x = hovered.x; x < hovered.x + size.x; x++)
+                    {
+                        bool water = port.IsWater(site, new Vector2Int(x, y));
+                        Color color = valid ? (water ? ValidWaterGhost : ValidGhost) : (water ? InvalidWaterGhost : InvalidGhost);
+                        EditorGUI.DrawRect(cellRect(x, y), color);
+                    }
+                }
+            }
             else
             {
                 foreach (Vector2Int cell in BrushCells(layout, hovered))
@@ -488,6 +545,20 @@ namespace DarkFantasyMerchant.Editor
                 else if (down)
                 {
                     CityLayoutEditing.SetTownHall(layout, buildings, new GridPlace(hovered, orientation));
+                }
+            }
+            else if (tool == Tool.Port)
+            {
+                if (erases)
+                {
+                    if (CityLayoutEditing.IsUnderPort(layout, buildings, hovered))
+                    {
+                        CityLayoutEditing.RemovePort(layout);
+                    }
+                }
+                else if (down)
+                {
+                    CityLayoutEditing.SetPort(layout, buildings, new PortSite(hovered, portFacing));
                 }
             }
             else
