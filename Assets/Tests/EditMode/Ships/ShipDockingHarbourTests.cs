@@ -382,6 +382,27 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void StartingToLeave_IsUndockedBeforeTheStateChangeIsRaised()
+        {
+            Ship ship = DockedShip();
+            bool? dockedWhenRaised = null;
+            var inPort = new List<Ship>();
+            docking.CityStateChanged += (s, where) =>
+            {
+                if (s == ship && docking.StateOf(s) == HarbourState.Leaving)
+                {
+                    dockedWhenRaised = docking.IsDocked(s);
+                    docking.GetShipsIn(port, inPort);
+                }
+            };
+
+            docking.OrderToPoint(ship, Cell(4, 3));
+
+            Assert.AreEqual(false, dockedWhenRaised);
+            Assert.IsEmpty(inPort);
+        }
+
+        [Test]
         public void NoHarbour_DocksAtOnce()
         {
             Ship ship = CreateShip();

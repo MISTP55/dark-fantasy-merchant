@@ -382,8 +382,8 @@ namespace DarkFantasyMerchant.Core
             }
 
             stay.Harbour.Leave(ship);
-            CityStateChanged?.Invoke(ship, stay.City);
             Undock(ship);
+            CityStateChanged?.Invoke(ship, stay.City);
         }
 
         private void Listen(Harbour harbour, TPort port)
