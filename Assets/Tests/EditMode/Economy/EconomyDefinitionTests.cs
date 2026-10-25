@@ -400,7 +400,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             grid.Place(BuildingKind.TownHall(), BuildingOwner.City, new Footprint(3, 2),
                 new GridPlace(new Vector2Int(8, 9), BuildingOrientation.Along));
             var placement = new RoadsidePlacement(new System.Random(1));
-            Assert.IsTrue(StartingHouses.TryPlace(grid, new PerClass<int>(2, 3, 5), footprints, placement));
+            Assert.IsTrue(StartingHouses.TryPlace(grid, new PerClass<int>(2, 3, 5), footprints, new System.Random(1)));
 
             // A house off the network: its room comes only when it connects.
             grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, footprints.Poor,

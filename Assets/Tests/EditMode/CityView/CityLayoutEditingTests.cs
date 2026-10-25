@@ -216,61 +216,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void AutoConnect_PlacesTownHallAndConnectsEveryHouse()
-        {
-            CityLayoutEditing.RemoveTownHall(layout);
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(1, 1));
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(7, 7));
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Wealthy, Along(1, 8));
-
-            int left = CityLayoutEditing.AutoConnect(layout, buildings);
-
-            Assert.AreEqual(0, left);
-            Assert.IsTrue(layout.HasTownHall);
-            Assert.IsTrue(CityLayoutEditing.TryMakeGrid(layout, buildings, out CityGrid grid));
-            Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Poor));
-            Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Rich));
-            Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Wealthy));
-        }
-
-        [Test]
-        public void AutoConnect_WalledInHouse_IsCounted()
-        {
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(1, 5));
-
-            for (int x = 0; x <= 3; x++)
-            {
-                for (int y = 4; y <= 6; y++)
-                {
-                    if (x < 1 || x > 2 || y != 5)
-                    {
-                        Forbid(new Vector2Int(x, y));
-                    }
-                }
-            }
-
-            Assert.AreEqual(1, CityLayoutEditing.AutoConnect(layout, buildings));
-            Assert.AreEqual(0, layout.Roads.Count);
-        }
-
-        [Test]
-        public void AutoConnect_Twice_ChangesNothing()
-        {
-            CityLayoutEditing.RemoveTownHall(layout);
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(1, 1));
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(7, 7));
-            CityLayoutEditing.AutoConnect(layout, buildings);
-
-            GridPlace hall = layout.TownHallPlace;
-            var roads = new List<Vector2Int>(layout.Roads);
-
-            Assert.AreEqual(0, CityLayoutEditing.AutoConnect(layout, buildings));
-
-            Assert.AreEqual(hall, layout.TownHallPlace);
-            CollectionAssert.AreEqual(roads, layout.Roads);
-        }
-
-        [Test]
         public void Resize_DropsRoadsAndTownHallOutside()
         {
             CityLayoutEditing.SetRoads(layout, buildings, new[] { new Vector2Int(1, 1), new Vector2Int(8, 8) }, true);
@@ -300,60 +245,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityLayoutEditing.SetForbidden(layout, buildings, new[] { new Vector2Int(5, 1), new Vector2Int(2, 2), new Vector2Int(8, 8) }, true);
 
             CollectionAssert.AreEqual(new[] { new Vector2Int(8, 8) }, layout.ForbiddenCells);
-        }
-
-        [Test]
-        public void AutoConnect_KeepsAnExistingTownHall()
-        {
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(1, 8));
-
-            Assert.AreEqual(0, CityLayoutEditing.AutoConnect(layout, buildings));
-
-            Assert.AreEqual(Along(4, 0), layout.TownHallPlace);
-            Assert.Greater(layout.Roads.Count, 0);
-        }
-
-        [Test]
-        public void AutoConnect_OverlappingContent_ReturnsTheHouseCountAndChangesNothing()
-        {
-            layout.SetContent(
-                10, 10, new Vector2Int[0],
-                new[]
-                {
-                    new CityLayoutDefinition.StartingHouse(SocialClass.Poor, new Vector2Int(0, 0), BuildingOrientation.Along),
-                    new CityLayoutDefinition.StartingHouse(SocialClass.Rich, new Vector2Int(0, 0), BuildingOrientation.Along),
-                },
-                null, new Vector2Int[0], null);
-
-            Assert.AreEqual(2, CityLayoutEditing.AutoConnect(layout, buildings));
-
-            Assert.IsFalse(layout.HasTownHall);
-            Assert.AreEqual(0, layout.Roads.Count);
-        }
-
-        [Test]
-        public void AutoConnect_WithNoRoomForATownHall_ReturnsTheHouseCountAndChangesNothing()
-        {
-            CityLayoutEditing.RemoveTownHall(layout);
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(0, 0));
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(5, 5));
-
-            // Forbid a cell in every possible hall position: a row of cells every 2 columns blocks 3x2 and 2x3 alike.
-            for (int x = 0; x < 10; x += 2)
-            {
-                for (int y = 0; y < 10; y += 2)
-                {
-                    if (CityLayoutEditing.HouseIndexAt(layout, buildings, new Vector2Int(x, y)) < 0)
-                    {
-                        Forbid(new Vector2Int(x, y));
-                    }
-                }
-            }
-
-            Assert.AreEqual(2, CityLayoutEditing.AutoConnect(layout, buildings));
-
-            Assert.IsFalse(layout.HasTownHall);
-            Assert.AreEqual(0, layout.Roads.Count);
         }
     }
 }

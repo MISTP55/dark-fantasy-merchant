@@ -62,7 +62,7 @@ namespace DarkFantasyMerchant.Editor
         private int heightField;
         private CityLayoutDefinition shownLayout;
         private Vector2 scroll;
-        private int lastUnconnected;
+        private string lastRegenerationProblem;
 
         // The Road tool's trace, as in the city view: an L from the pressed cell to the one under the pointer, laid
         // (left button) or removed (right button) in one edit on release.
@@ -187,7 +187,7 @@ namespace DarkFantasyMerchant.Editor
 
                 if (GUILayout.Button("Create layout"))
                 {
-                    WorldMapSetup.TryCreateLayout(city, economy, buildings, IndexInMap(city));
+                    WorldMapSetup.TryCreateLayout(city, economy, buildings, MaskOfMap(), IndexInMap(city));
                     AssetDatabase.SaveAssets();
                 }
 
@@ -198,23 +198,23 @@ namespace DarkFantasyMerchant.Editor
             {
                 CancelTrace();
                 shownLayout = layout;
-                lastUnconnected = 0;
+                lastRegenerationProblem = null;
                 widthField = layout.Width;
                 heightField = layout.Height;
             }
 
             DrawSizeFields(layout);
             DrawTools();
-            DrawAutoConnect(layout);
+            DrawRegenerate(layout);
 
             if (!layout.HasTownHall)
             {
-                EditorGUILayout.HelpBox("The layout has no town hall: place one with the Town hall tool, or use the Town hall and roads button.", MessageType.Warning);
+                EditorGUILayout.HelpBox("The layout has no town hall: place one with the Town hall tool, or regenerate the layout.", MessageType.Warning);
             }
 
             if (!layout.HasPort)
             {
-                EditorGUILayout.HelpBox("The layout has no port: paint water, then place one with the Port tool.", MessageType.Warning);
+                EditorGUILayout.HelpBox("The layout has no port: paint water, then place one with the Port tool, or regenerate the layout.", MessageType.Warning);
             }
 
             if (!CityLayoutEditing.TryMakeGrid(layout, buildings, out CityGrid grid))
@@ -303,16 +303,24 @@ namespace DarkFantasyMerchant.Editor
             }
         }
 
-        private void DrawAutoConnect(CityLayoutDefinition layout)
+        private void DrawRegenerate(CityLayoutDefinition layout)
         {
-            if (GUILayout.Button("Town hall and roads"))
+            if (GUILayout.Button("Regenerate layout (water, port, town hall, houses, roads)")
+                && EditorUtility.DisplayDialog(
+                    "Regenerate layout",
+                    $"Everything on {city.name}'s grid is replaced: water on the side of the sea, the port, the town hall, the starting houses and their roads. Undo brings it back.",
+                    "Regenerate", "Cancel"))
             {
-                lastUnconnected = CityLayoutEditing.AutoConnect(layout, buildings);
+                CancelTrace();
+                CityLayoutEditing.Regenerate(layout, city, economy, buildings, MaskOfMap(), IndexInMap(city), out lastRegenerationProblem);
+
+                // This pass was laid out for the old content.
+                GUIUtility.ExitGUI();
             }
 
-            if (lastUnconnected > 0)
+            if (lastRegenerationProblem != null)
             {
-                EditorGUILayout.HelpBox($"{lastUnconnected} starting house(s) stay unconnected: no road can reach them.", MessageType.Warning);
+                EditorGUILayout.HelpBox($"The layout was not regenerated: {lastRegenerationProblem}.", MessageType.Warning);
             }
         }
 
@@ -730,6 +738,14 @@ namespace DarkFantasyMerchant.Editor
             }
 
             return 0;
+        }
+
+        // Where the ships sail on the world map, which tells on which side of a city the sea is; null without one.
+        private static NavigationGrid MaskOfMap()
+        {
+            WorldMapDefinition map = FindAsset<WorldMapDefinition>();
+
+            return map != null && map.NavigationMask != null ? map.NavigationMask.CreateGrid() : null;
         }
 
         private static T FindAsset<T>() where T : Object

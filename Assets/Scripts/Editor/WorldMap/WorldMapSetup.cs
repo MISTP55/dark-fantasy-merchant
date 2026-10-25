@@ -74,8 +74,6 @@ namespace DarkFantasyMerchant.Editor
         private static readonly Vector2Int TownHallFootprint = new Vector2Int(3, 2);
         private static readonly Vector2Int PortFootprint = new Vector2Int(4, 3);
 
-        // The rows of water along the bottom edge of a default layout, where its port stands.
-        private const int DefaultWaterRows = 4;
         private const string GoodsFolder = "Assets/Data/Goods";
         private const string GoodIconsFolder = "Assets/Art/Goods/Icons";
 
@@ -1099,9 +1097,8 @@ namespace DarkFantasyMerchant.Editor
             return $"{GoodIconsFolder}/{assetName}.png";
         }
 
-        // A city without a layout gets a default grid with just the houses its starting population
-        // needs, placed at random (the same way every run: the seed is the city's index). A city with
-        // a layout is the user's and is left untouched.
+        // A city without a layout gets a generated grid (CityLayoutEditing.TryGenerate), the same every run: the seed
+        // is the city's index. A city with a layout is the user's and is left untouched.
         private static void CreateCityLayouts()
         {
             var definition = AssetDatabase.LoadAssetAtPath<WorldMapDefinition>(DefinitionPath);
@@ -1113,6 +1110,8 @@ namespace DarkFantasyMerchant.Editor
                 return;
             }
 
+            NavigationGrid mask = definition.NavigationMask != null ? definition.NavigationMask.CreateGrid() : null;
+
             for (int index = 0; index < definition.MapCities.Count; index++)
             {
                 CityDefinition city = definition.MapCities[index].City;
@@ -1122,18 +1121,22 @@ namespace DarkFantasyMerchant.Editor
                     continue;
                 }
 
-                TryCreateLayout(city, economy, buildings, index);
+                TryCreateLayout(city, economy, buildings, mask, index);
             }
         }
 
         /// <summary>
-        /// Makes the default layout asset of a city and links it: a grid with water along its bottom
-        /// edge and the port on it, the town hall, and just the houses its starting population needs,
-        /// placed at random with the seed. A layout asset already at the city's path is linked instead,
-        /// its content untouched. False (and an error logged) when the port or the houses do not fit,
-        /// or something else holds the path. The caller checks that the city has no layout.
+        /// Makes the default layout asset of a city and links it: a generated grid
+        /// (<see cref="CityLayoutEditing.TryGenerate"/>) with water on the side of the sea, the port, the town hall,
+        /// and just the houses its starting population needs, placed with the seed. A layout asset already at the
+        /// city's path is linked instead, its content untouched. False (and an error logged) when the port or the
+        /// houses do not fit, or something else holds the path. The caller checks that the city has no layout.
         /// </summary>
-        internal static bool TryCreateLayout(CityDefinition city, EconomyDefinition economy, BuildingsDefinition buildings, int seed)
+        /// <param name="mask">
+        /// Where the ships sail on the world map, which puts the water on the side of the sea; null puts it to the south.
+        /// </param>
+        internal static bool TryCreateLayout(
+            CityDefinition city, EconomyDefinition economy, BuildingsDefinition buildings, NavigationGrid mask, int seed)
         {
             string path = $"{CityLayoutsFolder}/{city.name}Layout.asset";
             Object existing = AssetDatabase.LoadMainAssetAtPath(path);
@@ -1151,70 +1154,16 @@ namespace DarkFantasyMerchant.Editor
                 return false;
             }
 
-            PerClass<int> roomPerHouse = buildings.HouseRooms;
-            var footprints = new PerClass<Footprint>(
-                buildings.HouseOf(SocialClass.Rich).Footprint,
-                buildings.HouseOf(SocialClass.Wealthy).Footprint,
-                buildings.HouseOf(SocialClass.Poor).Footprint);
-            PerClass<int> room = economy.StartingRoomOf(city, roomPerHouse);
-            var houses = new PerClass<int>(
-                room[SocialClass.Rich] / roomPerHouse[SocialClass.Rich],
-                room[SocialClass.Wealthy] / roomPerHouse[SocialClass.Wealthy],
-                room[SocialClass.Poor] / roomPerHouse[SocialClass.Poor]);
-            var water = new List<Vector2Int>();
-
-            for (int y = 0; y < DefaultWaterRows; y++)
+            if (!CityLayoutEditing.TryGenerate(
+                city, economy, buildings, mask, seed, CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize,
+                out CityGrid grid, out string problem))
             {
-                for (int x = 0; x < CityLayoutDefinition.DefaultSize; x++)
-                {
-                    water.Add(new Vector2Int(x, y));
-                }
-            }
-
-            var grid = new CityGrid(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, water, buildings.RoadContact);
-            Footprint townHallFootprint = buildings.TownHall.Footprint;
-            float centre = CityLayoutDefinition.DefaultSize / 2f;
-
-            if (!PortPlacement.TryNear(grid, buildings.Port.PortFootprint, new Vector2(centre, DefaultWaterRows), out PortSite portSite))
-            {
-                Debug.LogError($"CityDefinition '{city.name}': its port does not fit on the shore of a {CityLayoutDefinition.DefaultSize} by {CityLayoutDefinition.DefaultSize} grid; no layout was made.", city);
+                Debug.LogError($"CityDefinition '{city.name}': {problem}; no layout was made.", city);
                 return false;
-            }
-
-            grid.PlacePort(buildings.Port.PortFootprint, portSite);
-
-            if (!TownHallPlacement.TryNear(grid, townHallFootprint, new Vector2(centre, centre), out GridPlace townHallPlace))
-            {
-                Debug.LogError($"CityDefinition '{city.name}': its town hall does not fit on a {CityLayoutDefinition.DefaultSize} by {CityLayoutDefinition.DefaultSize} grid; no layout was made.", city);
-                return false;
-            }
-
-            grid.Place(BuildingKind.TownHall(), BuildingOwner.City, townHallFootprint, townHallPlace);
-
-            if (!StartingHouses.TryPlace(grid, houses, footprints, new RoadsidePlacement(new System.Random(seed))))
-            {
-                Debug.LogError($"CityDefinition '{city.name}': its starting houses do not fit on a {CityLayoutDefinition.DefaultSize} by {CityLayoutDefinition.DefaultSize} grid; no layout was made.", city);
-                return false;
-            }
-
-            var startingHouses = new List<CityLayoutDefinition.StartingHouse>();
-            var roads = new List<Vector2Int>();
-
-            foreach (PlacedBuilding building in grid.Buildings)
-            {
-                if (building.Kind.IsHouse)
-                {
-                    startingHouses.Add(new CityLayoutDefinition.StartingHouse(
-                        building.Kind.HousedClass, building.Place.Origin, building.Place.Orientation));
-                }
-                else if (building.Kind.IsRoad)
-                {
-                    roads.Add(building.Place.Origin);
-                }
             }
 
             var layout = ScriptableObject.CreateInstance<CityLayoutDefinition>();
-            layout.SetContent(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, water, startingHouses, townHallPlace, roads, portSite);
+            layout.SetContent(grid);
             Directory.CreateDirectory(CityLayoutsFolder);
             AssetDatabase.CreateAsset(layout, path);
             LinkLayout(city, layout);

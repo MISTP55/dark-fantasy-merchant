@@ -23,7 +23,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
 
         [Test]
-        [Ignore("The city layouts await their water and their port, placed by hand.")]
         public void EveryActiveCity_HasAUsableGrid()
         {
             var buildings = Load<BuildingsDefinition>(BuildingsPath);
@@ -41,7 +40,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        [Ignore("The city layouts await their water and their port, placed by hand.")]
         public void EveryActiveCity_HousesItsStartingPopulation()
         {
             var buildings = Load<BuildingsDefinition>(BuildingsPath);
@@ -80,7 +78,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        [Ignore("The city layouts await their water and their port, placed by hand.")]
         public void EveryLayout_HasAPort()
         {
             foreach (string guid in AssetDatabase.FindAssets("t:" + nameof(CityLayoutDefinition), new[] { "Assets/Data/CityLayouts" }))
@@ -94,7 +91,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
         // The layouts are connected for either contact: by sides, which also holds with corners.
         [TestCase(RoadContact.SidesAndCorners)]
         [TestCase(RoadContact.SidesOnly)]
-        [Ignore("The city layouts await their water and their port, placed by hand.")]
         public void EveryStartingHouse_IsConnected(RoadContact contact)
         {
             BuildingsDefinition buildings = Object.Instantiate(Load<BuildingsDefinition>(BuildingsPath));

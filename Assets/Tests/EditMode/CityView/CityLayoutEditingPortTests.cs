@@ -165,31 +165,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
             AssertPort(Port);
             CityLayoutEditing.SetTownHall(layout, buildings, Along(4, 2));
             AssertPort(Port);
-            CityLayoutEditing.AutoConnect(layout, buildings);
-            AssertPort(Port);
             CityLayoutEditing.RemoveTownHall(layout);
             AssertPort(Port);
             CityLayoutEditing.RemoveHouses(layout, buildings, new[] { new Vector2Int(8, 4) });
             AssertPort(Port);
             CityLayoutEditing.Resize(layout, buildings, 14, 12);
             AssertPort(Port);
-        }
-
-        [Test]
-        public void AutoConnect_KeepsClearOfThePort()
-        {
-            // No town hall; a house beside the port's land row, whose centre draws the town hall onto the port.
-            layout.SetContent(12, 12, Water(), new[]
-            {
-                new CityLayoutDefinition.StartingHouse(SocialClass.Poor, new Vector2Int(4, 9), BuildingOrientation.Along),
-            }, null, new Vector2Int[0], Port);
-
-            CityLayoutEditing.AutoConnect(layout, buildings);
-
-            Assert.IsTrue(layout.HasTownHall);
-            Assert.IsTrue(CityLayoutEditing.TryMakeGrid(layout, buildings, out CityGrid grid));
-            Assert.IsNotNull(grid.Port);
-            Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Poor));
         }
 
         [Test]

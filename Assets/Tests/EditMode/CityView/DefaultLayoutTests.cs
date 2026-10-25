@@ -38,7 +38,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var economy = AssetDatabase.LoadAssetAtPath<EconomyDefinition>("Assets/Data/Economy/Economy.asset");
             Assert.IsNull(AssetDatabase.LoadMainAssetAtPath(LayoutPath), "a layout is already at the test's path");
 
-            Assert.IsTrue(WorldMapSetup.TryCreateLayout(city, economy, buildings, 0));
+            Assert.IsTrue(WorldMapSetup.TryCreateLayout(city, economy, buildings, null, 0));
 
             CityLayoutDefinition layout = city.Layout;
             Assert.IsNotNull(layout);

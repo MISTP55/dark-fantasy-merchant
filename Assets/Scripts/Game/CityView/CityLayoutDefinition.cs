@@ -218,6 +218,53 @@ namespace DarkFantasyMerchant.Game
             return true;
         }
 
+        /// <summary>
+        /// Editor and setup only: replaces the whole content by the grid's: its size, its water, its town hall, its
+        /// port, its roads and its houses.
+        /// </summary>
+        public void SetContent(CityGrid grid)
+        {
+            var water = new List<Vector2Int>();
+            var houses = new List<StartingHouse>();
+            var roadCells = new List<Vector2Int>();
+            GridPlace? hall = null;
+            PortSite? portSite = null;
+
+            for (int y = 0; y < grid.Height; y++)
+            {
+                for (int x = 0; x < grid.Width; x++)
+                {
+                    var cell = new Vector2Int(x, y);
+                    if (grid.IsForbidden(cell))
+                    {
+                        water.Add(cell);
+                    }
+                }
+            }
+
+            foreach (PlacedBuilding building in grid.Buildings)
+            {
+                if (building.Kind.IsHouse)
+                {
+                    houses.Add(new StartingHouse(building.Kind.HousedClass, building.Place.Origin, building.Place.Orientation));
+                }
+                else if (building.Kind.IsRoad)
+                {
+                    roadCells.Add(building.Place.Origin);
+                }
+                else if (building.Kind.IsTownHall)
+                {
+                    hall = building.Place;
+                }
+                else if (building.Kind.IsPort)
+                {
+                    portSite = new PortSite(building.Place.Origin, building.PortFacing);
+                }
+            }
+
+            SetContent(grid.Width, grid.Height, water, houses, hall, roadCells, portSite);
+        }
+
         /// <summary>Editor and setup only: replaces the whole content.</summary>
         /// <param name="townHall">Where the town hall stands; null for a layout without one.</param>
         /// <param name="port">Where the port stands; null for a layout without one.</param>

@@ -19,10 +19,10 @@ paths:
 
 ## The port
 
-- Every city has one port, a 4×3 building (`PortDefinition`, the catalogue's `Port`) placed only by its layout, in the layout window's Port tool; nobody builds it. A layout without one, or whose port cannot stand, is unusable (`TryCreateGrid` fails). The existing layouts have none yet: they await their water and their port, placed by hand, and the content tests that need every city's grid (`CityViewContentTests`) are `[Ignore]`d until then; switch them back on once every port is placed.
+- Every city has one port, a 4×3 building (`PortDefinition`, the catalogue's `Port`) placed only by its layout, in the layout window's Port tool; nobody builds it. A layout without one, or whose port cannot stand, is unusable (`TryCreateGrid` fails); `CityViewContentTests` checks that every city's layout is usable.
 - It is placed through `CityGrid.PlacePort`/`CanPlacePort` with a `PortFootprint` (the footprint and its `WaterRows`, an asset value) and a `PortSite` (origin and `PortFacing`), never through `Place`, which throws for it. Its front `WaterRows` rows, on the side it faces, must all be water and its back rows all land (`PortFootprint.IsWater`). North is +y, east +x; facing north or south it lies `Along`, east or west `Across` (`PortFacings.OrientationOf`); R turns it a quarter turn north → east → south → west (`PortFacings.Turned`). `PlacedBuilding.PortFacing` keeps the facing.
 - It is not part of the road network: not a root, a road touching it is not a network road for that, and it is never connected nor darkened. No connection to the town hall is needed.
-- The layout window's edits never move it: the water brush leaves the cells under it, roads and the town hall cannot go on it, and every edit carries it (`CityLayoutEditing.Apply`); "Town hall and roads" places nothing on it.
+- The layout window's edits never move it: the water brush leaves the cells under it, roads and the town hall cannot go on it, and every edit carries it (`CityLayoutEditing.Apply`).
 
 ## Roads and the town hall
 
@@ -30,8 +30,15 @@ paths:
 - What touches is the grid's `Contact` (`RoadContact`), given at its creation from `BuildingsDefinition.RoadContact` and never changed: by a side or a corner, or by a side only. Every neighbour test of the network, of `RoadPlanner` and of `RoadsidePlacement` goes through `CityGrid.Touches`; a new one must too, or the two contacts disagree. The layouts are connected by sides, so that they work under either contact (`CityViewContentTests` checks both).
 - `PlaceRoads` floods the network once for a whole trace; placing roads one by one floods once each. Use it for any group of roads.
 - `BuildingConnected` is the only way room and hiring start. `BuildingPlaced` is raised before the flood: a `BuildingPlaced` handler must not read `IsNetworkRoad` or connection state; refresh on `BuildingConnected` (once per house or workshop, after the `BuildingPlaced` that caused it).
-- `RoadPlanner` finds the fewest free cells that make a building touch the network (`TryFindRoads`), and `Connects` checks an already chosen set of roads: anything that places a building together with its roads checks `Connects` before taking anything. `RoadsidePlacement` is the strategy in use (the places needing the fewest roads, at random among them); `RandomPlacement` is kept but unused, since it ignores roads and would leave houses unconnected.
-- A layout without a town hall is unusable (`TryCreateGrid` fails, the city gets no grid). The layout window can add one and the roads connecting its starting houses; the existing layouts were migrated once with the layout window's "Town hall and roads" (`CityLayoutEditing.AutoConnect`), which must be run on any later layout without a town hall. It changes nothing, and counts every starting house as unconnected, when the layout's content cannot stand (overlaps).
+- `RoadPlanner` finds the fewest free cells that make a building touch the network (`TryFindRoads`), and `Connects` checks an already chosen set of roads: anything that places a building together with its roads checks `Connects` before taking anything. `RoadsidePlacement` is the strategy the cities build with (the places needing the fewest roads, at random among them); packing houses next to the roads, it walls the network in after a dozen houses or so. `RandomPlacement` ignores roads; only `StartingHouses` uses it, as its first step.
+- A layout without a town hall is unusable (`TryCreateGrid` fails, the city gets no grid).
+
+## Generated layouts
+
+- The layout window's "Regenerate layout" (`CityLayoutEditing.Regenerate`, one undo step, nothing changed when it fails) replaces a layout's whole content, keeping its size, by `CityLayoutEditing.TryGenerate`, which the scene setup's default layout uses too: water, port, town hall, houses and roads, in that order (`StartingLayout.TryBuild`). The seed is the city's index in the map.
+- The water is a band of `GeneratedWaterRows` rows along the edge on the side of the sea: `ShoreSide.Of` sums the offsets of the navigation mask's water within 10 mask cells of the city, the larger axis winning (south without a mask or water). The port goes `PortPlacement.TryNear` the middle of the shore, the town hall `TownHallPlacement.TryNear` the centre.
+- The houses are just those `StartingRoomOf` asks for, placed by `StartingHouses.TryPlace`: all at random first, then roads, the house needing the fewest first, then every house no road reaches taken off (`CityGrid.RemoveHouse`, internal and silent: only for a grid nobody watches yet) and placed again by `RoadsidePlacement`. Placing them along the roads from the start walls the town hall in long before a city's houses are placed.
+- Generation always uses `RoadContact.SidesOnly`, whatever the catalogue's contact, so that the layout works under either.
 
 ## Projection
 
@@ -49,7 +56,7 @@ paths:
 - `BuildingsDefinition.PlacementStrategy` (a `PlacementStrategyDefinition`, `Assets/Data/Buildings/Placement/`) is required: `WorldEconomy` makes one strategy for the whole world from it. The scene setup gives the roadside one to a catalogue with none or with the random one.
 - `CityLayoutDefinition` (`CityDefinition.Layout`) is a city's grid: size, water cells, town hall, port, roads, starting houses with their place; `TryCreateGrid` places the town hall, the port, the roads, then the houses. `TryCreateGrid` gives the grid; a city without a usable layout gets a market without grid and one warning at the start. `WorldEconomy.GridOf` returns the grid.
 - With a grid, the room of a class at the start is its connected houses on the grid × the room of a house (`EconomyDefinition.CreateMarket`); `StartingRoomOf` is the room a grid should give at least.
-- The scene setup gives a city without a layout (`Assets/Data/CityLayouts/<city>Layout.asset`) a 40 by 40 grid (`CityLayoutDefinition.DefaultSize`) with 4 rows of water along its bottom edge and its port on them (`PortPlacement.TryNear` the middle of the shore), a town hall near its centre and just the starting houses `StartingRoomOf` asks for, placed along roads by `RoadsidePlacement` with the city's index in the map as seed; a city with a layout is never touched. A layout asset already at that path (a link lost) is linked to the city, never rewritten; the layout window's "Create layout" does the same.
+- The scene setup gives a city without a layout (`Assets/Data/CityLayouts/<city>Layout.asset`) a generated 40 by 40 grid (`CityLayoutDefinition.DefaultSize`, see Generated layouts); a city with a layout is never touched. A layout asset already at that path (a link lost) is linked to the city, never rewritten; the layout window's "Create layout" does the same.
 
 ## The city view scene
 

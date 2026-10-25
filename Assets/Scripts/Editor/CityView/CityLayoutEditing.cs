@@ -272,131 +272,59 @@ namespace DarkFantasyMerchant.Editor
             }
         }
 
+        /// <summary>The depth of the band of water a generated layout gets, in cells.</summary>
+        public const int GeneratedWaterRows = 4;
+
+        // How far around the city, in cells of the navigation mask, the water is looked for.
+        private const float ShoreRadius = 10f;
+
         /// <summary>
-        /// Places the town hall when the layout has none (nearest to the mean centre of the starting houses, to the
-        /// grid's centre without houses), then lays the roads that connect each starting house not yet connected, in
-        /// list order. Records nothing when nothing changes.
+        /// A whole city grid of the size, from nothing: water along the side of the sea (where the mask's water lies
+        /// around the city on the map; south without a mask), the port on that shore, the town hall near the centre,
+        /// then just the houses the city's starting population needs, placed with the seed by
+        /// <see cref="StartingHouses.TryPlace"/> and connected by roads. They are connected by sides, whatever the
+        /// catalogue's contact, so that the layout works under either.
         /// </summary>
-        /// <returns>The number of starting houses left unconnected: walled in, no town hall could stand, or the layout's content overlaps (nothing is changed then).</returns>
-        public static int AutoConnect(CityLayoutDefinition layout, BuildingsDefinition buildings)
+        /// <param name="problem">What did not fit, for the logs; null when everything did.</param>
+        public static bool TryGenerate(
+            CityDefinition city, EconomyDefinition economy, BuildingsDefinition buildings, NavigationGrid mask, int seed,
+            int width, int height, out CityGrid grid, out string problem)
         {
-            // A hand-edited layout whose content overlaps cannot be placed on a grid: leave it as it is.
-            if (!TryMakeGrid(layout, buildings, out _))
-            {
-                return layout.StartingHouses.Count;
-            }
+            PerClass<int> roomPerHouse = buildings.HouseRooms;
+            PerClass<int> room = economy.StartingRoomOf(city, roomPerHouse);
+            var houses = new PerClass<int>(
+                room[SocialClass.Rich] / roomPerHouse[SocialClass.Rich],
+                room[SocialClass.Wealthy] / roomPerHouse[SocialClass.Wealthy],
+                room[SocialClass.Poor] / roomPerHouse[SocialClass.Poor]);
+            var footprints = new PerClass<Footprint>(
+                HouseFootprint(buildings, SocialClass.Rich),
+                HouseFootprint(buildings, SocialClass.Wealthy),
+                HouseFootprint(buildings, SocialClass.Poor));
+            PortFacing shore = ShoreSide.Of(mask, city.MapPosition, ShoreRadius);
 
-            GridPlace? townHall = TownHallOf(layout);
-            var roads = new List<Vector2Int>(layout.Roads);
-
-            if (townHall == null)
-            {
-                var bare = new CityGrid(layout.Width, layout.Height, layout.ForbiddenCells, buildings.RoadContact);
-                PlacePortOf(layout, buildings, bare);
-                var centre = new Vector2(layout.Width / 2f, layout.Height / 2f);
-
-                if (layout.StartingHouses.Count > 0)
-                {
-                    centre = Vector2.zero;
-
-                    foreach (CityLayoutDefinition.StartingHouse house in layout.StartingHouses)
-                    {
-                        Vector2Int size = HouseFootprint(buildings, house.socialClass).SizeFor(house.orientation);
-                        centre += new Vector2(house.origin.x + size.x / 2f, house.origin.y + size.y / 2f);
-                    }
-
-                    centre /= layout.StartingHouses.Count;
-                }
-
-                foreach (CityLayoutDefinition.StartingHouse house in layout.StartingHouses)
-                {
-                    bare.Place(
-                        BuildingKind.House(house.socialClass), BuildingOwner.City,
-                        HouseFootprint(buildings, house.socialClass), new GridPlace(house.origin, house.orientation));
-                }
-
-                foreach (Vector2Int road in roads)
-                {
-                    PlaceRoad(bare, road);
-                }
-
-                if (!TownHallPlacement.TryNear(bare, buildings.TownHall.Footprint, centre, out GridPlace nearest))
-                {
-                    return layout.StartingHouses.Count;
-                }
-
-                townHall = nearest;
-            }
-
-            var grid = new CityGrid(layout.Width, layout.Height, layout.ForbiddenCells, buildings.RoadContact);
-            grid.Place(BuildingKind.TownHall(), BuildingOwner.City, buildings.TownHall.Footprint, townHall.Value);
-            PlacePortOf(layout, buildings, grid);
-
-            foreach (Vector2Int road in roads)
-            {
-                PlaceRoad(grid, road);
-            }
-
-            var placed = new List<PlacedBuilding>();
-
-            foreach (CityLayoutDefinition.StartingHouse house in layout.StartingHouses)
-            {
-                placed.Add(grid.Place(
-                    BuildingKind.House(house.socialClass), BuildingOwner.City,
-                    HouseFootprint(buildings, house.socialClass), new GridPlace(house.origin, house.orientation)));
-            }
-
-            int unconnected = 0;
-            int existingRoads = roads.Count;
-            var found = new List<Vector2Int>();
-
-            foreach (PlacedBuilding house in placed)
-            {
-                if (house.IsConnected)
-                {
-                    continue;
-                }
-
-                var cells = new List<Vector2Int>();
-
-                for (int y = 0; y < house.Size.y; y++)
-                {
-                    for (int x = 0; x < house.Size.x; x++)
-                    {
-                        cells.Add(new Vector2Int(house.Place.Origin.x + x, house.Place.Origin.y + y));
-                    }
-                }
-
-                if (!RoadPlanner.TryFindRoads(grid, cells, found))
-                {
-                    unconnected++;
-                    continue;
-                }
-
-                foreach (Vector2Int road in found)
-                {
-                    PlaceRoad(grid, road);
-                    roads.Add(road);
-                }
-            }
-
-            if (!layout.HasTownHall || roads.Count != existingRoads)
-            {
-                Apply(
-                    layout, "Town hall and roads", layout.Width, layout.Height,
-                    layout.ForbiddenCells, layout.StartingHouses, townHall, roads, PortOf(layout));
-            }
-
-            return unconnected;
+            return StartingLayout.TryBuild(
+                width, height, shore, GeneratedWaterRows, PortFootprintOf(buildings), buildings.TownHall.Footprint,
+                houses, footprints, RoadContact.SidesOnly, new System.Random(seed),
+                out grid, out problem);
         }
 
-        // Only for a layout whose content stands (TryMakeGrid).
-        private static void PlacePortOf(CityLayoutDefinition layout, BuildingsDefinition buildings, CityGrid grid)
+        /// <summary>
+        /// Replaces the whole content of the layout by a generated city of the same size (<see cref="TryGenerate"/>),
+        /// in one undo step; nothing is changed when it does not fit.
+        /// </summary>
+        public static bool Regenerate(
+            CityLayoutDefinition layout, CityDefinition city, EconomyDefinition economy, BuildingsDefinition buildings,
+            NavigationGrid mask, int seed, out string problem)
         {
-            if (layout.HasPort)
+            if (!TryGenerate(city, economy, buildings, mask, seed, layout.Width, layout.Height, out CityGrid grid, out problem))
             {
-                grid.PlacePort(PortFootprintOf(buildings), layout.PortSite);
+                return false;
             }
+
+            Undo.RecordObject(layout, "Regenerate city layout");
+            layout.SetContent(grid);
+            EditorUtility.SetDirty(layout);
+            return true;
         }
 
         /// <summary>Whether the layout's town hall covers the cell.</summary>

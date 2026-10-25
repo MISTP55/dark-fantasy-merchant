@@ -209,6 +209,23 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
+        /// <summary>
+        /// Takes a house off the grid. A house carries no network, so nothing else changes; no event is raised, which
+        /// is why it is only for a grid still being made, that nobody watches yet.
+        /// </summary>
+        internal void RemoveHouse(PlacedBuilding house)
+        {
+            if (!house.Kind.IsHouse || !buildings.Remove(house))
+            {
+                throw new ArgumentException("Not a house of this grid.", nameof(house));
+            }
+
+            foreach (Vector2Int cell in CellsOf(house))
+            {
+                occupancy[Index(cell)] = null;
+            }
+        }
+
         // The caller has checked that the building fits.
         private PlacedBuilding PlaceWithoutNetwork(PlacedBuilding building)
         {
