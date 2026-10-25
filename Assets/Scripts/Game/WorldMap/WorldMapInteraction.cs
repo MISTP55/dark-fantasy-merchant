@@ -12,7 +12,8 @@ namespace DarkFantasyMerchant.Game
     /// back to normal speed, as does the arrival of the ship that was selected and under
     /// way when it started: stopped at sea, the camera shows it in close-up; at its berth,
     /// its city's view opens; in a city's queue, that city is selected. Started from a city view,
-    /// the ship that was selected and under way when the view opened stands for the selected one.
+    /// the ship that was selected and under way when the view opened stands for the selected one, and is the one
+    /// awaited unless a ship of the player under way was selected in the view.
     /// The ship that was selected is selected again afterwards, or the city it has entered meanwhile.
     /// </summary>
     public sealed class WorldMapInteraction : MonoBehaviour
@@ -328,10 +329,10 @@ namespace DarkFantasyMerchant.Game
                 shipBeforeFastForward = shipOfView;
             }
 
-            // Only a ship of the player is awaited: the others arrive all the time.
-            awaitedShip = shipBeforeFastForward != null && shipsView.Docking.IsUnderWay(shipBeforeFastForward)
-                && shipsView.IsPlayerShip(shipBeforeFastForward)
-                ? shipBeforeFastForward
+            // Only a ship of the player is awaited: the others arrive all the time. A ship selected in the
+            // view that is not one stays the selection to restore, but the view's ship is still awaited.
+            awaitedShip = shipsView != null
+                ? AwaitedShipOf(shipBeforeFastForward, shipOfView, IsAwaitable)
                 : null;
 
             input.CancelGestures();
@@ -343,6 +344,26 @@ namespace DarkFantasyMerchant.Game
                 shipsView.Selection.SetHovered(null);
                 shipsView.Selection.ClearSelection();
             }
+        }
+
+        /// <summary>
+        /// The ship fast forward awaits: the selected ship when it can be awaited (a ship of the player under way),
+        /// else the ship of the city view (the player's ship selected and under way when the view opened) when it
+        /// still can be, else none.
+        /// </summary>
+        internal static Ship AwaitedShipOf(Ship selected, Ship shipOfView, System.Func<Ship, bool> isAwaitable)
+        {
+            if (selected != null && isAwaitable(selected))
+            {
+                return selected;
+            }
+
+            return shipOfView != null && isAwaitable(shipOfView) ? shipOfView : null;
+        }
+
+        private bool IsAwaitable(Ship ship)
+        {
+            return shipsView.Contains(ship) && shipsView.Docking.IsUnderWay(ship) && shipsView.IsPlayerShip(ship);
         }
 
         // A ship that entered a city during the fast forward is not on the map any more:
