@@ -203,6 +203,27 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void Stop_DropsTheRouteWithoutArriving()
+        {
+            Ship ship = CreateShip();
+            int arrivals = 0;
+            ship.Arrived += s => arrivals++;
+            ship.SetDestination(new Vector2(1f, 0.5f));
+            ship.Advance(1f);
+            Vector2 position = ship.Position;
+
+            ship.Stop();
+            ship.Advance(100f);
+
+            Assert.IsFalse(ship.IsMoving);
+            Assert.IsNull(ship.Destination);
+            Assert.IsEmpty(ship.RemainingWaypoints);
+            Assert.IsEmpty(ship.SailedWaypoints);
+            Assert.AreEqual(position, ship.Position);
+            Assert.AreEqual(0, arrivals);
+        }
+
+        [Test]
         public void FollowRoute_RejectsANullRoute()
         {
             Assert.Throws<ArgumentNullException>(() => CreateShip().FollowRoute(null));

@@ -53,7 +53,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Ship ship = CreateShip();
             docking.OrderToPort(ship, port, Cell(5, 0));
             ship.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
             events.Clear();
             return ship;
         }
@@ -72,7 +72,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             bool accepted = docking.OrderToPort(ship, port, Cell(5, 0));
             ship.Advance(1f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.IsTrue(accepted);
             Assert.IsTrue(ship.IsMoving);
@@ -96,7 +96,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreSame(port, docking.DestinationPortOf(ship));
 
             ship.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.AreSame(port, docking.PortOf(ship));
         }
@@ -120,8 +120,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             docking.OrderToPort(ship, port, Cell(5, 0));
 
             ship.Advance(100f);
-            docking.Update();
-            docking.Update();
+            docking.Update(0f);
+            docking.Update(0f);
 
             Assert.IsTrue(docking.IsDocked(ship));
             Assert.AreSame(port, docking.PortOf(ship));
@@ -137,7 +137,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             bool accepted = docking.OrderToPort(ship, port, Cell(5, 0));
             ship.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.IsTrue(accepted);
             Assert.IsFalse(docking.IsDocked(ship));
@@ -153,7 +153,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // In the wall, nearer its west side.
             bool accepted = docking.OrderToPort(ship, port, GridAssert.CellPoint(grid, 3.2f, 0.5f));
             ship.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.IsTrue(accepted);
             Assert.AreEqual(Cell(2, 0), ship.Position);
@@ -170,7 +170,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsTrue(accepted);
             Assert.IsFalse(docking.IsDocked(ship));
 
-            docking.Update();
+            docking.Update(0f);
 
             Assert.AreSame(port, docking.PortOf(ship));
         }
@@ -184,7 +184,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             docking.OrderToPoint(ship, Cell(0, 3));
             ship.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.AreEqual(Cell(0, 3), ship.Position);
             Assert.IsFalse(docking.IsDocked(ship));
@@ -199,7 +199,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             docking.OrderToPoint(ship, Cell(5, 0));
             ship.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.AreEqual(Cell(5, 0), ship.Position);
             Assert.IsFalse(docking.IsDocked(ship));
@@ -217,7 +217,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsNull(docking.DestinationPortOf(ship));
 
             ship.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.IsFalse(docking.IsDocked(ship));
             Assert.IsEmpty(events);
@@ -231,7 +231,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // On land, nearer the pond than the sea the ship is in.
             bool accepted = docking.OrderToPort(ship, port, GridAssert.CellPoint(grid, 6.8f, 0.5f));
             ship.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.IsFalse(accepted);
             Assert.IsFalse(docking.IsDocked(ship));
@@ -247,7 +247,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             docking.OrderToPort(ship, other, Cell(0, 3));
             ship.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.AreSame(other, docking.PortOf(ship));
             Assert.IsEmpty(ShipsIn(port));
@@ -267,7 +267,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // Whichever docks first sends the other away, in the same update.
             docking.Docked += (docked, where) =>
                 docking.OrderToPoint(ReferenceEquals(docked, first) ? second : first, Cell(0, 3));
-            docking.Update();
+            docking.Update(0f);
 
             Assert.AreEqual(1, ShipsIn(port).Count);
             Assert.AreNotEqual(docking.IsDocked(first), docking.IsDocked(second));
@@ -287,7 +287,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CollectionAssert.AreEqual(new[] { "undocked" }, events);
 
             ship.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.AreEqual(Cell(4, 3), ship.Position);
             Assert.IsFalse(docking.IsDocked(ship));
@@ -299,7 +299,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Ship ship = CreateDockedShip();
 
             bool accepted = docking.OrderToPort(ship, port, Cell(5, 0));
-            docking.Update();
+            docking.Update(0f);
 
             Assert.IsTrue(accepted);
             Assert.AreSame(port, docking.PortOf(ship));
@@ -319,7 +319,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreSame(other, docking.DestinationPortOf(ship));
 
             ship.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.AreSame(other, docking.PortOf(ship));
             Assert.IsEmpty(ShipsIn(port));
@@ -348,7 +348,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             docking.OrderToPoint(ship, new Vector2(float.NaN, 0.5f));
             ship.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.AreSame(port, docking.PortOf(ship));
         }
@@ -364,9 +364,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             near.Advance(2f);
             far.Advance(2f);
-            docking.Update();
+            docking.Update(0f);
             far.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
 
             CollectionAssert.AreEqual(new[] { first, near, far }, ShipsIn(port));
         }
@@ -379,7 +379,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsTrue(docking.OrderToPort(ship, port, new Vector2(0.4f, 0.5f)));
 
             ship.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.AreSame(port, docking.PortOf(ship));
         }
@@ -407,7 +407,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             docking.Remove(ship);
             ship.Advance(100f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.IsNull(docking.DestinationPortOf(ship));
             Assert.IsFalse(docking.IsDocked(ship));

@@ -32,11 +32,68 @@ namespace DarkFantasyMerchant.Tests.EditMode
             arrivals.Track(ship);
         }
 
+        [Test]
+        public void ArrivalAtAnAnchorageWithAHarbour_ReportedWhenDocked()
+        {
+            UseAHarbour();
+            docking.OrderToPort(ship, Port, PortPosition);
+
+            Step(5f);
+
+            Assert.AreEqual(HarbourState.Arriving, docking.StateOf(ship));
+            Assert.AreEqual(0, reported.Count);
+
+            Step(5f);
+
+            Assert.AreEqual(1, reported.Count);
+            Assert.AreSame(ship, reported[0].Ship);
+            Assert.AreEqual(Port, reported[0].Port);
+        }
+
+        [Test]
+        public void EnteringTheQueue_RaisesQueued()
+        {
+            UseAHarbour();
+            var queued = new List<(Ship Ship, string Port)>();
+            arrivals.Queued += (s, port) => queued.Add((s, port));
+            var other = new Ship(new MapProjection(40f, 2f), PortPosition, Speed, TestCrew.Full);
+            arrivals.Track(other);
+            docking.OrderToPort(other, Port, PortPosition);
+            docking.Update(0f);
+            docking.OrderToPort(ship, Port, PortPosition);
+
+            Step(5f);
+
+            Assert.AreEqual(HarbourState.Waiting, docking.StateOf(ship));
+            Assert.AreEqual(1, queued.Count);
+            Assert.AreSame(ship, queued[0].Ship);
+            Assert.AreEqual(Port, queued[0].Port);
+            Assert.IsFalse(reported.Exists(r => r.Ship == ship));
+
+            Step(0f);
+
+            Assert.AreEqual(1, queued.Count);
+        }
+
+        // Replaces the docking with one whose port has a harbour of one berth, crossed in 1 second.
+        private void UseAHarbour()
+        {
+            Harbour harbour = TestHarbours.OneBerth(2f);
+            docking = new ShipDocking<string>(port => port == Port ? harbour : null);
+            arrivals.Forget(ship);
+            arrivals = new ShipArrivals<string>(docking);
+            arrivals.Arrived += (s, port) => reported.Add((s, port));
+            arrivals.Track(ship);
+        }
+
         // One frame of ShipsView.
         private void Step(float deltaTime)
         {
-            ship.Advance(deltaTime);
-            docking.Update();
+            if (!docking.IsInCity(ship))
+            {
+                ship.Advance(deltaTime);
+            }
+            docking.Update(deltaTime);
             arrivals.Report();
         }
 
@@ -128,7 +185,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             docking.OrderToPort(ship, Port, PortPosition);
 
             ship.Advance(5f);
-            docking.Update();
+            docking.Update(0f);
 
             Assert.AreEqual(0, reported.Count);
 

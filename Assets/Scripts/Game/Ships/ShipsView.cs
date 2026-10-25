@@ -180,7 +180,7 @@ namespace DarkFantasyMerchant.Game
                 ship.Advance(deltaTime);
             }
 
-            Docking.Update();
+            Docking.Update(deltaTime);
 
             // After the docking's update, so that a ship that arrived at its port is in it.
             arrivals.Report();

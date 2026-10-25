@@ -111,14 +111,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var ship = new Ship(projection, positions[home], Speed, TestCrew.Full, navigation, new CargoHold(200));
             fleet.Add(ship, home);
-            docking.Update();
+            docking.Update(0f);
             return ship;
         }
 
         private void Arrive(Ship ship)
         {
             ship.Advance(1000f);
-            docking.Update();
+            docking.Update(0f);
         }
 
         private void Depart()
@@ -204,7 +204,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // Without a pathfinder, a ship would sail straight through the wall.
             var ship = new Ship(projection, positions[H], Speed, TestCrew.Full, null, new CargoHold(200));
             fleet.Add(ship, H);
-            docking.Update();
+            docking.Update(0f);
             Depart();
 
             Assert.Greater(routes.RouteBetween(H, D).Count, 1);
@@ -579,7 +579,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // An order that is not the fleet's leaves it at sea, with no port to enter.
             docking.OrderToPoint(ship, GridAssert.CellCenter(grid, 2, 3));
             ship.Advance(1000f);
-            docking.Update();
+            docking.Update(0f);
             Assert.IsFalse(docking.IsDocked(ship));
 
             fleet.Advance(1d);

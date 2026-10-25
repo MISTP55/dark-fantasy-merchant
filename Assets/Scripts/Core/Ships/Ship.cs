@@ -172,6 +172,13 @@ namespace DarkFantasyMerchant.Core
             return true;
         }
 
+        /// <summary>Drops the route, sailed and remaining: the ship lies still where it is. It does not arrive.</summary>
+        public void Stop()
+        {
+            waypoints.Clear();
+            sailedWaypoints.Clear();
+        }
+
         private void Follow(List<Vector2> route)
         {
             waypoints.Clear();
