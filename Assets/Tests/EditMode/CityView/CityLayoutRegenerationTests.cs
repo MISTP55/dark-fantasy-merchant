@@ -33,7 +33,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             layout.SetContent(40, 40, new[] { new Vector2Int(20, 20) }, new[]
             {
                 new CityLayoutDefinition.StartingHouse(SocialClass.Rich, new Vector2Int(30, 30), BuildingOrientation.Along),
-            }, null, new Vector2Int[0], null);
+            }, null, new Vector2Int[0], null, new Vector2Int[0]);
         }
 
         [TearDown]
@@ -92,6 +92,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 layout.TownHallPlace.Origin.x + buildings.TownHall.Footprint.SizeFor(layout.TownHallPlace.Orientation).x);
 
             Assert.IsTrue(layout.TryCreateGrid(buildings, out CityGrid grid, out problem), problem);
+            Assert.AreEqual(CityLayoutEditing.GeneratedBerths, layout.Berths.Count);
             PerClass<int> needed = economy.StartingRoomOf(city, buildings.HouseRooms);
 
             foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
@@ -122,7 +123,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void Regenerate_WhenNothingFits_ChangesNothing()
         {
-            layout.SetContent(3, 3, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], null, new Vector2Int[0], null);
+            layout.SetContent(3, 3, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], null, new Vector2Int[0], null, new Vector2Int[0]);
 
             Assert.IsFalse(CityLayoutEditing.Regenerate(layout, city, economy, buildings, null, 1, out string problem));
             StringAssert.Contains("port", problem);

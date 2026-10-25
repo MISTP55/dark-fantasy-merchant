@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace DarkFantasyMerchant.Core
 {
-    /// <summary>Makes a whole city grid from nothing: its water, its port, its town hall, then its houses with their roads.</summary>
+    /// <summary>Makes a whole city grid from nothing: its water, its port, its berths, its town hall, then its houses with their roads.</summary>
     public static class StartingLayout
     {
         /// <summary>
@@ -11,6 +11,7 @@ namespace DarkFantasyMerchant.Core
         /// the town hall inland of the port, then houses[c] houses of each class drawn around it, each connected by
         /// roads (<see cref="StartingHouses.TryPlace(CityGrid, PerClass{int}, PerClass{Footprint}, RectInt, System.Random)"/>).
         /// </summary>
+        /// <param name="berths">How many berths to place on the water nearest the port (<see cref="StartingBerths.Place"/>).</param>
         /// <param name="shore">The edge the water runs along.</param>
         /// <param name="waterRows">The depth of the band of water, in cells.</param>
         /// <param name="townHallDistance">
@@ -21,10 +22,10 @@ namespace DarkFantasyMerchant.Core
         /// The side, in cells, of the square centred on the town hall that the houses are drawn in at random.
         /// </param>
         /// <param name="problem">What did not fit, for the logs; null when everything did.</param>
-        /// <returns>False, and no grid, when the port, the town hall or a house does not fit.</returns>
+        /// <returns>False, and no grid, when the port, a berth, the town hall or a house does not fit.</returns>
         public static bool TryBuild(
             int width, int height, PortFacing shore, int waterRows, int townHallDistance, int houseArea,
-            PortFootprint port, Footprint townHall, PerClass<int> houses, PerClass<Footprint> houseFootprints,
+            PortFootprint port, int berths, Footprint townHall, PerClass<int> houses, PerClass<Footprint> houseFootprints,
             RoadContact contact, System.Random random,
             out CityGrid grid, out string problem)
         {
@@ -51,6 +52,12 @@ namespace DarkFantasyMerchant.Core
             }
 
             created.PlacePort(port, site);
+
+            if (StartingBerths.Place(created, berths) == 0)
+            {
+                problem = $"its port is not joined to the edge of a {width} by {height} grid";
+                return false;
+            }
 
             GridPlace hall = TownHallPlace(shore, waterRows + townHallDistance, townHall, width, height);
             if (!created.CanPlace(townHall, hall) && !TownHallPlacement.TryNear(created, townHall, CentreOf(hall, townHall), out hall))

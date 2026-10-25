@@ -77,6 +77,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Where the port stands, with the footprint of the catalogue's. Used only when the layout has one.")]
         [SerializeField] private PortSiteData port;
 
+        [Tooltip("The water cells where ships dock, inside the grid, not under the port.")]
+        [SerializeField] private List<Vector2Int> berths = new List<Vector2Int>();
+
         [Tooltip("The roads the city starts with, one cell each, inside the grid.")]
         [SerializeField] private List<Vector2Int> roads = new List<Vector2Int>();
 
@@ -103,11 +106,13 @@ namespace DarkFantasyMerchant.Game
 
         public IReadOnlyList<Vector2Int> Roads => roads;
 
+        public IReadOnlyList<Vector2Int> Berths => berths;
+
         /// <summary>
-        /// The grid with the town hall, then the port, then the roads, then the starting houses placed as the city's, with
+        /// The grid with the town hall, then the port, then the berths, then the roads, then the starting houses placed as the city's, with
         /// the footprints of the catalogue's buildings, which <see cref="BuildingsDefinition.TryValidate"/> accepts.
         /// </summary>
-        /// <param name="problem">What is wrong, for the logs: a size under 1, a water cell outside, no town hall or no port, a town hall, a port, a road or a house that cannot stand; null when nothing is.</param>
+        /// <param name="problem">What is wrong, for the logs: a size under 1, a water cell outside, no town hall or no port, a town hall, a port, a berth, a road or a house that cannot stand, no berth or a port or berth ships cannot reach; null when nothing is.</param>
         public bool TryCreateGrid(BuildingsDefinition buildings, out CityGrid grid, out string problem)
         {
             grid = null;
@@ -180,6 +185,17 @@ namespace DarkFantasyMerchant.Game
 
             created.PlacePort(portDefinition.PortFootprint, PortSite);
 
+            foreach (Vector2Int cell in berths)
+            {
+                if (!created.CanPlaceBerth(cell))
+                {
+                    problem = $"the berth at ({cell.x}, {cell.y}) cannot stand: it is outside the grid, on land, under the port or on another berth";
+                    return false;
+                }
+
+                created.PlaceBerth(cell);
+            }
+
             foreach (Vector2Int cell in roads)
             {
                 var roadPlace = new GridPlace(cell, BuildingOrientation.Along);
@@ -214,13 +230,18 @@ namespace DarkFantasyMerchant.Game
                 created.Place(BuildingKind.House(house.socialClass), BuildingOwner.City, definition.Footprint, place);
             }
 
+            if (!HarbourPaths.TryValidate(created, out problem))
+            {
+                return false;
+            }
+
             grid = created;
             return true;
         }
 
         /// <summary>
         /// Editor and setup only: replaces the whole content by the grid's: its size, its water, its town hall, its
-        /// port, its roads and its houses.
+        /// port, its berths, its roads and its houses.
         /// </summary>
         public void SetContent(CityGrid grid)
         {
@@ -262,15 +283,16 @@ namespace DarkFantasyMerchant.Game
                 }
             }
 
-            SetContent(grid.Width, grid.Height, water, houses, hall, roadCells, portSite);
+            SetContent(grid.Width, grid.Height, water, houses, hall, roadCells, portSite, grid.Berths);
         }
 
         /// <summary>Editor and setup only: replaces the whole content.</summary>
         /// <param name="townHall">Where the town hall stands; null for a layout without one.</param>
         /// <param name="port">Where the port stands; null for a layout without one.</param>
+        /// <param name="berths">The water cells where ships dock.</param>
         public void SetContent(
             int width, int height, IEnumerable<Vector2Int> forbidden, IEnumerable<StartingHouse> houses,
-            GridPlace? townHall, IEnumerable<Vector2Int> roads, PortSite? port)
+            GridPlace? townHall, IEnumerable<Vector2Int> roads, PortSite? port, IEnumerable<Vector2Int> berths)
         {
             this.width = width;
             this.height = height;
@@ -281,6 +303,7 @@ namespace DarkFantasyMerchant.Game
                 ? new TownHallSite { origin = townHall.Value.Origin, orientation = townHall.Value.Orientation }
                 : default;
             this.roads = new List<Vector2Int>(roads);
+            this.berths = new List<Vector2Int>(berths);
             hasPort = port.HasValue;
             this.port = port.HasValue
                 ? new PortSiteData { origin = port.Value.Origin, facing = port.Value.Facing }

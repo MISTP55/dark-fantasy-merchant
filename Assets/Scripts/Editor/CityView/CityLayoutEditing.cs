@@ -275,6 +275,9 @@ namespace DarkFantasyMerchant.Editor
         /// <summary>The depth of the band of water a generated layout gets, in cells.</summary>
         public const int GeneratedWaterRows = 12;
 
+        /// <summary>The berths a generated layout gets, on the water nearest its port.</summary>
+        public const int GeneratedBerths = 10;
+
         /// <summary>The rows of land between the water and the town hall of a generated layout.</summary>
         public const int GeneratedTownHallDistance = 16;
 
@@ -310,7 +313,7 @@ namespace DarkFantasyMerchant.Editor
 
             return StartingLayout.TryBuild(
                 width, height, shore, GeneratedWaterRows, GeneratedTownHallDistance, GeneratedHouseArea,
-                PortFootprintOf(buildings), buildings.TownHall.Footprint,
+                PortFootprintOf(buildings), GeneratedBerths, buildings.TownHall.Footprint,
                 houses, footprints, RoadContact.SidesOnly, new System.Random(seed),
                 out grid, out problem);
         }
@@ -618,7 +621,7 @@ namespace DarkFantasyMerchant.Editor
             GridPlace? townHall, IEnumerable<Vector2Int> roads, PortSite? port)
         {
             Undo.RecordObject(layout, undoName);
-            layout.SetContent(width, height, forbidden, houses, townHall, new List<Vector2Int>(roads), port);
+            layout.SetContent(width, height, forbidden, houses, townHall, new List<Vector2Int>(roads), port, layout.Berths);
             EditorUtility.SetDirty(layout);
         }
     }

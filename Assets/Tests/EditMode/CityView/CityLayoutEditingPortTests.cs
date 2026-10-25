@@ -22,7 +22,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             buildings = Track(TestBuildings.CreateCatalogue());
             layout = Track(ScriptableObject.CreateInstance<CityLayoutDefinition>());
-            layout.SetContent(12, 12, Water(), new CityLayoutDefinition.StartingHouse[0], Along(4, 0), new Vector2Int[0], null);
+            layout.SetContent(12, 12, Water(), new CityLayoutDefinition.StartingHouse[0], Along(4, 0), new Vector2Int[0], null, new Vector2Int[0]);
         }
 
         [TearDown]
@@ -191,7 +191,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TryMakeGrid_Fails_ForAPortThatCannotStand()
         {
             layout.SetContent(12, 12, Water(), new CityLayoutDefinition.StartingHouse[0], Along(4, 0), new Vector2Int[0],
-                new PortSite(new Vector2Int(0, 9), PortFacing.South));
+                new PortSite(new Vector2Int(0, 9), PortFacing.South), new Vector2Int[0]);
 
             Assert.IsFalse(CityLayoutEditing.TryMakeGrid(layout, buildings, out _));
         }

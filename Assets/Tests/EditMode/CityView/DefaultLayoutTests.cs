@@ -46,6 +46,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CollectionAssert.IsNotEmpty(layout.ForbiddenCells);
             Assert.IsTrue(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem), problem);
             Assert.IsNotNull(grid.Port);
+            Assert.AreEqual(CityLayoutEditing.GeneratedBerths, layout.Berths.Count);
         }
     }
 }

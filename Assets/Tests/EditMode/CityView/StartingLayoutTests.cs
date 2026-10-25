@@ -14,7 +14,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static bool TryBuild(PortFacing shore, PerClass<int> houses, out CityGrid grid, out string problem, int size = 40)
         {
             return StartingLayout.TryBuild(
-                size, size, shore, 4, 6, 20, Port, TownHall, houses, Houses, RoadContact.SidesOnly, new System.Random(3),
+                size, size, shore, 4, 6, 20, Port, 10, TownHall, houses, Houses, RoadContact.SidesOnly, new System.Random(3),
                 out grid, out problem);
         }
 
@@ -57,6 +57,18 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(3, grid.ConnectedHousesOf(SocialClass.Wealthy));
             Assert.AreEqual(5, grid.ConnectedHousesOf(SocialClass.Poor));
             Assert.IsNull(problem);
+        }
+
+        [TestCase(PortFacing.North)]
+        [TestCase(PortFacing.East)]
+        [TestCase(PortFacing.South)]
+        [TestCase(PortFacing.West)]
+        public void TryBuild_PlacesTenBerthsAndPasses(PortFacing shore)
+        {
+            Assert.IsTrue(TryBuild(shore, new PerClass<int>(2, 3, 5), out CityGrid grid, out string problem), problem);
+
+            Assert.AreEqual(10, grid.Berths.Count);
+            Assert.IsTrue(HarbourPaths.TryValidate(grid, out string berthProblem), berthProblem);
         }
 
         [Test]
