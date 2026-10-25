@@ -39,6 +39,7 @@ paths:
 - The water is a band of `GeneratedWaterRows` rows along the edge on the side of the sea: `ShoreSide.Of` sums the offsets of the navigation mask's water within 10 mask cells of the city, the larger axis winning (south without a mask or water). The port goes `PortPlacement.TryNear` the middle of the shore; the town hall in the middle of the shore too, lying as the port does (its width along the shore), `GeneratedTownHallDistance` rows of land between it and the water (`TownHallPlacement.TryNear` that place only when it is taken or off the grid).
 - The houses are just those `StartingRoomOf` asks for, placed by `StartingHouses.TryPlace`: all at random first, inside the square of `GeneratedHouseArea` cells centred on the town hall (`RandomPlacement` with an area), then roads, the house needing the fewest first, then every house no road reaches taken off (`CityGrid.RemoveHouse`, internal and silent: only for a grid nobody watches yet) and placed again by `RoadsidePlacement`, which may put them outside the square. Placing them along the roads from the start walls the town hall in long before a city's houses are placed.
 - Generation always uses `RoadContact.SidesOnly`, whatever the catalogue's contact, so that the layout works under either.
+- A change to what makes a layout usable (`TryCreateGrid` and what it checks) comes with the regeneration of every city's layout (`CityLayoutEditing.TryGenerate`), in the same work: the existing layouts are never patched to meet the new rule, nor left unusable for the designer to fix by hand.
 
 ## Projection
 
