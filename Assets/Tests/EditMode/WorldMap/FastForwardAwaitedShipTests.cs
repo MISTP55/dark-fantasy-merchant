@@ -50,5 +50,64 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsNull(WorldMapInteraction.AwaitedShipOf(aiShip, null, awaitable.Contains));
             Assert.IsNull(WorldMapInteraction.AwaitedShipOf(null, null, awaitable.Contains));
         }
+
+        [Test]
+        public void ShipToSelectAgain_TheAwaitedShipQueued_IsTheAwaitedShipNotTheOneSelectedBefore()
+        {
+            Assert.AreSame(viewShip, WorldMapInteraction.ShipToSelectAgain(aiShip, viewShip, true));
+        }
+
+        [Test]
+        public void ShipToSelectAgain_TheAwaitedShipNotQueued_IsTheOneSelectedBefore()
+        {
+            Assert.AreSame(aiShip, WorldMapInteraction.ShipToSelectAgain(aiShip, viewShip, false));
+            Assert.IsNull(WorldMapInteraction.ShipToSelectAgain(null, viewShip, false));
+        }
+
+        [Test]
+        public void ShipToSelectAgain_NoShipAwaited_IsTheOneSelectedBefore()
+        {
+            Assert.AreSame(aiShip, WorldMapInteraction.ShipToSelectAgain(aiShip, null, false));
+        }
+
+        [Test]
+        public void KeepsShipSelected_AShipAtSeaWhenACityIsSelected_IsDeselected()
+        {
+            CityDefinition city = ScriptableObject.CreateInstance<CityDefinition>();
+
+            try
+            {
+                Assert.IsFalse(WorldMapInteraction.KeepsShipSelected(city, false, null));
+            }
+            finally
+            {
+                Object.DestroyImmediate(city);
+            }
+        }
+
+        [Test]
+        public void KeepsShipSelected_AShipAtSeaWhenTheCityIsCleared_StaysSelected()
+        {
+            Assert.IsTrue(WorldMapInteraction.KeepsShipSelected(null, false, null));
+        }
+
+        [Test]
+        public void KeepsShipSelected_AShipInACity_StaysSelectedOnlyWithThatCity()
+        {
+            CityDefinition city = ScriptableObject.CreateInstance<CityDefinition>();
+            CityDefinition other = ScriptableObject.CreateInstance<CityDefinition>();
+
+            try
+            {
+                Assert.IsTrue(WorldMapInteraction.KeepsShipSelected(city, true, city));
+                Assert.IsFalse(WorldMapInteraction.KeepsShipSelected(other, true, city));
+                Assert.IsFalse(WorldMapInteraction.KeepsShipSelected(null, true, city));
+            }
+            finally
+            {
+                Object.DestroyImmediate(city);
+                Object.DestroyImmediate(other);
+            }
+        }
     }
 }

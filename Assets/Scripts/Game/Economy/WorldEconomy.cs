@@ -191,18 +191,20 @@ namespace DarkFantasyMerchant.Game
             return true;
         }
 
-        // A city with no usable layout still gets a market, without grid.
+        // A city with no usable layout is inactive: the map skips it (WorldMapView.IsUsable). One reaches here only
+        // when the map view has no buildings catalogue to check it with, which it has logged as an error; the city
+        // then still gets a market, without grid.
         private CityGrid CreateGridOf(CityDefinition city)
         {
             if (city.Layout == null)
             {
-                Debug.LogWarning($"CityDefinition '{city.name}' has no layout; its market has no grid.", city);
+                Debug.LogWarning($"CityDefinition '{city.name}' has no layout (the map view, without buildings, could not make it inactive); its market has no grid.", city);
                 return null;
             }
 
             if (!city.Layout.TryCreateGrid(buildings, out CityGrid grid, out string problem))
             {
-                Debug.LogWarning($"CityLayoutDefinition '{city.Layout.name}' of '{city.name}' is unusable: {problem}. Its market has no grid.", city.Layout);
+                Debug.LogWarning($"CityLayoutDefinition '{city.Layout.name}' of '{city.name}' is unusable: {problem} (the map view, without buildings, could not make the city inactive). Its market has no grid.", city.Layout);
                 return null;
             }
 
