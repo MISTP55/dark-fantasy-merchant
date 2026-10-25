@@ -24,3 +24,10 @@ paths:
 - A ship enters a port only when it was ordered to that city and has arrived: an order to the water beside a city does not dock. A ship in port leaves on its next order, except one to its own city. A city the ship cannot reach is not entered: it stops as near as it can, at sea. A port is entered from `Ship.AnchorageAt`.
 - A ship in port is not on the map: its view is inactive, its entry in `ShipWorldPositions` is NaN (which `CityPicker` skips), and it is deselected when it arrives.
 - Selecting a ship from the city panel's "ships in port" tab keeps the city selected: the only case of two selections. `WorldMapInteraction` clears it as soon as another city, or none, is selected, and the panel follows a selected AI ship that leaves by itself (`ShipDocking.Undocked`).
+
+## Harbour traffic
+
+- `Harbour` (Core) is one city's traffic on its `CityGrid`: a ship is only a key in it, it never reads the ship's map position or route. A ship's place is its berth and its distance from the berth along the berth's exit path.
+- A berth is reserved from the moment its ship enters the grid until it has left it by the edge, so a ship leaving (or turning round) still holds it. Turning round (`Leave`, `Return`) keeps the berth and only changes the direction.
+- Ships that find no free berth queue, first come first served; a queued ship enters on `Advance` or `Remove`, one per free berth.
+- The rest of a step is not carried over: a ship that docks or exits mid-step does not use the leftover distance.
