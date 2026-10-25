@@ -12,7 +12,7 @@ namespace DarkFantasyMerchant.Core
         /// buildingCells touch the network, listed from the network outwards. The cells may be those of a building
         /// already placed or of one being planned: either way they are blocked. Empty and true when the building
         /// already touches a network road; false when the grid has no town hall or no path exists. Ties are broken
-        /// by the order of a search that visits neighbours by x then y, so the result is deterministic.
+        /// by the order of a search that visits the neighbours a cell touches by x then y, so the result is deterministic.
         /// </summary>
         public static bool TryFindRoads(CityGrid grid, IReadOnlyCollection<Vector2Int> buildingCells, List<Vector2Int> roads)
         {
@@ -38,7 +38,7 @@ namespace DarkFantasyMerchant.Core
                     for (int dx = -1; dx <= 1; dx++)
                     {
                         var near = new Vector2Int(cell.x + dx, cell.y + dy);
-                        if (grid.Contains(near))
+                        if (grid.Touches(dx, dy) && grid.Contains(near))
                         {
                             goal[near.y * width + near.x] = true;
                         }
@@ -83,7 +83,7 @@ namespace DarkFantasyMerchant.Core
                     for (int dy = -1; dy <= 1; dy++)
                     {
                         var next = new Vector2Int(cell.x + dx, cell.y + dy);
-                        if (!IsOpen(grid, blocked, next) || seen[next.y * width + next.x])
+                        if (!grid.Touches(dx, dy) || !IsOpen(grid, blocked, next) || seen[next.y * width + next.x])
                         {
                             continue;
                         }
@@ -135,7 +135,7 @@ namespace DarkFantasyMerchant.Core
                     for (int dy = -1; dy <= 1; dy++)
                     {
                         var other = new Vector2Int(cell.x + dx, cell.y + dy);
-                        if (IsOpen(grid, null, other) && distances[other.y * width + other.x] == int.MaxValue)
+                        if (grid.Touches(dx, dy) && IsOpen(grid, null, other) && distances[other.y * width + other.x] == int.MaxValue)
                         {
                             distances[other.y * width + other.x] = next;
                             queue.Enqueue(other);
@@ -147,7 +147,7 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// Whether laying the roads, in their order, would connect a building covering buildingCells: every road is a
-        /// distinct free cell outside the building that joins the network or touches (8 neighbours) a road laid
+        /// distinct free cell outside the building that joins the network or touches a road laid
         /// before it, and the building touches a network road or one of the roads. With no road, whether the
         /// building already touches the network.
         /// </summary>
@@ -167,7 +167,7 @@ namespace DarkFantasyMerchant.Core
                     return false;
                 }
 
-                if (!grid.JoinsNetwork(road) && !TouchesAny(road, laid))
+                if (!grid.JoinsNetwork(road) && !TouchesAny(grid, road, laid))
                 {
                     return false;
                 }
@@ -182,7 +182,7 @@ namespace DarkFantasyMerchant.Core
 
             foreach (Vector2Int cell in buildingCells)
             {
-                if (TouchesAny(cell, laid))
+                if (TouchesAny(grid, cell, laid))
                 {
                     return true;
                 }
@@ -191,14 +191,14 @@ namespace DarkFantasyMerchant.Core
             return false;
         }
 
-        // Whether one of the cells is among the 8 neighbours of the cell.
-        private static bool TouchesAny(Vector2Int cell, HashSet<Vector2Int> cells)
+        // Whether the cell touches one of the cells, by the grid's contact.
+        private static bool TouchesAny(CityGrid grid, Vector2Int cell, HashSet<Vector2Int> cells)
         {
             for (int dy = -1; dy <= 1; dy++)
             {
                 for (int dx = -1; dx <= 1; dx++)
                 {
-                    if ((dx != 0 || dy != 0) && cells.Contains(new Vector2Int(cell.x + dx, cell.y + dy)))
+                    if (grid.Touches(dx, dy) && cells.Contains(new Vector2Int(cell.x + dx, cell.y + dy)))
                     {
                         return true;
                     }

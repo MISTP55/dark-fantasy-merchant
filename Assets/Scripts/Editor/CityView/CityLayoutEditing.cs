@@ -191,7 +191,7 @@ namespace DarkFantasyMerchant.Editor
 
             if (townHall == null)
             {
-                var bare = new CityGrid(layout.Width, layout.Height, layout.ForbiddenCells);
+                var bare = new CityGrid(layout.Width, layout.Height, layout.ForbiddenCells, buildings.RoadContact);
                 var centre = new Vector2(layout.Width / 2f, layout.Height / 2f);
 
                 if (layout.StartingHouses.Count > 0)
@@ -227,7 +227,7 @@ namespace DarkFantasyMerchant.Editor
                 townHall = nearest;
             }
 
-            var grid = new CityGrid(layout.Width, layout.Height, layout.ForbiddenCells);
+            var grid = new CityGrid(layout.Width, layout.Height, layout.ForbiddenCells, buildings.RoadContact);
             grid.Place(BuildingKind.TownHall(), BuildingOwner.City, buildings.TownHall.Footprint, townHall.Value);
 
             foreach (Vector2Int road in roads)
@@ -441,7 +441,7 @@ namespace DarkFantasyMerchant.Editor
         /// </summary>
         public static bool TryMakeGrid(CityLayoutDefinition layout, BuildingsDefinition buildings, out CityGrid grid)
         {
-            grid = new CityGrid(layout.Width, layout.Height, layout.ForbiddenCells);
+            grid = new CityGrid(layout.Width, layout.Height, layout.ForbiddenCells, buildings.RoadContact);
 
             if (layout.HasTownHall)
             {

@@ -30,7 +30,13 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("How the buildings choose their place on a city's grid, for the whole world.")]
         [SerializeField] private PlacementStrategyDefinition placementStrategy;
 
+        [Tooltip("When a road touches a building or another road, in every city: by a side or a corner, or by a side only. Read when a game starts, and by the layout tools.")]
+        [SerializeField] private RoadContact roadContact = RoadContact.SidesAndCorners;
+
         public PlacementStrategyDefinition PlacementStrategy => placementStrategy;
+
+        /// <summary>When a road touches a building or another road, for every city's grid.</summary>
+        public RoadContact RoadContact => roadContact;
 
         public RoadDefinition Road => road;
 

@@ -1128,7 +1128,7 @@ namespace DarkFantasyMerchant.Editor
                 room[SocialClass.Rich] / roomPerHouse[SocialClass.Rich],
                 room[SocialClass.Wealthy] / roomPerHouse[SocialClass.Wealthy],
                 room[SocialClass.Poor] / roomPerHouse[SocialClass.Poor]);
-            var grid = new CityGrid(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, System.Array.Empty<Vector2Int>());
+            var grid = new CityGrid(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, System.Array.Empty<Vector2Int>(), buildings.RoadContact);
             Footprint townHallFootprint = buildings.TownHall.Footprint;
             float centre = CityLayoutDefinition.DefaultSize / 2f;
 

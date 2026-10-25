@@ -130,8 +130,12 @@ namespace DarkFantasyMerchant.Core
             {
                 for (int x = origin.x - 1; x <= origin.x + size.x; x++)
                 {
-                    bool inside = x >= origin.x && x < origin.x + size.x && y >= origin.y && y < origin.y + size.y;
-                    if (inside || !grid.Contains(new Vector2Int(x, y)))
+                    bool alongX = x >= origin.x && x < origin.x + size.x;
+                    bool alongY = y >= origin.y && y < origin.y + size.y;
+
+                    // The ring's corner cells touch the place only by a corner.
+                    bool touching = alongX || alongY || grid.Contact == RoadContact.SidesAndCorners;
+                    if ((alongX && alongY) || !touching || !grid.Contains(new Vector2Int(x, y)))
                     {
                         continue;
                     }

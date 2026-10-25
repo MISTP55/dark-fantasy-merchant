@@ -14,7 +14,8 @@ namespace DarkFantasyMerchant.Core
         private readonly List<PlacedBuilding> buildings = new List<PlacedBuilding>();
         private readonly bool[] network;
 
-        public CityGrid(int width, int height, IEnumerable<Vector2Int> forbidden)
+        /// <param name="contact">When a road touches a building or another road, for the whole grid.</param>
+        public CityGrid(int width, int height, IEnumerable<Vector2Int> forbidden, RoadContact contact = RoadContact.SidesAndCorners)
         {
             if (width < 1)
             {
@@ -28,6 +29,7 @@ namespace DarkFantasyMerchant.Core
 
             Width = width;
             Height = height;
+            Contact = contact;
             this.forbidden = new bool[width * height];
             occupancy = new PlacedBuilding[width * height];
             network = new bool[width * height];
@@ -45,6 +47,9 @@ namespace DarkFantasyMerchant.Core
         public int Width { get; }
 
         public int Height { get; }
+
+        /// <summary>When a road touches a building or another road.</summary>
+        public RoadContact Contact { get; }
 
         /// <summary>Buildings in the order they were placed.</summary>
         public IReadOnlyList<PlacedBuilding> Buildings => buildings;
@@ -213,7 +218,7 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
-        /// <summary>Marks every road joined to the town hall, through the 8 neighbours.</summary>
+        /// <summary>Marks every road joined to the town hall, through the neighbours each cell touches.</summary>
         private void FloodNetwork()
         {
             Array.Clear(network, 0, network.Length);
@@ -241,7 +246,7 @@ namespace DarkFantasyMerchant.Core
                 for (int dx = -1; dx <= 1; dx++)
                 {
                     var cell = new Vector2Int(from.x + dx, from.y + dy);
-                    if (!Contains(cell) || network[Index(cell)])
+                    if (!Touches(dx, dy) || !Contains(cell) || network[Index(cell)])
                     {
                         continue;
                     }
@@ -275,7 +280,7 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
-        /// Whether one of the cells is a network road or has one among its 8 neighbours. The cells are not counted
+        /// Whether one of the cells is a network road or touches one. The cells are not counted
         /// as roads themselves.
         /// </summary>
         public bool TouchesNetwork(IEnumerable<Vector2Int> cells)
@@ -313,7 +318,13 @@ namespace DarkFantasyMerchant.Core
             return TouchesNetwork(cells);
         }
 
-        // Among the 8 neighbours of the cell: a cell of the town hall, or a network road.
+        /// <summary>Whether a cell touches the one at this offset from it (each of dx and dy between -1 and 1), by the grid's <see cref="Contact"/>.</summary>
+        public bool Touches(int dx, int dy)
+        {
+            return (dx != 0 || dy != 0) && (Contact == RoadContact.SidesAndCorners || dx == 0 || dy == 0);
+        }
+
+        // Among the neighbours the cell touches: a cell of the town hall, or a network road.
         private bool HasNeighbour(Vector2Int cell, bool townHall)
         {
             for (int dy = -1; dy <= 1; dy++)
@@ -321,7 +332,7 @@ namespace DarkFantasyMerchant.Core
                 for (int dx = -1; dx <= 1; dx++)
                 {
                     var other = new Vector2Int(cell.x + dx, cell.y + dy);
-                    if ((dx == 0 && dy == 0) || !Contains(other))
+                    if (!Touches(dx, dy) || !Contains(other))
                     {
                         continue;
                     }

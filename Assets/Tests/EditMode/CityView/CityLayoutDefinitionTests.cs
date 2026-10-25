@@ -57,6 +57,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void TheGrid_TakesTheCataloguesRoadContact()
+        {
+            // The road at (6, 2) touches the town hall's corner (7, 1) only.
+            layout.SetContent(10, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], TownHall,
+                new[] { new Vector2Int(6, 2) });
+
+            Assert.IsTrue(layout.TryCreateGrid(buildings, out CityGrid corners, out string problem), problem);
+            Assert.AreEqual(RoadContact.SidesAndCorners, corners.Contact);
+            Assert.IsTrue(corners.IsNetworkRoad(new Vector2Int(6, 2)));
+
+            TestBuildings.SetRoadContact(buildings, RoadContact.SidesOnly);
+            Assert.IsTrue(layout.TryCreateGrid(buildings, out CityGrid sides, out problem), problem);
+            Assert.AreEqual(RoadContact.SidesOnly, sides.Contact);
+            Assert.IsFalse(sides.IsNetworkRoad(new Vector2Int(6, 2)));
+        }
+
+        [Test]
         public void TownHallAndRoads_AreOnTheGrid()
         {
             layout.SetContent(10, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], TownHall,

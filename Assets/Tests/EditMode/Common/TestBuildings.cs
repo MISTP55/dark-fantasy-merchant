@@ -87,6 +87,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return buildings;
         }
 
+        /// <summary>Sets when a road touches a building or another road in the catalogue's cities.</summary>
+        public static void SetRoadContact(BuildingsDefinition buildings, RoadContact contact)
+        {
+            var serialized = new SerializedObject(buildings);
+            serialized.FindProperty("roadContact").enumValueIndex = (int)contact;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         /// <summary>Gives a catalogue its placement strategy; null takes it away.</summary>
         public static void SetPlacement(BuildingsDefinition buildings, PlacementStrategyDefinition placement)
         {

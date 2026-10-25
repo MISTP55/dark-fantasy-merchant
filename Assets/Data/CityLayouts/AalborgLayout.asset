@@ -313,19 +313,25 @@ MonoBehaviour:
     origin: {x: 19, y: 23}
     orientation: 0
   roads:
-  - {x: 18, y: 25}
+  - {x: 19, y: 25}
   - {x: 19, y: 26}
   - {x: 19, y: 27}
   - {x: 19, y: 28}
+  - {x: 18, y: 23}
+  - {x: 19, y: 29}
   - {x: 20, y: 29}
   - {x: 21, y: 29}
+  - {x: 22, y: 29}
   - {x: 20, y: 26}
   - {x: 21, y: 26}
+  - {x: 22, y: 26}
   - {x: 19, y: 22}
+  - {x: 19, y: 21}
   - {x: 18, y: 21}
   - {x: 19, y: 20}
   - {x: 19, y: 19}
   - {x: 19, y: 18}
+  - {x: 19, y: 17}
   startingHouses:
   - socialClass: 0
     origin: {x: 17, y: 28}

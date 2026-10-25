@@ -114,7 +114,7 @@ namespace DarkFantasyMerchant.Game
                 }
             }
 
-            var created = new CityGrid(width, height, forbiddenCells);
+            var created = new CityGrid(width, height, forbiddenCells, buildings.RoadContact);
 
             if (!hasTownHall)
             {

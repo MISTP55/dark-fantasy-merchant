@@ -77,29 +77,41 @@ namespace DarkFantasyMerchant.Tests.EditMode
             }
         }
 
-        [Test]
-        public void EveryStartingHouse_IsConnected()
+        // The layouts are connected for either contact: by sides, which also holds with corners.
+        [TestCase(RoadContact.SidesAndCorners)]
+        [TestCase(RoadContact.SidesOnly)]
+        public void EveryStartingHouse_IsConnected(RoadContact contact)
         {
-            var buildings = Load<BuildingsDefinition>(BuildingsPath);
+            BuildingsDefinition buildings = Object.Instantiate(Load<BuildingsDefinition>(BuildingsPath));
 
-            foreach (MapCity entry in Load<WorldMapDefinition>(MapPath).MapCities)
+            try
             {
-                if (!entry.Active)
-                {
-                    continue;
-                }
+                TestBuildings.SetRoadContact(buildings, contact);
 
-                Assert.IsTrue(entry.City.Layout.TryCreateGrid(buildings, out CityGrid grid, out string problem), $"{entry.City.name}: {problem}");
-
-                foreach (PlacedBuilding building in grid.Buildings)
+                foreach (MapCity entry in Load<WorldMapDefinition>(MapPath).MapCities)
                 {
-                    if (building.Kind.IsHouse)
+                    if (!entry.Active)
                     {
-                        Assert.IsTrue(
-                            building.IsConnected,
-                            $"{entry.City.name}: the {building.Kind.HousedClass} house at {building.Place.Origin}");
+                        continue;
+                    }
+
+                    Assert.IsTrue(entry.City.Layout.TryCreateGrid(buildings, out CityGrid grid, out string problem), $"{entry.City.name}: {problem}");
+                    Assert.AreEqual(contact, grid.Contact);
+
+                    foreach (PlacedBuilding building in grid.Buildings)
+                    {
+                        if (building.Kind.IsHouse)
+                        {
+                            Assert.IsTrue(
+                                building.IsConnected,
+                                $"{entry.City.name}: the {building.Kind.HousedClass} house at {building.Place.Origin}");
+                        }
                     }
                 }
+            }
+            finally
+            {
+                Object.DestroyImmediate(buildings);
             }
         }
 
