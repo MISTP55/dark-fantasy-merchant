@@ -8,13 +8,66 @@ namespace DarkFantasyMerchant.Core
     public static class HarbourPaths
     {
         // The order is fixed, so that a grid always gives the same path.
-        private static readonly Vector2Int[] Moves =
+        private static readonly Vector2Int[] AllMoves =
         {
             new Vector2Int(1, 0), new Vector2Int(0, 1), new Vector2Int(-1, 0), new Vector2Int(0, -1),
             new Vector2Int(1, 1), new Vector2Int(-1, 1), new Vector2Int(-1, -1), new Vector2Int(1, -1),
         };
 
         private static readonly float Diagonal = Mathf.Sqrt(2f);
+
+        /// <summary>
+        /// The eight moves of a ship from a cell, in a fixed order. Everything that measures the water of a grid goes
+        /// through them, <see cref="CanStep"/> and <see cref="StepLength"/>, so that it measures what ships sail.
+        /// </summary>
+        public static IReadOnlyList<Vector2Int> Moves => AllMoves;
+
+        /// <summary>Whether a ship can sail the move from the cell: onto a navigable cell, and for a diagonal between two.</summary>
+        public static bool CanStep(CityGrid grid, Vector2Int cell, Vector2Int move)
+        {
+            if (!grid.IsNavigable(cell + move))
+            {
+                return false;
+            }
+
+            return move.x == 0 || move.y == 0
+                || (grid.IsNavigable(new Vector2Int(cell.x + move.x, cell.y))
+                    && grid.IsNavigable(new Vector2Int(cell.x, cell.y + move.y)));
+        }
+
+        /// <summary>The length of a step between two neighbouring cells: 1 straight, the square root of 2 diagonally.</summary>
+        public static float StepLength(Vector2Int from, Vector2Int to)
+        {
+            return from.x != to.x && from.y != to.y ? Diagonal : 1f;
+        }
+
+        /// <summary>Cleared, then filled with the cells touching the port by a side, inside the grid or not; empty without a port.</summary>
+        public static void GetPortSides(CityGrid grid, List<Vector2Int> results)
+        {
+            results.Clear();
+            PlacedBuilding port = grid.Port;
+            if (port == null)
+            {
+                return;
+            }
+
+            Vector2Int origin = port.Place.Origin;
+            Vector2Int size = port.Size;
+            for (int y = origin.y - 1; y <= origin.y + size.y; y++)
+            {
+                for (int x = origin.x - 1; x <= origin.x + size.x; x++)
+                {
+                    bool insideX = x >= origin.x && x < origin.x + size.x;
+                    bool insideY = y >= origin.y && y < origin.y + size.y;
+
+                    // A side neighbour is in the port's columns or in its rows, not both (inside) nor neither (a corner).
+                    if (insideX != insideY)
+                    {
+                        results.Add(new Vector2Int(x, y));
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Fills path with the shortest way from the cell to the nearest navigable cell on the edge of the grid, both
@@ -69,24 +122,16 @@ namespace DarkFantasyMerchant.Core
                     return true;
                 }
 
-                foreach (Vector2Int move in Moves)
+                foreach (Vector2Int move in AllMoves)
                 {
-                    var next = new Vector2Int(cell.x + move.x, cell.y + move.y);
-                    if (!grid.IsNavigable(next))
+                    if (!CanStep(grid, cell, move))
                     {
                         continue;
                     }
 
-                    bool diagonal = move.x != 0 && move.y != 0;
-                    if (diagonal
-                        && (!grid.IsNavigable(new Vector2Int(cell.x + move.x, cell.y))
-                            || !grid.IsNavigable(new Vector2Int(cell.x, cell.y + move.y))))
-                    {
-                        continue;
-                    }
-
+                    Vector2Int next = cell + move;
                     int nextIndex = next.y * width + next.x;
-                    float nextCost = cost[index] + (diagonal ? Diagonal : 1f);
+                    float nextCost = cost[index] + StepLength(cell, next);
                     if (closed[nextIndex] || nextCost >= cost[nextIndex])
                     {
                         continue;
@@ -107,8 +152,7 @@ namespace DarkFantasyMerchant.Core
             float length = 0f;
             for (int i = 1; i < path.Count; i++)
             {
-                bool diagonal = path[i].x != path[i - 1].x && path[i].y != path[i - 1].y;
-                length += diagonal ? Diagonal : 1f;
+                length += StepLength(path[i - 1], path[i]);
             }
 
             return length;
@@ -117,32 +161,19 @@ namespace DarkFantasyMerchant.Core
         /// <summary>Whether the port, when the grid has one, touches by a side a navigable cell that has an exit.</summary>
         public static bool IsJoinedToEdge(CityGrid grid)
         {
-            PlacedBuilding port = grid.Port;
-            if (port == null)
+            if (grid.Port == null)
             {
                 return true;
             }
 
+            var sides = new List<Vector2Int>();
             var path = new List<Vector2Int>();
-            Vector2Int origin = port.Place.Origin;
-            Vector2Int size = port.Size;
-            for (int y = origin.y - 1; y <= origin.y + size.y; y++)
+            GetPortSides(grid, sides);
+            foreach (Vector2Int side in sides)
             {
-                for (int x = origin.x - 1; x <= origin.x + size.x; x++)
+                if (TryFindExit(grid, side, path))
                 {
-                    bool insideX = x >= origin.x && x < origin.x + size.x;
-                    bool insideY = y >= origin.y && y < origin.y + size.y;
-
-                    // A side neighbour is in the port's columns or in its rows, not both (inside) nor neither (a corner).
-                    if (insideX == insideY)
-                    {
-                        continue;
-                    }
-
-                    if (TryFindExit(grid, new Vector2Int(x, y), path))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
 

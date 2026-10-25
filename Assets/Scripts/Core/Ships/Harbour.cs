@@ -200,7 +200,7 @@ namespace DarkFantasyMerchant.Core
             float remaining = entry.Distance;
             for (int i = 1; i < path.Count; i++)
             {
-                float step = StepLength(path[i - 1], path[i]);
+                float step = HarbourPaths.StepLength(path[i - 1], path[i]);
                 if (remaining <= step)
                 {
                     gridPoint = Vector2.Lerp(path[i - 1], path[i], remaining / step);
@@ -273,11 +273,6 @@ namespace DarkFantasyMerchant.Core
                     }
                 }
             }
-        }
-
-        private static float StepLength(Vector2Int from, Vector2Int to)
-        {
-            return from.x != to.x && from.y != to.y ? (float)Math.Sqrt(2.0) : 1f;
         }
 
         private Entry Find(Ship ship)

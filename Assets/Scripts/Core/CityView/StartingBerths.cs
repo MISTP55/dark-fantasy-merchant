@@ -6,15 +6,6 @@ namespace DarkFantasyMerchant.Core
     /// <summary>Chooses the berths of a generated city: the water nearest its port that ships can sail to from the edge.</summary>
     public static class StartingBerths
     {
-        // The moves of HarbourPaths: the same distance as a ship sails.
-        private static readonly Vector2Int[] Moves =
-        {
-            new Vector2Int(1, 0), new Vector2Int(0, 1), new Vector2Int(-1, 0), new Vector2Int(0, -1),
-            new Vector2Int(1, 1), new Vector2Int(-1, 1), new Vector2Int(-1, -1), new Vector2Int(1, -1),
-        };
-
-        private static readonly float Diagonal = Mathf.Sqrt(2f);
-
         /// <summary>
         /// Places up to count berths on the navigable cells nearest the port that have a way to the edge of the grid,
         /// nearest first, ties by y then x (a grid always gets the same berths). Returns how many were placed: fewer
@@ -76,28 +67,16 @@ namespace DarkFantasyMerchant.Core
                 distance[i] = float.PositiveInfinity;
             }
 
-            PlacedBuilding port = grid.Port;
-            if (port == null)
-            {
-                return distance;
-            }
-
+            // The moves and steps of HarbourPaths: the nearest berths are the nearest by sea.
             var open = new SortedSet<(float distance, int index)>();
-            Vector2Int origin = port.Place.Origin;
-            Vector2Int size = port.Size;
-            for (int y = origin.y - 1; y <= origin.y + size.y; y++)
+            var sides = new List<Vector2Int>();
+            HarbourPaths.GetPortSides(grid, sides);
+            foreach (Vector2Int side in sides)
             {
-                for (int x = origin.x - 1; x <= origin.x + size.x; x++)
+                if (grid.IsNavigable(side))
                 {
-                    bool insideX = x >= origin.x && x < origin.x + size.x;
-                    bool insideY = y >= origin.y && y < origin.y + size.y;
-                    if (insideX == insideY || !grid.IsNavigable(new Vector2Int(x, y)))
-                    {
-                        continue;
-                    }
-
-                    distance[y * width + x] = 0f;
-                    open.Add((0f, y * width + x));
+                    distance[side.y * width + side.x] = 0f;
+                    open.Add((0f, side.y * width + side.x));
                 }
             }
 
@@ -111,24 +90,16 @@ namespace DarkFantasyMerchant.Core
                 }
 
                 var cell = new Vector2Int(index % width, index / width);
-                foreach (Vector2Int move in Moves)
+                foreach (Vector2Int move in HarbourPaths.Moves)
                 {
-                    var next = new Vector2Int(cell.x + move.x, cell.y + move.y);
-                    if (!grid.IsNavigable(next))
+                    if (!HarbourPaths.CanStep(grid, cell, move))
                     {
                         continue;
                     }
 
-                    bool diagonal = move.x != 0 && move.y != 0;
-                    if (diagonal
-                        && (!grid.IsNavigable(new Vector2Int(cell.x + move.x, cell.y))
-                            || !grid.IsNavigable(new Vector2Int(cell.x, cell.y + move.y))))
-                    {
-                        continue;
-                    }
-
+                    Vector2Int next = cell + move;
                     int nextIndex = next.y * width + next.x;
-                    float nextDistance = at + (diagonal ? Diagonal : 1f);
+                    float nextDistance = at + HarbourPaths.StepLength(cell, next);
                     if (nextDistance < distance[nextIndex])
                     {
                         distance[nextIndex] = nextDistance;

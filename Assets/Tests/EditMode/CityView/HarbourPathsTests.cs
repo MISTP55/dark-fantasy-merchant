@@ -26,6 +26,46 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void GetPortSides_ListsTheCellsTouchingThePortBySide()
+        {
+            CityGrid grid = OpenHarbour("........");
+            var sides = new List<Vector2Int>();
+
+            HarbourPaths.GetPortSides(grid, sides);
+
+            // The port covers x 1 to 4 and y 3 to 5: four cells below and above it, three on each end, no corner.
+            Assert.AreEqual(14, sides.Count);
+            CollectionAssert.Contains(sides, new Vector2Int(1, 2));
+            CollectionAssert.Contains(sides, new Vector2Int(5, 4));
+            CollectionAssert.DoesNotContain(sides, new Vector2Int(0, 2));
+            CollectionAssert.DoesNotContain(sides, new Vector2Int(2, 4));
+        }
+
+        [Test]
+        public void CanStep_DiagonalOnlyBetweenTwoNavigableCells()
+        {
+            CityGrid grid = TestHarbours.FromRows(
+                "~.",
+                ".~");
+
+            Assert.IsFalse(HarbourPaths.CanStep(grid, new Vector2Int(0, 1), new Vector2Int(1, -1)));
+            Assert.IsFalse(HarbourPaths.CanStep(grid, new Vector2Int(0, 1), new Vector2Int(1, 0)));
+
+            CityGrid open = TestHarbours.FromRows(
+                "~~",
+                "~~");
+
+            Assert.IsTrue(HarbourPaths.CanStep(open, new Vector2Int(0, 1), new Vector2Int(1, -1)));
+        }
+
+        [Test]
+        public void StepLength_IsOneStraightAndTheRootOfTwoDiagonally()
+        {
+            Assert.AreEqual(1f, HarbourPaths.StepLength(new Vector2Int(2, 2), new Vector2Int(3, 2)));
+            Assert.AreEqual(Mathf.Sqrt(2f), HarbourPaths.StepLength(new Vector2Int(2, 2), new Vector2Int(3, 1)), 1e-6f);
+        }
+
+        [Test]
         public void TryFindExit_StraightToTheNearestEdge()
         {
             CityGrid grid = TestHarbours.FromRows(
