@@ -65,12 +65,14 @@ namespace DarkFantasyMerchant.Editor
         private const string CityLayoutsFolder = "Assets/Data/CityLayouts";
         private const string RoadPath = BuildingsFolder + "/Road.asset";
         private const string TownHallPath = BuildingsFolder + "/TownHall.asset";
+        private const string PortPath = BuildingsFolder + "/Port.asset";
         private const string RandomPlacementPath = PlacementFolder + "/RandomPlacement.asset";
         private const string RoadsidePlacementPath = PlacementFolder + "/RoadsidePlacement.asset";
         private static readonly Vector2Int HouseFootprint = new Vector2Int(2, 1);
         private static readonly Vector2Int WorkshopFootprint = new Vector2Int(2, 2);
         private static readonly Vector2Int RoadFootprint = new Vector2Int(1, 1);
         private static readonly Vector2Int TownHallFootprint = new Vector2Int(3, 2);
+        private static readonly Vector2Int PortFootprint = new Vector2Int(4, 3);
         private const string GoodsFolder = "Assets/Data/Goods";
         private const string GoodIconsFolder = "Assets/Art/Goods/Icons";
 
@@ -732,7 +734,8 @@ namespace DarkFantasyMerchant.Editor
                 housedClass => LoadOrCreateHouse(housedClass, timber, metal, tiles),
                 good => LoadOrCreateWorkshop(samples[good], good, timber, metal),
                 LoadOrCreateRoad,
-                LoadOrCreateTownHall);
+                LoadOrCreateTownHall,
+                LoadOrCreatePort);
             CompletePlacement(buildings);
             EditorUtility.SetDirty(buildings);
             return buildings;
@@ -750,6 +753,7 @@ namespace DarkFantasyMerchant.Editor
         /// <param name="workshopOf">The workshop of a good, and whether it was just created; null when there is none.</param>
         /// <param name="roadOf">The road, made when missing.</param>
         /// <param name="townHallOf">The town hall, made when missing.</param>
+        /// <param name="portOf">The port, made when missing.</param>
         public static void CompleteBuildings(
             BuildingsDefinition buildings,
             bool isNew,
@@ -757,7 +761,8 @@ namespace DarkFantasyMerchant.Editor
             System.Func<SocialClass, (HouseDefinition house, bool created)> houseOf,
             System.Func<GoodDefinition, (WorkshopDefinition workshop, bool created)> workshopOf,
             System.Func<RoadDefinition> roadOf,
-            System.Func<TownHallDefinition> townHallOf)
+            System.Func<TownHallDefinition> townHallOf,
+            System.Func<PortDefinition> portOf)
         {
             var catalogue = new SerializedObject(buildings);
             SerializedProperty houses = catalogue.FindProperty("houses");
@@ -786,6 +791,7 @@ namespace DarkFantasyMerchant.Editor
 
             SerializedProperty road = catalogue.FindProperty("road");
             SerializedProperty townHall = catalogue.FindProperty("townHall");
+            SerializedProperty port = catalogue.FindProperty("port");
 
             if (road.objectReferenceValue == null)
             {
@@ -797,11 +803,17 @@ namespace DarkFantasyMerchant.Editor
                 townHall.objectReferenceValue = townHallOf();
             }
 
+            if (port.objectReferenceValue == null)
+            {
+                port.objectReferenceValue = portOf();
+            }
+
             catalogue.ApplyModifiedPropertiesWithoutUndo();
             CompleteFootprints(buildings.Houses, HouseFootprint);
             CompleteFootprints(buildings.Workshops, WorkshopFootprint);
             CompleteFootprints(new BuildingDefinition[] { buildings.Road }, RoadFootprint);
             CompleteFootprints(new BuildingDefinition[] { buildings.TownHall }, TownHallFootprint);
+            CompleteFootprints(new BuildingDefinition[] { buildings.Port }, PortFootprint);
         }
 
         /// <summary>
@@ -945,6 +957,23 @@ namespace DarkFantasyMerchant.Editor
             FillBuilding(serialized, "Hôtel de ville", 0);
             AssetDatabase.CreateAsset(townHall, TownHallPath);
             return townHall;
+        }
+
+        private static PortDefinition LoadOrCreatePort()
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<PortDefinition>(PortPath);
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var port = ScriptableObject.CreateInstance<PortDefinition>();
+            var serialized = new SerializedObject(port);
+            serialized.FindProperty("footprint").vector2IntValue = PortFootprint;
+            FillBuilding(serialized, "Port", 0);
+            AssetDatabase.CreateAsset(port, PortPath);
+            return port;
         }
 
         private static (WorkshopDefinition workshop, bool created) LoadOrCreateWorkshop(

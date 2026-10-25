@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d57d30d8a4fece41baf526a73c09114, type: 3}
+  m_Name: Port
+  m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.PortDefinition
+  displayName: Port
+  gold: 0
+  materials: []
+  footprint: {x: 4, y: 3}
+  viewSprite: {fileID: 0}
+  viewSpriteOrientation: 0
+  waterRows: 2

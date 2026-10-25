@@ -27,6 +27,9 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("The town hall every city has, placed by its layout.")]
         [SerializeField] private TownHallDefinition townHall;
 
+        [Tooltip("The port every city has, placed by its layout.")]
+        [SerializeField] private PortDefinition port;
+
         [Tooltip("How the buildings choose their place on a city's grid, for the whole world.")]
         [SerializeField] private PlacementStrategyDefinition placementStrategy;
 
@@ -41,6 +44,8 @@ namespace DarkFantasyMerchant.Game
         public RoadDefinition Road => road;
 
         public TownHallDefinition TownHall => townHall;
+
+        public PortDefinition Port => port;
 
         public IReadOnlyList<HouseDefinition> Houses => houses;
 
@@ -73,7 +78,7 @@ namespace DarkFantasyMerchant.Game
                 return known ? WorkshopOf(economy.Goods[kind.Good]) : null;
             }
 
-            return kind.IsRoad ? road : townHall;
+            return kind.IsRoad ? road : kind.IsPort ? port : townHall;
         }
 
         /// <summary>The places of the house of each class. Only for a catalogue that <see cref="TryValidate"/> accepts.</summary>
@@ -117,6 +122,18 @@ namespace DarkFantasyMerchant.Game
             if (!townHall.TryValidate(out string townHallProblem))
             {
                 problem = $"'{townHall.name}': {townHallProblem}";
+                return false;
+            }
+
+            if (port == null)
+            {
+                problem = "it has no port";
+                return false;
+            }
+
+            if (!port.TryValidate(out string portProblem))
+            {
+                problem = $"'{port.name}': {portProblem}";
                 return false;
             }
 

@@ -227,7 +227,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(0, left);
             Assert.IsTrue(layout.HasTownHall);
-            Assert.IsTrue(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem), problem);
+            Assert.IsTrue(CityLayoutEditing.TryMakeGrid(layout, buildings, out CityGrid grid));
             Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Poor));
             Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Rich));
             Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Wealthy));

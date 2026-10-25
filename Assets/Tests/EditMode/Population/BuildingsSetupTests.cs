@@ -19,6 +19,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private BuildingsDefinition buildings;
         private RoadDefinition road;
         private TownHallDefinition townHall;
+        private PortDefinition port;
         private int loads;
 
         [SetUp]
@@ -41,6 +42,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             TestBuildings.SetPlacement(buildings, Track(ScriptableObject.CreateInstance<RandomPlacementDefinition>()));
             road = Track(TestBuildings.CreateRoad());
             townHall = Track(TestBuildings.CreateTownHall());
+            port = Track(TestBuildings.CreatePort());
             loads = 0;
         }
 
@@ -95,28 +97,33 @@ namespace DarkFantasyMerchant.Tests.EditMode
                     return (workshops[good], false);
                 },
                 () => road,
-                () => townHall);
+                () => townHall,
+                () => port);
         }
 
         [Test]
-        public void CompleteBuildings_AddsRoadAndTownHall()
+        public void CompleteBuildings_AddsRoadTownHallAndPort()
         {
             Complete(false);
 
             Assert.AreSame(road, buildings.Road);
             Assert.AreSame(townHall, buildings.TownHall);
+            Assert.AreSame(port, buildings.Port);
         }
 
         [Test]
-        public void CompleteBuildings_KeepsTheRoadAndTownHallItHolds()
+        public void CompleteBuildings_KeepsTheRoadTownHallAndPortItHolds()
         {
             RoadDefinition other = Track(TestBuildings.CreateRoad("Chemin"));
+            PortDefinition otherPort = Track(TestBuildings.CreatePort("Quai"));
             TestBuildings.SetRoadAndTownHall(buildings, other, null);
+            TestBuildings.SetPort(buildings, otherPort);
 
             Complete(false);
 
             Assert.AreSame(other, buildings.Road);
             Assert.AreSame(townHall, buildings.TownHall);
+            Assert.AreSame(otherPort, buildings.Port);
         }
 
         [Test]
@@ -178,7 +185,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 housedClass => (rebuilt, true),
                 good => (rebuiltWorkshop, true),
                 () => road,
-                () => townHall);
+                () => townHall,
+                () => port);
 
             Assert.AreEqual(3, buildings.Houses.Count);
             Assert.AreSame(rebuilt, buildings.HouseOf(SocialClass.Wealthy));

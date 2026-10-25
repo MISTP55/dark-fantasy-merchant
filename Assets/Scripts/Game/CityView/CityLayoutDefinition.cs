@@ -6,7 +6,7 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The grid of one city: its size, the cells nothing can cover and the houses it starts with.
+    /// The grid of one city: its size, its water, its town hall, its port, its roads and the houses it starts with.
     /// Holds no runtime state: <see cref="TryCreateGrid"/> makes the grid the market works on.
     /// </summary>
     [CreateAssetMenu(fileName = "CityLayout", menuName = "Dark Fantasy Merchant/City layout")]
@@ -45,6 +45,16 @@ namespace DarkFantasyMerchant.Game
             public BuildingOrientation orientation;
         }
 
+        /// <summary>Where the city's port stands and which side its water rows are on.</summary>
+        [Serializable]
+        public struct PortSiteData
+        {
+            [Tooltip("The covered cell of smallest x and y.")]
+            public Vector2Int origin;
+
+            public PortFacing facing;
+        }
+
         /// <summary>Cells on each side of a new layout, and of the default grids the scene setup makes.</summary>
         public const int DefaultSize = 40;
 
@@ -54,13 +64,18 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Cells on y, at least 1.")]
         [SerializeField, Min(1)] private int height = DefaultSize;
 
-        [Tooltip("Cells nothing can cover (water, rock, fixed scenery), inside the grid.")]
+        [Tooltip("Water cells: only the port may cover them, inside the grid.")]
         [SerializeField] private List<Vector2Int> forbiddenCells = new List<Vector2Int>();
 
         [SerializeField] private bool hasTownHall;
 
         [Tooltip("Where the town hall stands, with the footprint of the catalogue's. Used only when the layout has one.")]
         [SerializeField] private TownHallSite townHall;
+
+        [SerializeField] private bool hasPort;
+
+        [Tooltip("Where the port stands, with the footprint of the catalogue's. Used only when the layout has one.")]
+        [SerializeField] private PortSiteData port;
 
         [Tooltip("The roads the city starts with, one cell each, inside the grid.")]
         [SerializeField] private List<Vector2Int> roads = new List<Vector2Int>();
@@ -81,13 +96,18 @@ namespace DarkFantasyMerchant.Game
         /// <summary>Where the town hall stands; meaningful only when <see cref="HasTownHall"/>.</summary>
         public GridPlace TownHallPlace => new GridPlace(townHall.origin, townHall.orientation);
 
+        public bool HasPort => hasPort;
+
+        /// <summary>Where the port stands; meaningful only when <see cref="HasPort"/>.</summary>
+        public PortSite PortSite => new PortSite(port.origin, port.facing);
+
         public IReadOnlyList<Vector2Int> Roads => roads;
 
         /// <summary>
-        /// The grid with the town hall, then the roads, then the starting houses placed as the city's, with
+        /// The grid with the town hall, then the port, then the roads, then the starting houses placed as the city's, with
         /// the footprints of the catalogue's buildings, which <see cref="BuildingsDefinition.TryValidate"/> accepts.
         /// </summary>
-        /// <param name="problem">What is wrong, for the logs: a size under 1, a forbidden cell outside, no town hall, a town hall, a road or a house that cannot stand; null when nothing is.</param>
+        /// <param name="problem">What is wrong, for the logs: a size under 1, a water cell outside, no town hall or no port, a town hall, a port, a road or a house that cannot stand; null when nothing is.</param>
         public bool TryCreateGrid(BuildingsDefinition buildings, out CityGrid grid, out string problem)
         {
             grid = null;
@@ -138,6 +158,28 @@ namespace DarkFantasyMerchant.Game
 
             created.Place(BuildingKind.TownHall(), BuildingOwner.City, hall.Footprint, TownHallPlace);
 
+            if (!hasPort)
+            {
+                problem = "it has no port";
+                return false;
+            }
+
+            PortDefinition portDefinition = buildings.Port;
+
+            if (portDefinition == null || !portDefinition.TryValidate(out _))
+            {
+                problem = "the buildings have no port with a footprint";
+                return false;
+            }
+
+            if (!created.CanPlacePort(portDefinition.PortFootprint, PortSite))
+            {
+                problem = $"the port cannot stand at ({port.origin.x}, {port.origin.y}) facing {port.facing.ToString().ToLowerInvariant()}: its front rows must be water and its back row land, inside the grid";
+                return false;
+            }
+
+            created.PlacePort(portDefinition.PortFootprint, PortSite);
+
             foreach (Vector2Int cell in roads)
             {
                 var roadPlace = new GridPlace(cell, BuildingOrientation.Along);
@@ -178,9 +220,10 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>Editor and setup only: replaces the whole content.</summary>
         /// <param name="townHall">Where the town hall stands; null for a layout without one.</param>
+        /// <param name="port">Where the port stands; null for a layout without one.</param>
         public void SetContent(
             int width, int height, IEnumerable<Vector2Int> forbidden, IEnumerable<StartingHouse> houses,
-            GridPlace? townHall, IEnumerable<Vector2Int> roads)
+            GridPlace? townHall, IEnumerable<Vector2Int> roads, PortSite? port = null)
         {
             this.width = width;
             this.height = height;
@@ -191,6 +234,10 @@ namespace DarkFantasyMerchant.Game
                 ? new TownHallSite { origin = townHall.Value.Origin, orientation = townHall.Value.Orientation }
                 : default;
             this.roads = new List<Vector2Int>(roads);
+            hasPort = port.HasValue;
+            this.port = port.HasValue
+                ? new PortSiteData { origin = port.Value.Origin, facing = port.Value.Facing }
+                : default;
         }
     }
 }

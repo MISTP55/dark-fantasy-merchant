@@ -58,6 +58,26 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return townHall;
         }
 
+        /// <summary>A free port of 4 by 3 cells, its 2 front rows on water.</summary>
+        public static PortDefinition CreatePort(string name = "Port", int waterRows = 2)
+        {
+            var port = ScriptableObject.CreateInstance<PortDefinition>();
+            port.name = name;
+            var serialized = new SerializedObject(port);
+            serialized.FindProperty("footprint").vector2IntValue = new Vector2Int(4, 3);
+            serialized.FindProperty("waterRows").intValue = waterRows;
+            SetBuilding(serialized, name, 0, new (GoodDefinition good, int units)[0]);
+            return port;
+        }
+
+        /// <summary>Gives a catalogue its port; null takes it away.</summary>
+        public static void SetPort(BuildingsDefinition buildings, PortDefinition port)
+        {
+            var serialized = new SerializedObject(buildings);
+            serialized.FindProperty("port").objectReferenceValue = port;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         /// <summary>Gives a catalogue its road and its town hall; null takes one away.</summary>
         public static void SetRoadAndTownHall(BuildingsDefinition buildings, RoadDefinition road, TownHallDefinition townHall)
         {
@@ -67,7 +87,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        /// <summary>A valid catalogue: a house per class (40, 70 and 140 places, 2 by 1 cells), a road, a town hall and a random placement strategy.</summary>
+        /// <summary>A valid catalogue: a house per class (40, 70 and 140 places, 2 by 1 cells), a road, a town hall, a port and a random placement strategy.</summary>
         public static BuildingsDefinition CreateCatalogue()
         {
             var buildings = ScriptableObject.CreateInstance<BuildingsDefinition>();
@@ -83,6 +103,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             houses.GetArrayElementAtIndex(2).objectReferenceValue = poor;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             SetRoadAndTownHall(buildings, CreateRoad(), CreateTownHall());
+            SetPort(buildings, CreatePort());
             SetPlacement(buildings, ScriptableObject.CreateInstance<RandomPlacementDefinition>());
             return buildings;
         }

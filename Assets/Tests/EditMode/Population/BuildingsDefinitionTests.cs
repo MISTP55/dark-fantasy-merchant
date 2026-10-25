@@ -40,6 +40,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             buildings.name = "Buildings";
             TestBuildings.SetPlacement(buildings, Track(ScriptableObject.CreateInstance<RandomPlacementDefinition>()));
             TestBuildings.SetRoadAndTownHall(buildings, Track(TestBuildings.CreateRoad()), Track(TestBuildings.CreateTownHall()));
+            TestBuildings.SetPort(buildings, Track(TestBuildings.CreatePort()));
             SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse }, new[] { farm, lumberjack });
         }
 
@@ -102,6 +103,33 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.IsFalse(buildings.TryValidate(out string problem));
             StringAssert.Contains("no town hall", problem);
+        }
+
+        [Test]
+        public void NoPort_IsInvalid()
+        {
+            TestBuildings.SetPort(buildings, null);
+
+            Assert.IsFalse(buildings.TryValidate(out string problem));
+            StringAssert.Contains("no port", problem);
+        }
+
+        [Test]
+        public void APortWithWaterRowsOutOfRange_IsInvalid()
+        {
+            TestBuildings.SetPort(buildings, Track(TestBuildings.CreatePort(waterRows: 3)));
+
+            Assert.IsFalse(buildings.TryValidate(out string problem));
+            StringAssert.Contains("water rows", problem);
+        }
+
+        [Test]
+        public void DefinitionOf_ThePort_IsThePort()
+        {
+            PortDefinition port = Track(TestBuildings.CreatePort());
+            TestBuildings.SetPort(buildings, port);
+
+            Assert.AreSame(port, buildings.DefinitionOf(BuildingKind.Port(), null));
         }
 
         [Test]
