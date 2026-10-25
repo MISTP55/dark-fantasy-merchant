@@ -14,6 +14,7 @@ namespace DarkFantasyMerchant.Core
         private readonly List<PlacedBuilding> buildings = new List<PlacedBuilding>();
         private readonly bool[] network;
 
+        /// <param name="forbidden">The water cells: only the port may cover them.</param>
         /// <param name="contact">When a road touches a building or another road, for the whole grid.</param>
         public CityGrid(int width, int height, IEnumerable<Vector2Int> forbidden, RoadContact contact = RoadContact.SidesAndCorners)
         {
@@ -57,6 +58,9 @@ namespace DarkFantasyMerchant.Core
         /// <summary>The town hall; null when none is placed.</summary>
         public PlacedBuilding TownHall { get; private set; }
 
+        /// <summary>The port; null when none is placed.</summary>
+        public PlacedBuilding Port { get; private set; }
+
         public event Action<PlacedBuilding> BuildingPlaced;
 
         /// <summary>
@@ -70,6 +74,7 @@ namespace DarkFantasyMerchant.Core
             return cell.x >= 0 && cell.y >= 0 && cell.x < Width && cell.y < Height;
         }
 
+        /// <summary>Whether the cell is water: only the port may cover it.</summary>
         public bool IsForbidden(Vector2Int cell)
         {
             return Contains(cell) && forbidden[Index(cell)];
@@ -114,9 +119,66 @@ namespace DarkFantasyMerchant.Core
 
         public PlacedBuilding Place(BuildingKind kind, BuildingOwner owner, Footprint footprint, GridPlace place)
         {
-            PlacedBuilding building = PlaceWithoutNetwork(kind, owner, footprint, place);
+            if (kind.IsPort)
+            {
+                throw new ArgumentException("Place a port with PlacePort.", nameof(kind));
+            }
+
+            if (!CanPlace(footprint, place))
+            {
+                throw new InvalidOperationException("The footprint does not fit at this place.");
+            }
+
+            PlacedBuilding building = PlaceWithoutNetwork(new PlacedBuilding(kind, owner, footprint, place));
             UpdateNetwork(building);
             return building;
+        }
+
+        /// <summary>
+        /// Whether the port can stand at the site: inside the grid, on no building, its front rows all on water and
+        /// its back rows all on land.
+        /// </summary>
+        public bool CanPlacePort(PortFootprint footprint, PortSite site)
+        {
+            Vector2Int size = footprint.Footprint.SizeFor(site.Place.Orientation);
+            Vector2Int origin = site.Origin;
+
+            if (origin.x < 0 || origin.y < 0 || origin.x + size.x > Width || origin.y + size.y > Height)
+            {
+                return false;
+            }
+
+            for (int y = origin.y; y < origin.y + size.y; y++)
+            {
+                for (int x = origin.x; x < origin.x + size.x; x++)
+                {
+                    var cell = new Vector2Int(x, y);
+                    int index = Index(cell);
+                    if (occupancy[index] != null || forbidden[index] != footprint.IsWater(site, cell))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>Places the city's port; it is not part of the network and connects nothing.</summary>
+        public PlacedBuilding PlacePort(PortFootprint footprint, PortSite site)
+        {
+            if (Port != null)
+            {
+                throw new InvalidOperationException("The grid already has a port.");
+            }
+
+            if (!CanPlacePort(footprint, site))
+            {
+                throw new InvalidOperationException("The port cannot stand at this site.");
+            }
+
+            return PlaceWithoutNetwork(new PlacedBuilding(
+                BuildingKind.Port(), BuildingOwner.City, footprint.Footprint, site.Place, site.Facing));
         }
 
         /// <summary>
@@ -137,7 +199,7 @@ namespace DarkFantasyMerchant.Core
 
             foreach (Vector2Int cell in cells)
             {
-                PlaceWithoutNetwork(BuildingKind.Road(), owner, road, new GridPlace(cell, BuildingOrientation.Along));
+                PlaceWithoutNetwork(new PlacedBuilding(BuildingKind.Road(), owner, road, new GridPlace(cell, BuildingOrientation.Along)));
             }
 
             if (cells.Count > 0)
@@ -147,11 +209,14 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
-        private PlacedBuilding PlaceWithoutNetwork(BuildingKind kind, BuildingOwner owner, Footprint footprint, GridPlace place)
+        // The caller has checked that the building fits.
+        private PlacedBuilding PlaceWithoutNetwork(PlacedBuilding building)
         {
-            if (kind.IsRoad && (footprint.Width != 1 || footprint.Depth != 1))
+            BuildingKind kind = building.Kind;
+            GridPlace place = building.Place;
+            if (kind.IsRoad && (building.Footprint.Width != 1 || building.Footprint.Depth != 1))
             {
-                throw new ArgumentException("A road covers exactly one cell.", nameof(footprint));
+                throw new ArgumentException("A road covers exactly one cell.", nameof(building));
             }
 
             if (kind.IsTownHall && TownHall != null)
@@ -159,12 +224,6 @@ namespace DarkFantasyMerchant.Core
                 throw new InvalidOperationException("The grid already has a town hall.");
             }
 
-            if (!CanPlace(footprint, place))
-            {
-                throw new InvalidOperationException("The footprint does not fit at this place.");
-            }
-
-            var building = new PlacedBuilding(kind, owner, footprint, place);
             Vector2Int size = building.Size;
             for (int y = place.Origin.y; y < place.Origin.y + size.y; y++)
             {
@@ -178,6 +237,10 @@ namespace DarkFantasyMerchant.Core
             if (kind.IsTownHall)
             {
                 TownHall = building;
+            }
+            else if (kind.IsPort)
+            {
+                Port = building;
             }
 
             BuildingPlaced?.Invoke(building);
