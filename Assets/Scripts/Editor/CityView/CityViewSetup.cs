@@ -30,6 +30,8 @@ namespace DarkFantasyMerchant.Editor
         private const string Block2x2SpritePath = ArtFolder + "/Block2x2.png";
         private const string Block3x2SpritePath = ArtFolder + "/Block3x2.png";
         private const string Block2x3SpritePath = ArtFolder + "/Block2x3.png";
+        private const string PortBackSpritePath = ArtFolder + "/PortBack.png";
+        private const string PortFrontSpritePath = ArtFolder + "/PortFront.png";
 
         // A cell is 1 world unit across (IsoProjection.CellWidth): 64 by 32 pixels.
         private const int PixelsPerUnit = 64;
@@ -58,6 +60,8 @@ namespace DarkFantasyMerchant.Editor
             CreateSprite(Block2x2SpritePath, 2, 2, BlockHeightPixels);
             CreateSprite(Block3x2SpritePath, 3, 2, BlockHeightPixels);
             CreateSprite(Block2x3SpritePath, 2, 3, BlockHeightPixels);
+            CreatePortSprite(PortBackSpritePath, true);
+            CreatePortSprite(PortFrontSpritePath, false);
             CreateMaterial();
             AssetDatabase.SaveAssets();
 
@@ -154,6 +158,79 @@ namespace DarkFantasyMerchant.Editor
 
             var fill = new[] { Color.clear, Color.white, new Color(0.78f, 0.78f, 0.78f, 1f), new Color(0.62f, 0.62f, 0.62f, 1f) };
             Color outline = heightPixels > 0 ? new Color(0.35f, 0.35f, 0.35f, 1f) : new Color(0.75f, 0.75f, 0.75f, 1f);
+            WriteSprite(path, faces, fill, outline, groundHeight);
+        }
+
+        /// <summary>
+        /// The port's placeholder, 4 cells on x and 3 on y, drawn Along: its 2 water rows a flat deck on the ground,
+        /// its land row a block. With the water at the back, the water rows are those of largest y (facing north);
+        /// otherwise those of smallest y (facing south). Mirrored, it shows the east and west facings.
+        /// </summary>
+        private static void CreatePortSprite(string path, bool waterAtBack)
+        {
+            if (File.Exists(path))
+            {
+                return;
+            }
+
+            const int sizeX = 4;
+            const int sizeY = 3;
+            const int waterRows = 2;
+            const int halfCellWidth = PixelsPerUnit / 2;
+            const int quarterCellWidth = PixelsPerUnit / 4;
+            int width = (sizeX + sizeY) * halfCellWidth;
+            int groundHeight = (sizeX + sizeY) * quarterCellWidth;
+            int height = groundHeight + BlockHeightPixels;
+
+            // A point of the ground, in cells, on the texture: x goes to the upper right, y to the upper left.
+            Vector2 At(float x, float y)
+            {
+                return new Vector2((x - y + sizeY) * halfCellWidth, (x + y) * quarterCellWidth);
+            }
+
+            float landFrom = waterAtBack ? 0f : waterRows;
+            float landTo = waterAtBack ? sizeY - waterRows : sizeY;
+            float waterFrom = waterAtBack ? sizeY - waterRows : 0f;
+            float waterTo = waterAtBack ? sizeY : waterRows;
+            var up = new Vector2(0f, BlockHeightPixels);
+
+            const int empty = 0;
+            const int topFace = 1;
+            const int leftFace = 2;
+            const int rightFace = 3;
+            const int deck = 4;
+            var faces = new int[width, height];
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    var point = new Vector2(x + 0.5f, y + 0.5f);
+
+                    // The block is drawn over the deck: in front of it, it hides it; behind it, they never overlap.
+                    faces[x, y] = IsInside(point, At(sizeX, landTo) + up, At(sizeX, landFrom) + up, At(0f, landFrom) + up, At(0f, landTo) + up) ? topFace
+                        : IsInside(point, At(0f, landTo) + up, At(0f, landTo), At(0f, landFrom), At(0f, landFrom) + up) ? leftFace
+                        : IsInside(point, At(0f, landFrom) + up, At(0f, landFrom), At(sizeX, landFrom), At(sizeX, landFrom) + up) ? rightFace
+                        : IsInside(point, At(sizeX, waterTo), At(sizeX, waterFrom), At(0f, waterFrom), At(0f, waterTo)) ? deck
+                        : empty;
+                }
+            }
+
+            var fill = new[]
+            {
+                Color.clear, Color.white, new Color(0.78f, 0.78f, 0.78f, 1f), new Color(0.62f, 0.62f, 0.62f, 1f),
+                new Color(0.55f, 0.55f, 0.55f, 1f),
+            };
+            WriteSprite(path, faces, fill, new Color(0.35f, 0.35f, 0.35f, 1f), groundHeight);
+        }
+
+        // Writes the faces, each in its fill and outlined, and imports the texture as a sprite whose pivot is the
+        // centre of the footprint on the ground.
+        private static void WriteSprite(string path, int[,] faces, Color[] fill, Color outline, int groundHeight)
+        {
+            const int empty = 0;
+            int width = faces.GetLength(0);
+            int height = faces.GetLength(1);
             var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
 
             for (int y = 0; y < height; y++)
@@ -354,6 +431,8 @@ namespace DarkFantasyMerchant.Editor
             changed |= WorldMapSetup.FillReference(gridView, "block2x2Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block2x2SpritePath));
             changed |= WorldMapSetup.FillReference(gridView, "block3x2Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block3x2SpritePath));
             changed |= WorldMapSetup.FillReference(gridView, "block2x3Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block2x3SpritePath));
+            changed |= WorldMapSetup.FillReference(gridView, "portBackSprite", AssetDatabase.LoadAssetAtPath<Sprite>(PortBackSpritePath));
+            changed |= WorldMapSetup.FillReference(gridView, "portFrontSprite", AssetDatabase.LoadAssetAtPath<Sprite>(PortFrontSpritePath));
             return changed;
         }
     }

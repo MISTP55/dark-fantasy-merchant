@@ -288,10 +288,13 @@ MonoBehaviour:
   block2x2Sprite: {fileID: 21300000, guid: 6cca30dcf65eff74b8f0a7d588c92237, type: 3}
   block3x2Sprite: {fileID: 21300000, guid: bbda398459f370c47a9e3a6c274b6142, type: 3}
   block2x3Sprite: {fileID: 21300000, guid: 6ce706a0f2da74c4791b92889e2276c2, type: 3}
+  portBackSprite: {fileID: 21300000, guid: bc4c374d851c8564a8bf5b06185b6284, type: 3}
+  portFrontSprite: {fileID: 21300000, guid: 9226f1b773fdc6f458a50fe9e9148db4, type: 3}
   freeCellColor: {r: 0.23137255, g: 0.2901961, b: 0.22745098, a: 1}
   forbiddenCellColor: {r: 0.14117648, g: 0.2627451, b: 0.36862746, a: 1}
   workshopColor: {r: 0.8392157, g: 0.22745098, b: 0.76862746, a: 1}
   townHallColor: {r: 0.7882353, g: 0.63529414, b: 0.15294118, a: 1}
+  portColor: {r: 0.6901961, g: 0.47843137, b: 0.28235295, a: 1}
   roadColor: {r: 0.5411765, g: 0.48235294, b: 0.38431373, a: 1}
   inactiveShade: 0.45
   buildingScale: 0.85

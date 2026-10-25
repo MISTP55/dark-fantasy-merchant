@@ -45,11 +45,18 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("A block covering 2 cells on x and 3 on y.")]
         [SerializeField] private Sprite block2x3Sprite;
 
+        [Tooltip("The port facing north: 4 cells on x and 3 on y, its water rows at the back. Mirrored, it faces east.")]
+        [SerializeField] private Sprite portBackSprite;
+
+        [Tooltip("The port facing south: 4 cells on x and 3 on y, its water rows in front. Mirrored, it faces west.")]
+        [SerializeField] private Sprite portFrontSprite;
+
         [SerializeField] private Color freeCellColor = new Color32(0x3B, 0x4A, 0x3A, 0xFF);
         [SerializeField] private Color forbiddenCellColor = new Color32(0x24, 0x43, 0x5E, 0xFF);
         [Tooltip("The colour of every workshop; a house takes the colour of its class.")]
         [SerializeField] private Color workshopColor = new Color32(0xD6, 0x3A, 0xC4, 0xFF);
         [SerializeField] private Color townHallColor = new Color32(0xC9, 0xA2, 0x27, 0xFF);
+        [SerializeField] private Color portColor = new Color32(0xB0, 0x7A, 0x48, 0xFF);
         [SerializeField] private Color roadColor = new Color32(0x8A, 0x7B, 0x62, 0xFF);
         [Tooltip("A house or workshop that is not connected is drawn with its colour times this on red, green and blue.")]
         [SerializeField, Range(0.1f, 1f)] private float inactiveShade = 0.45f;
@@ -315,12 +322,20 @@ namespace DarkFantasyMerchant.Game
             }
 
             Vector2Int size = building.Size;
-            string kindName = building.Kind.IsHouse ? "House" : building.Kind.IsWorkshop ? "Workshop" : "Town hall";
-            BuildingDefinition definition = buildings != null ? buildings.DefinitionOf(building.Kind, economy) : null;
+            string kindName = building.Kind.IsHouse ? "House" : building.Kind.IsWorkshop ? "Workshop"
+                : building.Kind.IsPort ? "Port" : "Town hall";
+
+            // The port's placeholder shows its facing; a view sprite, which has only two orientations, is not used for it.
+            BuildingDefinition definition = buildings != null && !building.Kind.IsPort ? buildings.DefinitionOf(building.Kind, economy) : null;
             Sprite viewSprite = definition != null ? definition.ViewSprite : null;
+            (bool waterAtBack, bool portFlipped) = building.Kind.IsPort ? PortSpriteOf(building.PortFacing) : (false, false);
+            Sprite sprite = viewSprite != null ? viewSprite
+                : building.Kind.IsPort ? (waterAtBack ? portBackSprite : portFrontSprite)
+                : BlockSpriteOf(size);
             SpriteRenderer buildingRenderer = CreateRenderer(
-                $"{building.Owner} {kindName} {origin.x},{origin.y}", buildingRoot, viewSprite != null ? viewSprite : BlockSpriteOf(size));
+                $"{building.Owner} {kindName} {origin.x},{origin.y}", buildingRoot, sprite);
             buildingRenderer.transform.localPosition = IsoProjection.CenterOf(origin, size);
+            buildingRenderer.flipX = portFlipped;
 
             // A view sprite has its own size; mirrored around its pivot, it shows the other orientation.
             if (viewSprite != null)
@@ -368,6 +383,11 @@ namespace DarkFantasyMerchant.Game
                 return isViewSprite ? Color.white : townHallColor;
             }
 
+            if (building.Kind.IsPort)
+            {
+                return portColor;
+            }
+
             Color color = isViewSprite ? Color.white
                 : building.Kind.IsHouse ? HouseColors.Of(building.Kind.HousedClass)
                 : workshopColor;
@@ -382,6 +402,26 @@ namespace DarkFantasyMerchant.Game
 
         // The scale of a building's block, and of the ghost, which shows the building as it will stand.
         private Vector3 BuildingScaleVector => new Vector3(buildingScale, buildingScale, 1f);
+
+        /// <summary>
+        /// The port's placeholder for a facing: the one with its water rows at the back (facing north) or in front
+        /// (facing south), and whether it is mirrored. Mirroring swaps the screen directions of x and y, so the north
+        /// one, its water at the upper left, shows the east facing, its water at the upper right.
+        /// </summary>
+        internal static (bool waterAtBack, bool flipX) PortSpriteOf(PortFacing facing)
+        {
+            switch (facing)
+            {
+                case PortFacing.North:
+                    return (true, false);
+                case PortFacing.East:
+                    return (true, true);
+                case PortFacing.South:
+                    return (false, false);
+                default:
+                    return (false, true);
+            }
+        }
 
         private Sprite BlockSpriteOf(Vector2Int size)
         {
