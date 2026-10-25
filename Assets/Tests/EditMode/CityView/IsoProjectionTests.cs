@@ -154,5 +154,34 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 }
             }
         }
+
+        [Test]
+        public void PointOf_OnIntegerPoints_IsCenterOf()
+        {
+            for (int x = -3; x <= 5; x++)
+            {
+                for (int y = -2; y <= 6; y++)
+                {
+                    Assert.AreEqual(IsoProjection.CenterOf(new Vector2Int(x, y)), IsoProjection.PointOf(new Vector2(x, y)));
+                }
+            }
+        }
+
+        [Test]
+        public void GridPointAt_IsTheInverseOfPointOf()
+        {
+            var points = new[]
+            {
+                Vector2.zero, new Vector2(3f, 7f), new Vector2(0.25f, 0.5f), new Vector2(12.4f, 3.75f),
+                new Vector2(-1.5f, 2.2f), new Vector2(79.9f, 0.1f),
+            };
+
+            foreach (Vector2 point in points)
+            {
+                Vector2 back = IsoProjection.GridPointAt(IsoProjection.PointOf(point));
+                Assert.AreEqual(point.x, back.x, 1e-4f, $"{point}");
+                Assert.AreEqual(point.y, back.y, 1e-4f, $"{point}");
+            }
+        }
     }
 }

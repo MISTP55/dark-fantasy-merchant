@@ -167,6 +167,7 @@ MonoBehaviour:
   gridView: {fileID: 784393615}
   viewCamera: {fileID: 2100634367}
   placement: {fileID: 696305942}
+  harbourView: {fileID: 1274976601}
 --- !u!114 &158713353
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -347,6 +348,56 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1689500793}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1274976600
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1274976602}
+  - component: {fileID: 1274976601}
+  m_Layer: 8
+  m_Name: City Harbour
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1274976601
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1274976600}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b3e5e7ab8b8838469568ad2d84f1349, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.HarbourView
+  gridView: {fileID: 784393615}
+  spriteMaterial: {fileID: 2100000, guid: b4058b0d7f637544ea47f8d04b31303c, type: 2}
+  shipSprite: {fileID: 21300000, guid: 7cb68836ef3cf79439c88a3c30f7d859, type: 3}
+  shipScale: 0.8
+  playerShipColor: {r: 1, g: 1, b: 1, a: 1}
+  aiShipColor: {r: 0.5, g: 0.7, b: 1, a: 1}
+--- !u!4 &1274976602
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1274976600}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1689500793}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1524076200
 GameObject:
   m_ObjectHideFlags: 0
@@ -411,6 +462,7 @@ Transform:
   - {fileID: 864136043}
   - {fileID: 784393614}
   - {fileID: 696305943}
+  - {fileID: 1274976602}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2009373775

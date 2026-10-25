@@ -32,10 +32,12 @@ namespace DarkFantasyMerchant.Editor
         private const string Block2x3SpritePath = ArtFolder + "/Block2x3.png";
         private const string PortBackSpritePath = ArtFolder + "/PortBack.png";
         private const string PortFrontSpritePath = ArtFolder + "/PortFront.png";
+        private const string ShipSpritePath = ArtFolder + "/ShipCylinder.png";
 
         // A cell is 1 world unit across (IsoProjection.CellWidth): 64 by 32 pixels.
         private const int PixelsPerUnit = 64;
         private const int BlockHeightPixels = 32;
+        private const int ShipHeightPixels = 20;
         private const int FirstUserLayer = 8;
 
         // Below the grid, where nothing is drawn.
@@ -62,6 +64,7 @@ namespace DarkFantasyMerchant.Editor
             CreateSprite(Block2x3SpritePath, 2, 3, BlockHeightPixels);
             CreatePortSprite(PortBackSpritePath, true);
             CreatePortSprite(PortFrontSpritePath, false);
+            CreateShipSprite(ShipSpritePath);
             CreateMaterial();
             AssetDatabase.SaveAssets();
 
@@ -222,6 +225,57 @@ namespace DarkFantasyMerchant.Editor
                 new Color(0.55f, 0.55f, 0.55f, 1f),
             };
             WriteSprite(path, faces, fill, new Color(0.35f, 0.35f, 0.35f, 1f), groundHeight);
+        }
+
+        /// <summary>
+        /// The ship's placeholder: a white upright cylinder standing on one cell, the circle inscribed in the cell
+        /// seen in the projection (an ellipse twice as wide as high), its side shaded and its edges outlined. The pivot
+        /// is the centre of the cell on the ground, as for the blocks.
+        /// </summary>
+        private static void CreateShipSprite(string path)
+        {
+            if (File.Exists(path))
+            {
+                return;
+            }
+
+            const int width = PixelsPerUnit;
+            const int groundHeight = PixelsPerUnit / 2;
+            const int height = groundHeight + ShipHeightPixels;
+
+            // The circle inscribed in the cell on the ground: its half-width is half the cell's width over the root of 2.
+            float halfWidth = PixelsPerUnit * 0.25f * Mathf.Sqrt(2f);
+            float halfHeight = halfWidth * 0.5f;
+            var groundCentre = new Vector2(width * 0.5f, groundHeight * 0.5f);
+            var topCentre = groundCentre + new Vector2(0f, ShipHeightPixels);
+
+            const int empty = 0;
+            const int topFace = 1;
+            const int sideFace = 2;
+            var faces = new int[width, height];
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    var point = new Vector2(x + 0.5f, y + 0.5f);
+                    float across = (point.x - groundCentre.x) / halfWidth;
+                    bool inTop = IsInEllipse(point, topCentre, halfWidth, halfHeight);
+                    bool inSide = Mathf.Abs(across) <= 1f && point.y <= topCentre.y
+                        && (point.y >= groundCentre.y || IsInEllipse(point, groundCentre, halfWidth, halfHeight));
+                    faces[x, y] = inTop ? topFace : inSide ? sideFace : empty;
+                }
+            }
+
+            var fill = new[] { Color.clear, Color.white, new Color(0.7f, 0.7f, 0.7f, 1f) };
+            WriteSprite(path, faces, fill, new Color(0.35f, 0.35f, 0.35f, 1f), groundHeight);
+        }
+
+        private static bool IsInEllipse(Vector2 point, Vector2 centre, float halfWidth, float halfHeight)
+        {
+            float dx = (point.x - centre.x) / halfWidth;
+            float dy = (point.y - centre.y) / halfHeight;
+            return dx * dx + dy * dy <= 1f;
         }
 
         // Writes the faces, each in its fill and outlined, and imports the texture as a sprite whose pivot is the
@@ -401,6 +455,16 @@ namespace DarkFantasyMerchant.Editor
                 changed = true;
             }
 
+            var harbourView = WorldMapSetup.FindInScene<HarbourView>(scene);
+
+            if (harbourView == null)
+            {
+                GameObject harbourObject = WorldMapSetup.CreateInGroup(scene, WorldMapSetup.WorldGroup, "City Harbour");
+                harbourObject.layer = layer;
+                harbourView = harbourObject.AddComponent<HarbourView>();
+                changed = true;
+            }
+
             var controller = WorldMapSetup.FindInScene<CityViewController>(scene);
 
             if (controller == null)
@@ -421,6 +485,10 @@ namespace DarkFantasyMerchant.Editor
             changed |= WorldMapSetup.FillReference(controller, "gridView", gridView);
             changed |= WorldMapSetup.FillReference(controller, "viewCamera", viewCamera);
             changed |= WorldMapSetup.FillReference(controller, "placement", placement);
+            changed |= WorldMapSetup.FillReference(controller, "harbourView", harbourView);
+            changed |= WorldMapSetup.FillReference(harbourView, "gridView", gridView);
+            changed |= WorldMapSetup.FillReference(harbourView, "spriteMaterial", AssetDatabase.LoadAssetAtPath<Material>(MaterialPath));
+            changed |= WorldMapSetup.FillReference(harbourView, "shipSprite", AssetDatabase.LoadAssetAtPath<Sprite>(ShipSpritePath));
             changed |= WorldMapSetup.FillReference(placement, "input", input);
             changed |= WorldMapSetup.FillReference(placement, "viewCamera", viewCamera);
             changed |= WorldMapSetup.FillReference(placement, "gridView", gridView);

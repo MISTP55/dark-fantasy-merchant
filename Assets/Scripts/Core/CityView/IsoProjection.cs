@@ -21,6 +21,23 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
+        /// The world position of a point of the grid, between cells too: cell (x, y)'s centre is the point (x, y),
+        /// so on whole points it is <see cref="CenterOf(Vector2Int)"/>.
+        /// </summary>
+        public static Vector2 PointOf(Vector2 gridPoint)
+        {
+            return new Vector2((gridPoint.x - gridPoint.y) * CellWidth * 0.5f, (gridPoint.x + gridPoint.y) * CellHeight * 0.5f);
+        }
+
+        /// <summary>The point of the grid at this world position: the exact inverse of <see cref="PointOf"/>.</summary>
+        public static Vector2 GridPointAt(Vector2 world)
+        {
+            var difference = world.x / (CellWidth * 0.5f);
+            var sum = world.y / (CellHeight * 0.5f);
+            return new Vector2((sum + difference) * 0.5f, (sum - difference) * 0.5f);
+        }
+
+        /// <summary>
         /// The centre of the cells a footprint covers, from this origin.
         /// <paramref name="size"/> is the covered size, already turned (<see cref="Footprint.SizeFor"/>).
         /// </summary>

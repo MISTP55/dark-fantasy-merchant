@@ -18,9 +18,13 @@ namespace DarkFantasyMerchant.Game
         // Ground cells are flat diamonds that never overlap: one order for all, below every road and building.
         private const int GroundSortingOrder = 0;
 
-        // Roads are flat on the ground: above the cells, below every building.
+        // Roads are flat on the ground: above the cells, below every building and ship.
         private const int RoadSortingOrder = 1;
-        private const int FirstBuildingSortingOrder = 2;
+
+        // Buildings go every other order from here, a ship in the gap before the building it is behind: the lowest
+        // ship order, FirstBuildingSortingOrder - 1, stays above the roads.
+        private const int FirstBuildingSortingOrder = 3;
+        private const int BuildingSortingStride = 2;
 
         // Above every building: a sortingOrder is a 16-bit value.
         private const int GhostSortingOrder = short.MaxValue;
@@ -69,7 +73,7 @@ namespace DarkFantasyMerchant.Game
 
         private readonly List<SpriteRenderer> cellRenderers = new List<SpriteRenderer>();
 
-        // The buildings' renderers by rank: index i is drawn with sortingOrder FirstBuildingSortingOrder + i.
+        // The buildings' renderers by rank: index i is drawn with sortingOrder FirstBuildingSortingOrder + 2 i.
         private readonly List<SpriteRenderer> buildingRenderers = new List<SpriteRenderer>();
         private readonly BuildingDrawOrder drawOrder = new BuildingDrawOrder();
 
@@ -106,6 +110,17 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>The tiles of the road being placed, pooled: those past the road's length are off.</summary>
         public IReadOnlyList<SpriteRenderer> RoadGhostRenderers => roadGhostRenderers;
+
+        /// <summary>
+        /// The sortingOrder of a ship on this cell: in the gap below the first building whose draw key is not smaller
+        /// than a 1 by 1 block's here, so that it is drawn after every building behind it and before every building
+        /// in front of it. Above the ground and the roads, below the ghost.
+        /// </summary>
+        public int ShipSortingOrderAt(Vector2Int cell)
+        {
+            int rank = drawOrder.RankOf(IsoProjection.DrawKeyOf(cell, Vector2Int.one));
+            return FirstBuildingSortingOrder + BuildingSortingStride * rank - 1;
+        }
 
         /// <summary>The rectangle, in world units, that holds every cell's diamond.</summary>
         public static Rect WorldBoundsOf(CityGrid grid)
@@ -361,7 +376,7 @@ namespace DarkFantasyMerchant.Game
 
             for (int i = rank; i < buildingRenderers.Count; i++)
             {
-                buildingRenderers[i].sortingOrder = FirstBuildingSortingOrder + i;
+                buildingRenderers[i].sortingOrder = FirstBuildingSortingOrder + BuildingSortingStride * i;
             }
         }
 

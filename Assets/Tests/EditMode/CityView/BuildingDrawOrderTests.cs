@@ -69,5 +69,26 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 Assert.LessOrEqual(order.KeyAt(rank - 1), order.KeyAt(rank));
             }
         }
+
+        [Test]
+        public void RankOf_CountsSmallerKeys()
+        {
+            var order = new BuildingDrawOrder();
+            order.Insert(new Vector2Int(8, 8), House);
+            order.Insert(new Vector2Int(4, 4), House);
+            order.Insert(new Vector2Int(4, 4), House);
+            order.Insert(new Vector2Int(0, 0), House);
+            long behind = IsoProjection.DrawKeyOf(new Vector2Int(8, 8), House);
+            long middle = IsoProjection.DrawKeyOf(new Vector2Int(4, 4), House);
+            long front = IsoProjection.DrawKeyOf(new Vector2Int(0, 0), House);
+
+            Assert.AreEqual(0, order.RankOf(behind - 1));
+            Assert.AreEqual(0, order.RankOf(behind));
+            Assert.AreEqual(1, order.RankOf(middle));
+            Assert.AreEqual(3, order.RankOf(middle + 1));
+            Assert.AreEqual(3, order.RankOf(front));
+            Assert.AreEqual(4, order.RankOf(front + 1));
+            Assert.AreEqual(0, new BuildingDrawOrder().RankOf(middle));
+        }
     }
 }

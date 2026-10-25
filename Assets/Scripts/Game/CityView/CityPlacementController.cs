@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DarkFantasyMerchant.Core;
 using UnityEngine;
@@ -42,6 +43,12 @@ namespace DarkFantasyMerchant.Game
         private Vector2Int traceEnd;
 
         public bool IsPlacing => cursor.IsPlacing;
+
+        /// <summary>
+        /// Raised with the screen position of a click of the view's input while nothing is placed: such a click
+        /// builds nothing and is the view's to use (selecting a ship). While placing, a click places and is not raised.
+        /// </summary>
+        public event Action<Vector2> ClickedWithoutPlacing;
 
         public BuildingOrientation Orientation => cursor.Orientation;
 
@@ -303,6 +310,12 @@ namespace DarkFantasyMerchant.Game
 
         private void OnClicked(Vector2 screenPosition)
         {
+            if (!cursor.IsPlacing)
+            {
+                ClickedWithoutPlacing?.Invoke(screenPosition);
+                return;
+            }
+
             Click(screenPosition);
         }
 

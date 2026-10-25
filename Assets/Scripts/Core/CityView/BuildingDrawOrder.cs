@@ -46,6 +46,31 @@ namespace DarkFantasyMerchant.Core
             return low;
         }
 
+        /// <summary>
+        /// How many ranked keys are smaller than this one: something of this key drawn just below that rank is drawn
+        /// after every building of a smaller key and before every building of an equal or larger one.
+        /// </summary>
+        public int RankOf(long key)
+        {
+            // The first rank whose key is not smaller.
+            int low = 0;
+            int high = keys.Count;
+            while (low < high)
+            {
+                int middle = (low + high) / 2;
+                if (keys[middle] < key)
+                {
+                    low = middle + 1;
+                }
+                else
+                {
+                    high = middle;
+                }
+            }
+
+            return low;
+        }
+
         public void Clear()
         {
             keys.Clear();
