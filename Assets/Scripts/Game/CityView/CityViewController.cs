@@ -110,7 +110,8 @@ namespace DarkFantasyMerchant.Game
                 Debug.LogWarning($"CityDefinition '{city.name}' has no grid; the city view shows nothing.", city);
             }
 
-            gridView.Show(grid);
+            WorldEconomy worldEconomy = services != null ? services.WorldEconomy : null;
+            gridView.Show(grid, worldEconomy != null ? worldEconomy.Buildings : null, worldEconomy != null ? worldEconomy.Economy : null);
 
             if (placement != null)
             {

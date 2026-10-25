@@ -41,6 +41,12 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("The cells the building covers on the city grid, in its Along orientation: width on x, depth on y. Each at least 1.")]
         [SerializeField] private Vector2Int footprint;
 
+        [Tooltip("The building as the city view draws it, untinted, in place of a placeholder block; none keeps the block. Its pivot is the centre of the footprint on the ground, and its size is set by its pixels per unit.")]
+        [SerializeField] private Sprite viewSprite;
+
+        [Tooltip("The orientation the view sprite shows; the other is drawn mirrored.")]
+        [SerializeField] private BuildingOrientation viewSpriteOrientation;
+
         /// <summary>What the cost of a building that cannot be built reads.</summary>
         public const string UnavailableText = "indisponible";
 
@@ -55,6 +61,12 @@ namespace DarkFantasyMerchant.Game
         public Footprint Footprint => new Footprint(footprint.x, footprint.y);
 
         public IReadOnlyList<MaterialAmount> Materials => materials;
+
+        /// <summary>The building in the city view, or null to draw a placeholder block.</summary>
+        public Sprite ViewSprite => viewSprite;
+
+        /// <summary>The orientation <see cref="ViewSprite"/> shows; the other is drawn mirrored.</summary>
+        public BuildingOrientation ViewSpriteOrientation => viewSpriteOrientation;
 
         /// <summary>
         /// The materials of the building, the player's or one a city builds of its own, by their

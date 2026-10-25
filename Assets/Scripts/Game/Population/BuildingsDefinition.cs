@@ -58,6 +58,24 @@ namespace DarkFantasyMerchant.Game
             return good == null ? null : workshops.Find(workshop => workshop != null && workshop.Good == good);
         }
 
+        /// <returns>The definition of a building on a grid, or null when the catalogue has none.</returns>
+        /// <param name="economy">Gives the good of a workshop by its index among the active goods.</param>
+        public BuildingDefinition DefinitionOf(BuildingKind kind, EconomyDefinition economy)
+        {
+            if (kind.IsHouse)
+            {
+                return HouseOf(kind.HousedClass);
+            }
+
+            if (kind.IsWorkshop)
+            {
+                bool known = economy != null && kind.Good >= 0 && kind.Good < economy.Goods.Count;
+                return known ? WorkshopOf(economy.Goods[kind.Good]) : null;
+            }
+
+            return kind.IsRoad ? road : townHall;
+        }
+
         /// <summary>The places of the house of each class. Only for a catalogue that <see cref="TryValidate"/> accepts.</summary>
         public PerClass<int> HouseRooms => new PerClass<int>(
             HouseOf(SocialClass.Rich).Room, HouseOf(SocialClass.Wealthy).Room, HouseOf(SocialClass.Poor).Room);

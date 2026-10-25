@@ -5,11 +5,13 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// Draws a city's grid in placeholder shapes: a diamond per cell, tinted free or forbidden, a flat tile per road,
-    /// and a block per other building, a house tinted by the class it shelters (<see cref="HouseColors"/>, as in the
-    /// layout window), a workshop in the workshop colour, the town hall in its own; a house or workshop that is not
-    /// connected is darkened until it is. A building placed while the grid is shown gets its block then; nothing is
-    /// redrawn every frame. Every sprite is on this object's layer, which only the city view's camera draws.
+    /// Draws a city's grid: a diamond per cell, tinted free or forbidden, a flat tile per road, and a placeholder block
+    /// per other building, a house tinted by the class it shelters (<see cref="HouseColors"/>, as in the layout
+    /// window), a workshop in the workshop colour, the town hall in its own. A building whose definition has a view
+    /// sprite is drawn with it instead, untinted, mirrored in the orientation the sprite does not show. A house or
+    /// workshop that is not connected is darkened until it is. A building placed while the grid is shown is drawn
+    /// then; nothing is redrawn every frame. Every sprite is on this object's layer, which only the city view's camera
+    /// draws.
     /// </summary>
     public sealed class CityGridView : MonoBehaviour
     {
@@ -67,9 +69,14 @@ namespace DarkFantasyMerchant.Game
         // The renderers of the houses and workshops, to give them their colour when they connect.
         private readonly Dictionary<PlacedBuilding, SpriteRenderer> shadedRenderers = new Dictionary<PlacedBuilding, SpriteRenderer>();
         private readonly List<SpriteRenderer> roadRenderers = new List<SpriteRenderer>();
+
+        // The buildings drawn with their definition's view sprite rather than a block: they are not tinted.
+        private readonly HashSet<SpriteRenderer> viewSpriteRenderers = new HashSet<SpriteRenderer>();
         private readonly List<SpriteRenderer> roadGhostRenderers = new List<SpriteRenderer>();
 
         private CityGrid grid;
+        private BuildingsDefinition buildings;
+        private EconomyDefinition economy;
         private Transform cellRoot;
         private Transform buildingRoot;
         private Transform roadGhostRoot;
@@ -106,11 +113,16 @@ namespace DarkFantasyMerchant.Game
             return Rect.MinMaxRect(left, bottom, right, top);
         }
 
-        /// <summary>Draws this grid in place of the one shown, if any. Null shows nothing.</summary>
-        public void Show(CityGrid newGrid)
+        /// <summary>
+        /// Draws this grid in place of the one shown, if any. Null shows nothing. The catalogue gives the buildings
+        /// their view sprites, the economy the good of a workshop; without them every building is a block.
+        /// </summary>
+        public void Show(CityGrid newGrid, BuildingsDefinition buildingsDefinition, EconomyDefinition economyDefinition)
         {
             Clear();
             grid = newGrid;
+            buildings = buildingsDefinition;
+            economy = economyDefinition;
 
             if (grid == null)
             {
@@ -257,9 +269,12 @@ namespace DarkFantasyMerchant.Game
             }
 
             grid = null;
+            buildings = null;
+            economy = null;
             cellRenderers.Clear();
             buildingRenderers.Clear();
             shadedRenderers.Clear();
+            viewSpriteRenderers.Clear();
             roadRenderers.Clear();
             roadGhostRenderers.Clear();
             drawOrder.Clear();
@@ -301,11 +316,24 @@ namespace DarkFantasyMerchant.Game
 
             Vector2Int size = building.Size;
             string kindName = building.Kind.IsHouse ? "House" : building.Kind.IsWorkshop ? "Workshop" : "Town hall";
+            BuildingDefinition definition = buildings != null ? buildings.DefinitionOf(building.Kind, economy) : null;
+            Sprite viewSprite = definition != null ? definition.ViewSprite : null;
             SpriteRenderer buildingRenderer = CreateRenderer(
-                $"{building.Owner} {kindName} {origin.x},{origin.y}", buildingRoot, BlockSpriteOf(size));
+                $"{building.Owner} {kindName} {origin.x},{origin.y}", buildingRoot, viewSprite != null ? viewSprite : BlockSpriteOf(size));
             buildingRenderer.transform.localPosition = IsoProjection.CenterOf(origin, size);
-            buildingRenderer.transform.localScale = BuildingScaleVector;
-            buildingRenderer.color = ColorOf(building);
+
+            // A view sprite has its own size; mirrored around its pivot, it shows the other orientation.
+            if (viewSprite != null)
+            {
+                buildingRenderer.flipX = building.Place.Orientation != definition.ViewSpriteOrientation;
+                viewSpriteRenderers.Add(buildingRenderer);
+            }
+            else
+            {
+                buildingRenderer.transform.localScale = BuildingScaleVector;
+            }
+
+            buildingRenderer.color = ColorOf(building, buildingRenderer);
 
             if (building.Kind.IsHouse || building.Kind.IsWorkshop)
             {
@@ -327,18 +355,22 @@ namespace DarkFantasyMerchant.Game
         {
             if (shadedRenderers.TryGetValue(building, out SpriteRenderer buildingRenderer))
             {
-                buildingRenderer.color = ColorOf(building);
+                buildingRenderer.color = ColorOf(building, buildingRenderer);
             }
         }
 
-        private Color ColorOf(PlacedBuilding building)
+        private Color ColorOf(PlacedBuilding building, SpriteRenderer buildingRenderer)
         {
+            bool isViewSprite = viewSpriteRenderers.Contains(buildingRenderer);
+
             if (building.Kind.IsTownHall)
             {
-                return townHallColor;
+                return isViewSprite ? Color.white : townHallColor;
             }
 
-            Color color = building.Kind.IsHouse ? HouseColors.Of(building.Kind.HousedClass) : workshopColor;
+            Color color = isViewSprite ? Color.white
+                : building.Kind.IsHouse ? HouseColors.Of(building.Kind.HousedClass)
+                : workshopColor;
 
             if (building.IsConnected)
             {
