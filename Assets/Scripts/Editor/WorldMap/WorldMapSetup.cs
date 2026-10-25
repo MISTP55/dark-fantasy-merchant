@@ -73,6 +73,9 @@ namespace DarkFantasyMerchant.Editor
         private static readonly Vector2Int RoadFootprint = new Vector2Int(1, 1);
         private static readonly Vector2Int TownHallFootprint = new Vector2Int(3, 2);
         private static readonly Vector2Int PortFootprint = new Vector2Int(4, 3);
+
+        // The rows of water along the bottom edge of a default layout, where its port stands.
+        private const int DefaultWaterRows = 4;
         private const string GoodsFolder = "Assets/Data/Goods";
         private const string GoodIconsFolder = "Assets/Art/Goods/Icons";
 
@@ -1124,10 +1127,11 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <summary>
-        /// Makes the default layout asset of a city and links it: a grid with just the houses its
-        /// starting population needs, placed at random with the seed. A layout asset already at the
-        /// city's path is linked instead, its content untouched. False (and an error logged) when the
-        /// houses do not fit, or something else holds the path. The caller checks that the city has no layout.
+        /// Makes the default layout asset of a city and links it: a grid with water along its bottom
+        /// edge and the port on it, the town hall, and just the houses its starting population needs,
+        /// placed at random with the seed. A layout asset already at the city's path is linked instead,
+        /// its content untouched. False (and an error logged) when the port or the houses do not fit,
+        /// or something else holds the path. The caller checks that the city has no layout.
         /// </summary>
         internal static bool TryCreateLayout(CityDefinition city, EconomyDefinition economy, BuildingsDefinition buildings, int seed)
         {
@@ -1157,9 +1161,27 @@ namespace DarkFantasyMerchant.Editor
                 room[SocialClass.Rich] / roomPerHouse[SocialClass.Rich],
                 room[SocialClass.Wealthy] / roomPerHouse[SocialClass.Wealthy],
                 room[SocialClass.Poor] / roomPerHouse[SocialClass.Poor]);
-            var grid = new CityGrid(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, System.Array.Empty<Vector2Int>(), buildings.RoadContact);
+            var water = new List<Vector2Int>();
+
+            for (int y = 0; y < DefaultWaterRows; y++)
+            {
+                for (int x = 0; x < CityLayoutDefinition.DefaultSize; x++)
+                {
+                    water.Add(new Vector2Int(x, y));
+                }
+            }
+
+            var grid = new CityGrid(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, water, buildings.RoadContact);
             Footprint townHallFootprint = buildings.TownHall.Footprint;
             float centre = CityLayoutDefinition.DefaultSize / 2f;
+
+            if (!PortPlacement.TryNear(grid, buildings.Port.PortFootprint, new Vector2(centre, DefaultWaterRows), out PortSite portSite))
+            {
+                Debug.LogError($"CityDefinition '{city.name}': its port does not fit on the shore of a {CityLayoutDefinition.DefaultSize} by {CityLayoutDefinition.DefaultSize} grid; no layout was made.", city);
+                return false;
+            }
+
+            grid.PlacePort(buildings.Port.PortFootprint, portSite);
 
             if (!TownHallPlacement.TryNear(grid, townHallFootprint, new Vector2(centre, centre), out GridPlace townHallPlace))
             {
@@ -1192,7 +1214,7 @@ namespace DarkFantasyMerchant.Editor
             }
 
             var layout = ScriptableObject.CreateInstance<CityLayoutDefinition>();
-            layout.SetContent(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, System.Array.Empty<Vector2Int>(), startingHouses, townHallPlace, roads);
+            layout.SetContent(CityLayoutDefinition.DefaultSize, CityLayoutDefinition.DefaultSize, water, startingHouses, townHallPlace, roads, portSite);
             Directory.CreateDirectory(CityLayoutsFolder);
             AssetDatabase.CreateAsset(layout, path);
             LinkLayout(city, layout);
