@@ -79,12 +79,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(PortFacing.East, layout.PortSite.Facing);
             Assert.IsTrue(layout.HasTownHall);
             CollectionAssert.DoesNotContain(layout.ForbiddenCells, new Vector2Int(20, 20));
-            Assert.AreEqual(4 * 40, layout.ForbiddenCells.Count);
+            Assert.AreEqual(CityLayoutEditing.GeneratedWaterRows * 40, layout.ForbiddenCells.Count);
 
             foreach (Vector2Int cell in layout.ForbiddenCells)
             {
-                Assert.GreaterOrEqual(cell.x, 36, cell.ToString());
+                Assert.GreaterOrEqual(cell.x, 40 - CityLayoutEditing.GeneratedWaterRows, cell.ToString());
             }
+
+            // Its nearest side the distance from the water.
+            Assert.AreEqual(
+                40 - CityLayoutEditing.GeneratedWaterRows - CityLayoutEditing.GeneratedTownHallDistance,
+                layout.TownHallPlace.Origin.x + buildings.TownHall.Footprint.SizeFor(layout.TownHallPlace.Orientation).x);
 
             Assert.IsTrue(layout.TryCreateGrid(buildings, out CityGrid grid, out problem), problem);
             PerClass<int> needed = economy.StartingRoomOf(city, buildings.HouseRooms);

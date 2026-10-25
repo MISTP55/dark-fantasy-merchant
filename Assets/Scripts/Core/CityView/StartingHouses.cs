@@ -20,9 +20,24 @@ namespace DarkFantasyMerchant.Core
         /// </returns>
         public static bool TryPlace(CityGrid grid, PerClass<int> houses, PerClass<Footprint> footprints, System.Random random)
         {
+            return TryPlace(grid, houses, footprints, new RandomPlacement(random), random);
+        }
+
+        /// <summary>
+        /// As <see cref="TryPlace(CityGrid, PerClass{int}, PerClass{Footprint}, System.Random)"/>, the houses drawn at
+        /// random only inside the area; those placed again along the roads may stand outside it.
+        /// </summary>
+        public static bool TryPlace(
+            CityGrid grid, PerClass<int> houses, PerClass<Footprint> footprints, RectInt area, System.Random random)
+        {
+            return TryPlace(grid, houses, footprints, new RandomPlacement(random, area), random);
+        }
+
+        private static bool TryPlace(
+            CityGrid grid, PerClass<int> houses, PerClass<Footprint> footprints, RandomPlacement drawn, System.Random random)
+        {
             var placed = new List<PlacedBuilding>();
             var roads = new List<Vector2Int>();
-            var drawn = new RandomPlacement(random);
             foreach (SocialClass housedClass in Classes)
             {
                 for (int i = 0; i < houses[housedClass]; i++)

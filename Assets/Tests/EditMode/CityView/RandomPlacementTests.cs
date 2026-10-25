@@ -65,6 +65,29 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void TryChoose_WithAnArea_ChoosesOnlyPlacesWhollyInsideIt()
+        {
+            var grid = new CityGrid(10, 10, new Vector2Int[0]);
+            var footprint = new Footprint(2, 1);
+            var area = new RectInt(3, 4, 3, 2);
+            for (int seed = 0; seed < 100; seed++)
+            {
+                Assert.IsTrue(new RandomPlacement(new System.Random(seed), area).TryChoose(grid, footprint, out GridPlace place, roads));
+                Vector2Int size = footprint.SizeFor(place.Orientation);
+                Assert.IsTrue(area.Contains(place.Origin), $"seed {seed}");
+                Assert.IsTrue(area.Contains(place.Origin + size - Vector2Int.one), $"seed {seed}");
+            }
+        }
+
+        [Test]
+        public void TryChoose_WithAnArea_IsFalse_WhenNothingFitsInIt()
+        {
+            var grid = new CityGrid(10, 10, new Vector2Int[0]);
+            var area = new RectInt(3, 3, 1, 1);
+            Assert.IsFalse(new RandomPlacement(new System.Random(1), area).TryChoose(grid, new Footprint(2, 1), out _, roads));
+        }
+
+        [Test]
         public void Constructor_Throws_ForANullRandom() =>
             Assert.Throws<ArgumentNullException>(() => new RandomPlacement(null));
     }

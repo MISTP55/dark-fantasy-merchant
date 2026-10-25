@@ -56,7 +56,7 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>Cells on each side of a new layout, and of the default grids the scene setup makes.</summary>
-        public const int DefaultSize = 40;
+        public const int DefaultSize = 80;
 
         [Tooltip("Cells on x, at least 1.")]
         [SerializeField, Min(1)] private int width = DefaultSize;

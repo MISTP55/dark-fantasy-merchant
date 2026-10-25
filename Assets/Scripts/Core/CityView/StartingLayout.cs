@@ -8,16 +8,24 @@ namespace DarkFantasyMerchant.Core
     {
         /// <summary>
         /// A grid with a band of water along the shore's edge, the port on the middle of that shore facing the water,
-        /// the town hall near the centre, then houses[c] houses of each class, each connected by roads
-        /// (<see cref="StartingHouses.TryPlace"/>).
+        /// the town hall inland of the port, then houses[c] houses of each class drawn around it, each connected by
+        /// roads (<see cref="StartingHouses.TryPlace(CityGrid, PerClass{int}, PerClass{Footprint}, RectInt, System.Random)"/>).
         /// </summary>
         /// <param name="shore">The edge the water runs along.</param>
         /// <param name="waterRows">The depth of the band of water, in cells.</param>
+        /// <param name="townHallDistance">
+        /// The rows of land between the water and the town hall, in the middle of the shore and lying as the port does
+        /// (its width along the shore); nearest that place when it is taken or off the grid.
+        /// </param>
+        /// <param name="houseArea">
+        /// The side, in cells, of the square centred on the town hall that the houses are drawn in at random.
+        /// </param>
         /// <param name="problem">What did not fit, for the logs; null when everything did.</param>
         /// <returns>False, and no grid, when the port, the town hall or a house does not fit.</returns>
         public static bool TryBuild(
-            int width, int height, PortFacing shore, int waterRows, PortFootprint port, Footprint townHall,
-            PerClass<int> houses, PerClass<Footprint> houseFootprints, RoadContact contact, System.Random random,
+            int width, int height, PortFacing shore, int waterRows, int townHallDistance, int houseArea,
+            PortFootprint port, Footprint townHall, PerClass<int> houses, PerClass<Footprint> houseFootprints,
+            RoadContact contact, System.Random random,
             out CityGrid grid, out string problem)
         {
             grid = null;
@@ -44,7 +52,8 @@ namespace DarkFantasyMerchant.Core
 
             created.PlacePort(port, site);
 
-            if (!TownHallPlacement.TryNear(created, townHall, new Vector2(width / 2f, height / 2f), out GridPlace hall))
+            GridPlace hall = TownHallPlace(shore, waterRows + townHallDistance, townHall, width, height);
+            if (!created.CanPlace(townHall, hall) && !TownHallPlacement.TryNear(created, townHall, CentreOf(hall, townHall), out hall))
             {
                 problem = $"its town hall does not fit on a {width} by {height} grid";
                 return false;
@@ -52,7 +61,7 @@ namespace DarkFantasyMerchant.Core
 
             created.Place(BuildingKind.TownHall(), BuildingOwner.City, townHall, hall);
 
-            if (!StartingHouses.TryPlace(created, houses, houseFootprints, random))
+            if (!StartingHouses.TryPlace(created, houses, houseFootprints, HouseArea(created.TownHall, houseArea), random))
             {
                 problem = $"its starting houses do not fit on a {width} by {height} grid";
                 return false;
@@ -76,6 +85,41 @@ namespace DarkFantasyMerchant.Core
                 default:
                     return x < waterRows;
             }
+        }
+
+        // The town hall whose side nearest the shore is `fromEdge` cells from the shore's edge, its width along the
+        // shore, in the middle of it; a cell nearer the origin when it cannot be exactly in the middle.
+        private static GridPlace TownHallPlace(PortFacing shore, int fromEdge, Footprint townHall, int width, int height)
+        {
+            BuildingOrientation orientation = PortFacings.OrientationOf(shore);
+            Vector2Int size = townHall.SizeFor(orientation);
+            switch (shore)
+            {
+                case PortFacing.North:
+                    return new GridPlace(new Vector2Int((width - size.x) / 2, height - fromEdge - size.y), orientation);
+                case PortFacing.South:
+                    return new GridPlace(new Vector2Int((width - size.x) / 2, fromEdge), orientation);
+                case PortFacing.East:
+                    return new GridPlace(new Vector2Int(width - fromEdge - size.x, (height - size.y) / 2), orientation);
+                default:
+                    return new GridPlace(new Vector2Int(fromEdge, (height - size.y) / 2), orientation);
+            }
+        }
+
+        private static Vector2 CentreOf(GridPlace place, Footprint footprint)
+        {
+            Vector2Int size = footprint.SizeFor(place.Orientation);
+            return new Vector2(place.Origin.x + size.x / 2f, place.Origin.y + size.y / 2f);
+        }
+
+        // The square of `side` cells centred on the town hall; a cell more on the far side when they do not split evenly.
+        private static RectInt HouseArea(PlacedBuilding townHall, int side)
+        {
+            Vector2Int size = townHall.Size;
+            Vector2Int origin = townHall.Place.Origin;
+            int x = origin.x + (size.x - side) / 2;
+            int y = origin.y + (size.y - side) / 2;
+            return new RectInt(x, y, side, side);
         }
 
         // The middle of the line between the water and the land.

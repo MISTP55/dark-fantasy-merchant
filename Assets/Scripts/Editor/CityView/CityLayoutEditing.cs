@@ -273,16 +273,22 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <summary>The depth of the band of water a generated layout gets, in cells.</summary>
-        public const int GeneratedWaterRows = 4;
+        public const int GeneratedWaterRows = 12;
+
+        /// <summary>The rows of land between the water and the town hall of a generated layout.</summary>
+        public const int GeneratedTownHallDistance = 16;
+
+        /// <summary>The side, in cells, of the square around the town hall a generated layout's houses are drawn in.</summary>
+        public const int GeneratedHouseArea = 40;
 
         // How far around the city, in cells of the navigation mask, the water is looked for.
         private const float ShoreRadius = 10f;
 
         /// <summary>
         /// A whole city grid of the size, from nothing: water along the side of the sea (where the mask's water lies
-        /// around the city on the map; south without a mask), the port on that shore, the town hall near the centre,
-        /// then just the houses the city's starting population needs, placed with the seed by
-        /// <see cref="StartingHouses.TryPlace"/> and connected by roads. They are connected by sides, whatever the
+        /// around the city on the map; south without a mask), the port on that shore, the town hall inland of the port,
+        /// then just the houses the city's starting population needs, drawn around the town hall with the seed and
+        /// connected by roads (<see cref="StartingLayout.TryBuild"/>). They are connected by sides, whatever the
         /// catalogue's contact, so that the layout works under either.
         /// </summary>
         /// <param name="problem">What did not fit, for the logs; null when everything did.</param>
@@ -303,7 +309,8 @@ namespace DarkFantasyMerchant.Editor
             PortFacing shore = ShoreSide.Of(mask, city.MapPosition, ShoreRadius);
 
             return StartingLayout.TryBuild(
-                width, height, shore, GeneratedWaterRows, PortFootprintOf(buildings), buildings.TownHall.Footprint,
+                width, height, shore, GeneratedWaterRows, GeneratedTownHallDistance, GeneratedHouseArea,
+                PortFootprintOf(buildings), buildings.TownHall.Footprint,
                 houses, footprints, RoadContact.SidesOnly, new System.Random(seed),
                 out grid, out problem);
         }

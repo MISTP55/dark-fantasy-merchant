@@ -14,7 +14,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static bool TryBuild(PortFacing shore, PerClass<int> houses, out CityGrid grid, out string problem, int size = 40)
         {
             return StartingLayout.TryBuild(
-                size, size, shore, 4, Port, TownHall, houses, Houses, RoadContact.SidesOnly, new System.Random(3),
+                size, size, shore, 4, 6, 20, Port, TownHall, houses, Houses, RoadContact.SidesOnly, new System.Random(3),
                 out grid, out problem);
         }
 
@@ -67,6 +67,20 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // Its land row on the first row of land, its centre on the middle of the edge.
             Assert.AreEqual(2, grid.Port.Place.Origin.y);
             Assert.AreEqual(18, grid.Port.Place.Origin.x);
+        }
+
+        // 4 rows of water then 6 of land: the town hall's near side 10 cells from the edge, its long side along the
+        // shore, in the middle of it.
+        [TestCase(PortFacing.North, 18, 28)]
+        [TestCase(PortFacing.South, 18, 10)]
+        [TestCase(PortFacing.East, 28, 18)]
+        [TestCase(PortFacing.West, 10, 18)]
+        public void TryBuild_PutsTheTownHallInlandOfTheShore(PortFacing shore, int x, int y)
+        {
+            Assert.IsTrue(TryBuild(shore, new PerClass<int>(0, 0, 0), out CityGrid grid, out string problem), problem);
+
+            Assert.AreEqual(new Vector2Int(x, y), grid.TownHall.Place.Origin);
+            Assert.AreEqual(PortFacings.OrientationOf(shore), grid.TownHall.Place.Orientation);
         }
 
         [Test]
