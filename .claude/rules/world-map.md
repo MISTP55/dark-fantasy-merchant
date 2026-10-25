@@ -16,6 +16,7 @@ paths:
 - Picking is `CityPicker` (nearest point within a screen-pixel radius, no colliders), for cities and ships alike.
 - A city stands on a navigable cell of the mask, at the edge of the water beside its town on the map. The order of the map's active cities is the order of the AI merchants' numbers, and the player starts in the first.
 - **Active cities.** Each `MapCity` of the map is ticked active or not before Play mode, to test the economy on fewer cities. An inactive city does not exist in the game: `WorldMapDefinition.Cities` holds only the active ones, and everything in the game reads them through `WorldMapView.Cities`; `MapCities` is every city, for the Editor and the content tests. The shortages an inactive city leaves are wanted, not made up for.
+- **Cities without a usable layout are inactive too.** `WorldMapView.SpawnMarkers` skips (one warning each, "CityDefinition 'X' is inactive: …") an active city that `WorldMapView.IsUsable(city, buildings, out problem)` refuses: no layout, or a layout whose `TryCreateGrid` fails (see `city-view.md`). It checks with the `buildings` catalogue the scene setup wires into the view; without one it logs one error and skips no city.
 - Cities are placed by dragging their handles in the Scene view (`CityPlacementTool`), inactive ones in dark grey; it and the navigation mask tool find the map through `WorldMapEditorContext`.
 - `WorldMapInteraction` arbitrates between the selection of cities and that of ships (see `ships.md`), and drives fast forward (see `time.md`).
 

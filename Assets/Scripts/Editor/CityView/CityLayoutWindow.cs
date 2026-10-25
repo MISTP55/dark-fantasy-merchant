@@ -22,11 +22,12 @@ namespace DarkFantasyMerchant.Editor
             PoorHouse,
             TownHall,
             Port,
+            Berth,
             Road,
             Erase,
         }
 
-        private static readonly string[] ToolLabels = { "Water", "Rich house", "Wealthy house", "Poor house", "Town hall", "Port", "Road", "Erase" };
+        private static readonly string[] ToolLabels = { "Water", "Rich house", "Wealthy house", "Poor house", "Town hall", "Port", "Berth", "Road", "Erase" };
 
         private static readonly Color FreeCell = new Color32(0x3B, 0x4A, 0x3A, 0xFF);
         private static readonly Color ForbiddenCell = new Color32(0x24, 0x43, 0x5E, 0xFF);
@@ -38,6 +39,7 @@ namespace DarkFantasyMerchant.Editor
         private static readonly Color RoadColor = new Color32(0x8A, 0x7B, 0x62, 0xFF);
         private static readonly Color PortColor = new Color32(0x7A, 0x4E, 0x2E, 0xFF);
         private static readonly Color PortWaterColor = new Color32(0xB0, 0x8A, 0x5C, 0xFF);
+        private static readonly Color BerthColor = new Color32(0xE8, 0xD0, 0x5A, 0xFF);
         private static readonly Color ShortageColor = new Color32(0xD0, 0x50, 0x50, 0xFF);
         private static readonly Color GridLine = new Color(0f, 0f, 0f, 0.35f);
 
@@ -217,7 +219,14 @@ namespace DarkFantasyMerchant.Editor
                 EditorGUILayout.HelpBox("The layout has no port: paint water, then place one with the Port tool, or regenerate the layout.", MessageType.Warning);
             }
 
-            if (!CityLayoutEditing.TryMakeGrid(layout, buildings, out CityGrid grid))
+            bool madeGrid = CityLayoutEditing.TryMakeGrid(layout, buildings, out CityGrid grid);
+
+            if (madeGrid && layout.HasPort && !HarbourPaths.TryValidate(grid, out string harbourProblem))
+            {
+                EditorGUILayout.HelpBox($"Ships cannot use this layout: {harbourProblem}. Place berths with the Berth tool, or regenerate the layout.", MessageType.Warning);
+            }
+
+            if (!madeGrid)
             {
                 CancelTrace();
                 EditorGUILayout.HelpBox("Something in the layout cannot stand: a town hall, a port, a road or a house is outside the grid, on a wrong cell or on another building.", MessageType.Error);
@@ -240,6 +249,7 @@ namespace DarkFantasyMerchant.Editor
                 return;
             }
 
+            EditorGUILayout.LabelField($"Berths: {layout.Berths.Count}");
             DrawRooms(grid);
             DrawGrid(layout, grid);
         }
@@ -403,6 +413,11 @@ namespace DarkFantasyMerchant.Editor
                 }
             }
 
+            foreach (Vector2Int berth in grid.Berths)
+            {
+                EditorGUI.DrawRect(CellRect(berth.x, berth.y), BerthColor);
+            }
+
             foreach (PlacedBuilding building in grid.Buildings)
             {
                 Vector2Int origin = building.Place.Origin;
@@ -533,6 +548,11 @@ namespace DarkFantasyMerchant.Editor
                     }
                 }
             }
+            else if (tool == Tool.Berth)
+            {
+                bool valid = CityLayoutEditing.CanPlaceBerth(layout, buildings, hovered);
+                EditorGUI.DrawRect(cellRect(hovered.x, hovered.y), valid ? ValidGhost : InvalidGhost);
+            }
             else
             {
                 foreach (Vector2Int cell in BrushCells(layout, hovered))
@@ -591,6 +611,17 @@ namespace DarkFantasyMerchant.Editor
                 else if (down)
                 {
                     CityLayoutEditing.SetPort(layout, buildings, new PortSite(hovered, portFacing));
+                }
+            }
+            else if (tool == Tool.Berth)
+            {
+                if (erases)
+                {
+                    CityLayoutEditing.RemoveBerth(layout, hovered);
+                }
+                else if (down)
+                {
+                    CityLayoutEditing.AddBerth(layout, buildings, hovered);
                 }
             }
             else
@@ -720,7 +751,7 @@ namespace DarkFantasyMerchant.Editor
         }
 
         // The seed of the default layout is the city's index in the map, as in the scene setup.
-        private static int IndexInMap(CityDefinition city)
+        internal static int IndexInMap(CityDefinition city)
         {
             WorldMapDefinition map = FindAsset<WorldMapDefinition>();
 
@@ -741,14 +772,14 @@ namespace DarkFantasyMerchant.Editor
         }
 
         // Where the ships sail on the world map, which tells on which side of a city the sea is; null without one.
-        private static NavigationGrid MaskOfMap()
+        internal static NavigationGrid MaskOfMap()
         {
             WorldMapDefinition map = FindAsset<WorldMapDefinition>();
 
             return map != null && map.NavigationMask != null ? map.NavigationMask.CreateGrid() : null;
         }
 
-        private static T FindAsset<T>() where T : Object
+        internal static T FindAsset<T>() where T : Object
         {
             string[] guids = AssetDatabase.FindAssets("t:" + typeof(T).Name);
 

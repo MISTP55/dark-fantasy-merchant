@@ -14,6 +14,9 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private CityMarkerView markerPrefab;
         [SerializeField] private Transform markerRoot;
 
+        [Tooltip("The catalogue the cities' layouts are checked with: a city whose layout cannot make a grid is inactive.")]
+        [SerializeField] private BuildingsDefinition buildings;
+
         [Tooltip("On-screen size, in pixels, of one world unit of marker sprite.")]
         [SerializeField] private float markerScreenPixelsPerUnit = 32f;
 
@@ -134,6 +137,24 @@ namespace DarkFantasyMerchant.Game
             return city != null && markers.ContainsKey(city);
         }
 
+        /// <summary>
+        /// Whether the city can be played: it has a layout, and the layout makes a grid ships can sail on (a berth,
+        /// the port and the berths joined to the edge by water).
+        /// </summary>
+        /// <param name="problem">What is wrong, for the logs; null when the city is usable.</param>
+        public static bool IsUsable(CityDefinition city, BuildingsDefinition buildings, out string problem)
+        {
+            problem = null;
+
+            if (city.Layout == null)
+            {
+                problem = "it has no layout";
+                return false;
+            }
+
+            return city.Layout.TryCreateGrid(buildings, out _, out problem);
+        }
+
         public Vector2 GetWorldPosition(CityDefinition city)
         {
             return Projection.NormalizedToWorld(city.MapPosition);
@@ -157,6 +178,11 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
+            if (buildings == null)
+            {
+                Debug.LogError("WorldMapView has no buildings assigned: no city is checked for a usable layout.", this);
+            }
+
             foreach (CityDefinition city in definition.Cities)
             {
                 if (city == null)
@@ -172,6 +198,12 @@ namespace DarkFantasyMerchant.Game
                     Debug.LogError(
                         $"WorldMapDefinition '{definition.name}' lists city '{city.name}' twice; skipped.",
                         definition);
+                    continue;
+                }
+
+                if (buildings != null && !IsUsable(city, buildings, out string problem))
+                {
+                    Debug.LogWarning($"CityDefinition '{city.name}' is inactive: {problem}.", city);
                     continue;
                 }
 

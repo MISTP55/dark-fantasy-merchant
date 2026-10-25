@@ -395,6 +395,7 @@ MonoBehaviour:
   mapRenderer: {fileID: 994455070}
   markerPrefab: {fileID: 543058900750921632, guid: 2debcb91d29b4a84085797b5d5388506, type: 3}
   markerRoot: {fileID: 1707268069}
+  buildings: {fileID: 11400000, guid: 67b5244d21281d547bcd7ee53306b188, type: 2}
   markerScreenPixelsPerUnit: 32
 --- !u!4 &935350159
 Transform:

@@ -2294,6 +2294,8 @@ namespace DarkFantasyMerchant.Editor
             }
 
             // Also for a scene in which one of them was deleted and made again.
+            // The map view checks the cities' layouts with the catalogue.
+            changed |= FillReference(mapView, "buildings", AssetDatabase.LoadAssetAtPath<BuildingsDefinition>(BuildingsPath));
             changed |= FillReference(loader, "mapCamera", cameraController.gameObject);
             changed |= FillReference(loader, "mapInput", input);
             changed |= FillReference(loader, "mapInteraction", interaction);

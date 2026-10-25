@@ -83,7 +83,7 @@ namespace DarkFantasyMerchant.Editor
                 }
             }
 
-            Apply(layout, "Resize city layout", width, height, forbidden, houses, townHall, roads, port);
+            Apply(layout, "Resize city layout", width, height, forbidden, houses, townHall, roads, port, buildings);
         }
 
         /// <summary>The cells the town hall covers when placed with this orientation.</summary>
@@ -136,7 +136,7 @@ namespace DarkFantasyMerchant.Editor
                 return true;
             }
 
-            Apply(layout, "Place town hall", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, place, layout.Roads, PortOf(layout));
+            Apply(layout, "Place town hall", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, place, layout.Roads, PortOf(layout), buildings);
             return true;
         }
 
@@ -148,7 +148,7 @@ namespace DarkFantasyMerchant.Editor
                 return;
             }
 
-            Apply(layout, "Remove town hall", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, null, layout.Roads, PortOf(layout));
+            Apply(layout, "Remove town hall", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, null, layout.Roads, PortOf(layout), null);
         }
 
         /// <summary>The port's footprint split into water and land rows, from the catalogue. Only for a catalogue whose port is usable (<see cref="TryGetPortFootprint"/>).</summary>
@@ -205,7 +205,7 @@ namespace DarkFantasyMerchant.Editor
                 return true;
             }
 
-            Apply(layout, "Place port", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, TownHallOf(layout), layout.Roads, site);
+            Apply(layout, "Place port", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, TownHallOf(layout), layout.Roads, site, buildings);
             return true;
         }
 
@@ -217,7 +217,7 @@ namespace DarkFantasyMerchant.Editor
                 return;
             }
 
-            Apply(layout, "Remove port", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, TownHallOf(layout), layout.Roads, null);
+            Apply(layout, "Remove port", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, TownHallOf(layout), layout.Roads, null, null);
         }
 
         /// <summary>Whether the layout's port covers the cell.</summary>
@@ -268,8 +268,45 @@ namespace DarkFantasyMerchant.Editor
             {
                 Apply(
                     layout, add ? "Lay roads" : "Remove roads", layout.Width, layout.Height,
-                    layout.ForbiddenCells, layout.StartingHouses, TownHallOf(layout), roads, PortOf(layout));
+                    layout.ForbiddenCells, layout.StartingHouses, TownHallOf(layout), roads, PortOf(layout), buildings);
             }
+        }
+
+        /// <summary>Whether a berth can be added at the cell: water, not under the port, no berth there yet.</summary>
+        public static bool CanPlaceBerth(CityLayoutDefinition layout, BuildingsDefinition buildings, Vector2Int cell)
+        {
+            return TryMakeGrid(layout, buildings, out CityGrid grid) && grid.CanPlaceBerth(cell);
+        }
+
+        /// <summary>Adds a berth; false, and nothing recorded, when it cannot stand there.</summary>
+        public static bool AddBerth(CityLayoutDefinition layout, BuildingsDefinition buildings, Vector2Int cell)
+        {
+            if (!CanPlaceBerth(layout, buildings, cell))
+            {
+                return false;
+            }
+
+            var berths = new List<Vector2Int>(layout.Berths) { cell };
+            Apply(
+                layout, "Add berth", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses,
+                TownHallOf(layout), layout.Roads, PortOf(layout), buildings, berths);
+            return true;
+        }
+
+        /// <summary>Removes the berth at the cell; false, and nothing recorded, when there is none.</summary>
+        public static bool RemoveBerth(CityLayoutDefinition layout, Vector2Int cell)
+        {
+            var berths = new List<Vector2Int>(layout.Berths);
+
+            if (!berths.Remove(cell))
+            {
+                return false;
+            }
+
+            Apply(
+                layout, "Remove berth", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses,
+                TownHallOf(layout), layout.Roads, PortOf(layout), null, berths);
+            return true;
         }
 
         /// <summary>The depth of the band of water a generated layout gets, in cells.</summary>
@@ -419,7 +456,7 @@ namespace DarkFantasyMerchant.Editor
 
             if (changed)
             {
-                Apply(layout, forbid ? "Forbid cells" : "Free cells", layout.Width, layout.Height, forbidden, layout.StartingHouses);
+                Apply(layout, forbid ? "Forbid cells" : "Free cells", layout.Width, layout.Height, forbidden, layout.StartingHouses, buildings);
             }
         }
 
@@ -437,7 +474,7 @@ namespace DarkFantasyMerchant.Editor
                 new CityLayoutDefinition.StartingHouse(housedClass, place.Origin, place.Orientation),
             };
 
-            Apply(layout, "Add starting house", layout.Width, layout.Height, layout.ForbiddenCells, houses);
+            Apply(layout, "Add starting house", layout.Width, layout.Height, layout.ForbiddenCells, houses, buildings);
             return true;
         }
 
@@ -475,7 +512,7 @@ namespace DarkFantasyMerchant.Editor
                 }
             }
 
-            Apply(layout, "Remove starting houses", layout.Width, layout.Height, layout.ForbiddenCells, houses);
+            Apply(layout, "Remove starting houses", layout.Width, layout.Height, layout.ForbiddenCells, houses, buildings);
         }
 
         private static readonly Footprint RoadFootprint = new Footprint(1, 1);
@@ -533,6 +570,19 @@ namespace DarkFantasyMerchant.Editor
                 }
 
                 PlaceRoad(grid, road);
+            }
+
+            if (withPort)
+            {
+                foreach (Vector2Int berth in layout.Berths)
+                {
+                    if (!grid.CanPlaceBerth(berth))
+                    {
+                        return false;
+                    }
+
+                    grid.PlaceBerth(berth);
+                }
             }
 
             foreach (CityLayoutDefinition.StartingHouse house in layout.StartingHouses)
@@ -610,18 +660,42 @@ namespace DarkFantasyMerchant.Editor
 
         private static void Apply(
             CityLayoutDefinition layout, string undoName, int width, int height,
-            IEnumerable<Vector2Int> forbidden, IEnumerable<CityLayoutDefinition.StartingHouse> houses)
+            IEnumerable<Vector2Int> forbidden, IEnumerable<CityLayoutDefinition.StartingHouse> houses,
+            BuildingsDefinition buildings)
         {
-            Apply(layout, undoName, width, height, forbidden, houses, TownHallOf(layout), layout.Roads, PortOf(layout));
+            Apply(layout, undoName, width, height, forbidden, houses, TownHallOf(layout), layout.Roads, PortOf(layout), buildings);
         }
 
+        // Keeps of the berths those still inside the new size, on water and not under the new port, so that every edit
+        // that invalidates a berth drops it in its own undo step. The catalogue is needed for the port's size: without
+        // it (the port is unchanged or gone) only the size and the water are checked.
         private static void Apply(
             CityLayoutDefinition layout, string undoName, int width, int height,
             IEnumerable<Vector2Int> forbidden, IEnumerable<CityLayoutDefinition.StartingHouse> houses,
-            GridPlace? townHall, IEnumerable<Vector2Int> roads, PortSite? port)
+            GridPlace? townHall, IEnumerable<Vector2Int> roads, PortSite? port, BuildingsDefinition buildings,
+            IEnumerable<Vector2Int> berths = null)
         {
+            var forbiddenCells = new List<Vector2Int>(forbidden);
+            var water = new HashSet<Vector2Int>(forbiddenCells);
+            var keptBerths = new List<Vector2Int>();
+            Vector2Int portSize = default;
+            bool portKnown = port != null && buildings != null && TryGetPortFootprint(buildings, out PortFootprint footprint)
+                && (portSize = footprint.Footprint.SizeFor(port.Value.Place.Orientation)).x > 0;
+
+            foreach (Vector2Int berth in berths ?? layout.Berths)
+            {
+                bool underPort = portKnown
+                    && berth.x >= port.Value.Origin.x && berth.x < port.Value.Origin.x + portSize.x
+                    && berth.y >= port.Value.Origin.y && berth.y < port.Value.Origin.y + portSize.y;
+
+                if (berth.x >= 0 && berth.y >= 0 && berth.x < width && berth.y < height && water.Contains(berth) && !underPort)
+                {
+                    keptBerths.Add(berth);
+                }
+            }
+
             Undo.RecordObject(layout, undoName);
-            layout.SetContent(width, height, forbidden, houses, townHall, new List<Vector2Int>(roads), port, layout.Berths);
+            layout.SetContent(width, height, forbiddenCells, houses, townHall, new List<Vector2Int>(roads), port, keptBerths);
             EditorUtility.SetDirty(layout);
         }
     }
