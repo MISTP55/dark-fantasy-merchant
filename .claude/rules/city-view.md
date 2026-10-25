@@ -24,6 +24,9 @@ paths:
 - It is not part of the road network: not a root, a road touching it is not a network road for that, and it is never connected nor darkened. No connection to the town hall is needed.
 - The layout window's edits never move it: the water brush leaves the cells under it, roads and the town hall cannot go on it, and every edit carries it (`CityLayoutEditing.Apply`).
 
+- The grid also holds the port's berths (`Berths`, in placing order; `PlaceBerth` throws where `CanPlaceBerth` refuses): water cells where ships dock, never under the port, and `CanPlacePort` refuses a site covering one. `IsNavigable` is water with no building on it (the port is the only building on water); berths are navigable.
+- `HarbourPaths` (Core) sails over the navigable cells: `TryFindExit` is an A* with 8 moves, no corner cutting (a diagonal needs both orthogonal cells navigable), whose exit is the nearest navigable edge cell, with a fixed neighbour order and ties by insertion so a grid always gives the same path. `TryValidate` gives the problem that makes a grid unusable for ships (no berth, port not joined to the edge by water, a berth with no way to the edge); a grid without a port counts as joined.
+
 ## Roads and the town hall
 
 - The road network is kept by the grid, not recomputed by callers: a road is a 1 by 1 building, the town hall is the grid's `TownHall`, and a road is a network road (`IsNetworkRoad`) when joined to the town hall from touching cell to touching cell. The town hall alone connects nothing: a house or workshop is connected when it touches a network road.

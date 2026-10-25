@@ -13,6 +13,8 @@ namespace DarkFantasyMerchant.Core
         private readonly PlacedBuilding[] occupancy;
         private readonly List<PlacedBuilding> buildings = new List<PlacedBuilding>();
         private readonly bool[] network;
+        private readonly List<Vector2Int> berths = new List<Vector2Int>();
+        private readonly HashSet<Vector2Int> berthSet = new HashSet<Vector2Int>();
 
         /// <param name="forbidden">The water cells: only the port may cover them.</param>
         /// <param name="contact">When a road touches a building or another road, for the whole grid.</param>
@@ -61,6 +63,9 @@ namespace DarkFantasyMerchant.Core
         /// <summary>The port; null when none is placed.</summary>
         public PlacedBuilding Port { get; private set; }
 
+        /// <summary>The water cells where ships dock, in the order they were placed.</summary>
+        public IReadOnlyList<Vector2Int> Berths => berths;
+
         public event Action<PlacedBuilding> BuildingPlaced;
 
         /// <summary>
@@ -84,6 +89,34 @@ namespace DarkFantasyMerchant.Core
         public PlacedBuilding BuildingAt(Vector2Int cell)
         {
             return Contains(cell) ? occupancy[Index(cell)] : null;
+        }
+
+        public bool IsBerth(Vector2Int cell)
+        {
+            return berthSet.Contains(cell);
+        }
+
+        /// <summary>Whether a berth can be placed: on water inside the grid, under no building (the port) and not already a berth.</summary>
+        public bool CanPlaceBerth(Vector2Int cell)
+        {
+            return IsNavigable(cell) && !berthSet.Contains(cell);
+        }
+
+        public void PlaceBerth(Vector2Int cell)
+        {
+            if (!CanPlaceBerth(cell))
+            {
+                throw new ArgumentException("A berth cannot be placed at this cell.", nameof(cell));
+            }
+
+            berths.Add(cell);
+            berthSet.Add(cell);
+        }
+
+        /// <summary>Whether a ship can sail through the cell: water with no building on it (the port is the only building on water).</summary>
+        public bool IsNavigable(Vector2Int cell)
+        {
+            return Contains(cell) && forbidden[Index(cell)] && occupancy[Index(cell)] == null;
         }
 
         public bool CanPlace(Footprint footprint, GridPlace place)
@@ -136,7 +169,7 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// Whether the port can stand at the site: inside the grid, on no building, its front rows all on water and
-        /// its back rows all on land.
+        /// its back rows all on land, covering no berth.
         /// </summary>
         public bool CanPlacePort(PortFootprint footprint, PortSite site)
         {
@@ -154,7 +187,7 @@ namespace DarkFantasyMerchant.Core
                 {
                     var cell = new Vector2Int(x, y);
                     int index = Index(cell);
-                    if (occupancy[index] != null || forbidden[index] != footprint.IsWater(site, cell))
+                    if (occupancy[index] != null || berthSet.Contains(cell) || forbidden[index] != footprint.IsWater(site, cell))
                     {
                         return false;
                     }
