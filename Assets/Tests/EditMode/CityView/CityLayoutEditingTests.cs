@@ -19,7 +19,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             buildings = Track(TestBuildings.CreateCatalogue());
             layout = Track(ScriptableObject.CreateInstance<CityLayoutDefinition>());
-            layout.SetContent(10, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], Along(4, 0), new Vector2Int[0]);
+            layout.SetContent(10, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], Along(4, 0), new Vector2Int[0], null);
         }
 
         [TearDown]
@@ -323,7 +323,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                     new CityLayoutDefinition.StartingHouse(SocialClass.Poor, new Vector2Int(0, 0), BuildingOrientation.Along),
                     new CityLayoutDefinition.StartingHouse(SocialClass.Rich, new Vector2Int(0, 0), BuildingOrientation.Along),
                 },
-                null, new Vector2Int[0]);
+                null, new Vector2Int[0], null);
 
             Assert.AreEqual(2, CityLayoutEditing.AutoConnect(layout, buildings));
 

@@ -174,7 +174,7 @@ namespace DarkFantasyMerchant.Game
 
             if (!created.CanPlacePort(portDefinition.PortFootprint, PortSite))
             {
-                problem = $"the port cannot stand at ({port.origin.x}, {port.origin.y}) facing {port.facing.ToString().ToLowerInvariant()}: its front rows must be water and its back row land, inside the grid";
+                problem = $"the port cannot stand at ({port.origin.x}, {port.origin.y}) facing {port.facing.ToString().ToLowerInvariant()}: its front rows must be water and its back rows land, inside the grid";
                 return false;
             }
 
@@ -223,7 +223,7 @@ namespace DarkFantasyMerchant.Game
         /// <param name="port">Where the port stands; null for a layout without one.</param>
         public void SetContent(
             int width, int height, IEnumerable<Vector2Int> forbidden, IEnumerable<StartingHouse> houses,
-            GridPlace? townHall, IEnumerable<Vector2Int> roads, PortSite? port = null)
+            GridPlace? townHall, IEnumerable<Vector2Int> roads, PortSite? port)
         {
             this.width = width;
             this.height = height;

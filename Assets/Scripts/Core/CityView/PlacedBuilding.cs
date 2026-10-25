@@ -36,10 +36,10 @@ namespace DarkFantasyMerchant.Core
         /// </summary>
         public bool IsConnected { get; internal set; }
 
-        /// <summary>The cells covered on x and y, in the orientation of the place.</summary>
         /// <summary>The side the water rows of a port are on; only for a port.</summary>
         public PortFacing PortFacing => Kind.IsPort ? portFacing : throw new InvalidOperationException("Not a port.");
 
+        /// <summary>The cells covered on x and y, in the orientation of the place.</summary>
         public Vector2Int Size => Footprint.SizeFor(Place.Orientation);
     }
 }

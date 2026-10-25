@@ -22,7 +22,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             buildings = Track(TestBuildings.CreateCatalogue());
             layout = Track(ScriptableObject.CreateInstance<CityLayoutDefinition>());
-            layout.SetContent(12, 12, Water(), new CityLayoutDefinition.StartingHouse[0], Along(4, 0), new Vector2Int[0]);
+            layout.SetContent(12, 12, Water(), new CityLayoutDefinition.StartingHouse[0], Along(4, 0), new Vector2Int[0], null);
         }
 
         [TearDown]
@@ -190,6 +190,20 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsTrue(CityLayoutEditing.TryMakeGrid(layout, buildings, out CityGrid grid));
             Assert.IsNotNull(grid.Port);
             Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Poor));
+        }
+
+        [Test]
+        public void ACatalogueWithoutAPort_MakesNoGridAndThrowsNothing()
+        {
+            CityLayoutEditing.SetPort(layout, buildings, Port);
+            Object.DestroyImmediate(buildings.Port);
+            TestBuildings.SetPort(buildings, null);
+
+            Assert.IsFalse(CityLayoutEditing.TryMakeGrid(layout, buildings, out _));
+            Assert.IsFalse(CityLayoutEditing.CanPlacePort(layout, buildings, Port));
+            Assert.IsFalse(CityLayoutEditing.IsUnderPort(layout, buildings, new Vector2Int(0, 9)));
+            CityLayoutEditing.SetRoads(layout, buildings, new[] { new Vector2Int(6, 6) }, true);
+            CollectionAssert.Contains(layout.Roads, new Vector2Int(6, 6));
         }
 
         [Test]

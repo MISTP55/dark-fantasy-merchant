@@ -170,6 +170,14 @@ namespace DarkFantasyMerchant.Editor
                 return;
             }
 
+            // The tools read the footprints of the catalogue's town hall, port and houses.
+            if (!buildings.TryValidate(out string buildingsProblem))
+            {
+                CancelTrace();
+                EditorGUILayout.HelpBox($"The buildings asset cannot be used: {buildingsProblem}.", MessageType.Warning);
+                return;
+            }
+
             CityLayoutDefinition layout = city.Layout;
 
             if (layout == null)
@@ -213,6 +221,22 @@ namespace DarkFantasyMerchant.Editor
             {
                 CancelTrace();
                 EditorGUILayout.HelpBox("Something in the layout cannot stand: a town hall, a port, a road or a house is outside the grid, on a wrong cell or on another building.", MessageType.Error);
+
+                // A building asset changed after the layout was made can leave the town hall or the port standing
+                // wrong, and the grid is not drawn to remove them with their tool.
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (layout.HasTownHall && GUILayout.Button("Remove town hall"))
+                    {
+                        CityLayoutEditing.RemoveTownHall(layout);
+                    }
+
+                    if (layout.HasPort && GUILayout.Button("Remove port"))
+                    {
+                        CityLayoutEditing.RemovePort(layout);
+                    }
+                }
+
                 return;
             }
 

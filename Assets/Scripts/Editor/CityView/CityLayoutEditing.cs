@@ -64,9 +64,10 @@ namespace DarkFantasyMerchant.Editor
             if (layout.HasPort)
             {
                 PortSite site = layout.PortSite;
-                Vector2Int portSize = PortSize(buildings, site);
 
-                if (site.Origin.x + portSize.x <= width && site.Origin.y + portSize.y <= height)
+                // Without a usable port in the catalogue, its size is unknown: it is kept as it is.
+                if (!TryGetPortFootprint(buildings, out PortFootprint footprint)
+                    || FitsInside(site, footprint.Footprint.SizeFor(site.Place.Orientation), width, height))
                 {
                     port = site;
                 }
@@ -150,10 +151,29 @@ namespace DarkFantasyMerchant.Editor
             Apply(layout, "Remove town hall", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses, null, layout.Roads, PortOf(layout));
         }
 
-        /// <summary>The port's footprint split into water and land rows, from the catalogue.</summary>
+        /// <summary>The port's footprint split into water and land rows, from the catalogue. Only for a catalogue whose port is usable (<see cref="TryGetPortFootprint"/>).</summary>
         public static PortFootprint PortFootprintOf(BuildingsDefinition buildings)
         {
             return buildings.Port.PortFootprint;
+        }
+
+        /// <summary>The port's footprint; false when the catalogue has no usable port.</summary>
+        public static bool TryGetPortFootprint(BuildingsDefinition buildings, out PortFootprint footprint)
+        {
+            footprint = default;
+
+            if (buildings.Port == null || !buildings.Port.TryValidate(out _))
+            {
+                return false;
+            }
+
+            footprint = buildings.Port.PortFootprint;
+            return true;
+        }
+
+        private static bool FitsInside(PortSite site, Vector2Int size, int width, int height)
+        {
+            return site.Origin.x + size.x <= width && site.Origin.y + size.y <= height;
         }
 
         /// <summary>The cells the port covers when it stands at the site.</summary>
@@ -168,7 +188,8 @@ namespace DarkFantasyMerchant.Editor
         /// </summary>
         public static bool CanPlacePort(CityLayoutDefinition layout, BuildingsDefinition buildings, PortSite site)
         {
-            return TryMakeGrid(layout, buildings, false, out CityGrid grid) && grid.CanPlacePort(PortFootprintOf(buildings), site);
+            return TryGetPortFootprint(buildings, out PortFootprint footprint)
+                && TryMakeGrid(layout, buildings, false, out CityGrid grid) && grid.CanPlacePort(footprint, site);
         }
 
         /// <summary>Places the port or moves it; false, and nothing recorded, when it cannot stand there.</summary>
@@ -202,13 +223,13 @@ namespace DarkFantasyMerchant.Editor
         /// <summary>Whether the layout's port covers the cell.</summary>
         public static bool IsUnderPort(CityLayoutDefinition layout, BuildingsDefinition buildings, Vector2Int cell)
         {
-            if (!layout.HasPort)
+            if (!layout.HasPort || !TryGetPortFootprint(buildings, out PortFootprint footprint))
             {
                 return false;
             }
 
             PortSite site = layout.PortSite;
-            Vector2Int size = PortSize(buildings, site);
+            Vector2Int size = footprint.Footprint.SizeFor(site.Place.Orientation);
 
             return cell.x >= site.Origin.x && cell.x < site.Origin.x + size.x
                 && cell.y >= site.Origin.y && cell.y < site.Origin.y + size.y;
@@ -558,12 +579,12 @@ namespace DarkFantasyMerchant.Editor
 
             if (withPort && layout.HasPort)
             {
-                if (!grid.CanPlacePort(PortFootprintOf(buildings), layout.PortSite))
+                if (!TryGetPortFootprint(buildings, out PortFootprint footprint) || !grid.CanPlacePort(footprint, layout.PortSite))
                 {
                     return false;
                 }
 
-                grid.PlacePort(PortFootprintOf(buildings), layout.PortSite);
+                grid.PlacePort(footprint, layout.PortSite);
             }
 
             foreach (Vector2Int road in layout.Roads)

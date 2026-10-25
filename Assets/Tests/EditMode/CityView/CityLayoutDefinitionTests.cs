@@ -65,7 +65,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void NoPort_IsUnusable()
         {
-            layout.SetContent(10, 10, WithWater(new Vector2Int[0]), new CityLayoutDefinition.StartingHouse[0], TownHall, new Vector2Int[0]);
+            layout.SetContent(10, 10, WithWater(new Vector2Int[0]), new CityLayoutDefinition.StartingHouse[0], TownHall, new Vector2Int[0], null);
 
             Assert.IsFalse(layout.HasPort);
             Assert.IsFalse(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem));
@@ -81,6 +81,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.IsFalse(layout.TryCreateGrid(buildings, out _, out string problem));
             StringAssert.Contains("port cannot stand", problem);
+            StringAssert.Contains("back rows land", problem);
         }
 
         [Test]
@@ -101,7 +102,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void NoTownHall_IsUnusable()
         {
-            layout.SetContent(10, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], null, new Vector2Int[0]);
+            layout.SetContent(10, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], null, new Vector2Int[0], null);
 
             Assert.IsFalse(layout.HasTownHall);
             Assert.IsFalse(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem));
@@ -230,7 +231,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryCreateGrid_Fails_ForASizeUnderOne()
         {
-            layout.SetContent(0, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], TownHall, new Vector2Int[0]);
+            layout.SetContent(0, 10, new Vector2Int[0], new CityLayoutDefinition.StartingHouse[0], TownHall, new Vector2Int[0], null);
 
             Assert.IsFalse(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem));
             Assert.IsNull(grid);
@@ -240,7 +241,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryCreateGrid_Fails_ForAForbiddenCellOutside()
         {
-            layout.SetContent(4, 4, new[] { new Vector2Int(4, 0) }, new CityLayoutDefinition.StartingHouse[0], TownHall, new Vector2Int[0]);
+            layout.SetContent(4, 4, new[] { new Vector2Int(4, 0) }, new CityLayoutDefinition.StartingHouse[0], TownHall, new Vector2Int[0], null);
 
             Assert.IsFalse(layout.TryCreateGrid(buildings, out _, out string problem));
             StringAssert.Contains("forbidden", problem);
