@@ -298,5 +298,24 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(HarbourState.Waiting, state);
             Assert.AreEqual(HarbourState.Leaving, harbour.StateOf(leaving));
         }
+
+        [Test]
+        public void Admit_FromExitedHandler_QueuesBehindShipsAlreadyWaiting()
+        {
+            Ship leaving = CreateShip();
+            harbour.Admit(leaving);
+            harbour.Admit(CreateShip());
+            Ship queued = CreateShip();
+            harbour.Admit(queued);
+            Ship newcomer = CreateShip();
+            harbour.Exited += ship => harbour.Admit(newcomer);
+            harbour.Advance(10f);
+            harbour.Leave(leaving);
+
+            harbour.Advance(10f);
+
+            Assert.AreEqual(HarbourState.Arriving, harbour.StateOf(queued));
+            Assert.AreEqual(HarbourState.Waiting, harbour.StateOf(newcomer));
+        }
     }
 }

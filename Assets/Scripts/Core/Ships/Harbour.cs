@@ -36,6 +36,7 @@ namespace DarkFantasyMerchant.Core
         // Reused by every step.
         private readonly List<Entry> snapshot = new List<Entry>();
 
+        private bool advancing;
         private int freeBerths;
 
         public Harbour(CityGrid grid, float cellsPerSecond)
@@ -112,7 +113,7 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
-        /// <summary>Lets a ship in: it arrives from the edge when a berth is free, else it queues.</summary>
+        /// <summary>Lets a ship in: it arrives from the edge when a berth is free and nobody is queued, else it queues.</summary>
         public HarbourState Admit(Ship ship)
         {
             if (ship == null)
@@ -128,7 +129,11 @@ namespace DarkFantasyMerchant.Core
             var entry = new Entry { Ship = ship, State = HarbourState.Waiting };
             entries.Add(entry);
             byShip.Add(ship, entry);
-            TryEnter(entry);
+            if (!HasWaiting(entry))
+            {
+                TryEnter(entry);
+            }
+
             return entry.State;
         }
 
@@ -217,7 +222,27 @@ namespace DarkFantasyMerchant.Core
                 return;
             }
 
-            float travel = cellsPerSecond * seconds;
+            if (advancing)
+            {
+                throw new InvalidOperationException("Advance cannot be called from an event of the harbour.");
+            }
+
+            advancing = true;
+            try
+            {
+                MoveShips(cellsPerSecond * seconds);
+            }
+            finally
+            {
+                advancing = false;
+                snapshot.Clear();
+            }
+
+            AdmitQueue();
+        }
+
+        private void MoveShips(float travel)
+        {
             snapshot.Clear();
             snapshot.AddRange(entries);
             for (int i = 0; i < snapshot.Count; i++)
@@ -248,9 +273,6 @@ namespace DarkFantasyMerchant.Core
                     }
                 }
             }
-
-            snapshot.Clear();
-            AdmitQueue();
         }
 
         private static float StepLength(Vector2Int from, Vector2Int to)
@@ -305,6 +327,20 @@ namespace DarkFantasyMerchant.Core
             entry.Distance = lengths[best];
             entry.State = HarbourState.Arriving;
             return true;
+        }
+
+        // True when a ship other than the given one is queued: a free berth is then theirs, in order.
+        private bool HasWaiting(Entry except)
+        {
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (entries[i] != except && entries[i].State == HarbourState.Waiting)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void AdmitQueue()
