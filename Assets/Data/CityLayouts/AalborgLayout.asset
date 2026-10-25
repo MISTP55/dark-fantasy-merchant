@@ -312,6 +312,10 @@ MonoBehaviour:
   townHall:
     origin: {x: 20, y: 23}
     orientation: 0
+  hasPort: 1
+  port:
+    origin: {x: 14, y: 32}
+    facing: 0
   roads:
   - {x: 19, y: 25}
   - {x: 19, y: 26}
@@ -365,6 +369,11 @@ MonoBehaviour:
   - {x: 17, y: 29}
   - {x: 16, y: 29}
   - {x: 15, y: 29}
+  - {x: 14, y: 30}
+  - {x: 14, y: 31}
+  - {x: 17, y: 31}
+  - {x: 16, y: 31}
+  - {x: 15, y: 31}
   startingHouses:
   - socialClass: 0
     origin: {x: 17, y: 28}
