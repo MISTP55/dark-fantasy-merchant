@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DarkFantasyMerchant.Core;
 using NUnit.Framework;
 using UnityEngine;
@@ -11,11 +12,29 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static readonly Footprint TownHall = new Footprint(3, 2);
         private static readonly PerClass<Footprint> Houses = new PerClass<Footprint>(new Footprint(2, 1), new Footprint(2, 1), new Footprint(2, 1));
 
-        private static bool TryBuild(PortFacing shore, PerClass<int> houses, out CityGrid grid, out string problem, int size = 40)
+        private static bool TryBuild(
+            PortFacing shore, PerClass<int> houses, out CityGrid grid, out string problem, int size = 40, int wallSide = 25)
         {
             return StartingLayout.TryBuild(
-                size, size, shore, 4, 6, 20, Port, 10, TownHall, houses, Houses, RoadContact.SidesOnly, new System.Random(3),
-                out grid, out problem);
+                size, size, shore, 4, 6, 20, wallSide, Port, 10, TownHall, houses, Houses, RoadContact.SidesOnly,
+                new System.Random(3), out grid, out problem);
+        }
+
+        // The outline of the square of `side` cells centred on the town hall, a cell more on the far side.
+        private static HashSet<Vector2Int> Outline(PlacedBuilding townHall, int side)
+        {
+            int x0 = townHall.Place.Origin.x + (townHall.Size.x - side) / 2;
+            int y0 = townHall.Place.Origin.y + (townHall.Size.y - side) / 2;
+            var cells = new HashSet<Vector2Int>();
+            for (int i = 0; i < side; i++)
+            {
+                cells.Add(new Vector2Int(x0 + i, y0));
+                cells.Add(new Vector2Int(x0 + i, y0 + side - 1));
+                cells.Add(new Vector2Int(x0, y0 + i));
+                cells.Add(new Vector2Int(x0 + side - 1, y0 + i));
+            }
+
+            return cells;
         }
 
         private static bool InBand(PortFacing shore, Vector2Int cell, int size)
@@ -95,10 +114,63 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(PortFacings.OrientationOf(shore), grid.TownHall.Place.Orientation);
         }
 
+        [TestCase(PortFacing.North)]
+        [TestCase(PortFacing.East)]
+        [TestCase(PortFacing.South)]
+        [TestCase(PortFacing.West)]
+        public void TryBuild_WallsTheOutlineOfTheSquare(PortFacing shore)
+        {
+            Assert.IsTrue(TryBuild(shore, new PerClass<int>(2, 3, 5), out CityGrid grid, out string problem), problem);
+
+            HashSet<Vector2Int> outline = Outline(grid.TownHall, 25);
+            for (int y = 0; y < 40; y++)
+            {
+                for (int x = 0; x < 40; x++)
+                {
+                    var cell = new Vector2Int(x, y);
+                    PlacedBuilding there = grid.BuildingAt(cell);
+                    bool wall = there != null && there.Kind.IsWall;
+                    Assert.AreEqual(outline.Contains(cell) && !grid.IsForbidden(cell), wall, cell.ToString());
+                }
+            }
+
+            Assert.IsTrue(grid.HasClosedWalls);
+        }
+
+        [TestCase(PortFacing.North)]
+        [TestCase(PortFacing.East)]
+        [TestCase(PortFacing.South)]
+        [TestCase(PortFacing.West)]
+        public void TryBuild_PutsEveryBuildingInsideTheWalls(PortFacing shore)
+        {
+            Assert.IsTrue(TryBuild(shore, new PerClass<int>(2, 3, 5), out CityGrid grid, out string problem), problem);
+
+            Assert.IsTrue(grid.TryValidateWalls(out string wallProblem), wallProblem);
+            Assert.IsTrue(grid.KeepsInsideWalls);
+        }
+
+        [Test]
+        public void TryBuild_Fails_WhenTheWallsDoNotClose()
+        {
+            // The square leaves the 40 by 40 grid on its land sides.
+            Assert.IsFalse(TryBuild(PortFacing.South, new PerClass<int>(0, 0, 0), out CityGrid grid, out string problem, wallSide: 45));
+            Assert.IsNull(grid);
+            StringAssert.Contains("walls", problem);
+        }
+
         [Test]
         public void TryBuild_Fails_WhenTheHousesDoNotFit()
         {
-            Assert.IsFalse(TryBuild(PortFacing.South, new PerClass<int>(0, 0, 500), out CityGrid grid, out string problem, 12));
+            Assert.IsFalse(TryBuild(PortFacing.South, new PerClass<int>(0, 0, 500), out CityGrid grid, out string problem));
+            Assert.IsNull(grid);
+            StringAssert.Contains("houses", problem);
+        }
+
+        [Test]
+        public void TryBuild_Fails_WhenTheHousesDoNotFitInsideTheWalls()
+        {
+            // 5 by 5 cells inside, 6 of them under the town hall: no room for 10 houses and their roads.
+            Assert.IsFalse(TryBuild(PortFacing.South, new PerClass<int>(0, 0, 10), out CityGrid grid, out string problem, wallSide: 7));
             Assert.IsNull(grid);
             StringAssert.Contains("houses", problem);
         }

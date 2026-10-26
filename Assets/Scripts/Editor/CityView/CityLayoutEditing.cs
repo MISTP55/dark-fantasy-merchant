@@ -321,13 +321,16 @@ namespace DarkFantasyMerchant.Editor
         /// <summary>The side, in cells, of the square around the town hall a generated layout's houses are drawn in.</summary>
         public const int GeneratedHouseArea = 40;
 
+        /// <summary>The side, in cells, of the square around the town hall whose outline a generated layout walls.</summary>
+        public const int GeneratedWallSide = 45;
+
         // How far around the city, in cells of the navigation mask, the water is looked for.
         private const float ShoreRadius = 10f;
 
         /// <summary>
         /// A whole city grid of the size, from nothing: water along the side of the sea (where the mask's water lies
         /// around the city on the map; south without a mask), the port on that shore, the town hall inland of the port,
-        /// then just the houses the city's starting population needs, drawn around the town hall with the seed and
+        /// walls around it (<see cref="GeneratedWallSide"/>), then just the houses the city's starting population needs, drawn around the town hall with the seed and
         /// connected by roads (<see cref="StartingLayout.TryBuild"/>). They are connected by sides, whatever the
         /// catalogue's contact, so that the layout works under either.
         /// </summary>
@@ -349,7 +352,7 @@ namespace DarkFantasyMerchant.Editor
             PortFacing shore = ShoreSide.Of(mask, city.MapPosition, ShoreRadius);
 
             return StartingLayout.TryBuild(
-                width, height, shore, GeneratedWaterRows, GeneratedTownHallDistance, GeneratedHouseArea,
+                width, height, shore, GeneratedWaterRows, GeneratedTownHallDistance, GeneratedHouseArea, GeneratedWallSide,
                 PortFootprintOf(buildings), GeneratedBerths, buildings.TownHall.Footprint,
                 houses, footprints, RoadContact.SidesOnly, new System.Random(seed),
                 out grid, out problem);

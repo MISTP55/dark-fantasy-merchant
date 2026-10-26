@@ -28,9 +28,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             serialized.FindProperty("mapPosition").vector2Value = new Vector2(0.5f, 0.5f);
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
-            // A hand-made layout: a water cell in the middle and a house, no port.
+            // A hand-made layout of the default size, room for the generated walls: a water cell in the middle and a house, no port.
             layout = Track(ScriptableObject.CreateInstance<CityLayoutDefinition>());
-            layout.SetContent(40, 40, new[] { new Vector2Int(20, 20) }, new[]
+            layout.SetContent(80, 80, new[] { new Vector2Int(20, 20) }, new[]
             {
                 new CityLayoutDefinition.StartingHouse(SocialClass.Rich, new Vector2Int(30, 30), BuildingOrientation.Along),
             }, null, new Vector2Int[0], null, new Vector2Int[0]);
@@ -73,22 +73,22 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             Assert.IsTrue(CityLayoutEditing.Regenerate(layout, city, economy, buildings, SeaToTheEast(), 1, out string problem), problem);
 
-            Assert.AreEqual(40, layout.Width);
-            Assert.AreEqual(40, layout.Height);
+            Assert.AreEqual(80, layout.Width);
+            Assert.AreEqual(80, layout.Height);
             Assert.IsTrue(layout.HasPort);
             Assert.AreEqual(PortFacing.East, layout.PortSite.Facing);
             Assert.IsTrue(layout.HasTownHall);
             CollectionAssert.DoesNotContain(layout.ForbiddenCells, new Vector2Int(20, 20));
-            Assert.AreEqual(CityLayoutEditing.GeneratedWaterRows * 40, layout.ForbiddenCells.Count);
+            Assert.AreEqual(CityLayoutEditing.GeneratedWaterRows * 80, layout.ForbiddenCells.Count);
 
             foreach (Vector2Int cell in layout.ForbiddenCells)
             {
-                Assert.GreaterOrEqual(cell.x, 40 - CityLayoutEditing.GeneratedWaterRows, cell.ToString());
+                Assert.GreaterOrEqual(cell.x, 80 - CityLayoutEditing.GeneratedWaterRows, cell.ToString());
             }
 
             // Its nearest side the distance from the water.
             Assert.AreEqual(
-                40 - CityLayoutEditing.GeneratedWaterRows - CityLayoutEditing.GeneratedTownHallDistance,
+                80 - CityLayoutEditing.GeneratedWaterRows - CityLayoutEditing.GeneratedTownHallDistance,
                 layout.TownHallPlace.Origin.x + buildings.TownHall.Footprint.SizeFor(layout.TownHallPlace.Orientation).x);
 
             Assert.IsTrue(layout.TryCreateGrid(buildings, out CityGrid grid, out problem), problem);
@@ -108,7 +108,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             TestBuildings.SetRoadContact(buildings, RoadContact.SidesAndCorners);
 
-            Assert.IsTrue(CityLayoutEditing.TryGenerate(city, economy, buildings, SeaToTheEast(), 1, 40, 40, out CityGrid grid, out string problem), problem);
+            Assert.IsTrue(CityLayoutEditing.TryGenerate(city, economy, buildings, SeaToTheEast(), 1, 80, 80, out CityGrid grid, out string problem), problem);
             Assert.AreEqual(RoadContact.SidesOnly, grid.Contact);
         }
 

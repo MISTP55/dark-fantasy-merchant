@@ -25,7 +25,8 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// As <see cref="TryPlace(CityGrid, PerClass{int}, PerClass{Footprint}, System.Random)"/>, the houses drawn at
-        /// random only inside the area; those placed again along the roads may stand outside it.
+        /// random only inside the area; those placed again along the roads may stand outside it, inside the walls of a grid
+        /// kept inside them like every building.
         /// </summary>
         public static bool TryPlace(
             CityGrid grid, PerClass<int> houses, PerClass<Footprint> footprints, RectInt area, System.Random random)

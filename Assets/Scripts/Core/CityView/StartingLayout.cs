@@ -3,12 +3,12 @@ using UnityEngine;
 
 namespace DarkFantasyMerchant.Core
 {
-    /// <summary>Makes a whole city grid from nothing: its water, its port, its berths, its town hall, then its houses with their roads.</summary>
+    /// <summary>Makes a whole city grid from nothing: its water, its port, its berths, its town hall, its walls, then its houses with their roads.</summary>
     public static class StartingLayout
     {
         /// <summary>
         /// A grid with a band of water along the shore's edge, the port on the middle of that shore facing the water,
-        /// the town hall inland of the port, then houses[c] houses of each class drawn around it, each connected by
+        /// the town hall inland of the port, walls on the outline of the square of wallSide cells centred on it, then houses[c] houses of each class drawn around it, each connected by
         /// roads (<see cref="StartingHouses.TryPlace(CityGrid, PerClass{int}, PerClass{Footprint}, RectInt, System.Random)"/>).
         /// </summary>
         /// <param name="berths">How many berths to place on the water nearest the port (<see cref="StartingBerths.Place"/>).</param>
@@ -21,10 +21,15 @@ namespace DarkFantasyMerchant.Core
         /// <param name="houseArea">
         /// The side, in cells, of the square centred on the town hall that the houses are drawn in at random.
         /// </param>
+        /// <param name="wallSide">
+        /// The side, in cells, of the square centred on the town hall whose outline is walled, on every cell of it that
+        /// is inside the grid, land and free; the water closes it where it crosses the water. The houses and their roads
+        /// stand inside, and the grid returned keeps inside the walls (<see cref="CityGrid.KeepsInsideWalls"/>).
+        /// </param>
         /// <param name="problem">What did not fit, for the logs; null when everything did.</param>
-        /// <returns>False, and no grid, when the port, a berth, the town hall or a house does not fit.</returns>
+        /// <returns>False, and no grid, when the port, a berth, the town hall or a house does not fit, or the walls do not close.</returns>
         public static bool TryBuild(
-            int width, int height, PortFacing shore, int waterRows, int townHallDistance, int houseArea,
+            int width, int height, PortFacing shore, int waterRows, int townHallDistance, int houseArea, int wallSide,
             PortFootprint port, int berths, Footprint townHall, PerClass<int> houses, PerClass<Footprint> houseFootprints,
             RoadContact contact, System.Random random,
             out CityGrid grid, out string problem)
@@ -68,7 +73,25 @@ namespace DarkFantasyMerchant.Core
 
             created.Place(BuildingKind.TownHall(), BuildingOwner.City, townHall, hall);
 
-            if (!StartingHouses.TryPlace(created, houses, houseFootprints, HouseArea(created.TownHall, houseArea), random))
+            var wall = new Footprint(1, 1);
+            foreach (Vector2Int cell in Outline(SquareAround(created.TownHall, wallSide)))
+            {
+                var place = new GridPlace(cell, BuildingOrientation.Along);
+                if (created.CanPlace(wall, place))
+                {
+                    created.Place(BuildingKind.Wall(), BuildingOwner.City, wall, place);
+                }
+            }
+
+            if (!created.HasClosedWalls)
+            {
+                problem = $"its walls do not close on a {width} by {height} grid";
+                return false;
+            }
+
+            created.KeepsInsideWalls = true;
+
+            if (!StartingHouses.TryPlace(created, houses, houseFootprints, SquareAround(created.TownHall, houseArea), random))
             {
                 problem = $"its starting houses do not fit on a {width} by {height} grid";
                 return false;
@@ -120,13 +143,28 @@ namespace DarkFantasyMerchant.Core
         }
 
         // The square of `side` cells centred on the town hall; a cell more on the far side when they do not split evenly.
-        private static RectInt HouseArea(PlacedBuilding townHall, int side)
+        private static RectInt SquareAround(PlacedBuilding townHall, int side)
         {
             Vector2Int size = townHall.Size;
             Vector2Int origin = townHall.Place.Origin;
             int x = origin.x + (size.x - side) / 2;
             int y = origin.y + (size.y - side) / 2;
             return new RectInt(x, y, side, side);
+        }
+
+        // The cells on the rectangle's border.
+        private static IEnumerable<Vector2Int> Outline(RectInt rect)
+        {
+            for (int y = rect.yMin; y < rect.yMax; y++)
+            {
+                for (int x = rect.xMin; x < rect.xMax; x++)
+                {
+                    if (x == rect.xMin || y == rect.yMin || x == rect.xMax - 1 || y == rect.yMax - 1)
+                    {
+                        yield return new Vector2Int(x, y);
+                    }
+                }
+            }
         }
 
         // The middle of the line between the water and the land.
