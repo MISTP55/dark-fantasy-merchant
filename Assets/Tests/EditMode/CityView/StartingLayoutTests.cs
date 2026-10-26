@@ -159,6 +159,16 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void TryBuild_Fails_WhenThePortStandsOutsideTheWalls()
+        {
+            // A 7-side square around the town hall, 6 rows inland, closes on land, short of the port's land row.
+            Assert.IsFalse(TryBuild(PortFacing.South, new PerClass<int>(0, 0, 0), out CityGrid grid, out string problem, wallSide: 7));
+            Assert.IsNull(grid);
+            StringAssert.Contains("port", problem);
+            StringAssert.Contains("outside the walls", problem);
+        }
+
+        [Test]
         public void TryBuild_Fails_WhenTheHousesDoNotFit()
         {
             Assert.IsFalse(TryBuild(PortFacing.South, new PerClass<int>(0, 0, 500), out CityGrid grid, out string problem));
@@ -169,8 +179,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryBuild_Fails_WhenTheHousesDoNotFitInsideTheWalls()
         {
-            // 5 by 5 cells inside, 6 of them under the town hall: no room for 10 houses and their roads.
-            Assert.IsFalse(TryBuild(PortFacing.South, new PerClass<int>(0, 0, 10), out CityGrid grid, out string problem, wallSide: 7));
+            // 15 by 15 cells inside, the port's land row and the town hall among them: no room for 100 houses and their
+            // roads, which the 40 by 40 grid would hold.
+            Assert.IsFalse(TryBuild(PortFacing.South, new PerClass<int>(0, 0, 100), out CityGrid grid, out string problem, wallSide: 17));
             Assert.IsNull(grid);
             StringAssert.Contains("houses", problem);
         }

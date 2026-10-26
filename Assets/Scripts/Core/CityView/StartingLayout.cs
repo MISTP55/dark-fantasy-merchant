@@ -83,9 +83,9 @@ namespace DarkFantasyMerchant.Core
                 }
             }
 
-            if (!created.HasClosedWalls)
+            // The port stands already: walls that close short of it would leave it outside.
+            if (!created.TryValidateWalls(out problem))
             {
-                problem = $"its walls do not close on a {width} by {height} grid";
                 return false;
             }
 
