@@ -17,6 +17,7 @@ namespace DarkFantasyMerchant.Editor
         private enum Tool
         {
             Water,
+            Wall,
             RichHouse,
             WealthyHouse,
             PoorHouse,
@@ -27,7 +28,7 @@ namespace DarkFantasyMerchant.Editor
             Erase,
         }
 
-        private static readonly string[] ToolLabels = { "Water", "Rich house", "Wealthy house", "Poor house", "Town hall", "Port", "Berth", "Road", "Erase" };
+        private static readonly string[] ToolLabels = { "Water", "Wall", "Rich house", "Wealthy house", "Poor house", "Town hall", "Port", "Berth", "Road", "Erase" };
 
         private static readonly Color FreeCell = new Color32(0x3B, 0x4A, 0x3A, 0xFF);
         private static readonly Color ForbiddenCell = new Color32(0x24, 0x43, 0x5E, 0xFF);
@@ -37,6 +38,7 @@ namespace DarkFantasyMerchant.Editor
         private static readonly Color InvalidWaterGhost = new Color32(0x90, 0x30, 0x60, 0x99);
         private static readonly Color TownHallColor = new Color32(0xC9, 0xA2, 0x27, 0xFF);
         private static readonly Color RoadColor = new Color32(0x8A, 0x7B, 0x62, 0xFF);
+        private static readonly Color WallColor = new Color32(0x3A, 0x3A, 0x3A, 0xFF);
         private static readonly Color PortColor = new Color32(0x7A, 0x4E, 0x2E, 0xFF);
         private static readonly Color PortWaterColor = new Color32(0xB0, 0x8A, 0x5C, 0xFF);
         private static readonly Color BerthColor = new Color32(0xE8, 0xD0, 0x5A, 0xFF);
@@ -226,10 +228,15 @@ namespace DarkFantasyMerchant.Editor
                 EditorGUILayout.HelpBox($"Ships cannot use this layout: {harbourProblem}. Place berths with the Berth tool, or regenerate the layout.", MessageType.Warning);
             }
 
+            if (madeGrid && layout.HasTownHall && !grid.TryValidateWalls(out string wallProblem))
+            {
+                EditorGUILayout.HelpBox($"The walls do not hold the city: {wallProblem}. Paint walls with the Wall tool, or regenerate the layout.", MessageType.Warning);
+            }
+
             if (!madeGrid)
             {
                 CancelTrace();
-                EditorGUILayout.HelpBox("Something in the layout cannot stand: a town hall, a port, a road or a house is outside the grid, on a wrong cell or on another building.", MessageType.Error);
+                EditorGUILayout.HelpBox("Something in the layout cannot stand: a town hall, a port, a wall, a road or a house is outside the grid, on a wrong cell or on another building.", MessageType.Error);
 
                 // A building asset changed after the layout was made can leave the town hall or the port standing
                 // wrong, and the grid is not drawn to remove them with their tool.
@@ -432,6 +439,10 @@ namespace DarkFantasyMerchant.Editor
                 {
                     EditorGUI.DrawRect(rect, TownHallColor);
                 }
+                else if (building.Kind.IsWall)
+                {
+                    EditorGUI.DrawRect(rect, WallColor);
+                }
                 else if (building.Kind.IsPort)
                 {
                     var site = new PortSite(origin, building.PortFacing);
@@ -633,11 +644,16 @@ namespace DarkFantasyMerchant.Editor
                     // Painting water never frees a cell: only the right click does.
                     CityLayoutEditing.SetForbidden(layout, buildings, cells, paints);
                 }
+                else if (tool == Tool.Wall)
+                {
+                    CityLayoutEditing.SetWalls(layout, buildings, cells, paints);
+                }
                 else
                 {
                     CityLayoutEditing.SetForbidden(layout, buildings, cells, false);
                     CityLayoutEditing.RemoveHouses(layout, buildings, cells);
                     CityLayoutEditing.SetRoads(layout, buildings, cells, false);
+                    CityLayoutEditing.SetWalls(layout, buildings, cells, false);
                 }
             }
 
@@ -723,7 +739,7 @@ namespace DarkFantasyMerchant.Editor
 
         private static bool UsesBrush(Tool tool)
         {
-            return tool == Tool.Water || tool == Tool.Erase;
+            return tool == Tool.Water || tool == Tool.Wall || tool == Tool.Erase;
         }
 
         private List<Vector2Int> BrushCells(CityLayoutDefinition layout, Vector2Int hovered)

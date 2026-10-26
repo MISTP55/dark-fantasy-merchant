@@ -18,7 +18,7 @@ namespace DarkFantasyMerchant.Editor
             return buildings.HouseOf(housedClass).Footprint;
         }
 
-        /// <summary>Gives the layout the size; the water cells, the houses, the town hall, the port and the roads that fall outside are dropped.</summary>
+        /// <summary>Gives the layout the size; the water cells, the houses, the town hall, the port, the roads and the walls that fall outside are dropped.</summary>
         public static void Resize(CityLayoutDefinition layout, BuildingsDefinition buildings, int width, int height)
         {
             width = Mathf.Max(1, width);
@@ -93,8 +93,8 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <summary>
-        /// Whether the town hall can stand at the place: inside the grid, on no water cell, road, house or port. Its
-        /// own current place does not count.
+        /// Whether the town hall can stand at the place: inside the grid, on no water cell, road, house, wall or port.
+        /// Its own current place does not count.
         /// </summary>
         public static bool CanPlaceTownHall(CityLayoutDefinition layout, BuildingsDefinition buildings, GridPlace place)
         {
@@ -113,7 +113,7 @@ namespace DarkFantasyMerchant.Editor
 
                     if (!IsInside(layout, cell) || IsForbiddenIn(layout, cell)
                         || HouseIndexAt(layout, buildings, cell) >= 0 || IsRoadIn(layout, cell)
-                        || IsUnderPort(layout, buildings, cell))
+                        || IsWallIn(layout, cell) || IsUnderPort(layout, buildings, cell))
                     {
                         return false;
                     }
@@ -236,8 +236,8 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <summary>
-        /// Adds roads or removes them. The cells outside the grid, on water, or under the town hall, the port or a house are
-        /// skipped. Records nothing when no cell changes.
+        /// Adds roads or removes them. The cells outside the grid, on water, or under the town hall, the port, a house or a
+        /// wall are skipped. Records nothing when no cell changes.
         /// </summary>
         public static void SetRoads(CityLayoutDefinition layout, BuildingsDefinition buildings, IEnumerable<Vector2Int> cells, bool add)
         {
@@ -257,7 +257,7 @@ namespace DarkFantasyMerchant.Editor
                 }
                 else if (!roads.Contains(cell) && !IsForbiddenIn(layout, cell)
                     && HouseIndexAt(layout, buildings, cell) < 0 && !IsUnderTownHall(layout, buildings, cell)
-                    && !IsUnderPort(layout, buildings, cell))
+                    && !IsUnderPort(layout, buildings, cell) && !IsWallIn(layout, cell))
                 {
                     roads.Add(cell);
                     changed = true;
@@ -269,6 +269,45 @@ namespace DarkFantasyMerchant.Editor
                 Apply(
                     layout, add ? "Lay roads" : "Remove roads", layout.Width, layout.Height,
                     layout.ForbiddenCells, layout.StartingHouses, TownHallOf(layout), roads, PortOf(layout), buildings);
+            }
+        }
+
+        /// <summary>
+        /// Adds walls or removes them. When adding, the cells outside the grid, on water (a berth included), or under the
+        /// town hall, the port, a house or a road are skipped: a cell is one thing at a time. Records nothing when no
+        /// cell changes.
+        /// </summary>
+        public static void SetWalls(CityLayoutDefinition layout, BuildingsDefinition buildings, IEnumerable<Vector2Int> cells, bool add)
+        {
+            var walls = new List<Vector2Int>(layout.Walls);
+            bool changed = false;
+
+            foreach (Vector2Int cell in cells)
+            {
+                if (!IsInside(layout, cell))
+                {
+                    continue;
+                }
+
+                if (!add)
+                {
+                    changed |= walls.Remove(cell);
+                }
+                else if (!walls.Contains(cell) && !IsForbiddenIn(layout, cell)
+                    && HouseIndexAt(layout, buildings, cell) < 0 && !IsUnderTownHall(layout, buildings, cell)
+                    && !IsUnderPort(layout, buildings, cell) && !IsRoadIn(layout, cell))
+                {
+                    walls.Add(cell);
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                Apply(
+                    layout, add ? "Build walls" : "Remove walls", layout.Width, layout.Height,
+                    layout.ForbiddenCells, layout.StartingHouses, TownHallOf(layout), layout.Roads, PortOf(layout), buildings,
+                    walls: walls);
             }
         }
 
@@ -415,6 +454,19 @@ namespace DarkFantasyMerchant.Editor
             return false;
         }
 
+        private static bool IsWallIn(CityLayoutDefinition layout, Vector2Int cell)
+        {
+            foreach (Vector2Int wall in layout.Walls)
+            {
+                if (wall == cell)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static bool IsRoadIn(CityLayoutDefinition layout, Vector2Int cell)
         {
             foreach (Vector2Int road in layout.Roads)
@@ -430,7 +482,7 @@ namespace DarkFantasyMerchant.Editor
 
         /// <summary>
         /// Makes the cells water or frees them. The cells outside the grid or under the port, and when making water
-        /// those a house, the town hall or a road covers, are skipped. Records nothing when no cell changes.
+        /// those a house, the town hall, a road or a wall covers, are skipped. Records nothing when no cell changes.
         /// The port's cells are left as they are, so that it never ends up standing wrong.
         /// </summary>
         public static void SetForbidden(CityLayoutDefinition layout, BuildingsDefinition buildings, IEnumerable<Vector2Int> cells, bool forbid)
@@ -450,7 +502,7 @@ namespace DarkFantasyMerchant.Editor
                     changed |= forbidden.Remove(cell);
                 }
                 else if (!forbidden.Contains(cell) && HouseIndexAt(layout, buildings, cell) < 0
-                    && !IsUnderTownHall(layout, buildings, cell) && !IsRoadIn(layout, cell))
+                    && !IsUnderTownHall(layout, buildings, cell) && !IsRoadIn(layout, cell) && !IsWallIn(layout, cell))
                 {
                     forbidden.Add(cell);
                     changed = true;
@@ -532,7 +584,8 @@ namespace DarkFantasyMerchant.Editor
 
         /// <summary>
         /// The grid of the layout's content, without requiring a town hall or a port (a layout being edited may have
-        /// none yet); false when something in it cannot stand.
+        /// none yet) nor closed walls, placing anywhere (<see cref="CityGrid.KeepsInsideWalls"/> off: a building may
+        /// stand outside the walls while the layout is edited); false when something in it cannot stand.
         /// </summary>
         public static bool TryMakeGrid(CityLayoutDefinition layout, BuildingsDefinition buildings, out CityGrid grid)
         {
@@ -553,6 +606,16 @@ namespace DarkFantasyMerchant.Editor
                 }
 
                 grid.Place(BuildingKind.TownHall(), BuildingOwner.City, hall, layout.TownHallPlace);
+            }
+
+            foreach (Vector2Int wall in layout.Walls)
+            {
+                if (!grid.CanPlace(RoadFootprint, RoadPlaceAt(wall)))
+                {
+                    return false;
+                }
+
+                grid.Place(BuildingKind.Wall(), BuildingOwner.City, RoadFootprint, RoadPlaceAt(wall));
             }
 
             if (withPort && layout.HasPort)
@@ -671,13 +734,24 @@ namespace DarkFantasyMerchant.Editor
 
         // Keeps of the berths those still inside the new size, on water and not under the new port, so that every edit
         // that invalidates a berth drops it in its own undo step. The catalogue is needed for the port's size: without
-        // it (the port is unchanged or gone) only the size and the water are checked.
+        // it (the port is unchanged or gone) only the size and the water are checked. The walls, the layout's when
+        // none are given, are kept inside the new size.
         private static void Apply(
             CityLayoutDefinition layout, string undoName, int width, int height,
             IEnumerable<Vector2Int> forbidden, IEnumerable<CityLayoutDefinition.StartingHouse> houses,
             GridPlace? townHall, IEnumerable<Vector2Int> roads, PortSite? port, BuildingsDefinition buildings,
-            IEnumerable<Vector2Int> berths = null)
+            IEnumerable<Vector2Int> berths = null, IEnumerable<Vector2Int> walls = null)
         {
+            var keptWalls = new List<Vector2Int>();
+
+            foreach (Vector2Int wall in walls ?? layout.Walls)
+            {
+                if (wall.x >= 0 && wall.y >= 0 && wall.x < width && wall.y < height)
+                {
+                    keptWalls.Add(wall);
+                }
+            }
+
             var forbiddenCells = new List<Vector2Int>(forbidden);
             var water = new HashSet<Vector2Int>(forbiddenCells);
             var keptBerths = new List<Vector2Int>();
@@ -698,7 +772,7 @@ namespace DarkFantasyMerchant.Editor
             }
 
             Undo.RecordObject(layout, undoName);
-            layout.SetContent(width, height, forbiddenCells, houses, townHall, new List<Vector2Int>(roads), port, keptBerths);
+            layout.SetContent(width, height, forbiddenCells, houses, townHall, new List<Vector2Int>(roads), port, keptBerths, keptWalls);
             EditorUtility.SetDirty(layout);
         }
     }
