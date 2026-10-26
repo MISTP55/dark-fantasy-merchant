@@ -5,24 +5,21 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// Draws a city's grid: a diamond per cell, tinted free or forbidden, a flat tile per road, and a placeholder block
-    /// per other building, a house tinted by the class it shelters (<see cref="HouseColors"/>, as in the layout
-    /// window), a workshop in the workshop colour, the town hall in its own. A building whose definition has a view
+    /// Draws a city's grid: its ground in one mesh (<see cref="GroundMesh"/>: a diamond per cell, tinted free,
+    /// forbidden or road), and a placeholder block per other building, a house tinted by the class it shelters
+    /// (<see cref="HouseColors"/>, as in the layout window), a workshop in the workshop colour, the town hall in its own. A building whose definition has a view
     /// sprite is drawn with it instead, untinted, mirrored in the orientation the sprite does not show. A house or
     /// workshop that is not connected is darkened until it is. A building placed while the grid is shown is drawn
-    /// then; nothing is redrawn every frame. Every sprite is on this object's layer, which only the city view's camera
-    /// draws.
+    /// then; nothing is redrawn every frame, a road's cell being tinted on the ground at the end of the frame it is
+    /// placed in. Everything is on this object's layer, which only the city view's camera draws.
     /// </summary>
     public sealed class CityGridView : MonoBehaviour
     {
-        // Ground cells are flat diamonds that never overlap: one order for all, below every road and building.
+        // The ground and its roads, flat diamonds that never overlap: below every building and ship.
         private const int GroundSortingOrder = 0;
 
-        // Roads are flat on the ground: above the cells, below every building and ship.
-        private const int RoadSortingOrder = 1;
-
         // Buildings go every other order from here, a ship in the gap before the building it is behind: the lowest
-        // ship order, FirstBuildingSortingOrder - 1, stays above the roads.
+        // ship order, FirstBuildingSortingOrder - 1, stays above the ground.
         private const int FirstBuildingSortingOrder = 3;
         private const int BuildingSortingStride = 2;
 
@@ -32,6 +29,7 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Unlit: the city view has no light.")]
         [SerializeField] private Material spriteMaterial;
 
+        [Tooltip("Drawn on every cell of the ground, its pivot at the cell's centre, and as the road ghost's tiles.")]
         [SerializeField] private Sprite cellSprite;
 
         [Tooltip("A block covering 2 cells on x and 1 on y.")]
@@ -71,15 +69,12 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private Color unconnectedGhostColor = new Color32(0xE0, 0xC0, 0x40, 0x99);
         [SerializeField] private Color invalidGhostColor = new Color32(0xD0, 0x50, 0x50, 0x99);
 
-        private readonly List<SpriteRenderer> cellRenderers = new List<SpriteRenderer>();
-
         // The buildings' renderers by rank: index i is drawn with sortingOrder FirstBuildingSortingOrder + 2 i.
         private readonly List<SpriteRenderer> buildingRenderers = new List<SpriteRenderer>();
         private readonly BuildingDrawOrder drawOrder = new BuildingDrawOrder();
 
         // The renderers of the houses and workshops, to give them their colour when they connect.
         private readonly Dictionary<PlacedBuilding, SpriteRenderer> shadedRenderers = new Dictionary<PlacedBuilding, SpriteRenderer>();
-        private readonly List<SpriteRenderer> roadRenderers = new List<SpriteRenderer>();
 
         // The buildings drawn with their definition's view sprite rather than a block: they are not tinted.
         private readonly HashSet<SpriteRenderer> viewSpriteRenderers = new HashSet<SpriteRenderer>();
@@ -88,7 +83,9 @@ namespace DarkFantasyMerchant.Game
         private CityGrid grid;
         private BuildingsDefinition buildings;
         private EconomyDefinition economy;
-        private Transform cellRoot;
+        private GroundMesh ground;
+        private GameObject groundObject;
+        private MeshRenderer groundRenderer;
         private Transform buildingRoot;
         private Transform roadGhostRoot;
         private SpriteRenderer ghostRenderer;
@@ -97,13 +94,14 @@ namespace DarkFantasyMerchant.Game
         /// <summary>The grid shown, or null.</summary>
         public CityGrid Grid => grid;
 
-        public IReadOnlyList<SpriteRenderer> CellRenderers => cellRenderers;
+        /// <summary>The ground of the grid shown, its roads included, or null.</summary>
+        public GroundMesh Ground => ground;
+
+        /// <summary>The renderer of <see cref="Ground"/>, or null.</summary>
+        public MeshRenderer GroundRenderer => groundRenderer;
 
         /// <summary>The blocks' renderers (every building but the roads), in drawing order.</summary>
         public IReadOnlyList<SpriteRenderer> BuildingRenderers => buildingRenderers;
-
-        /// <summary>The roads' tiles, in no particular order.</summary>
-        public IReadOnlyList<SpriteRenderer> RoadRenderers => roadRenderers;
 
         /// <summary>The block of the building being placed, or null before one is shown; off when hidden.</summary>
         public SpriteRenderer GhostRenderer => ghostRenderer;
@@ -151,27 +149,16 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            cellRoot = CreateChild("Cells", transform).transform;
+            CreateGround();
             buildingRoot = CreateChild("Buildings", transform).transform;
-
-            for (int y = 0; y < grid.Height; y++)
-            {
-                for (int x = 0; x < grid.Width; x++)
-                {
-                    var cell = new Vector2Int(x, y);
-                    SpriteRenderer cellRenderer = CreateRenderer($"Cell {x},{y}", cellRoot, cellSprite);
-                    cellRenderer.transform.localPosition = IsoProjection.CenterOf(cell);
-                    cellRenderer.color = grid.IsForbidden(cell) ? forbiddenCellColor : freeCellColor;
-                    cellRenderer.sortingOrder = GroundSortingOrder;
-                    cellRenderers.Add(cellRenderer);
-                }
-            }
 
             foreach (PlacedBuilding building in grid.Buildings)
             {
                 AddBuilding(building);
             }
 
+            // Its water and roads from the first frame, whenever in the frame it is shown.
+            ground?.Apply();
             grid.BuildingPlaced += AddBuilding;
             grid.BuildingConnected += OnBuildingConnected;
         }
@@ -273,6 +260,12 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
+        // Roads are placed by the trace or by the simulation, often many in one frame: uploaded once.
+        private void LateUpdate()
+        {
+            ground?.Apply();
+        }
+
         private void OnDestroy()
         {
             if (grid != null)
@@ -280,6 +273,60 @@ namespace DarkFantasyMerchant.Game
                 grid.BuildingPlaced -= AddBuilding;
                 grid.BuildingConnected -= OnBuildingConnected;
             }
+
+            DestroyGround();
+        }
+
+        private void CreateGround()
+        {
+            if (cellSprite == null)
+            {
+                Debug.LogError("CityGridView needs a cell sprite to draw the ground.", this);
+                return;
+            }
+
+            ground = new GroundMesh(grid.Width, grid.Height, cellSprite, freeCellColor);
+
+            for (int y = 0; y < grid.Height; y++)
+            {
+                for (int x = 0; x < grid.Width; x++)
+                {
+                    var cell = new Vector2Int(x, y);
+
+                    if (grid.IsForbidden(cell))
+                    {
+                        ground.SetColor(cell, forbiddenCellColor);
+                    }
+                }
+            }
+
+            groundObject = CreateChild("Ground", transform);
+            groundObject.AddComponent<MeshFilter>().sharedMesh = ground.Mesh;
+            groundRenderer = groundObject.AddComponent<MeshRenderer>();
+            groundRenderer.sortingOrder = GroundSortingOrder;
+
+            if (spriteMaterial != null)
+            {
+                groundRenderer.sharedMaterial = spriteMaterial;
+            }
+
+            // The material is shared with the sprites, which give it their texture themselves: the ground's is its own.
+            var properties = new MaterialPropertyBlock();
+            properties.SetTexture("_MainTex", cellSprite.texture);
+            groundRenderer.SetPropertyBlock(properties);
+        }
+
+        private void DestroyGround()
+        {
+            if (groundObject != null)
+            {
+                Destroy(groundObject);
+            }
+
+            ground?.Dispose();
+            ground = null;
+            groundObject = null;
+            groundRenderer = null;
         }
 
         private void Clear()
@@ -293,18 +340,12 @@ namespace DarkFantasyMerchant.Game
             grid = null;
             buildings = null;
             economy = null;
-            cellRenderers.Clear();
             buildingRenderers.Clear();
             shadedRenderers.Clear();
             viewSpriteRenderers.Clear();
-            roadRenderers.Clear();
             roadGhostRenderers.Clear();
             drawOrder.Clear();
-
-            if (cellRoot != null)
-            {
-                Destroy(cellRoot.gameObject);
-            }
+            DestroyGround();
 
             if (buildingRoot != null)
             {
@@ -316,7 +357,6 @@ namespace DarkFantasyMerchant.Game
                 Destroy(roadGhostRoot.gameObject);
             }
 
-            cellRoot = null;
             buildingRoot = null;
             roadGhostRoot = null;
             HideGhost();
@@ -326,13 +366,10 @@ namespace DarkFantasyMerchant.Game
         {
             Vector2Int origin = building.Place.Origin;
 
+            // A road is flat on its cell: the ground's cell takes its colour.
             if (building.Kind.IsRoad)
             {
-                SpriteRenderer tile = CreateRenderer($"Road {origin.x},{origin.y}", buildingRoot, cellSprite);
-                tile.transform.localPosition = IsoProjection.CenterOf(origin);
-                tile.color = roadColor;
-                tile.sortingOrder = RoadSortingOrder;
-                roadRenderers.Add(tile);
+                ground?.SetColor(origin, roadColor);
                 return;
             }
 
