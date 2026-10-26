@@ -9,7 +9,7 @@ namespace DarkFantasyMerchant.Game
     /// One good in every city's market, for the debug panel: its stock, its thresholds, its prices,
     /// what the city produces, consumes, takes as inputs and gains of it in a week (nominal, then the last days in
     /// brackets), its workers and what the AI ships carry there, and a last row with the totals.
-    /// The cities are in alphabetical order. Follows the markets while it is shown.
+    /// The cities are in alphabetical order. Follows the markets while it is shown, writing what changed at most once a frame.
     /// </summary>
     public sealed class DebugGoodMarketTable
     {
@@ -39,6 +39,7 @@ namespace DarkFantasyMerchant.Game
             public Func<int, int> UnderWay;
             public Label[] Cells;
             public Action Refresh;
+            public bool IsDirty;
         }
 
         private readonly VisualElement rowContainer;
@@ -47,6 +48,9 @@ namespace DarkFantasyMerchant.Game
 
         private int good;
         private bool isShown;
+
+        // A row has changed since it was last written.
+        private bool hasChanges;
 
         public DebugGoodMarketTable(VisualElement header, VisualElement rowContainer, VisualElement totalContainer)
         {
@@ -93,11 +97,12 @@ namespace DarkFantasyMerchant.Game
             var row = new Row { Name = cityName, Market = market, UnderWay = underWay ?? (_ => 0), Cells = AddCells(element) };
             row.Cells[0].text = cityName;
 
-            // A market that changes changes the totals too.
+            // Marked only: a market changes at every trade, many times a frame at high speed, and the row and the
+            // totals are written once a frame (WriteChanges).
             row.Refresh = () =>
             {
-                Write(row);
-                WriteTotals();
+                row.IsDirty = true;
+                hasChanges = true;
             };
 
             int index = rows.FindIndex(other => NameOrder.Compare(other.Name, cityName) > 0);
@@ -110,7 +115,8 @@ namespace DarkFantasyMerchant.Game
             rows.Insert(index, row);
             rowContainer.Insert(index, element);
             ListStripes.Apply(rowContainer);
-            row.Refresh();
+            Write(row);
+            WriteTotals();
 
             if (isShown)
             {
@@ -162,9 +168,35 @@ namespace DarkFantasyMerchant.Game
             foreach (Row row in rows)
             {
                 Write(row);
+                row.IsDirty = false;
             }
 
             WriteTotals();
+            hasChanges = false;
+        }
+
+        /// <summary>
+        /// Rewrites the rows whose market changed since they were last written, and the totals when one did. Called
+        /// once a frame while the table is shown.
+        /// </summary>
+        public void WriteChanges()
+        {
+            if (!hasChanges)
+            {
+                return;
+            }
+
+            foreach (Row row in rows)
+            {
+                if (row.IsDirty)
+                {
+                    Write(row);
+                    row.IsDirty = false;
+                }
+            }
+
+            WriteTotals();
+            hasChanges = false;
         }
 
         private void Write(Row row)

@@ -85,6 +85,31 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
+        /// <summary>
+        /// Writes what the markets changed since the last frame in the table shown. Called every frame while the
+        /// view is shown: a market changes many times a frame at high speed, so the tables only mark their rows.
+        /// </summary>
+        public void WriteChanges()
+        {
+            if (!isShown)
+            {
+                return;
+            }
+
+            if (subtabs.Selected == PopulationTab)
+            {
+                populationTable.WriteChanges();
+            }
+            else if (goodField.index > 0)
+            {
+                goodTable.WriteChanges();
+            }
+            else
+            {
+                allGoodsTable.WriteChanges();
+            }
+        }
+
         // A table that is not shown costs nothing: only the one in view follows the markets.
         private void ShowTables()
         {

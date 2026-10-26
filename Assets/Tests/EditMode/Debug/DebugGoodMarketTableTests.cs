@@ -149,6 +149,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(DebugCitiesTable.FormatNet(-24.5) + " (" + DebugCitiesTable.FormatNet(0) + ")", Total(NetCell));
 
             smithy.StartDay();
+            alone.WriteChanges();
 
             Assert.AreEqual("10,5 (1,5)", Text(0, InputsCell));
             Assert.AreEqual(DebugCitiesTable.FormatNet(-24.5) + " (" + DebugCitiesTable.FormatNet(-3.5) + ")", Text(0, NetCell));
@@ -158,6 +159,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void GoodMarket_FollowsTheMarkets_WhileShown()
         {
             market.Take(Fish, 10);
+            Assert.AreEqual("60", Text(0, StockCell));
+
+            table.WriteChanges();
 
             Assert.AreEqual("50", Text(0, StockCell));
         }

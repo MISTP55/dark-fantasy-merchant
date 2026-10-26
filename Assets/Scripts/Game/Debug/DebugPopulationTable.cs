@@ -10,7 +10,7 @@ namespace DarkFantasyMerchant.Game
     /// number they tend to, its rich, wealthy and poor over the room of their houses with their
     /// satisfaction, how much it has grown since the game started and the houses it built of its
     /// own, and a last row with the totals. The cities are in alphabetical order. Follows the
-    /// markets while it is shown.
+    /// markets while it is shown, writing what changed at most once a frame.
     /// </summary>
     public sealed class DebugPopulationTable
     {
@@ -33,6 +33,7 @@ namespace DarkFantasyMerchant.Game
             public CityMarket Market;
             public Label[] Cells;
             public Action Refresh;
+            public bool IsDirty;
         }
 
         private readonly VisualElement rowContainer;
@@ -40,6 +41,9 @@ namespace DarkFantasyMerchant.Game
         private readonly Label[] totals;
 
         private bool isShown;
+
+        // A row has changed since it was last written.
+        private bool hasChanges;
 
         public DebugPopulationTable(VisualElement header, VisualElement rowContainer, VisualElement totalContainer)
         {
@@ -88,11 +92,12 @@ namespace DarkFantasyMerchant.Game
             var row = new Row { Name = cityName, Market = market, Cells = AddCells(element) };
             row.Cells[0].text = cityName;
 
-            // A market that changes changes the totals too.
+            // Marked only: a market changes at every trade, many times a frame at high speed, and the row and the
+            // totals are written once a frame (WriteChanges).
             row.Refresh = () =>
             {
-                Write(row);
-                WriteTotals();
+                row.IsDirty = true;
+                hasChanges = true;
             };
 
             // After the cities of the same name, before the first that comes after it.
@@ -106,7 +111,8 @@ namespace DarkFantasyMerchant.Game
             rows.Insert(index, row);
             rowContainer.Insert(index, element);
             ListStripes.Apply(rowContainer);
-            row.Refresh();
+            Write(row);
+            WriteTotals();
 
             if (isShown)
             {
@@ -125,10 +131,36 @@ namespace DarkFantasyMerchant.Game
                 }
 
                 Write(row);
+                row.IsDirty = false;
             }
 
             WriteTotals();
+            hasChanges = false;
             isShown = true;
+        }
+
+        /// <summary>
+        /// Rewrites the rows whose market changed since they were last written, and the totals when one did. Called
+        /// once a frame while the table is shown.
+        /// </summary>
+        public void WriteChanges()
+        {
+            if (!hasChanges)
+            {
+                return;
+            }
+
+            foreach (Row row in rows)
+            {
+                if (row.IsDirty)
+                {
+                    Write(row);
+                    row.IsDirty = false;
+                }
+            }
+
+            WriteTotals();
+            hasChanges = false;
         }
 
         /// <summary>Stops following the markets: a hidden table costs nothing.</summary>
@@ -167,7 +199,7 @@ namespace DarkFantasyMerchant.Game
             cells[7].text = TreasuryHudController.FormatNumber(market.CityHouses);
         }
 
-        // Summed again on every change: a handful of cities, once a day each.
+        // Summed again at most once a frame: a handful of cities.
         private void WriteTotals()
         {
             long inhabitants = 0;

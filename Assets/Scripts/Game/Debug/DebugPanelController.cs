@@ -71,6 +71,9 @@ namespace DarkFantasyMerchant.Game
         private DebugShipsTable shipsTable;
         private readonly IDebugView[] views = new IDebugView[TabNames.Length];
 
+        // The cities tab's view, also in views: its tables write what the markets changed once a frame.
+        private DebugCitiesView citiesView;
+
         // The sub-tabs of the curves, whose view comes later.
         private DebugTabs curvesSubtabs;
 
@@ -134,6 +137,7 @@ namespace DarkFantasyMerchant.Game
             tabs = null;
             shipsTable = null;
             System.Array.Clear(views, 0, views.Length);
+            citiesView = null;
             shownView = null;
             isOpen = false;
             panel.style.display = DisplayStyle.None;
@@ -239,7 +243,8 @@ namespace DarkFantasyMerchant.Game
         }
 
         // Ships sail every frame: their tab is rewritten as often, while it is shown. The other
-        // views are rewritten at most once a frame, when the record has new days.
+        // views are rewritten at most once a frame, when the record has new days, and the cities
+        // tab writes what the markets changed once a frame.
         private void Update()
         {
             if (!isBound)
@@ -265,6 +270,11 @@ namespace DarkFantasyMerchant.Game
             else if (isDirty)
             {
                 shownView?.Refresh();
+            }
+
+            if (shownView != null && shownView == citiesView)
+            {
+                citiesView.WriteChanges();
             }
 
             isDirty = false;
@@ -544,7 +554,7 @@ namespace DarkFantasyMerchant.Game
                 }
             }
 
-            views[CitiesTab] = new DebugCitiesView(
+            citiesView = new DebugCitiesView(
                 SubtabsOf(citiesPage, "population", "markets"),
                 populationTable,
                 citiesTable,
@@ -553,6 +563,7 @@ namespace DarkFantasyMerchant.Game
                 citiesPage.Q<VisualElement>("all-goods"),
                 citiesPage.Q<VisualElement>("good-market"),
                 goodNames);
+            views[CitiesTab] = citiesView;
             curvesSubtabs = SubtabsOf(pages[CurvesTab], "city-curves", "indicator-curves", "composed-curves");
             curvesSubtabs.Select(0);
 

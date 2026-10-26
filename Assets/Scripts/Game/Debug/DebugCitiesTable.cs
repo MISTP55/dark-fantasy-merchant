@@ -11,7 +11,7 @@ namespace DarkFantasyMerchant.Game
     /// its beggars over the number they tend to, its rich, wealthy and poor over the room of their houses, how much it has grown or declined since the game started and, for every good, its stock and what it produces, consumes, takes as inputs and
     /// gains in a week, the nominal figure first and the one of the last days in brackets,
     /// the workers of its workshop over their maximum and its reserve,
-    /// and a last row with the total of every column. Follows the markets while it is shown.
+    /// and a last row with the total of every column. Follows the markets while it is shown, writing what changed at most once a frame.
     /// The cities and the goods are in alphabetical order.
     /// The city's columns and the goods' are in two containers, so that only the goods' scroll sideways:
     /// UI Toolkit has no sticky position. The rows have one height, so that the two sides line up.
@@ -73,6 +73,7 @@ namespace DarkFantasyMerchant.Game
             public CityMarket Market;
             public GoodCells[] Goods;
             public Action Refresh;
+            public bool IsDirty;
         }
 
         private readonly VisualElement rowContainer;
@@ -91,6 +92,9 @@ namespace DarkFantasyMerchant.Game
         private readonly GoodCells[] totalGoods;
 
         private bool isShown;
+
+        // A row has changed since it was last written.
+        private bool hasChanges;
 
         /// <param name="header">Where the two header rows of the city's columns are built.</param>
         /// <param name="rowContainer">Where the city's columns of the rows are built, one row per city added.</param>
@@ -257,11 +261,12 @@ namespace DarkFantasyMerchant.Game
                 Goods = AddGoodCells(goodElement, goodCount),
             };
 
-            // A market that changes changes the totals too.
+            // Marked only: a market changes at every trade, many times a frame at high speed, and the row and the
+            // totals are written once a frame (WriteChanges).
             row.Refresh = () =>
             {
-                Write(row);
-                WriteTotals();
+                row.IsDirty = true;
+                hasChanges = true;
             };
 
             // After the cities of the same name, before the first that comes after it.
@@ -279,7 +284,8 @@ namespace DarkFantasyMerchant.Game
             // The two sides of a row take the same stripe.
             ListStripes.Apply(rowContainer);
             ListStripes.Apply(goodRowContainer);
-            row.Refresh();
+            Write(row);
+            WriteTotals();
 
             if (isShown)
             {
@@ -298,10 +304,36 @@ namespace DarkFantasyMerchant.Game
                 }
 
                 Write(row);
+                row.IsDirty = false;
             }
 
             WriteTotals();
+            hasChanges = false;
             isShown = true;
+        }
+
+        /// <summary>
+        /// Rewrites the rows whose market changed since they were last written, and the totals when one did. Called
+        /// once a frame while the table is shown.
+        /// </summary>
+        public void WriteChanges()
+        {
+            if (!hasChanges)
+            {
+                return;
+            }
+
+            foreach (Row row in rows)
+            {
+                if (row.IsDirty)
+                {
+                    Write(row);
+                    row.IsDirty = false;
+                }
+            }
+
+            WriteTotals();
+            hasChanges = false;
         }
 
         /// <summary>Stops following the markets: a hidden table costs nothing.</summary>
@@ -397,7 +429,7 @@ namespace DarkFantasyMerchant.Game
             return FormatClass(count, room, null);
         }
 
-        // Summed again on every change: a handful of cities, once a day each.
+        // Summed again at most once a frame: a handful of cities.
         private void WriteTotals()
         {
             totalRich.text = FormatClassTotal(SocialClass.Rich);

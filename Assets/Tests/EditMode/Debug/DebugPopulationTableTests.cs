@@ -68,6 +68,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("0", Text(0, HousesCell));
 
             market.StartDay();
+            table.WriteChanges();
 
             Assert.AreEqual("1", Text(0, HousesCell));
             Assert.AreEqual("1", ((Label)totals[0][HousesCell]).text);
@@ -97,12 +98,29 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void WhileShown_AChange_IsWrittenByWriteChanges_NotAtOnce()
+        {
+            CityMarket market = CrowdedMarket();
+            table.AddCity("Cologne", market);
+            table.Show();
+
+            market.StartDay();
+            Assert.AreEqual("0", Text(0, HousesCell));
+
+            table.WriteChanges();
+
+            Assert.AreEqual("1", Text(0, HousesCell));
+            Assert.AreEqual("1", ((Label)totals[0][HousesCell]).text);
+        }
+
+        [Test]
         public void AHiddenTable_DoesNotFollowTheMarkets()
         {
             CityMarket market = CrowdedMarket();
             table.AddCity("Cologne", market);
 
             market.StartDay();
+            table.WriteChanges();
 
             Assert.AreEqual("0", Text(0, HousesCell));
         }

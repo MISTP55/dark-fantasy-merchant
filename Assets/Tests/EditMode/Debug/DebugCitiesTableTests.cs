@@ -199,6 +199,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             city.Population.SetBeggars(0);
             city.StartDay();
+            table.WriteChanges();
 
             Assert.AreEqual("900", Text(0, PopulationCell));
             Assert.AreEqual("900", Total(PopulationCell));
@@ -221,6 +222,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             growing.Population.SetBeggars(50);
             shrinking.StartDay();
             growing.StartDay();
+            table.WriteChanges();
 
             // 900 and 1 050 inhabitants, 1 950 for the 2 000 of the start.
             Assert.AreEqual(Negative("-10,0\u00A0%"), Text(0, GrowthSinceStartCell));
@@ -289,6 +291,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual($"{Negative("-24,5")} (0,0)", Total(Fish, Net));
 
             smithy.StartDay();
+            table.WriteChanges();
 
             // A day of 1.5 barrels taken: the recent figures follow.
             Assert.AreEqual("10,5 (1,5)", Text(0, Fish, Inputs));
@@ -303,6 +306,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             table.Show();
 
             market.StartDay();
+            table.WriteChanges();
 
             Assert.AreEqual("58", Text(0, Fish, Stock));
             Assert.AreEqual("14,0 (2,0)", Text(0, Fish, Consumption));
@@ -319,8 +323,26 @@ namespace DarkFantasyMerchant.Tests.EditMode
             table.Show();
 
             market.Take(Fish, 25);
+            table.WriteChanges();
 
             Assert.AreEqual("35", Text(0, Fish, Stock));
+        }
+
+        [Test]
+        public void WhileShown_AChange_IsWrittenByWriteChanges_NotAtOnce()
+        {
+            table.AddCity("Sparia", market);
+            table.Show();
+
+            market.Take(Fish, 25);
+            market.Take(Fish, 5);
+            Assert.AreEqual("60", Text(0, Fish, Stock));
+            Assert.AreEqual("60", Total(Fish, Stock));
+
+            table.WriteChanges();
+
+            Assert.AreEqual("30", Text(0, Fish, Stock));
+            Assert.AreEqual("30", Total(Fish, Stock));
         }
 
         [Test]
@@ -329,11 +351,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             table.AddCity("Sparia", market);
 
             market.StartDay();
+            table.WriteChanges();
             Assert.AreEqual("60", Text(0, Fish, Stock));
 
             table.Show();
             table.Hide();
             market.StartDay();
+            table.WriteChanges();
 
             Assert.AreEqual("58", Text(0, Fish, Stock));
         }
@@ -358,6 +382,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             table.Hide();
 
             market.StartDay();
+            table.WriteChanges();
 
             Assert.AreEqual("60", Text(0, Fish, Stock));
         }
@@ -369,10 +394,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
             table.AddCity("Sparia", market);
 
             market.StartDay();
+            table.WriteChanges();
             Assert.AreEqual("58", Text(0, Fish, Stock));
 
             table.Hide();
             market.StartDay();
+            table.WriteChanges();
             Assert.AreEqual("58", Text(0, Fish, Stock));
         }
 
@@ -431,6 +458,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             market.StartDay();
             village.StartDay();
+            table.WriteChanges();
 
             // Fish: 58 and 29 left, 2 and 1 consumed. Iron: 61 and 14.5 left, 3 produced, 2 and 0.5 consumed.
             Assert.AreEqual("87", Total(Fish, Stock));
@@ -449,6 +477,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             table.Hide();
 
             market.StartDay();
+            table.WriteChanges();
 
             Assert.AreEqual("60", Total(Fish, Stock));
         }
@@ -485,6 +514,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             market.Put(Iron, 100);
 
             market.StartDay();
+            table.WriteChanges();
 
             // 158 iron once consumed, above T3: the workshop keeps one worker.
             Assert.AreEqual("1/30", Text(0, Iron, Workers));
@@ -554,6 +584,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             table.Show();
 
             city.StartDay();
+            table.WriteChanges();
 
             Assert.Greater(city.ReserveOf(Iron), 0);
             Assert.AreEqual(
@@ -581,6 +612,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             first.StartDay();
             second.StartDay();
+            table.WriteChanges();
 
             Assert.AreEqual(
                 DebugCitiesTable.FormatBeggars(
