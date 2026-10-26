@@ -40,21 +40,30 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return instance;
         }
 
+        // A 12 by 12 grid: water on its three top rows, walls on the rest of its edge, the town hall and the port inside.
         private void GiveLayout(params Vector2Int[] berths)
         {
             var water = new List<Vector2Int>();
-            for (int y = 8; y < 10; y++)
+            var walls = new List<Vector2Int>();
+            for (int y = 0; y < 12; y++)
             {
-                for (int x = 0; x < 10; x++)
+                for (int x = 0; x < 12; x++)
                 {
-                    water.Add(new Vector2Int(x, y));
+                    if (y >= 9)
+                    {
+                        water.Add(new Vector2Int(x, y));
+                    }
+                    else if (x == 0 || y == 0 || x == 11)
+                    {
+                        walls.Add(new Vector2Int(x, y));
+                    }
                 }
             }
 
             layout.SetContent(
-                10, 10, water, new CityLayoutDefinition.StartingHouse[0],
-                new GridPlace(new Vector2Int(7, 0), BuildingOrientation.Along), new Vector2Int[0],
-                new PortSite(new Vector2Int(0, 7), PortFacing.North), berths);
+                12, 12, water, new CityLayoutDefinition.StartingHouse[0],
+                new GridPlace(new Vector2Int(8, 1), BuildingOrientation.Along), new Vector2Int[0],
+                new PortSite(new Vector2Int(1, 8), PortFacing.North), berths, walls);
 
             var serialized = new SerializedObject(city);
             serialized.FindProperty("layout").objectReferenceValue = layout;
@@ -80,7 +89,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void IsUsable_UsableLayout_IsTrue()
         {
-            GiveLayout(new Vector2Int(5, 9));
+            GiveLayout(new Vector2Int(6, 10));
 
             Assert.IsTrue(WorldMapView.IsUsable(city, buildings, out string problem), problem);
             Assert.IsNull(problem);

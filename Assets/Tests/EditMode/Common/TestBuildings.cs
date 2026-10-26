@@ -70,6 +70,25 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return port;
         }
 
+        /// <summary>A free wall of one cell.</summary>
+        public static WallDefinition CreateWall(string name = "Mur")
+        {
+            var wall = ScriptableObject.CreateInstance<WallDefinition>();
+            wall.name = name;
+            var serialized = new SerializedObject(wall);
+            serialized.FindProperty("footprint").vector2IntValue = new Vector2Int(1, 1);
+            SetBuilding(serialized, name, 0, new (GoodDefinition good, int units)[0]);
+            return wall;
+        }
+
+        /// <summary>Gives a catalogue its wall; null takes it away.</summary>
+        public static void SetWall(BuildingsDefinition buildings, WallDefinition wall)
+        {
+            var serialized = new SerializedObject(buildings);
+            serialized.FindProperty("wall").objectReferenceValue = wall;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         /// <summary>Gives a catalogue its port; null takes it away.</summary>
         public static void SetPort(BuildingsDefinition buildings, PortDefinition port)
         {
@@ -87,7 +106,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        /// <summary>A valid catalogue: a house per class (40, 70 and 140 places, 2 by 1 cells), a road, a town hall, a port and a random placement strategy.</summary>
+        /// <summary>A valid catalogue: a house per class (40, 70 and 140 places, 2 by 1 cells), a road, a town hall, a port, a wall and a random placement strategy.</summary>
         public static BuildingsDefinition CreateCatalogue()
         {
             var buildings = ScriptableObject.CreateInstance<BuildingsDefinition>();
@@ -104,6 +123,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             serialized.ApplyModifiedPropertiesWithoutUndo();
             SetRoadAndTownHall(buildings, CreateRoad(), CreateTownHall());
             SetPort(buildings, CreatePort());
+            SetWall(buildings, CreateWall());
             SetPlacement(buildings, ScriptableObject.CreateInstance<RandomPlacementDefinition>());
             return buildings;
         }

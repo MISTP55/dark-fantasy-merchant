@@ -41,6 +41,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             TestBuildings.SetPlacement(buildings, Track(ScriptableObject.CreateInstance<RandomPlacementDefinition>()));
             TestBuildings.SetRoadAndTownHall(buildings, Track(TestBuildings.CreateRoad()), Track(TestBuildings.CreateTownHall()));
             TestBuildings.SetPort(buildings, Track(TestBuildings.CreatePort()));
+            TestBuildings.SetWall(buildings, Track(TestBuildings.CreateWall()));
             SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse }, new[] { farm, lumberjack });
         }
 
@@ -130,6 +131,35 @@ namespace DarkFantasyMerchant.Tests.EditMode
             TestBuildings.SetPort(buildings, port);
 
             Assert.AreSame(port, buildings.DefinitionOf(BuildingKind.Port(), null));
+        }
+
+        [Test]
+        public void NoWall_IsInvalid()
+        {
+            TestBuildings.SetWall(buildings, null);
+
+            Assert.IsFalse(buildings.TryValidate(out string problem));
+            StringAssert.Contains("no wall", problem);
+        }
+
+        [Test]
+        public void WallOfTwoCells_IsInvalid()
+        {
+            WallDefinition wide = Track(TestBuildings.CreateWall());
+            TestBuildings.SetFootprint(wide, new Vector2Int(1, 2));
+            TestBuildings.SetWall(buildings, wide);
+
+            Assert.IsFalse(buildings.TryValidate(out string problem));
+            StringAssert.Contains("one cell", problem);
+        }
+
+        [Test]
+        public void DefinitionOf_TheWall_IsTheWall()
+        {
+            WallDefinition wall = Track(TestBuildings.CreateWall());
+            TestBuildings.SetWall(buildings, wall);
+
+            Assert.AreSame(wall, buildings.DefinitionOf(BuildingKind.Wall(), null));
         }
 
         [Test]

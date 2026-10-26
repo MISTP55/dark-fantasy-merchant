@@ -20,6 +20,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private RoadDefinition road;
         private TownHallDefinition townHall;
         private PortDefinition port;
+        private WallDefinition wall;
         private int loads;
 
         [SetUp]
@@ -43,6 +44,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             road = Track(TestBuildings.CreateRoad());
             townHall = Track(TestBuildings.CreateTownHall());
             port = Track(TestBuildings.CreatePort());
+            wall = Track(TestBuildings.CreateWall());
             loads = 0;
         }
 
@@ -98,17 +100,19 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 },
                 () => road,
                 () => townHall,
-                () => port);
+                () => port,
+                () => wall);
         }
 
         [Test]
-        public void CompleteBuildings_AddsRoadTownHallAndPort()
+        public void CompleteBuildings_AddsRoadTownHallPortAndWall()
         {
             Complete(false);
 
             Assert.AreSame(road, buildings.Road);
             Assert.AreSame(townHall, buildings.TownHall);
             Assert.AreSame(port, buildings.Port);
+            Assert.AreSame(wall, buildings.Wall);
         }
 
         [Test]
@@ -118,8 +122,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
             PortDefinition otherPort = Track(TestBuildings.CreatePort("Quai"));
             TestBuildings.SetRoadAndTownHall(buildings, other, null);
             TestBuildings.SetPort(buildings, otherPort);
+            WallDefinition otherWall = Track(TestBuildings.CreateWall("Rempart"));
+            TestBuildings.SetWall(buildings, otherWall);
 
             Complete(false);
+
+            Assert.AreSame(otherWall, buildings.Wall);
 
             Assert.AreSame(other, buildings.Road);
             Assert.AreSame(townHall, buildings.TownHall);
@@ -186,7 +194,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 good => (rebuiltWorkshop, true),
                 () => road,
                 () => townHall,
-                () => port);
+                () => port,
+                () => wall);
 
             Assert.AreEqual(3, buildings.Houses.Count);
             Assert.AreSame(rebuilt, buildings.HouseOf(SocialClass.Wealthy));
