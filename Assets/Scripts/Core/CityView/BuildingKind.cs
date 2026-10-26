@@ -2,7 +2,7 @@ using System;
 
 namespace DarkFantasyMerchant.Core
 {
-    /// <summary>What a building is: the house of a class, the workshop of a good, a road, the town hall or the port.</summary>
+    /// <summary>What a building is: the house of a class, the workshop of a good, a road, the town hall, the port or a wall.</summary>
     public readonly struct BuildingKind
     {
         private enum Type
@@ -12,6 +12,7 @@ namespace DarkFantasyMerchant.Core
             Road,
             TownHall,
             Port,
+            Wall,
         }
 
         private readonly Type type;
@@ -53,6 +54,12 @@ namespace DarkFantasyMerchant.Core
             return new BuildingKind(Type.Port, default, -1);
         }
 
+        /// <summary>A wall: one cell, closing in with the water the space where the other buildings stand.</summary>
+        public static BuildingKind Wall()
+        {
+            return new BuildingKind(Type.Wall, default, -1);
+        }
+
         public bool IsHouse => type == Type.House;
 
         public bool IsWorkshop => type == Type.Workshop;
@@ -62,6 +69,8 @@ namespace DarkFantasyMerchant.Core
         public bool IsTownHall => type == Type.TownHall;
 
         public bool IsPort => type == Type.Port;
+
+        public bool IsWall => type == Type.Wall;
 
         /// <summary>The class a house lodges; only for a house.</summary>
         public SocialClass HousedClass => IsHouse ? housedClass : throw new InvalidOperationException("Not a house.");

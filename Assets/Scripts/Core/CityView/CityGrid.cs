@@ -15,6 +15,12 @@ namespace DarkFantasyMerchant.Core
         private readonly bool[] network;
         private readonly List<Vector2Int> berths = new List<Vector2Int>();
         private readonly HashSet<Vector2Int> berthSet = new HashSet<Vector2Int>();
+        private readonly bool[] enclosed;
+        private bool enclosureStale = true;
+        private bool closed;
+
+        // The first edge cell the flood of the walls reached; meaningful only when they do not close.
+        private Vector2Int openCell;
 
         /// <param name="forbidden">The water cells: only the port may cover them.</param>
         /// <param name="contact">When a road touches a building or another road, for the whole grid.</param>
@@ -36,6 +42,7 @@ namespace DarkFantasyMerchant.Core
             this.forbidden = new bool[width * height];
             occupancy = new PlacedBuilding[width * height];
             network = new bool[width * height];
+            enclosed = new bool[width * height];
             foreach (Vector2Int cell in forbidden)
             {
                 if (!Contains(cell))
@@ -66,6 +73,25 @@ namespace DarkFantasyMerchant.Core
         /// <summary>The water cells where ships dock, in the order they were placed.</summary>
         public IReadOnlyList<Vector2Int> Berths => berths;
 
+        /// <summary>
+        /// Whether placing refuses the cells outside the walls (<see cref="IsBuildable"/>). Off at creation, so that a
+        /// layout can be placed whole and then checked (<see cref="TryValidateWalls"/>); on for a grid in play.
+        /// </summary>
+        public bool KeepsInsideWalls { get; set; }
+
+        /// <summary>
+        /// Whether the walls close: a town hall is placed, and the cells reached from it by sides, never onto a wall
+        /// nor onto water, include none on the grid's edge. The cells under the other buildings are crossed.
+        /// </summary>
+        public bool HasClosedWalls
+        {
+            get
+            {
+                RefreshEnclosure();
+                return closed;
+            }
+        }
+
         public event Action<PlacedBuilding> BuildingPlaced;
 
         /// <summary>
@@ -83,6 +109,128 @@ namespace DarkFantasyMerchant.Core
         public bool IsForbidden(Vector2Int cell)
         {
             return Contains(cell) && forbidden[Index(cell)];
+        }
+
+        /// <summary>Whether the cell is inside closed walls (<see cref="HasClosedWalls"/>); never a wall's or water.</summary>
+        public bool IsEnclosed(Vector2Int cell)
+        {
+            return HasClosedWalls && Contains(cell) && enclosed[Index(cell)];
+        }
+
+        /// <summary>
+        /// Whether a building other than the port or a wall may cover the cell, whatever already stands on it: inside
+        /// the grid, on land and, while <see cref="KeepsInsideWalls"/>, inside the walls.
+        /// </summary>
+        public bool IsBuildable(Vector2Int cell)
+        {
+            return Contains(cell) && !forbidden[Index(cell)] && (!KeepsInsideWalls || IsEnclosed(cell));
+        }
+
+        /// <summary>
+        /// Whether the walls close and every land cell of every building other than a wall is inside them: the port's
+        /// water rows are not checked.
+        /// </summary>
+        /// <param name="problem">What is wrong, for the logs; null when nothing is.</param>
+        public bool TryValidateWalls(out string problem)
+        {
+            if (!HasClosedWalls)
+            {
+                problem = TownHall == null
+                    ? "its walls do not close: it has no town hall"
+                    : $"its walls do not close: the town hall reaches the edge at ({openCell.x}, {openCell.y})";
+                return false;
+            }
+
+            foreach (PlacedBuilding building in buildings)
+            {
+                if (building.Kind.IsWall)
+                {
+                    continue;
+                }
+
+                foreach (Vector2Int cell in CellsOf(building))
+                {
+                    if (!forbidden[Index(cell)] && !enclosed[Index(cell)])
+                    {
+                        Vector2Int origin = building.Place.Origin;
+                        problem = $"the {KindName(building.Kind)} at ({origin.x}, {origin.y}) stands outside the walls";
+                        return false;
+                    }
+                }
+            }
+
+            problem = null;
+            return true;
+        }
+
+        private static string KindName(BuildingKind kind)
+        {
+            return kind.IsHouse ? "house" : kind.IsWorkshop ? "workshop" : kind.IsRoad ? "road"
+                : kind.IsPort ? "port" : "town hall";
+        }
+
+        // Floods from the town hall, by sides, stopping at walls and water, when a wall or the town hall was placed.
+        private void RefreshEnclosure()
+        {
+            if (!enclosureStale)
+            {
+                return;
+            }
+
+            enclosureStale = false;
+            Array.Clear(enclosed, 0, enclosed.Length);
+            closed = false;
+            if (TownHall == null)
+            {
+                return;
+            }
+
+            var queue = new Queue<Vector2Int>();
+            foreach (Vector2Int cell in CellsOf(TownHall))
+            {
+                enclosed[Index(cell)] = true;
+                queue.Enqueue(cell);
+            }
+
+            bool open = false;
+            while (queue.Count > 0)
+            {
+                Vector2Int cell = queue.Dequeue();
+                if (cell.x == 0 || cell.y == 0 || cell.x == Width - 1 || cell.y == Height - 1)
+                {
+                    if (!open)
+                    {
+                        openCell = cell;
+                    }
+
+                    open = true;
+                }
+
+                Enclose(new Vector2Int(cell.x + 1, cell.y), queue);
+                Enclose(new Vector2Int(cell.x - 1, cell.y), queue);
+                Enclose(new Vector2Int(cell.x, cell.y + 1), queue);
+                Enclose(new Vector2Int(cell.x, cell.y - 1), queue);
+            }
+
+            closed = !open;
+        }
+
+        private void Enclose(Vector2Int cell, Queue<Vector2Int> queue)
+        {
+            if (!Contains(cell))
+            {
+                return;
+            }
+
+            int index = Index(cell);
+            PlacedBuilding there = occupancy[index];
+            if (enclosed[index] || forbidden[index] || (there != null && there.Kind.IsWall))
+            {
+                return;
+            }
+
+            enclosed[index] = true;
+            queue.Enqueue(cell);
         }
 
         /// <summary>The building covering the cell; null when it is free or outside the grid.</summary>
@@ -119,7 +267,17 @@ namespace DarkFantasyMerchant.Core
             return Contains(cell) && forbidden[Index(cell)] && occupancy[Index(cell)] == null;
         }
 
+        /// <summary>
+        /// Whether a building other than the port fits: inside the grid, on land, on no building and, while
+        /// <see cref="KeepsInsideWalls"/>, inside the walls.
+        /// </summary>
         public bool CanPlace(Footprint footprint, GridPlace place)
+        {
+            return Fits(footprint, place, KeepsInsideWalls);
+        }
+
+        // A wall is never refused for the walls: it is what makes them.
+        private bool Fits(Footprint footprint, GridPlace place, bool insideWalls)
         {
             Vector2Int size = footprint.SizeFor(place.Orientation);
             Vector2Int origin = place.Origin;
@@ -140,7 +298,8 @@ namespace DarkFantasyMerchant.Core
                 for (int x = origin.x; x < origin.x + size.x; x++)
                 {
                     int index = y * Width + x;
-                    if (forbidden[index] || occupancy[index] != null)
+                    if (forbidden[index] || occupancy[index] != null
+                        || (insideWalls && !IsEnclosed(new Vector2Int(x, y))))
                     {
                         return false;
                     }
@@ -157,7 +316,7 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentException("Place a port with PlacePort.", nameof(kind));
             }
 
-            if (!CanPlace(footprint, place))
+            if (!Fits(footprint, place, KeepsInsideWalls && !kind.IsWall))
             {
                 throw new InvalidOperationException("The footprint does not fit at this place.");
             }
@@ -269,6 +428,11 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentException("A road covers exactly one cell.", nameof(building));
             }
 
+            if (kind.IsWall && (building.Footprint.Width != 1 || building.Footprint.Depth != 1))
+            {
+                throw new ArgumentException("A wall covers exactly one cell.", nameof(building));
+            }
+
             if (kind.IsTownHall && TownHall != null)
             {
                 throw new InvalidOperationException("The grid already has a town hall.");
@@ -291,6 +455,11 @@ namespace DarkFantasyMerchant.Core
             else if (kind.IsPort)
             {
                 Port = building;
+            }
+
+            if (kind.IsTownHall || kind.IsWall)
+            {
+                enclosureStale = true;
             }
 
             BuildingPlaced?.Invoke(building);

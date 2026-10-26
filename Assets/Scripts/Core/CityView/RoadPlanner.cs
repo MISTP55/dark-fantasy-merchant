@@ -210,8 +210,7 @@ namespace DarkFantasyMerchant.Core
 
         private static bool IsOpen(CityGrid grid, HashSet<Vector2Int> blocked, Vector2Int cell)
         {
-            return grid.Contains(cell)
-                && !grid.IsForbidden(cell)
+            return grid.IsBuildable(cell)
                 && grid.BuildingAt(cell) == null
                 && (blocked == null || !blocked.Contains(cell));
         }

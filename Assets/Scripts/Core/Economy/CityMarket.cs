@@ -494,7 +494,8 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// Fills newCells (cleared first) with the distinct cells that are not roads yet, in their order. False, and
-        /// newCells empty, when a cell cannot hold a road: off the grid, forbidden or under a building that is not a road.
+        /// newCells empty, when a cell cannot hold a road: off the grid, forbidden, outside the walls of a grid kept inside
+        /// them (<see cref="CityGrid.IsBuildable"/>) or under a building that is not a road.
         /// </summary>
         internal static bool TryCollectNewRoads(CityGrid grid, IReadOnlyList<Vector2Int> cells, List<Vector2Int> newCells)
         {
@@ -509,7 +510,7 @@ namespace DarkFantasyMerchant.Core
             {
                 PlacedBuilding there = grid.BuildingAt(cell);
 
-                if (!grid.Contains(cell) || grid.IsForbidden(cell) || (there != null && !there.Kind.IsRoad))
+                if (!grid.IsBuildable(cell) || (there != null && !there.Kind.IsRoad))
                 {
                     newCells.Clear();
                     return false;
