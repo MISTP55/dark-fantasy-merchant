@@ -32,11 +32,15 @@ namespace DarkFantasyMerchant.Editor
         private const string Block2x3SpritePath = ArtFolder + "/Block2x3.png";
         private const string PortBackSpritePath = ArtFolder + "/PortBack.png";
         private const string PortFrontSpritePath = ArtFolder + "/PortFront.png";
+        private const string WallSpritePath = ArtFolder + "/Wall.png";
         private const string ShipSpritePath = ArtFolder + "/ShipCylinder.png";
 
         // A cell is 1 world unit across (IsoProjection.CellWidth): 64 by 32 pixels.
         private const int PixelsPerUnit = 64;
         private const int BlockHeightPixels = 32;
+
+        // A wall is 2 cells high, a cell's height being half its width on screen, as a block's is.
+        private const int WallHeightPixels = 2 * PixelsPerUnit / 2;
         private const int ShipHeightPixels = 20;
         private const int FirstUserLayer = 8;
 
@@ -64,6 +68,7 @@ namespace DarkFantasyMerchant.Editor
             CreateSprite(Block2x3SpritePath, 2, 3, BlockHeightPixels);
             CreatePortSprite(PortBackSpritePath, true);
             CreatePortSprite(PortFrontSpritePath, false);
+            CreateSprite(WallSpritePath, 1, 1, WallHeightPixels);
             CreateShipSprite(ShipSpritePath);
             CreateMaterial();
             AssetDatabase.SaveAssets();
@@ -501,6 +506,7 @@ namespace DarkFantasyMerchant.Editor
             changed |= WorldMapSetup.FillReference(gridView, "block2x3Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block2x3SpritePath));
             changed |= WorldMapSetup.FillReference(gridView, "portBackSprite", AssetDatabase.LoadAssetAtPath<Sprite>(PortBackSpritePath));
             changed |= WorldMapSetup.FillReference(gridView, "portFrontSprite", AssetDatabase.LoadAssetAtPath<Sprite>(PortFrontSpritePath));
+            changed |= WorldMapSetup.FillReference(gridView, "wallSprite", AssetDatabase.LoadAssetAtPath<Sprite>(WallSpritePath));
             return changed;
         }
     }

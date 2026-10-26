@@ -40,5 +40,6 @@ MonoBehaviour:
   road: {fileID: 11400000, guid: 1a44d32081b5df04296612ff2872f474, type: 2}
   townHall: {fileID: 11400000, guid: a5cc6fe5c7432674e8a16d0f5b4c7c11, type: 2}
   port: {fileID: 11400000, guid: 0960cd009a52ea7499e1d3ef5275274f, type: 2}
+  wall: {fileID: 11400000, guid: 20a0b3fe655dcde4a87b0a95b9d0d7bb, type: 2}
   placementStrategy: {fileID: 11400000, guid: 82c45b07cac851d4ca8f7df2ee9cdd4b, type: 2}
   roadContact: 0

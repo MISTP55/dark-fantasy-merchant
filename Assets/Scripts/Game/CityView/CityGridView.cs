@@ -7,7 +7,7 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// Draws a city's grid: its ground in one mesh (<see cref="GroundMesh"/>: a diamond per cell, tinted free,
     /// forbidden or road), and a placeholder block per other building, a house tinted by the class it shelters
-    /// (<see cref="HouseColors"/>, as in the layout window), a workshop in the workshop colour, the town hall in its own. A building whose definition has a view
+    /// (<see cref="HouseColors"/>, as in the layout window), a workshop in the workshop colour, the town hall and the walls in their own. A building whose definition has a view
     /// sprite is drawn with it instead, untinted, mirrored in the orientation the sprite does not show. A house or
     /// workshop that is not connected is darkened until it is. A building placed while the grid is shown is drawn
     /// then; nothing is redrawn every frame, a road's cell being tinted on the ground at the end of the frame it is
@@ -53,12 +53,16 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("The port facing south: 4 cells on x and 3 on y, its water rows in front. Mirrored, it faces west.")]
         [SerializeField] private Sprite portFrontSprite;
 
+        [Tooltip("A wall: a block covering 1 cell, 2 cells high.")]
+        [SerializeField] private Sprite wallSprite;
+
         [SerializeField] private Color freeCellColor = new Color32(0x3B, 0x4A, 0x3A, 0xFF);
         [SerializeField] private Color forbiddenCellColor = new Color32(0x24, 0x43, 0x5E, 0xFF);
         [Tooltip("The colour of every workshop; a house takes the colour of its class.")]
         [SerializeField] private Color workshopColor = new Color32(0xD6, 0x3A, 0xC4, 0xFF);
         [SerializeField] private Color townHallColor = new Color32(0xC9, 0xA2, 0x27, 0xFF);
         [SerializeField] private Color portColor = new Color32(0xB0, 0x7A, 0x48, 0xFF);
+        [SerializeField] private Color wallColor = new Color32(0x3A, 0x3A, 0x3A, 0xFF);
         [SerializeField] private Color roadColor = new Color32(0x8A, 0x7B, 0x62, 0xFF);
         [Tooltip("A house or workshop that is not connected is drawn with its colour times this on red, green and blue.")]
         [SerializeField, Range(0.1f, 1f)] private float inactiveShade = 0.45f;
@@ -375,7 +379,7 @@ namespace DarkFantasyMerchant.Game
 
             Vector2Int size = building.Size;
             string kindName = building.Kind.IsHouse ? "House" : building.Kind.IsWorkshop ? "Workshop"
-                : building.Kind.IsPort ? "Port" : "Town hall";
+                : building.Kind.IsPort ? "Port" : building.Kind.IsWall ? "Wall" : "Town hall";
 
             // The port's placeholder shows its facing; a view sprite, which has only two orientations, is not used for it.
             BuildingDefinition definition = buildings != null && !building.Kind.IsPort ? buildings.DefinitionOf(building.Kind, economy) : null;
@@ -383,6 +387,7 @@ namespace DarkFantasyMerchant.Game
             (bool waterAtBack, bool portFlipped) = building.Kind.IsPort ? PortSpriteOf(building.PortFacing) : (false, false);
             Sprite sprite = viewSprite != null ? viewSprite
                 : building.Kind.IsPort ? (waterAtBack ? portBackSprite : portFrontSprite)
+                : building.Kind.IsWall ? wallSprite
                 : BlockSpriteOf(size);
             SpriteRenderer buildingRenderer = CreateRenderer(
                 $"{building.Owner} {kindName} {origin.x},{origin.y}", buildingRoot, sprite);
@@ -438,6 +443,11 @@ namespace DarkFantasyMerchant.Game
             if (building.Kind.IsPort)
             {
                 return portColor;
+            }
+
+            if (building.Kind.IsWall)
+            {
+                return isViewSprite ? Color.white : wallColor;
             }
 
             Color color = isViewSprite ? Color.white
