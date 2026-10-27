@@ -10,6 +10,7 @@ namespace DarkFantasyMerchant.Core
     public sealed class CityGrid
     {
         private readonly bool[] forbidden;
+        private readonly bool[] reserved;
         private readonly PlacedBuilding[] occupancy;
         private readonly List<PlacedBuilding> buildings = new List<PlacedBuilding>();
         private readonly bool[] network;
@@ -40,6 +41,7 @@ namespace DarkFantasyMerchant.Core
             Height = height;
             Contact = contact;
             this.forbidden = new bool[width * height];
+            reserved = new bool[width * height];
             occupancy = new PlacedBuilding[width * height];
             network = new bool[width * height];
             enclosed = new bool[width * height];
@@ -69,6 +71,15 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>The port; null when none is placed.</summary>
         public PlacedBuilding Port { get; private set; }
+
+        /// <summary>The trading post; null until it is built.</summary>
+        public PlacedBuilding TradingPost { get; private set; }
+
+        /// <summary>The place reserved for the trading post; null when none is reserved.</summary>
+        public GridPlace? TradingPostSite { get; private set; }
+
+        /// <summary>The footprint of the reserved site; <c>default</c> (0 by 0) when none is reserved.</summary>
+        public Footprint TradingPostFootprint { get; private set; }
 
         /// <summary>The water cells where ships dock, in the order they were placed.</summary>
         public IReadOnlyList<Vector2Int> Berths => berths;
@@ -117,13 +128,68 @@ namespace DarkFantasyMerchant.Core
             return HasClosedWalls && Contains(cell) && enclosed[Index(cell)];
         }
 
+        /// <summary>Whether the cell is under the trading post's reserved site: only the trading post may cover it.</summary>
+        public bool IsReserved(Vector2Int cell)
+        {
+            return Contains(cell) && reserved[Index(cell)];
+        }
+
         /// <summary>
         /// Whether a building other than the port or a wall may cover the cell, whatever already stands on it: inside
-        /// the grid, on land and, while <see cref="KeepsInsideWalls"/>, inside the walls.
+        /// the grid, on land, not reserved and, while <see cref="KeepsInsideWalls"/>, inside the walls.
         /// </summary>
         public bool IsBuildable(Vector2Int cell)
         {
-            return Contains(cell) && !forbidden[Index(cell)] && (!KeepsInsideWalls || IsEnclosed(cell));
+            return Contains(cell) && !forbidden[Index(cell)] && !reserved[Index(cell)]
+                && (!KeepsInsideWalls || IsEnclosed(cell));
+        }
+
+        /// <summary>
+        /// Whether the site can be reserved for the trading post: the grid has none yet, and every cell is inside
+        /// the grid, on land, under no building and, while <see cref="KeepsInsideWalls"/>, inside the walls.
+        /// </summary>
+        public bool CanReserveTradingPostSite(Footprint footprint, GridPlace place)
+        {
+            return TradingPostSite == null && Fits(footprint, place, KeepsInsideWalls);
+        }
+
+        /// <summary>Reserves the site: from now on only <see cref="PlaceTradingPost"/> may cover its cells.</summary>
+        public void ReserveTradingPostSite(Footprint footprint, GridPlace place)
+        {
+            if (!CanReserveTradingPostSite(footprint, place))
+            {
+                throw new InvalidOperationException("The trading post site cannot be reserved at this place.");
+            }
+
+            Vector2Int size = footprint.SizeFor(place.Orientation);
+            for (int y = place.Origin.y; y < place.Origin.y + size.y; y++)
+            {
+                for (int x = place.Origin.x; x < place.Origin.x + size.x; x++)
+                {
+                    reserved[y * Width + x] = true;
+                }
+            }
+
+            TradingPostFootprint = footprint;
+            TradingPostSite = place;
+        }
+
+        /// <summary>Whether the trading post can be placed: a site is reserved and it is not built yet.</summary>
+        public bool CanPlaceTradingPost => TradingPostSite != null && TradingPost == null;
+
+        /// <summary>
+        /// Places the player's trading post on its site. It is not part of the network and connects nothing, like
+        /// the port.
+        /// </summary>
+        public PlacedBuilding PlaceTradingPost()
+        {
+            if (!CanPlaceTradingPost)
+            {
+                throw new InvalidOperationException("There is no trading post site free to build on.");
+            }
+
+            return PlaceWithoutNetwork(new PlacedBuilding(
+                BuildingKind.TradingPost(), BuildingOwner.Player, TradingPostFootprint, TradingPostSite.Value));
         }
 
         /// <summary>
@@ -159,6 +225,23 @@ namespace DarkFantasyMerchant.Core
                 }
             }
 
+            if (TradingPostSite != null)
+            {
+                Vector2Int size = TradingPostFootprint.SizeFor(TradingPostSite.Value.Orientation);
+                Vector2Int origin = TradingPostSite.Value.Origin;
+                for (int y = origin.y; y < origin.y + size.y; y++)
+                {
+                    for (int x = origin.x; x < origin.x + size.x; x++)
+                    {
+                        if (!IsEnclosed(new Vector2Int(x, y)))
+                        {
+                            problem = $"the trading post site at ({origin.x}, {origin.y}) is outside its walls";
+                            return false;
+                        }
+                    }
+                }
+            }
+
             problem = null;
             return true;
         }
@@ -166,7 +249,7 @@ namespace DarkFantasyMerchant.Core
         private static string KindName(BuildingKind kind)
         {
             return kind.IsHouse ? "house" : kind.IsWorkshop ? "workshop" : kind.IsRoad ? "road"
-                : kind.IsPort ? "port" : "town hall";
+                : kind.IsPort ? "port" : kind.IsTradingPost ? "trading post" : "town hall";
         }
 
         // Floods from the town hall, by sides, stopping at walls and water, when a wall or the town hall was placed.
@@ -298,7 +381,7 @@ namespace DarkFantasyMerchant.Core
                 for (int x = origin.x; x < origin.x + size.x; x++)
                 {
                     int index = y * Width + x;
-                    if (forbidden[index] || occupancy[index] != null
+                    if (forbidden[index] || reserved[index] || occupancy[index] != null
                         || (insideWalls && !IsEnclosed(new Vector2Int(x, y))))
                     {
                         return false;
@@ -346,7 +429,7 @@ namespace DarkFantasyMerchant.Core
                 {
                     var cell = new Vector2Int(x, y);
                     int index = Index(cell);
-                    if (occupancy[index] != null || berthSet.Contains(cell) || forbidden[index] != footprint.IsWater(site, cell))
+                    if (occupancy[index] != null || reserved[index] || berthSet.Contains(cell) || forbidden[index] != footprint.IsWater(site, cell))
                     {
                         return false;
                     }
@@ -455,6 +538,10 @@ namespace DarkFantasyMerchant.Core
             else if (kind.IsPort)
             {
                 Port = building;
+            }
+            else if (kind.IsTradingPost)
+            {
+                TradingPost = building;
             }
 
             if (kind.IsTownHall || kind.IsWall)

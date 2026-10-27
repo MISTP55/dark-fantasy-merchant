@@ -2,7 +2,7 @@ using System;
 
 namespace DarkFantasyMerchant.Core
 {
-    /// <summary>What a building is: the house of a class, the workshop of a good, a road, the town hall, the port or a wall.</summary>
+    /// <summary>What a building is: the house of a class, the workshop of a good, a road, the town hall, the port, a wall or the trading post.</summary>
     public readonly struct BuildingKind
     {
         private enum Type
@@ -13,6 +13,7 @@ namespace DarkFantasyMerchant.Core
             TownHall,
             Port,
             Wall,
+            TradingPost,
         }
 
         private readonly Type type;
@@ -60,6 +61,12 @@ namespace DarkFantasyMerchant.Core
             return new BuildingKind(Type.Wall, default, -1);
         }
 
+        /// <summary>The player's trading post: at most one per grid, on the reserved site; not part of the network.</summary>
+        public static BuildingKind TradingPost()
+        {
+            return new BuildingKind(Type.TradingPost, default, -1);
+        }
+
         public bool IsHouse => type == Type.House;
 
         public bool IsWorkshop => type == Type.Workshop;
@@ -71,6 +78,8 @@ namespace DarkFantasyMerchant.Core
         public bool IsPort => type == Type.Port;
 
         public bool IsWall => type == Type.Wall;
+
+        public bool IsTradingPost => type == Type.TradingPost;
 
         /// <summary>The class a house lodges; only for a house.</summary>
         public SocialClass HousedClass => IsHouse ? housedClass : throw new InvalidOperationException("Not a house.");

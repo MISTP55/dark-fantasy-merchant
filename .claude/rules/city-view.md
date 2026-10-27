@@ -38,6 +38,12 @@ paths:
 - A layout is usable for the game (`WorldMapView.IsUsable`, see `world-map.md`) when `TryCreateGrid` succeeds: a town hall, walls that stand, a port that stands, berths that stand, roads and houses that stand, closed walls with every building inside them (`TryValidateWalls`), and `HarbourPaths.TryValidate` finds no problem.
 - `Tools > Dark Fantasy Merchant > Regenerate All City Layouts` (`CityLayoutRegeneration.RegenerateAll`, with a confirmation; `Run` is the same without it) regenerates the layout of every city of the map (`CityLayoutEditing.Regenerate`, seed = index in `MapCities`, the map's mask). Run it whenever what makes a layout usable changes.
 
+## The trading post site
+
+- The grid can reserve a site for the player's trading post (`ReserveTradingPostSite`, once; `CanReserveTradingPostSite` needs land, no building and, while `KeepsInsideWalls`, cells inside the walls). Reserved cells (`IsReserved`) are refused by `IsBuildable` and by `Fits` (walls included, whatever `insideWalls`) and by `CanPlacePort`, so every strategy, `GetPlaces`, `RoadPlanner` and the player's roads respect it without knowing it. A new placement test must go through them.
+- Only `PlaceTradingPost` covers the site (`CanPlaceTradingPost`: a site and no post yet): the player's building, `BuildingPlaced` raised, and, like the port, not part of the network: never connected, a road touching only it is not a network road. The cells stay reserved once it stands.
+- `TryValidateWalls` reports a site with a cell outside the walls ("the trading post site at (x, y) is outside its walls").
+
 ## Roads and the town hall
 
 - The road network is kept by the grid, not recomputed by callers: a road is a 1 by 1 building, the town hall is the grid's `TownHall`, and a road is a network road (`IsNetworkRoad`) when joined to the town hall from touching cell to touching cell. The town hall alone connects nothing: a house or workshop is connected when it touches a network road.
