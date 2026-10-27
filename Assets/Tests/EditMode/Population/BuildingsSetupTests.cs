@@ -21,6 +21,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private TownHallDefinition townHall;
         private PortDefinition port;
         private WallDefinition wall;
+        private TradingPostDefinition tradingPost;
         private int loads;
 
         [SetUp]
@@ -45,6 +46,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             townHall = Track(TestBuildings.CreateTownHall());
             port = Track(TestBuildings.CreatePort());
             wall = Track(TestBuildings.CreateWall());
+            tradingPost = Track(TestBuildings.CreateTradingPost());
             loads = 0;
         }
 
@@ -101,7 +103,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 () => road,
                 () => townHall,
                 () => port,
-                () => wall);
+                () => wall,
+                () => tradingPost);
         }
 
         [Test]
@@ -113,6 +116,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreSame(townHall, buildings.TownHall);
             Assert.AreSame(port, buildings.Port);
             Assert.AreSame(wall, buildings.Wall);
+            Assert.AreSame(tradingPost, buildings.TradingPost);
         }
 
         [Test]
@@ -195,7 +199,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 () => road,
                 () => townHall,
                 () => port,
-                () => wall);
+                () => wall,
+                () => tradingPost);
 
             Assert.AreEqual(3, buildings.Houses.Count);
             Assert.AreSame(rebuilt, buildings.HouseOf(SocialClass.Wealthy));

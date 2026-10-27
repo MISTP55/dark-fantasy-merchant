@@ -44,6 +44,16 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void Place_ATradingPost_Throws()
+        {
+            CityGrid grid = Grid();
+
+            var exception = Assert.Throws<ArgumentException>(
+                () => grid.Place(BuildingKind.TradingPost(), BuildingOwner.Player, Post, At(4, 4)));
+            StringAssert.Contains("PlaceTradingPost", exception.Message);
+        }
+
+        [Test]
         public void ReserveTradingPostSite_SetsSiteAndReservesItsCells()
         {
             CityGrid grid = Grid();

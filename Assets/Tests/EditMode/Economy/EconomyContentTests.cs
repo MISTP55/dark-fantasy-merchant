@@ -3,6 +3,7 @@ using DarkFantasyMerchant.Core;
 using DarkFantasyMerchant.Game;
 using NUnit.Framework;
 using UnityEditor;
+using UnityEngine;
 
 namespace DarkFantasyMerchant.Tests.EditMode
 {
@@ -273,6 +274,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 AssertCost(workshop, 10000, ("Bois", 10), ("Métal", 30));
                 Assert.IsTrue(workshop.TryCreateCost(economy, out _, out problem), problem);
             }
+        }
+
+        [Test]
+        public void TradingPostAsset_Is2By3AndCosts20000Gold50Metal100Timber()
+        {
+            var buildings = AssetDatabase.LoadAssetAtPath<BuildingsDefinition>(BuildingsPath);
+            Assert.IsNotNull(buildings, BuildingsPath);
+            TradingPostDefinition post = buildings.TradingPost;
+            Assert.IsNotNull(post);
+
+            Assert.AreEqual("Comptoir", post.DisplayName);
+            Assert.AreEqual(new Vector2Int(2, 3), post.FootprintSize);
+            AssertCost(post, 20000, ("Métal", 50), ("Bois", 100));
+            Assert.AreEqual(2000, post.Capacity);
+            Assert.AreEqual(1, post.RentPerBarrel);
         }
 
         private static void AssertHouse(

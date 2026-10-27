@@ -399,6 +399,11 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentException("Place a port with PlacePort.", nameof(kind));
             }
 
+            if (kind.IsTradingPost)
+            {
+                throw new ArgumentException("Place the trading post with PlaceTradingPost.", nameof(kind));
+            }
+
             if (!Fits(footprint, place, KeepsInsideWalls && !kind.IsWall))
             {
                 throw new InvalidOperationException("The footprint does not fit at this place.");

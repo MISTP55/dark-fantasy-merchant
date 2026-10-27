@@ -68,6 +68,7 @@ namespace DarkFantasyMerchant.Editor
         private const string TownHallPath = BuildingsFolder + "/TownHall.asset";
         private const string PortPath = BuildingsFolder + "/Port.asset";
         private const string WallPath = BuildingsFolder + "/Wall.asset";
+        private const string TradingPostPath = BuildingsFolder + "/TradingPost.asset";
         private const string RandomPlacementPath = PlacementFolder + "/RandomPlacement.asset";
         private const string RoadsidePlacementPath = PlacementFolder + "/RoadsidePlacement.asset";
         private static readonly Vector2Int HouseFootprint = new Vector2Int(2, 1);
@@ -76,6 +77,7 @@ namespace DarkFantasyMerchant.Editor
         private static readonly Vector2Int TownHallFootprint = new Vector2Int(3, 2);
         private static readonly Vector2Int PortFootprint = new Vector2Int(4, 3);
         private static readonly Vector2Int WallFootprint = new Vector2Int(1, 1);
+        private static readonly Vector2Int TradingPostFootprint = new Vector2Int(2, 3);
 
         private const string GoodsFolder = "Assets/Data/Goods";
         private const string GoodIconsFolder = "Assets/Art/Goods/Icons";
@@ -743,7 +745,8 @@ namespace DarkFantasyMerchant.Editor
                 LoadOrCreateRoad,
                 LoadOrCreateTownHall,
                 LoadOrCreatePort,
-                LoadOrCreateWall);
+                LoadOrCreateWall,
+                () => LoadOrCreateTradingPost(timber, metal));
             CompletePlacement(buildings);
             EditorUtility.SetDirty(buildings);
             return buildings;
@@ -755,7 +758,7 @@ namespace DarkFantasyMerchant.Editor
         /// or <paramref name="workshopOf"/> gives, when that one was just created or the catalogue
         /// itself is new. A definition that exists and was taken out of the catalogue by hand stays
         /// out, and one the catalogue holds is never looked for, whatever its asset is called. The road,
-        /// the town hall, the port and the wall are single fields: each is filled when null.
+        /// the town hall, the port, the wall and the trading post are single fields: each is filled when null.
         /// </summary>
         /// <param name="houseOf">The house of a class, and whether it was just created; null when there is none.</param>
         /// <param name="workshopOf">The workshop of a good, and whether it was just created; null when there is none.</param>
@@ -763,6 +766,7 @@ namespace DarkFantasyMerchant.Editor
         /// <param name="townHallOf">The town hall, made when missing.</param>
         /// <param name="portOf">The port, made when missing.</param>
         /// <param name="wallOf">The wall, made when missing.</param>
+        /// <param name="tradingPostOf">The trading post, made when missing.</param>
         public static void CompleteBuildings(
             BuildingsDefinition buildings,
             bool isNew,
@@ -772,7 +776,8 @@ namespace DarkFantasyMerchant.Editor
             System.Func<RoadDefinition> roadOf,
             System.Func<TownHallDefinition> townHallOf,
             System.Func<PortDefinition> portOf,
-            System.Func<WallDefinition> wallOf)
+            System.Func<WallDefinition> wallOf,
+            System.Func<TradingPostDefinition> tradingPostOf)
         {
             var catalogue = new SerializedObject(buildings);
             SerializedProperty houses = catalogue.FindProperty("houses");
@@ -803,6 +808,7 @@ namespace DarkFantasyMerchant.Editor
             SerializedProperty townHall = catalogue.FindProperty("townHall");
             SerializedProperty port = catalogue.FindProperty("port");
             SerializedProperty wall = catalogue.FindProperty("wall");
+            SerializedProperty tradingPost = catalogue.FindProperty("tradingPost");
 
             if (road.objectReferenceValue == null)
             {
@@ -824,6 +830,11 @@ namespace DarkFantasyMerchant.Editor
                 wall.objectReferenceValue = wallOf();
             }
 
+            if (tradingPost.objectReferenceValue == null)
+            {
+                tradingPost.objectReferenceValue = tradingPostOf();
+            }
+
             catalogue.ApplyModifiedPropertiesWithoutUndo();
             CompleteFootprints(buildings.Houses, HouseFootprint);
             CompleteFootprints(buildings.Workshops, WorkshopFootprint);
@@ -831,6 +842,7 @@ namespace DarkFantasyMerchant.Editor
             CompleteFootprints(new BuildingDefinition[] { buildings.TownHall }, TownHallFootprint);
             CompleteFootprints(new BuildingDefinition[] { buildings.Port }, PortFootprint);
             CompleteFootprints(new BuildingDefinition[] { buildings.Wall }, WallFootprint);
+            CompleteFootprints(new BuildingDefinition[] { buildings.TradingPost }, TradingPostFootprint);
         }
 
         /// <summary>
@@ -1008,6 +1020,25 @@ namespace DarkFantasyMerchant.Editor
             FillBuilding(serialized, "Mur", 0);
             AssetDatabase.CreateAsset(wall, WallPath);
             return wall;
+        }
+
+        private static TradingPostDefinition LoadOrCreateTradingPost(GoodDefinition timber, GoodDefinition metal)
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<TradingPostDefinition>(TradingPostPath);
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var post = ScriptableObject.CreateInstance<TradingPostDefinition>();
+            var serialized = new SerializedObject(post);
+            serialized.FindProperty("footprint").vector2IntValue = TradingPostFootprint;
+            serialized.FindProperty("capacity").intValue = 2000;
+            serialized.FindProperty("rentPerBarrel").longValue = 1;
+            FillBuilding(serialized, "Comptoir", 20000, (metal, 50), (timber, 100));
+            AssetDatabase.CreateAsset(post, TradingPostPath);
+            return post;
         }
 
         private static (WorkshopDefinition workshop, bool created) LoadOrCreateWorkshop(

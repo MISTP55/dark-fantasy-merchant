@@ -81,6 +81,27 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return wall;
         }
 
+        /// <summary>A free trading post of 2 by 3 cells, holding 2000 barrels, its rent 1 gold a barrel.</summary>
+        public static TradingPostDefinition CreateTradingPost(string name = "Comptoir")
+        {
+            var post = ScriptableObject.CreateInstance<TradingPostDefinition>();
+            post.name = name;
+            var serialized = new SerializedObject(post);
+            serialized.FindProperty("footprint").vector2IntValue = new Vector2Int(2, 3);
+            serialized.FindProperty("capacity").intValue = 2000;
+            serialized.FindProperty("rentPerBarrel").longValue = 1;
+            SetBuilding(serialized, name, 0, new (GoodDefinition good, int units)[0]);
+            return post;
+        }
+
+        /// <summary>Gives a catalogue its trading post; null takes it away.</summary>
+        public static void SetTradingPost(BuildingsDefinition buildings, TradingPostDefinition post)
+        {
+            var serialized = new SerializedObject(buildings);
+            serialized.FindProperty("tradingPost").objectReferenceValue = post;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         /// <summary>Gives a catalogue its wall; null takes it away.</summary>
         public static void SetWall(BuildingsDefinition buildings, WallDefinition wall)
         {
@@ -106,7 +127,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        /// <summary>A valid catalogue: a house per class (40, 70 and 140 places, 2 by 1 cells), a road, a town hall, a port, a wall and a random placement strategy.</summary>
+        /// <summary>A valid catalogue: a house per class (40, 70 and 140 places, 2 by 1 cells), a road, a town hall, a port, a wall, a trading post and a random placement strategy.</summary>
         public static BuildingsDefinition CreateCatalogue()
         {
             var buildings = ScriptableObject.CreateInstance<BuildingsDefinition>();
@@ -124,6 +145,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             SetRoadAndTownHall(buildings, CreateRoad(), CreateTownHall());
             SetPort(buildings, CreatePort());
             SetWall(buildings, CreateWall());
+            SetTradingPost(buildings, CreateTradingPost());
             SetPlacement(buildings, ScriptableObject.CreateInstance<RandomPlacementDefinition>());
             return buildings;
         }

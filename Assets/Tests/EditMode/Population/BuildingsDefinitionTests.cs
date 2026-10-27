@@ -42,6 +42,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             TestBuildings.SetRoadAndTownHall(buildings, Track(TestBuildings.CreateRoad()), Track(TestBuildings.CreateTownHall()));
             TestBuildings.SetPort(buildings, Track(TestBuildings.CreatePort()));
             TestBuildings.SetWall(buildings, Track(TestBuildings.CreateWall()));
+            TestBuildings.SetTradingPost(buildings, Track(TestBuildings.CreateTradingPost()));
             SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse }, new[] { farm, lumberjack });
         }
 
@@ -113,6 +114,24 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.IsFalse(buildings.TryValidate(out string problem));
             StringAssert.Contains("no port", problem);
+        }
+
+        [Test]
+        public void BuildingsDefinition_TryValidate_RefusesACatalogueWithoutTradingPost()
+        {
+            TestBuildings.SetTradingPost(buildings, null);
+
+            Assert.IsFalse(buildings.TryValidate(out string problem));
+            StringAssert.Contains("no trading post", problem);
+        }
+
+        [Test]
+        public void DefinitionOf_TheTradingPost_IsTheTradingPost()
+        {
+            TradingPostDefinition post = Track(TestBuildings.CreateTradingPost());
+            TestBuildings.SetTradingPost(buildings, post);
+
+            Assert.AreSame(post, buildings.DefinitionOf(BuildingKind.TradingPost(), null));
         }
 
         [Test]
