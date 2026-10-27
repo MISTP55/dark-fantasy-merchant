@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.IO;
+using DarkFantasyMerchant.Core;
 using DarkFantasyMerchant.Game;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -32,15 +34,21 @@ namespace DarkFantasyMerchant.Editor
         private const string Block2x3SpritePath = ArtFolder + "/Block2x3.png";
         private const string PortBackSpritePath = ArtFolder + "/PortBack.png";
         private const string PortFrontSpritePath = ArtFolder + "/PortFront.png";
-        private const string WallSpritePath = ArtFolder + "/Wall.png";
+        private const string WallSpritePrefix = ArtFolder + "/Wall";
         private const string ShipSpritePath = ArtFolder + "/ShipCylinder.png";
 
         // A cell is 1 world unit across (IsoProjection.CellWidth): 64 by 32 pixels.
         private const int PixelsPerUnit = 64;
         private const int BlockHeightPixels = 32;
 
-        // A wall is 2 cells high, a cell's height being half its width on screen, as a block's is.
-        private const int WallHeightPixels = 2 * PixelsPerUnit / 2;
+        // A cell's height is half its width on screen, as a block's is. A straight wall is 2 cells high, a tower 3.
+        private const int CellHeightPixels = PixelsPerUnit / 2;
+        private const int StraightWallCells = 2;
+        private const int TowerCells = 3;
+
+        // The walls are drawn as a block scaled by CityGridView's default buildingScale would be, their gap with the
+        // cells beside them drawn in: a straight section and a tower's joins reach the cells of their neighbours.
+        private const float WallScale = CityGridView.DefaultBuildingScale;
         private const int ShipHeightPixels = 20;
         private const int FirstUserLayer = 8;
 
@@ -68,7 +76,12 @@ namespace DarkFantasyMerchant.Editor
             CreateSprite(Block2x3SpritePath, 2, 3, BlockHeightPixels);
             CreatePortSprite(PortBackSpritePath, true);
             CreatePortSprite(PortFrontSpritePath, false);
-            CreateSprite(WallSpritePath, 1, 1, WallHeightPixels);
+
+            for (int sides = 0; sides < WallShapes.Count; sides++)
+            {
+                CreateWallSprite(WallSpritePathOf((WallSides)sides), (WallSides)sides);
+            }
+
             CreateShipSprite(ShipSpritePath);
             CreateMaterial();
             AssetDatabase.SaveAssets();
@@ -273,6 +286,123 @@ namespace DarkFantasyMerchant.Editor
             }
 
             var fill = new[] { Color.clear, Color.white, new Color(0.7f, 0.7f, 0.7f, 1f) };
+            WriteSprite(path, faces, fill, new Color(0.35f, 0.35f, 0.35f, 1f), groundHeight);
+        }
+
+        /// <summary>
+        /// The path of a wall's placeholder: "Wall_" and the sides on which another wall stands (E, N, W, S), or
+        /// "Wall_Alone".
+        /// </summary>
+        private static string WallSpritePathOf(WallSides sides)
+        {
+            string name = (sides & WallSides.East) != 0 ? "E" : "";
+            name += (sides & WallSides.North) != 0 ? "N" : "";
+            name += (sides & WallSides.West) != 0 ? "W" : "";
+            name += (sides & WallSides.South) != 0 ? "S" : "";
+            return $"{WallSpritePrefix}_{(name.Length == 0 ? "Alone" : name)}.png";
+        }
+
+        /// <summary>
+        /// A wall's placeholder on one cell, for the walls beside it (<see cref="WallShapes"/>): a white block, its
+        /// sides shaded, outlined. A straight section runs across the whole cell between its two neighbours, as thick
+        /// as a scaled block, 2 cells high; a tower is a scaled block 3 cells high, joined to each neighbour by a
+        /// section as thick and high as a straight one, from the tower to the edge of the cell.
+        /// </summary>
+        private static void CreateWallSprite(string path, WallSides sides)
+        {
+            if (File.Exists(path))
+            {
+                return;
+            }
+
+            const int halfCellWidth = PixelsPerUnit / 2;
+            const int quarterCellWidth = PixelsPerUnit / 4;
+            const int width = PixelsPerUnit;
+            const int groundHeight = PixelsPerUnit / 2;
+            int straightHeight = Mathf.RoundToInt(StraightWallCells * CellHeightPixels * WallScale);
+            int towerHeight = Mathf.RoundToInt(TowerCells * CellHeightPixels * WallScale);
+            int height = groundHeight + towerHeight;
+
+            // The gap between a scaled block and the edge of its cell, in cells; the block lies between near and far.
+            const float near = (1f - WallScale) * 0.5f;
+            const float far = 1f - near;
+
+            // Back to front: what lies farther on x or y is drawn first, the nearer blocks over it.
+            var blocks = new List<(Rect ground, int heightPixels)>();
+
+            if (WallShapes.IsStraight(sides) && (sides & WallSides.East) != 0)
+            {
+                blocks.Add((Rect.MinMaxRect(0f, near, 1f, far), straightHeight));
+            }
+            else if (WallShapes.IsStraight(sides))
+            {
+                blocks.Add((Rect.MinMaxRect(near, 0f, far, 1f), straightHeight));
+            }
+            else
+            {
+                if ((sides & WallSides.East) != 0)
+                {
+                    blocks.Add((Rect.MinMaxRect(far, near, 1f, far), straightHeight));
+                }
+
+                if ((sides & WallSides.North) != 0)
+                {
+                    blocks.Add((Rect.MinMaxRect(near, far, far, 1f), straightHeight));
+                }
+
+                blocks.Add((Rect.MinMaxRect(near, near, far, far), towerHeight));
+
+                if ((sides & WallSides.West) != 0)
+                {
+                    blocks.Add((Rect.MinMaxRect(0f, near, near, far), straightHeight));
+                }
+
+                if ((sides & WallSides.South) != 0)
+                {
+                    blocks.Add((Rect.MinMaxRect(near, 0f, far, near), straightHeight));
+                }
+            }
+
+            // A point of the ground, in cells, on the texture: x goes to the upper right, y to the upper left.
+            Vector2 At(float x, float y)
+            {
+                return new Vector2((x - y + 1f) * halfCellWidth, (x + y) * quarterCellWidth);
+            }
+
+            const int empty = 0;
+            const int topFace = 1;
+            const int leftFace = 2;
+            const int rightFace = 3;
+            var faces = new int[width, height];
+
+            foreach ((Rect ground, int heightPixels) in blocks)
+            {
+                var up = new Vector2(0f, heightPixels);
+                Vector2 farCorner = At(ground.xMax, ground.yMax);
+                Vector2 eastCorner = At(ground.xMax, ground.yMin);
+                Vector2 nearCorner = At(ground.xMin, ground.yMin);
+                Vector2 northCorner = At(ground.xMin, ground.yMax);
+
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        var point = new Vector2(x + 0.5f, y + 0.5f);
+                        int face = IsInside(point, farCorner + up, eastCorner + up, nearCorner + up, northCorner + up) ? topFace
+                            : IsInside(point, northCorner + up, northCorner, nearCorner, nearCorner + up) ? leftFace
+                            : IsInside(point, nearCorner + up, nearCorner, eastCorner, eastCorner + up) ? rightFace
+                            : empty;
+
+                        // A nearer block hides what it covers of the farther ones.
+                        if (face != empty)
+                        {
+                            faces[x, y] = face;
+                        }
+                    }
+                }
+            }
+
+            var fill = new[] { Color.clear, Color.white, new Color(0.78f, 0.78f, 0.78f, 1f), new Color(0.62f, 0.62f, 0.62f, 1f) };
             WriteSprite(path, faces, fill, new Color(0.35f, 0.35f, 0.35f, 1f), groundHeight);
         }
 
@@ -506,7 +636,36 @@ namespace DarkFantasyMerchant.Editor
             changed |= WorldMapSetup.FillReference(gridView, "block2x3Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block2x3SpritePath));
             changed |= WorldMapSetup.FillReference(gridView, "portBackSprite", AssetDatabase.LoadAssetAtPath<Sprite>(PortBackSpritePath));
             changed |= WorldMapSetup.FillReference(gridView, "portFrontSprite", AssetDatabase.LoadAssetAtPath<Sprite>(PortFrontSpritePath));
-            changed |= WorldMapSetup.FillReference(gridView, "wallSprite", AssetDatabase.LoadAssetAtPath<Sprite>(WallSpritePath));
+            changed |= FillWallSprites(gridView);
+            return changed;
+        }
+
+        /// <returns>True when the list of wall sprites was short or a missing one is now set.</returns>
+        private static bool FillWallSprites(CityGridView gridView)
+        {
+            var serialized = new SerializedObject(gridView);
+            SerializedProperty sprites = serialized.FindProperty("wallSprites");
+            bool changed = false;
+
+            if (sprites.arraySize < WallShapes.Count)
+            {
+                sprites.arraySize = WallShapes.Count;
+                changed = true;
+            }
+
+            for (int sides = 0; sides < WallShapes.Count; sides++)
+            {
+                SerializedProperty entry = sprites.GetArrayElementAtIndex(sides);
+
+                if (entry.objectReferenceValue == null)
+                {
+                    var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(WallSpritePathOf((WallSides)sides));
+                    entry.objectReferenceValue = sprite;
+                    changed |= sprite != null;
+                }
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
             return changed;
         }
     }

@@ -7,7 +7,8 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// Draws a city's grid: its ground in one mesh (<see cref="GroundMesh"/>: a diamond per cell, tinted free,
     /// forbidden or road), and a placeholder block per other building, a house tinted by the class it shelters
-    /// (<see cref="HouseColors"/>, as in the layout window), a workshop in the workshop colour, the town hall and the walls in their own. A building whose definition has a view
+    /// (<see cref="HouseColors"/>, as in the layout window), a workshop in the workshop colour, the town hall and the walls in their own, a wall
+    /// by the walls beside it (<see cref="WallShapes"/>). A building whose definition has a view
     /// sprite is drawn with it instead, untinted, mirrored in the orientation the sprite does not show. A house or
     /// workshop that is not connected is darkened until it is. A building placed while the grid is shown is drawn
     /// then; nothing is redrawn every frame, a road's cell being tinted on the ground at the end of the frame it is
@@ -25,6 +26,9 @@ namespace DarkFantasyMerchant.Game
 
         // Above every building: a sortingOrder is a 16-bit value.
         private const int GhostSortingOrder = short.MaxValue;
+
+        /// <summary>The default of buildingScale, which the walls' placeholders are drawn for.</summary>
+        public const float DefaultBuildingScale = 0.85f;
 
         [Tooltip("Unlit: the city view has no light.")]
         [SerializeField] private Material spriteMaterial;
@@ -53,8 +57,8 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("The port facing south: 4 cells on x and 3 on y, its water rows in front. Mirrored, it faces west.")]
         [SerializeField] private Sprite portFrontSprite;
 
-        [Tooltip("A wall: a block covering 1 cell, 2 cells high.")]
-        [SerializeField] private Sprite wallSprite;
+        [Tooltip("A wall by the sides on which another wall stands, indexed by its WallSides (east 1, north 2, west 4, south 8): a straight section for east and west or north and south, a tower joined to its neighbours otherwise. Their gap with the cells beside them is drawn in, so they are not scaled by buildingScale.")]
+        [SerializeField] private Sprite[] wallSprites = new Sprite[WallShapes.Count];
 
         [SerializeField] private Color freeCellColor = new Color32(0x3B, 0x4A, 0x3A, 0xFF);
         [SerializeField] private Color forbiddenCellColor = new Color32(0x24, 0x43, 0x5E, 0xFF);
@@ -67,7 +71,7 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("A house or workshop that is not connected is drawn with its colour times this on red, green and blue.")]
         [SerializeField, Range(0.1f, 1f)] private float inactiveShade = 0.45f;
         [Tooltip("A building's block is drawn this much smaller than its footprint, around its centre, so that a gap shows between neighbours.")]
-        [SerializeField, Range(0.5f, 1f)] private float buildingScale = 0.85f;
+        [SerializeField, Range(0.5f, 1f)] private float buildingScale = DefaultBuildingScale;
 
         [SerializeField] private Color validGhostColor = new Color32(0x6F, 0xBF, 0x73, 0x99);
         [SerializeField] private Color unconnectedGhostColor = new Color32(0xE0, 0xC0, 0x40, 0x99);
@@ -387,7 +391,7 @@ namespace DarkFantasyMerchant.Game
             (bool waterAtBack, bool portFlipped) = building.Kind.IsPort ? PortSpriteOf(building.PortFacing) : (false, false);
             Sprite sprite = viewSprite != null ? viewSprite
                 : building.Kind.IsPort ? (waterAtBack ? portBackSprite : portFrontSprite)
-                : building.Kind.IsWall ? wallSprite
+                : building.Kind.IsWall ? WallSpriteOf(WallShapes.SidesOf(grid, origin))
                 : BlockSpriteOf(size);
             SpriteRenderer buildingRenderer = CreateRenderer(
                 $"{building.Owner} {kindName} {origin.x},{origin.y}", buildingRoot, sprite);
@@ -400,7 +404,7 @@ namespace DarkFantasyMerchant.Game
                 buildingRenderer.flipX = building.Place.Orientation != definition.ViewSpriteOrientation;
                 viewSpriteRenderers.Add(buildingRenderer);
             }
-            else
+            else if (!building.Kind.IsWall)
             {
                 buildingRenderer.transform.localScale = BuildingScaleVector;
             }
@@ -483,6 +487,13 @@ namespace DarkFantasyMerchant.Game
                 default:
                     return (false, true);
             }
+        }
+
+        // The walls are placed only by the layout, before the grid is shown: their neighbours never change under the view.
+        private Sprite WallSpriteOf(WallSides sides)
+        {
+            int index = (int)sides;
+            return wallSprites != null && index < wallSprites.Length ? wallSprites[index] : null;
         }
 
         private Sprite BlockSpriteOf(Vector2Int size)

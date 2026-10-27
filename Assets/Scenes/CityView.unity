@@ -291,7 +291,23 @@ MonoBehaviour:
   block2x3Sprite: {fileID: 21300000, guid: 6ce706a0f2da74c4791b92889e2276c2, type: 3}
   portBackSprite: {fileID: 21300000, guid: bc4c374d851c8564a8bf5b06185b6284, type: 3}
   portFrontSprite: {fileID: 21300000, guid: 9226f1b773fdc6f458a50fe9e9148db4, type: 3}
-  wallSprite: {fileID: 21300000, guid: 2117711dd8a92594ea44ab364c7fc28d, type: 3}
+  wallSprites:
+  - {fileID: 21300000, guid: a3c190abd71742f4e9d9b70df956c87d, type: 3}
+  - {fileID: 21300000, guid: 5e31533c6349b114fac6e4488cd7c929, type: 3}
+  - {fileID: 21300000, guid: 3f4fc63932757a74f951c0a8f307f16e, type: 3}
+  - {fileID: 21300000, guid: fd60fda247d23b14bb0a1530b40f4bbc, type: 3}
+  - {fileID: 21300000, guid: 10e7538bc6a729441bdf9e9f53665ddd, type: 3}
+  - {fileID: 21300000, guid: 567beae1ef54de741a0c238e222e12d7, type: 3}
+  - {fileID: 21300000, guid: 43ffb34350da7364fa99db8980cf74b9, type: 3}
+  - {fileID: 21300000, guid: d3cf5b221ef466647930437bbb343436, type: 3}
+  - {fileID: 21300000, guid: c9df735193f6ab748ad707bfd06487c6, type: 3}
+  - {fileID: 21300000, guid: 90e789e2ada1a3f4e8875fadea3fcb14, type: 3}
+  - {fileID: 21300000, guid: 92b3d7a49ac3faa4e98af53a18fc422c, type: 3}
+  - {fileID: 21300000, guid: 84a3f8afbfd92d24082f0958dda22099, type: 3}
+  - {fileID: 21300000, guid: efbe412183c29484cb0958e98632ef0f, type: 3}
+  - {fileID: 21300000, guid: 0df503f9fec7a7d41a5cc7c2c83e3756, type: 3}
+  - {fileID: 21300000, guid: b98e935082626ca41835b446979586b4, type: 3}
+  - {fileID: 21300000, guid: 249d50d3a1a121f41b821fed55b927e4, type: 3}
   freeCellColor: {r: 0.23137255, g: 0.2901961, b: 0.22745098, a: 1}
   forbiddenCellColor: {r: 0.14117648, g: 0.2627451, b: 0.36862746, a: 1}
   workshopColor: {r: 0.8392157, g: 0.22745098, b: 0.76862746, a: 1}
