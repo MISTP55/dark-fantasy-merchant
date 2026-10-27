@@ -394,24 +394,33 @@ namespace DarkFantasyMerchant.Editor
             var shown = new int[width, height];
             var faces = new int[width, height];
 
-            foreach ((Rect ground, int heightPixels) in blocks)
+            // Each block has faces of its own, so that an edge shows where a join meets the tower; their fills go by
+            // the side they face.
+            var fill = new Color[1 + 3 * blocks.Count];
+
+            for (int i = 0; i < blocks.Count; i++)
             {
-                DrawWallBlock(shown, ground, heightPixels, At);
-                DrawWallBlock(faces, Continued(ground), heightPixels, At);
+                (Rect ground, int heightPixels) = blocks[i];
+                int firstFace = 1 + 3 * i;
+                DrawWallBlock(shown, ground, heightPixels, firstFace, At);
+                DrawWallBlock(faces, Continued(ground), heightPixels, firstFace, At);
+                fill[firstFace] = Color.white;
+                fill[firstFace + 1] = new Color(0.78f, 0.78f, 0.78f, 1f);
+                fill[firstFace + 2] = new Color(0.62f, 0.62f, 0.62f, 1f);
             }
 
             // The faces going on are outlined as one with the neighbours', but drawn only over the cell's own blocks.
-            var fill = new[] { Color.clear, Color.white, new Color(0.78f, 0.78f, 0.78f, 1f), new Color(0.62f, 0.62f, 0.62f, 1f) };
             WriteSprite(path, faces, fill, new Color(0.35f, 0.35f, 0.35f, 1f), groundHeight, shown);
         }
 
-        // Draws a block over the faces drawn so far, hiding what it covers of them: blocks go back to front.
-        private static void DrawWallBlock(int[,] faces, Rect ground, int heightPixels, System.Func<float, float, Vector2> at)
+        // Draws a block over the faces drawn so far, hiding what it covers of them: blocks go back to front. Its top,
+        // left and right faces are firstFace and the two after it.
+        private static void DrawWallBlock(int[,] faces, Rect ground, int heightPixels, int firstFace, System.Func<float, float, Vector2> at)
         {
             const int empty = 0;
-            const int topFace = 1;
-            const int leftFace = 2;
-            const int rightFace = 3;
+            int topFace = firstFace;
+            int leftFace = firstFace + 1;
+            int rightFace = firstFace + 2;
             var up = new Vector2(0f, heightPixels);
             Vector2 farCorner = at(ground.xMax, ground.yMax);
             Vector2 eastCorner = at(ground.xMax, ground.yMin);
