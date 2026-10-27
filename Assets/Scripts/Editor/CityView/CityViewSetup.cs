@@ -46,9 +46,18 @@ namespace DarkFantasyMerchant.Editor
         private const int StraightWallCells = 2;
         private const int TowerCells = 3;
 
-        // The walls are drawn as a block scaled by CityGridView's default buildingScale would be, their gap with the
-        // cells beside them drawn in: a straight section and a tower's joins reach the cells of their neighbours.
+        // A tower is drawn as a block scaled by CityGridView's default buildingScale would be, its gap with the cells
+        // beside it drawn in; the heights of the walls are scaled the same. A straight section and a tower's joins
+        // reach the cells of their neighbours.
         private const float WallScale = CityGridView.DefaultBuildingScale;
+
+        // The thickness of a straight section and of a tower's joins, in cells: thinner than a tower, so that it shows.
+        private const float StraightWallThickness = 0.6f;
+
+        // How far, in cells, a wall's faces are taken to go on into the cell of a neighbour for their outline: no
+        // outline is drawn where two walls meet, and the wall looks of one piece.
+        private const float WallOverhang = 0.1f;
+
         private const int ShipHeightPixels = 20;
         private const int FirstUserLayer = 8;
 
@@ -304,9 +313,10 @@ namespace DarkFantasyMerchant.Editor
 
         /// <summary>
         /// A wall's placeholder on one cell, for the walls beside it (<see cref="WallShapes"/>): a white block, its
-        /// sides shaded, outlined. A straight section runs across the whole cell between its two neighbours, as thick
-        /// as a scaled block, 2 cells high; a tower is a scaled block 3 cells high, joined to each neighbour by a
-        /// section as thick and high as a straight one, from the tower to the edge of the cell.
+        /// sides shaded, outlined except where it meets a neighbour. A straight section runs across the whole cell between
+        /// its two neighbours, <see cref="StraightWallThickness"/> thick, 2 cells high; a tower is a scaled block 3
+        /// cells high, joined to each neighbour by a section as thick and high as a straight one, from the tower to the
+        /// edge of the cell.
         /// </summary>
         private static void CreateWallSprite(string path, WallSides sides)
         {
@@ -327,39 +337,43 @@ namespace DarkFantasyMerchant.Editor
             const float near = (1f - WallScale) * 0.5f;
             const float far = 1f - near;
 
+            // A straight section or a join lies between these across its length.
+            const float thinNear = (1f - StraightWallThickness) * 0.5f;
+            const float thinFar = 1f - thinNear;
+
             // Back to front: what lies farther on x or y is drawn first, the nearer blocks over it.
             var blocks = new List<(Rect ground, int heightPixels)>();
 
             if (WallShapes.IsStraight(sides) && (sides & WallSides.East) != 0)
             {
-                blocks.Add((Rect.MinMaxRect(0f, near, 1f, far), straightHeight));
+                blocks.Add((Rect.MinMaxRect(0f, thinNear, 1f, thinFar), straightHeight));
             }
             else if (WallShapes.IsStraight(sides))
             {
-                blocks.Add((Rect.MinMaxRect(near, 0f, far, 1f), straightHeight));
+                blocks.Add((Rect.MinMaxRect(thinNear, 0f, thinFar, 1f), straightHeight));
             }
             else
             {
                 if ((sides & WallSides.East) != 0)
                 {
-                    blocks.Add((Rect.MinMaxRect(far, near, 1f, far), straightHeight));
+                    blocks.Add((Rect.MinMaxRect(far, thinNear, 1f, thinFar), straightHeight));
                 }
 
                 if ((sides & WallSides.North) != 0)
                 {
-                    blocks.Add((Rect.MinMaxRect(near, far, far, 1f), straightHeight));
+                    blocks.Add((Rect.MinMaxRect(thinNear, far, thinFar, 1f), straightHeight));
                 }
 
                 blocks.Add((Rect.MinMaxRect(near, near, far, far), towerHeight));
 
                 if ((sides & WallSides.West) != 0)
                 {
-                    blocks.Add((Rect.MinMaxRect(0f, near, near, far), straightHeight));
+                    blocks.Add((Rect.MinMaxRect(0f, thinNear, near, thinFar), straightHeight));
                 }
 
                 if ((sides & WallSides.South) != 0)
                 {
-                    blocks.Add((Rect.MinMaxRect(near, 0f, far, near), straightHeight));
+                    blocks.Add((Rect.MinMaxRect(thinNear, 0f, thinFar, near), straightHeight));
                 }
             }
 
@@ -369,41 +383,57 @@ namespace DarkFantasyMerchant.Editor
                 return new Vector2((x - y + 1f) * halfCellWidth, (x + y) * quarterCellWidth);
             }
 
-            const int empty = 0;
-            const int topFace = 1;
-            const int leftFace = 2;
-            const int rightFace = 3;
+            // Only a block's side reaching the edge of the cell meets a neighbour: there, its faces go on.
+            Rect Continued(Rect ground)
+            {
+                return Rect.MinMaxRect(
+                    ground.xMin <= 0f ? -WallOverhang : ground.xMin, ground.yMin <= 0f ? -WallOverhang : ground.yMin,
+                    ground.xMax >= 1f ? 1f + WallOverhang : ground.xMax, ground.yMax >= 1f ? 1f + WallOverhang : ground.yMax);
+            }
+
+            var shown = new int[width, height];
             var faces = new int[width, height];
 
             foreach ((Rect ground, int heightPixels) in blocks)
             {
-                var up = new Vector2(0f, heightPixels);
-                Vector2 farCorner = At(ground.xMax, ground.yMax);
-                Vector2 eastCorner = At(ground.xMax, ground.yMin);
-                Vector2 nearCorner = At(ground.xMin, ground.yMin);
-                Vector2 northCorner = At(ground.xMin, ground.yMax);
+                DrawWallBlock(shown, ground, heightPixels, At);
+                DrawWallBlock(faces, Continued(ground), heightPixels, At);
+            }
 
-                for (int y = 0; y < height; y++)
+            // The faces going on are outlined as one with the neighbours', but drawn only over the cell's own blocks.
+            var fill = new[] { Color.clear, Color.white, new Color(0.78f, 0.78f, 0.78f, 1f), new Color(0.62f, 0.62f, 0.62f, 1f) };
+            WriteSprite(path, faces, fill, new Color(0.35f, 0.35f, 0.35f, 1f), groundHeight, shown);
+        }
+
+        // Draws a block over the faces drawn so far, hiding what it covers of them: blocks go back to front.
+        private static void DrawWallBlock(int[,] faces, Rect ground, int heightPixels, System.Func<float, float, Vector2> at)
+        {
+            const int empty = 0;
+            const int topFace = 1;
+            const int leftFace = 2;
+            const int rightFace = 3;
+            var up = new Vector2(0f, heightPixels);
+            Vector2 farCorner = at(ground.xMax, ground.yMax);
+            Vector2 eastCorner = at(ground.xMax, ground.yMin);
+            Vector2 nearCorner = at(ground.xMin, ground.yMin);
+            Vector2 northCorner = at(ground.xMin, ground.yMax);
+
+            for (int y = 0; y < faces.GetLength(1); y++)
+            {
+                for (int x = 0; x < faces.GetLength(0); x++)
                 {
-                    for (int x = 0; x < width; x++)
-                    {
-                        var point = new Vector2(x + 0.5f, y + 0.5f);
-                        int face = IsInside(point, farCorner + up, eastCorner + up, nearCorner + up, northCorner + up) ? topFace
-                            : IsInside(point, northCorner + up, northCorner, nearCorner, nearCorner + up) ? leftFace
-                            : IsInside(point, nearCorner + up, nearCorner, eastCorner, eastCorner + up) ? rightFace
-                            : empty;
+                    var point = new Vector2(x + 0.5f, y + 0.5f);
+                    int face = IsInside(point, farCorner + up, eastCorner + up, nearCorner + up, northCorner + up) ? topFace
+                        : IsInside(point, northCorner + up, northCorner, nearCorner, nearCorner + up) ? leftFace
+                        : IsInside(point, nearCorner + up, nearCorner, eastCorner, eastCorner + up) ? rightFace
+                        : empty;
 
-                        // A nearer block hides what it covers of the farther ones.
-                        if (face != empty)
-                        {
-                            faces[x, y] = face;
-                        }
+                    if (face != empty)
+                    {
+                        faces[x, y] = face;
                     }
                 }
             }
-
-            var fill = new[] { Color.clear, Color.white, new Color(0.78f, 0.78f, 0.78f, 1f), new Color(0.62f, 0.62f, 0.62f, 1f) };
-            WriteSprite(path, faces, fill, new Color(0.35f, 0.35f, 0.35f, 1f), groundHeight);
         }
 
         private static bool IsInEllipse(Vector2 point, Vector2 centre, float halfWidth, float halfHeight)
@@ -414,8 +444,8 @@ namespace DarkFantasyMerchant.Editor
         }
 
         // Writes the faces, each in its fill and outlined, and imports the texture as a sprite whose pivot is the
-        // centre of the footprint on the ground.
-        private static void WriteSprite(string path, int[,] faces, Color[] fill, Color outline, int groundHeight)
+        // centre of the footprint on the ground. With shown, only the pixels where it has a face are drawn.
+        private static void WriteSprite(string path, int[,] faces, Color[] fill, Color outline, int groundHeight, int[,] shown = null)
         {
             const int empty = 0;
             int width = faces.GetLength(0);
@@ -430,7 +460,8 @@ namespace DarkFantasyMerchant.Editor
                     bool isEdge = face != empty
                         && (FaceAt(faces, x - 1, y) != face || FaceAt(faces, x + 1, y) != face
                             || FaceAt(faces, x, y - 1) != face || FaceAt(faces, x, y + 1) != face);
-                    texture.SetPixel(x, y, isEdge ? outline : fill[face]);
+                    bool isShown = shown == null || shown[x, y] != empty;
+                    texture.SetPixel(x, y, !isShown ? Color.clear : isEdge ? outline : fill[face]);
                 }
             }
 
