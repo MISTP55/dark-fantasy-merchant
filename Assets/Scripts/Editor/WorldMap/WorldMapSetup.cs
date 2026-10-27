@@ -2353,12 +2353,14 @@ namespace DarkFantasyMerchant.Editor
             }
 
             var mapView = FindInScene<WorldMapView>(scene);
+            var shipsView = FindInScene<ShipsView>(scene);
             var cameraController = FindInScene<WorldMapCameraController>(scene);
             var loader = FindInScene<CityViewLoader>(scene);
 
-            if (mapView == null || cameraController == null || loader == null)
+            if (mapView == null || shipsView == null || cameraController == null || loader == null)
             {
-                Debug.LogWarning($"{ScenePath} lacks the map view, camera or city view loader; home city start not added.");
+                Debug.LogWarning(
+                    $"{ScenePath} lacks the map view, ships view, camera or city view loader; home city start not added.");
                 return;
             }
 
@@ -2375,6 +2377,7 @@ namespace DarkFantasyMerchant.Editor
             changed |= FillReference(homeCityStart, "playerStart",
                 AssetDatabase.LoadAssetAtPath<PlayerStartDefinition>(PlayerStartPath));
             changed |= FillReference(homeCityStart, "mapView", mapView);
+            changed |= FillReference(homeCityStart, "shipsView", shipsView);
             changed |= FillReference(homeCityStart, "cameraController", cameraController);
             changed |= FillReference(homeCityStart, "cityViewLoader", loader);
 

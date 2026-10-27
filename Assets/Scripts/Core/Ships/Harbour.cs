@@ -137,6 +137,35 @@ namespace DarkFantasyMerchant.Core
             return entry.State;
         }
 
+        /// <summary>
+        /// Puts a ship straight at the free berth nearest the edge, docked, as if it had always lain there: no event
+        /// is raised. False, and the ship is left out, when no berth is free or ships are queued for one.
+        /// </summary>
+        public bool Place(Ship ship)
+        {
+            if (ship == null)
+            {
+                throw new ArgumentNullException(nameof(ship));
+            }
+
+            if (byShip.ContainsKey(ship))
+            {
+                throw new InvalidOperationException("The ship is already in the harbour.");
+            }
+
+            var entry = new Entry { Ship = ship, State = HarbourState.Waiting };
+            if (HasWaiting(entry) || !TryEnter(entry))
+            {
+                return false;
+            }
+
+            entry.Distance = 0f;
+            entry.State = HarbourState.Docked;
+            entries.Add(entry);
+            byShip.Add(ship, entry);
+            return true;
+        }
+
         /// <summary>Takes a waiting ship out of the queue.</summary>
         public bool Withdraw(Ship ship)
         {

@@ -30,6 +30,7 @@ paths:
 - `ShipArrivals` reports an arrival when a ship docks at its berth, or stops at sea; a route ending at an anchorage that leads into a queue or a grid is not an arrival. It reports the tracked ships that entered a queue, and are still in it, through `Queued`.
 - Selecting a ship from the city panel's ships tab (every ship in the city, in every state) keeps the city selected: the only case of two selections. `WorldMapInteraction` tests "in a city" with `IsInCity`/`CityOf`, never `IsDocked`: it clears the ship as soon as another city, or none, is selected, and clears the city when the selected ship is back at sea (`CityStateChanged` to `AtSea`), by an order from the queue or at the edge of the harbour. Only docked ships trade (`GetShipsIn`).
 - `ShipDocking.LeaveCity` undocks before it raises `CityStateChanged`: a listener never sees a leaving ship counted as docked.
+- `ShipDocking.PlaceInPort` (over `Harbour.Place`) is the only way to start a ship docked: straight at the free berth nearest the edge, for a ship lying at the port's anchorage. It raises `CityStateChanged` but not `Docked`, so that `ShipArrivals` reports no arrival; `Harbour.Place` raises nothing.
 
 ## Harbour traffic
 

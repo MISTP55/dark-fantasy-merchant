@@ -355,6 +355,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.HomeCityStart
   playerStart: {fileID: 11400000, guid: ff5a95c57ff7ac544866b34d11a3cb10, type: 2}
   mapView: {fileID: 935350158}
+  shipsView: {fileID: 948842205}
   cameraController: {fileID: 1418061170}
   cityViewLoader: {fileID: 2009373777}
 --- !u!1 &927664969

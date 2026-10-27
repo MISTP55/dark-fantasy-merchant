@@ -423,5 +423,111 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CollectionAssert.AreEqual(new[] { "docked", "undocked" }, events);
             CollectionAssert.AreEqual(new[] { HarbourState.Docked, HarbourState.AtSea }, changes);
         }
+
+        [Test]
+        public void PlaceInPort_DocksAtOnceWithoutDockedNorArrival()
+        {
+            Ship ship = CreateShip(5, 0);
+            var arrivals = new ShipArrivals<Port>(docking);
+            arrivals.Track(ship);
+            var reported = new List<Ship>();
+            arrivals.Arrived += (s, where) => reported.Add(s);
+            var changes = new List<HarbourState>();
+            docking.CityStateChanged += (s, where) => changes.Add(docking.StateOf(s));
+
+            Assert.IsTrue(docking.PlaceInPort(ship, port, PortPosition));
+            docking.Update(0f);
+            arrivals.Report();
+
+            Assert.AreEqual(HarbourState.Docked, docking.StateOf(ship));
+            Assert.AreSame(port, docking.PortOf(ship));
+            Assert.AreSame(port, docking.CityOf(ship));
+            Assert.IsFalse(docking.IsUnderWay(ship));
+            var inPort = new List<Ship>();
+            docking.GetShipsIn(port, inPort);
+            CollectionAssert.AreEqual(new[] { ship }, inPort);
+            CollectionAssert.AreEqual(new[] { HarbourState.Docked }, changes);
+            Assert.IsEmpty(events);
+            Assert.IsEmpty(reported);
+        }
+
+        [Test]
+        public void PlaceInPort_ThenOrder_LeavesByTheEdge()
+        {
+            Ship ship = CreateShip(5, 0);
+            docking.PlaceInPort(ship, port, PortPosition);
+
+            Assert.IsTrue(docking.OrderToPoint(ship, Cell(4, 3)));
+
+            CollectionAssert.AreEqual(new[] { "undocked" }, events);
+            Assert.AreEqual(HarbourState.Leaving, docking.StateOf(ship));
+
+            Step(100f);
+
+            Assert.IsFalse(docking.IsInCity(ship));
+            Assert.AreEqual(harbour.Capacity, harbour.FreeBerths);
+        }
+
+        [Test]
+        public void PlaceInPort_ThenRemove_UndocksAndFreesTheBerth()
+        {
+            Ship ship = CreateShip(5, 0);
+            docking.PlaceInPort(ship, port, PortPosition);
+
+            docking.Remove(ship);
+
+            CollectionAssert.AreEqual(new[] { "undocked" }, events);
+            Assert.IsFalse(docking.IsInCity(ship));
+            Assert.AreEqual(harbour.Capacity, harbour.FreeBerths);
+        }
+
+        [Test]
+        public void PlaceInPort_NoFreeBerth_StaysAtSea()
+        {
+            DockedShip();
+            Ship ship = CreateShip(5, 0);
+
+            Assert.IsFalse(docking.PlaceInPort(ship, port, PortPosition));
+
+            Assert.IsFalse(docking.IsInCity(ship));
+            Assert.AreEqual(HarbourState.AtSea, docking.StateOf(ship));
+            Assert.IsEmpty(events);
+        }
+
+        [Test]
+        public void PlaceInPort_AwayFromTheAnchorage_StaysAtSea()
+        {
+            Ship ship = CreateShip();
+
+            Assert.IsFalse(docking.PlaceInPort(ship, port, PortPosition));
+
+            Assert.IsFalse(docking.IsInCity(ship));
+            Assert.AreEqual(harbour.Capacity, harbour.FreeBerths);
+        }
+
+        [Test]
+        public void PlaceInPort_NoHarbour_DocksAtOnce()
+        {
+            Ship ship = CreateShip(0, 3);
+
+            Assert.IsTrue(docking.PlaceInPort(ship, open, Cell(0, 3)));
+
+            Assert.AreSame(open, docking.PortOf(ship));
+            Assert.AreEqual(HarbourState.Docked, docking.StateOf(ship));
+            Assert.IsEmpty(events);
+        }
+
+        [Test]
+        public void PlaceInPort_ShipInACityOrUnderOrders_Throws()
+        {
+            Ship docked = DockedShip();
+            Ship ordered = CreateShip(4, 0);
+            docking.OrderToPort(ordered, port, PortPosition);
+
+            Assert.Throws<System.InvalidOperationException>(() => docking.PlaceInPort(docked, port, PortPosition));
+            Assert.Throws<System.InvalidOperationException>(() => docking.PlaceInPort(ordered, open, Cell(0, 3)));
+            Assert.Throws<System.ArgumentNullException>(() => docking.PlaceInPort(null, port, PortPosition));
+            Assert.Throws<System.ArgumentNullException>(() => docking.PlaceInPort(CreateShip(5, 0), null, PortPosition));
+        }
     }
 }

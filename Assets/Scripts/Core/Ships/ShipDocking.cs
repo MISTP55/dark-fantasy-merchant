@@ -259,6 +259,55 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
+        /// Puts a ship that starts in a port straight at a berth, docked: <see cref="CityStateChanged"/> is raised,
+        /// but not <see cref="Docked"/>, since the ship has not come in. The ship must lie at the port's anchorage,
+        /// out of every city and with no order to a port.
+        /// </summary>
+        /// <param name="portPosition">Normalized map position of the port.</param>
+        /// <returns>False, the ship staying at sea, when it is not at the anchorage or no berth is free.</returns>
+        public bool PlaceInPort(Ship ship, TPort port, Vector2 portPosition)
+        {
+            if (ship == null)
+            {
+                throw new ArgumentNullException(nameof(ship));
+            }
+
+            if (port == null)
+            {
+                throw new ArgumentNullException(nameof(port));
+            }
+
+            if (stays.ContainsKey(ship) || destinationPorts.ContainsKey(ship))
+            {
+                throw new InvalidOperationException("Only a ship at sea with no order to a port can be placed in one.");
+            }
+
+            if (ship.IsMoving || !IsSamePoint(ship.Position, ship.AnchorageAt(portPosition)))
+            {
+                return false;
+            }
+
+            Harbour harbour = harbourOf?.Invoke(port);
+
+            if (harbour != null && !harbour.Place(ship))
+            {
+                return false;
+            }
+
+            if (harbour != null)
+            {
+                Listen(harbour, port);
+            }
+
+            stays[ship] = new Stay { City = port, Harbour = harbour };
+            cityShips.Add(ship);
+            ports[ship] = port;
+            dockedShips.Add(ship);
+            CityStateChanged?.Invoke(ship, port);
+            return true;
+        }
+
+        /// <summary>
         /// Forgets a ship that leaves the map: it is no longer in a city, which it leaves
         /// at once whatever its state, nor on its way to one.
         /// </summary>

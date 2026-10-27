@@ -317,5 +317,69 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(HarbourState.Arriving, harbour.StateOf(queued));
             Assert.AreEqual(HarbourState.Waiting, harbour.StateOf(newcomer));
         }
+
+        [Test]
+        public void Place_DocksAtTheBerthNearestTheEdgeWithoutBerthed()
+        {
+            Ship ship = CreateShip();
+
+            Assert.IsTrue(harbour.Place(ship));
+
+            Assert.AreEqual(HarbourState.Docked, harbour.StateOf(ship));
+            Assert.AreEqual(new Vector2(NearBerth.x, NearBerth.y), PositionOf(ship));
+            Assert.AreEqual(1, harbour.FreeBerths);
+            Assert.IsEmpty(events);
+        }
+
+        [Test]
+        public void Place_NoFreeBerth_ReturnsFalse()
+        {
+            Assert.IsTrue(harbour.Place(CreateShip()));
+            Assert.IsTrue(harbour.Place(CreateShip()));
+            Ship third = CreateShip();
+
+            Assert.IsFalse(harbour.Place(third));
+
+            Assert.IsFalse(harbour.Contains(third));
+            Assert.AreEqual(HarbourState.AtSea, harbour.StateOf(third));
+        }
+
+        [Test]
+        public void Place_ThenAdmit_NewcomerTakesTheOtherBerth()
+        {
+            Ship placed = CreateShip();
+            harbour.Place(placed);
+            Ship newcomer = CreateShip();
+
+            harbour.Admit(newcomer);
+            harbour.Advance(100f);
+
+            Assert.AreEqual(new Vector2(NearBerth.x, NearBerth.y), PositionOf(placed));
+            Assert.AreEqual(new Vector2(FarBerth.x, FarBerth.y), PositionOf(newcomer));
+        }
+
+        [Test]
+        public void Place_ShipAlreadyHere_Throws()
+        {
+            Ship ship = CreateShip();
+            harbour.Admit(ship);
+
+            Assert.Throws<System.InvalidOperationException>(() => harbour.Place(ship));
+            Assert.Throws<System.ArgumentNullException>(() => harbour.Place(null));
+        }
+
+        [Test]
+        public void Place_ThenLeave_ExitsAndFreesTheBerth()
+        {
+            Ship ship = CreateShip();
+            harbour.Place(ship);
+
+            harbour.Leave(ship);
+            harbour.Advance(100f);
+
+            Assert.IsFalse(harbour.Contains(ship));
+            Assert.AreEqual(harbour.Capacity, harbour.FreeBerths);
+            CollectionAssert.AreEqual(new[] { "exited" }, events);
+        }
     }
 }
