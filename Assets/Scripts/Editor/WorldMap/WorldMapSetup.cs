@@ -51,6 +51,7 @@ namespace DarkFantasyMerchant.Editor
 
         private const string PlayerDataFolder = "Assets/Data/Player";
         private const string PlayerStartPath = PlayerDataFolder + "/PlayerStart.asset";
+        private const string HomeCityPath = CitiesFolder + "/Lubeck.asset";
         private const string TreasuryHudTemplatePath = UiFolder + "/TreasuryHud.uxml";
         private const string NotificationsHudTemplatePath = UiFolder + "/NotificationsHud.uxml";
 
@@ -386,6 +387,7 @@ namespace DarkFantasyMerchant.Editor
             AddDebugToolsToScene(mapSceneHadUnsavedChanges);
             CityViewSetup.Build();
             AddCityViewLoaderToScene(mapSceneHadUnsavedChanges);
+            AddHomeCityStartToScene(mapSceneHadUnsavedChanges);
             AssetDatabase.SaveAssets();
 
             Debug.Log("World map setup finished.");
@@ -593,7 +595,8 @@ namespace DarkFantasyMerchant.Editor
             return calendar;
         }
 
-        // Like the calendar, a new player start is the game's: its defaults are the content.
+        // Like the calendar, a new player start is the game's: its defaults are the content, with Lübeck as its home
+        // city. An existing one is left as it is, so that an emptied home city stays empty.
         private static PlayerStartDefinition CreatePlayerStart()
         {
             var existing = AssetDatabase.LoadAssetAtPath<PlayerStartDefinition>(PlayerStartPath);
@@ -605,6 +608,7 @@ namespace DarkFantasyMerchant.Editor
 
             var playerStart = ScriptableObject.CreateInstance<PlayerStartDefinition>();
             AssetDatabase.CreateAsset(playerStart, PlayerStartPath);
+            SetReference(playerStart, "homeCity", AssetDatabase.LoadAssetAtPath<CityDefinition>(HomeCityPath));
             return playerStart;
         }
 
@@ -2338,6 +2342,45 @@ namespace DarkFantasyMerchant.Editor
             if (changed)
             {
                 SaveSceneChanges(scene, sceneHadUnsavedChanges, "The city view loader");
+            }
+        }
+
+        private static void AddHomeCityStartToScene(bool sceneHadUnsavedChanges)
+        {
+            if (!TryOpenMapScene("The home city start", out Scene scene))
+            {
+                return;
+            }
+
+            var mapView = FindInScene<WorldMapView>(scene);
+            var cameraController = FindInScene<WorldMapCameraController>(scene);
+            var loader = FindInScene<CityViewLoader>(scene);
+
+            if (mapView == null || cameraController == null || loader == null)
+            {
+                Debug.LogWarning($"{ScenePath} lacks the map view, camera or city view loader; home city start not added.");
+                return;
+            }
+
+            bool changed = false;
+            var homeCityStart = FindInScene<HomeCityStart>(scene);
+
+            if (homeCityStart == null)
+            {
+                homeCityStart = CreateInGroup(scene, WorldGroup, "Home City Start").AddComponent<HomeCityStart>();
+                changed = true;
+            }
+
+            // Also for a scene in which one of them was deleted and made again.
+            changed |= FillReference(homeCityStart, "playerStart",
+                AssetDatabase.LoadAssetAtPath<PlayerStartDefinition>(PlayerStartPath));
+            changed |= FillReference(homeCityStart, "mapView", mapView);
+            changed |= FillReference(homeCityStart, "cameraController", cameraController);
+            changed |= FillReference(homeCityStart, "cityViewLoader", loader);
+
+            if (changed)
+            {
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The home city start");
             }
         }
 

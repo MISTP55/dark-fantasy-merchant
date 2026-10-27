@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.PlayerStartDefinition
   startingGold: 1000000
   startingCrew: 12
+  homeCity: {fileID: 11400000, guid: 93db23da26cc49546883cd26aa6d438f, type: 2}

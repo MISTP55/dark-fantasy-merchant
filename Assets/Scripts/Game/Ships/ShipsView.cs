@@ -21,10 +21,7 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private ShipView shipPrefab;
         [SerializeField] private ShipDefinition playerShipDefinition;
 
-        [Tooltip("City the player ship starts on. Empty, or an inactive city, uses the first active city of the map.")]
-        [SerializeField] private CityDefinition startCity;
-
-        [Tooltip("Optional. Without it, the player ship starts with a full crew.")]
+        [Tooltip("Optional. Without it, the player ship starts with a full crew, on the first active city of the map.")]
         [SerializeField] private PlayerStartDefinition playerStart;
 
         [Tooltip("On-screen size, in pixels, of one world unit of ship sprite.")]
@@ -323,15 +320,11 @@ namespace DarkFantasyMerchant.Game
 
         private Vector2 StartPosition()
         {
-            // An inactive city does not exist in the game: the player cannot start there.
-            if (mapView.HasCity(startCity))
-            {
-                return startCity.MapPosition;
-            }
+            CityDefinition homeCity = PlayerStartDefinition.HomeCityOn(playerStart, mapView);
 
-            if (mapView.Cities.Count > 0)
+            if (homeCity != null)
             {
-                return mapView.Cities[0].MapPosition;
+                return homeCity.MapPosition;
             }
 
             Debug.LogWarning("ShipsView found no city to start on; the player ship starts at the map center.", this);

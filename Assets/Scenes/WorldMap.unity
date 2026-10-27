@@ -309,6 +309,54 @@ Transform:
   m_Children: []
   m_Father: {fileID: 190532898}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &667158997
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 667158998}
+  - component: {fileID: 667158999}
+  m_Layer: 0
+  m_Name: Home City Start
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &667158998
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 667158997}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1937814779}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &667158999
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 667158997}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dcb394122a93db74f8ade90bbd31090f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.HomeCityStart
+  playerStart: {fileID: 11400000, guid: ff5a95c57ff7ac544866b34d11a3cb10, type: 2}
+  mapView: {fileID: 935350158}
+  cameraController: {fileID: 1418061170}
+  cityViewLoader: {fileID: 2009373777}
 --- !u!1 &927664969
 GameObject:
   m_ObjectHideFlags: 0
@@ -480,7 +528,6 @@ MonoBehaviour:
   mapView: {fileID: 935350158}
   shipPrefab: {fileID: 5632966371277847169, guid: 80e95f523fa6cfe4593cd70b6aa116ac, type: 3}
   playerShipDefinition: {fileID: 11400000, guid: 18b3e3fb8dac72947b20f2d72f48a95a, type: 2}
-  startCity: {fileID: 0}
   playerStart: {fileID: 11400000, guid: ff5a95c57ff7ac544866b34d11a3cb10, type: 2}
   shipScreenPixelsPerUnit: 32
   routeView: {fileID: 1824036736}
@@ -1682,6 +1729,7 @@ Transform:
   - {fileID: 948842206}
   - {fileID: 935350159}
   - {fileID: 2009373776}
+  - {fileID: 667158998}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1991110004

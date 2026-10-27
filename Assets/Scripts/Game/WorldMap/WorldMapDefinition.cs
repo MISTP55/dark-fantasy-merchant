@@ -13,7 +13,7 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Width of the map in world units. Height follows the sprite's aspect ratio.")]
         [SerializeField, Min(0.01f)] private float worldWidth = 40f;
 
-        [Tooltip("The cities of the map. The player starts in the first active one. A city that is not active does not exist in the game.")]
+        [Tooltip("The cities of the map. Without a home city, the player starts in the first active one. A city that is not active does not exist in the game.")]
         [SerializeField] private List<MapCity> cities = new List<MapCity>();
 
         // The active cities, worked out on first use and again after every change of the file.
