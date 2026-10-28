@@ -182,6 +182,7 @@ namespace DarkFantasyMerchant.Game
         public void Hide()
         {
             Unbind();
+            isPointerOverFill = false;
             section.EnableInClassList(TradingClass, false);
             section.style.display = DisplayStyle.None;
             ShowTip();
@@ -348,7 +349,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             holdLabel.EnableInClassList(OverCapacityClass, isOver);
-            holdLabel.tooltip = isOver ? RentTipText(warehouse.Excess, warehouse.Excess * rentPerBarrel) : string.Empty;
+            holdLabel.tooltip = isOver ? RentTipText(warehouse.Excess, Warehouse.WeeklyRentOf(new[] { warehouse }, rentPerBarrel)) : string.Empty;
             ShowTip();
         }
 

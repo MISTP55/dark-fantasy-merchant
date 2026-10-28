@@ -15,6 +15,7 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private PlayerTreasury playerTreasury;
         [SerializeField] private ShipsView shipsView;
 
+        [Tooltip("Optional. Without it, no trading post rent is billed.")]
         [SerializeField] private WorldEconomy worldEconomy;
 
         [Tooltip("Optional. Without it, the expenses are paid without a word.")]
@@ -26,11 +27,10 @@ namespace DarkFantasyMerchant.Game
 
         private void OnEnable()
         {
-            if (expenses == null || worldClock == null || playerTreasury == null || shipsView == null
-                || worldEconomy == null)
+            if (expenses == null || worldClock == null || playerTreasury == null || shipsView == null)
             {
                 Debug.LogError(
-                    "PlayerExpenses needs an expenses definition, a world clock, the player's treasury and a ships view and the world economy.",
+                    "PlayerExpenses needs an expenses definition, a world clock, the player's treasury and a ships view.",
                     this);
                 return;
             }
@@ -106,7 +106,7 @@ namespace DarkFantasyMerchant.Game
         // Read on the billing day: the economy may not be ready when the billing is made.
         private long RentOfTradingPosts()
         {
-            if (!worldEconomy.IsReady)
+            if (worldEconomy == null || !worldEconomy.IsReady)
             {
                 return 0;
             }

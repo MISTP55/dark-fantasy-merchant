@@ -9,10 +9,10 @@ namespace DarkFantasyMerchant.Game
     [CreateAssetMenu(fileName = "TradingPost", menuName = "Dark Fantasy Merchant/Trading Post")]
     public sealed class TradingPostDefinition : BuildingDefinition
     {
-        [Tooltip("Barrels of goods the trading post can store.")]
+        [Tooltip("Barrels stored free of rent.")]
         [SerializeField, Min(0)] private int capacity = 2000;
 
-        [Tooltip("Gold coins the player pays for each barrel stored, each week.")]
+        [Tooltip("Gold a week per barrel stored above the capacity.")]
         [SerializeField, Min(0)] private long rentPerBarrel = 1;
 
         public int Capacity => capacity;

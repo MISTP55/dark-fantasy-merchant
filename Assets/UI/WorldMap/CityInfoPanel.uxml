@@ -58,7 +58,7 @@
                                 <ui:VisualElement class="market__icon" />
                                 <ui:Label text="Marchandise" class="market__cell market__cell--name" />
                                 <ui:Label name="transfer-hold-header" text="Cale" class="market__cell market__cell--number" />
-                                <ui:Label text="—" class="market__cell transfer__moves-header" />
+                                <ui:Label text="" class="market__cell transfer__moves-header" />
                                 <ui:Label text="Comptoir" class="market__cell market__cell--number" />
                             </ui:VisualElement>
                             <ui:ScrollView class="market__scroll">

@@ -8,18 +8,18 @@ namespace DarkFantasyMerchant.Core
     /// </summary>
     public sealed class MaterialSources : IGoodSource
     {
-        private readonly IGoodSource _first;
-        private readonly IGoodSource _second;
+        private readonly IGoodSource first;
+        private readonly IGoodSource second;
 
         public MaterialSources(IGoodSource first, IGoodSource second)
         {
-            _first = first;
-            _second = second;
+            this.first = first;
+            this.second = second;
         }
 
         public int UnitsOf(int good)
         {
-            return (_first?.UnitsOf(good) ?? 0) + (_second?.UnitsOf(good) ?? 0);
+            return (first?.UnitsOf(good) ?? 0) + (second?.UnitsOf(good) ?? 0);
         }
 
         /// <summary>Takes from the first source, then the second; all or nothing.</summary>
@@ -35,16 +35,16 @@ namespace DarkFantasyMerchant.Core
                 return false;
             }
 
-            int fromFirst = Math.Min(_first?.UnitsOf(good) ?? 0, count);
+            int fromFirst = Math.Min(first?.UnitsOf(good) ?? 0, count);
 
             if (fromFirst > 0)
             {
-                _first.TryRemove(good, fromFirst);
+                first.TryRemove(good, fromFirst);
             }
 
             if (count > fromFirst)
             {
-                _second.TryRemove(good, count - fromFirst);
+                second.TryRemove(good, count - fromFirst);
             }
 
             return true;
