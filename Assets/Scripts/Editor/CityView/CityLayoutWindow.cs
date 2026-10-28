@@ -24,11 +24,12 @@ namespace DarkFantasyMerchant.Editor
             TownHall,
             Port,
             Berth,
+            TradingPostSite,
             Road,
             Erase,
         }
 
-        private static readonly string[] ToolLabels = { "Water", "Wall", "Rich house", "Wealthy house", "Poor house", "Town hall", "Port", "Berth", "Road", "Erase" };
+        private static readonly string[] ToolLabels = { "Water", "Wall", "Rich house", "Wealthy house", "Poor house", "Town hall", "Port", "Berth", "Trading post site", "Road", "Erase" };
 
         private static readonly Color FreeCell = new Color32(0x3B, 0x4A, 0x3A, 0xFF);
         private static readonly Color ForbiddenCell = new Color32(0x24, 0x43, 0x5E, 0xFF);
@@ -42,6 +43,7 @@ namespace DarkFantasyMerchant.Editor
         private static readonly Color PortColor = new Color32(0x7A, 0x4E, 0x2E, 0xFF);
         private static readonly Color PortWaterColor = new Color32(0xB0, 0x8A, 0x5C, 0xFF);
         private static readonly Color BerthColor = new Color32(0xE8, 0xD0, 0x5A, 0xFF);
+        private static readonly Color TradingPostSiteColor = new Color32(0x8E, 0x5F, 0xB5, 0xFF);
         private static readonly Color ShortageColor = new Color32(0xD0, 0x50, 0x50, 0xFF);
         private static readonly Color GridLine = new Color(0f, 0f, 0f, 0.35f);
 
@@ -221,6 +223,11 @@ namespace DarkFantasyMerchant.Editor
                 EditorGUILayout.HelpBox("The layout has no port: paint water, then place one with the Port tool, or regenerate the layout.", MessageType.Warning);
             }
 
+            if (!layout.HasTradingPostSite)
+            {
+                EditorGUILayout.HelpBox("No trading post site: the city is not usable. Place one with the Trading post site tool, or regenerate the layout.", MessageType.Warning);
+            }
+
             bool madeGrid = CityLayoutEditing.TryMakeGrid(layout, buildings, out CityGrid grid);
 
             if (madeGrid && layout.HasPort && !HarbourPaths.TryValidate(grid, out string harbourProblem))
@@ -298,7 +305,7 @@ namespace DarkFantasyMerchant.Editor
             }
             else
             {
-                bool across = GUILayout.Toggle(orientation == BuildingOrientation.Across, "Across (R turns the house or the town hall)");
+                bool across = GUILayout.Toggle(orientation == BuildingOrientation.Across, "Across (R turns the house, the town hall or the trading post site)");
                 orientation = across ? BuildingOrientation.Across : BuildingOrientation.Along;
             }
 
@@ -423,6 +430,20 @@ namespace DarkFantasyMerchant.Editor
             foreach (Vector2Int berth in grid.Berths)
             {
                 EditorGUI.DrawRect(CellRect(berth.x, berth.y), BerthColor);
+            }
+
+            if (grid.TradingPostSite != null)
+            {
+                GridPlace postSite = grid.TradingPostSite.Value;
+                Vector2Int postSize = grid.TradingPostFootprint.SizeFor(postSite.Orientation);
+
+                for (int y = postSite.Origin.y; y < postSite.Origin.y + postSize.y; y++)
+                {
+                    for (int x = postSite.Origin.x; x < postSite.Origin.x + postSize.x; x++)
+                    {
+                        EditorGUI.DrawRect(CellRect(x, y), TradingPostSiteColor);
+                    }
+                }
             }
 
             foreach (PlacedBuilding building in grid.Buildings)
@@ -559,6 +580,15 @@ namespace DarkFantasyMerchant.Editor
                     }
                 }
             }
+            else if (tool == Tool.TradingPostSite)
+            {
+                var place = new GridPlace(hovered, orientation);
+                Vector2Int size = CityLayoutEditing.TradingPostSize(buildings, place);
+                bool valid = CityLayoutEditing.CanPlaceTradingPostSite(layout, buildings, place);
+                Rect low = cellRect(hovered.x, hovered.y);
+                var rect = new Rect(low.x, low.yMax - size.y * low.height, size.x * low.width, size.y * low.height);
+                EditorGUI.DrawRect(rect, valid ? ValidGhost : InvalidGhost);
+            }
             else if (tool == Tool.Berth)
             {
                 bool valid = CityLayoutEditing.CanPlaceBerth(layout, buildings, hovered);
@@ -622,6 +652,20 @@ namespace DarkFantasyMerchant.Editor
                 else if (down)
                 {
                     CityLayoutEditing.SetPort(layout, buildings, new PortSite(hovered, portFacing));
+                }
+            }
+            else if (tool == Tool.TradingPostSite)
+            {
+                if (erases)
+                {
+                    if (CityLayoutEditing.IsUnderTradingPostSite(layout, buildings, hovered))
+                    {
+                        CityLayoutEditing.RemoveTradingPostSite(layout);
+                    }
+                }
+                else if (down)
+                {
+                    CityLayoutEditing.SetTradingPostSite(layout, buildings, new GridPlace(hovered, orientation));
                 }
             }
             else if (tool == Tool.Berth)

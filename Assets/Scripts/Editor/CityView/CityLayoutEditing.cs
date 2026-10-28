@@ -113,7 +113,8 @@ namespace DarkFantasyMerchant.Editor
 
                     if (!IsInside(layout, cell) || IsForbiddenIn(layout, cell)
                         || HouseIndexAt(layout, buildings, cell) >= 0 || IsRoadIn(layout, cell)
-                        || IsWallIn(layout, cell) || IsUnderPort(layout, buildings, cell))
+                        || IsWallIn(layout, cell) || IsUnderPort(layout, buildings, cell)
+                        || IsUnderTradingPostSite(layout, buildings, cell))
                     {
                         return false;
                     }
@@ -257,7 +258,8 @@ namespace DarkFantasyMerchant.Editor
                 }
                 else if (!roads.Contains(cell) && !IsForbiddenIn(layout, cell)
                     && HouseIndexAt(layout, buildings, cell) < 0 && !IsUnderTownHall(layout, buildings, cell)
-                    && !IsUnderPort(layout, buildings, cell) && !IsWallIn(layout, cell))
+                    && !IsUnderPort(layout, buildings, cell) && !IsWallIn(layout, cell)
+                    && !IsUnderTradingPostSite(layout, buildings, cell))
                 {
                     roads.Add(cell);
                     changed = true;
@@ -274,7 +276,7 @@ namespace DarkFantasyMerchant.Editor
 
         /// <summary>
         /// Adds walls or removes them. When adding, the cells outside the grid, on water (a berth included), or under the
-        /// town hall, the port, a house or a road are skipped: a cell is one thing at a time. Records nothing when no
+        /// town hall, the port, the trading post site, a house or a road are skipped: a cell is one thing at a time. Records nothing when no
         /// cell changes.
         /// </summary>
         public static void SetWalls(CityLayoutDefinition layout, BuildingsDefinition buildings, IEnumerable<Vector2Int> cells, bool add)
@@ -295,7 +297,8 @@ namespace DarkFantasyMerchant.Editor
                 }
                 else if (!walls.Contains(cell) && !IsForbiddenIn(layout, cell)
                     && HouseIndexAt(layout, buildings, cell) < 0 && !IsUnderTownHall(layout, buildings, cell)
-                    && !IsUnderPort(layout, buildings, cell) && !IsRoadIn(layout, cell))
+                    && !IsUnderPort(layout, buildings, cell) && !IsRoadIn(layout, cell)
+                    && !IsUnderTradingPostSite(layout, buildings, cell))
                 {
                     walls.Add(cell);
                     changed = true;
@@ -309,6 +312,70 @@ namespace DarkFantasyMerchant.Editor
                     layout.ForbiddenCells, layout.StartingHouses, TownHallOf(layout), layout.Roads, PortOf(layout), buildings,
                     walls: walls);
             }
+        }
+
+        /// <summary>The cells the trading post site covers when placed with this orientation.</summary>
+        public static Vector2Int TradingPostSize(BuildingsDefinition buildings, GridPlace place)
+        {
+            return buildings.TradingPost.Footprint.SizeFor(place.Orientation);
+        }
+
+        /// <summary>
+        /// Whether the trading post site can lie at the place: on land inside the grid, under no building. The current
+        /// site does not count, and the walls are not enforced.
+        /// </summary>
+        public static bool CanPlaceTradingPostSite(CityLayoutDefinition layout, BuildingsDefinition buildings, GridPlace place)
+        {
+            return buildings.TradingPost != null
+                && TryMakeGrid(layout, buildings, true, false, out CityGrid grid)
+                && grid.CanReserveTradingPostSite(buildings.TradingPost.Footprint, place);
+        }
+
+        /// <summary>Places the trading post site or moves it; false, and nothing recorded, when it cannot stand there.</summary>
+        public static bool SetTradingPostSite(CityLayoutDefinition layout, BuildingsDefinition buildings, GridPlace place)
+        {
+            if (!CanPlaceTradingPostSite(layout, buildings, place))
+            {
+                return false;
+            }
+
+            if (layout.HasTradingPostSite && layout.TradingPostSite.Equals(place))
+            {
+                return true;
+            }
+
+            Apply(
+                layout, "Place trading post site", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses,
+                TownHallOf(layout), layout.Roads, PortOf(layout), buildings, tradingPostSite: place, setSite: true);
+            return true;
+        }
+
+        /// <summary>Takes the trading post site away; records nothing when there is none.</summary>
+        public static void RemoveTradingPostSite(CityLayoutDefinition layout)
+        {
+            if (!layout.HasTradingPostSite)
+            {
+                return;
+            }
+
+            Apply(
+                layout, "Remove trading post site", layout.Width, layout.Height, layout.ForbiddenCells, layout.StartingHouses,
+                TownHallOf(layout), layout.Roads, PortOf(layout), null, tradingPostSite: null, setSite: true);
+        }
+
+        /// <summary>Whether the layout's trading post site covers the cell.</summary>
+        public static bool IsUnderTradingPostSite(CityLayoutDefinition layout, BuildingsDefinition buildings, Vector2Int cell)
+        {
+            if (!layout.HasTradingPostSite || buildings.TradingPost == null)
+            {
+                return false;
+            }
+
+            GridPlace site = layout.TradingPostSite;
+            Vector2Int size = TradingPostSize(buildings, site);
+
+            return cell.x >= site.Origin.x && cell.x < site.Origin.x + size.x
+                && cell.y >= site.Origin.y && cell.y < site.Origin.y + size.y;
         }
 
         /// <summary>Whether a berth can be added at the cell: water, not under the port, no berth there yet.</summary>
@@ -481,7 +548,7 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <summary>
-        /// Makes the cells water or frees them. The cells outside the grid or under the port, and when making water
+        /// Makes the cells water or frees them. The cells outside the grid or under the port or the trading post site, and when making water
         /// those a house, the town hall, a road or a wall covers, are skipped. Records nothing when no cell changes.
         /// The port's cells are left as they are, so that it never ends up standing wrong.
         /// </summary>
@@ -492,7 +559,8 @@ namespace DarkFantasyMerchant.Editor
 
             foreach (Vector2Int cell in cells)
             {
-                if (!IsInside(layout, cell) || IsUnderPort(layout, buildings, cell))
+                if (!IsInside(layout, cell) || IsUnderPort(layout, buildings, cell)
+                    || IsUnderTradingPostSite(layout, buildings, cell))
                 {
                     continue;
                 }
@@ -589,12 +657,30 @@ namespace DarkFantasyMerchant.Editor
         /// </summary>
         public static bool TryMakeGrid(CityLayoutDefinition layout, BuildingsDefinition buildings, out CityGrid grid)
         {
-            return TryMakeGrid(layout, buildings, true, out grid);
+            return TryMakeGrid(layout, buildings, true, true, out grid);
         }
 
         private static bool TryMakeGrid(CityLayoutDefinition layout, BuildingsDefinition buildings, bool withPort, out CityGrid grid)
         {
+            return TryMakeGrid(layout, buildings, withPort, true, out grid);
+        }
+
+        private static bool TryMakeGrid(
+            CityLayoutDefinition layout, BuildingsDefinition buildings, bool withPort, bool withSite, out CityGrid grid)
+        {
             grid = new CityGrid(layout.Width, layout.Height, layout.ForbiddenCells, buildings.RoadContact);
+
+            // Reserved first, so that every other placement is refused on the site by the grid itself.
+            if (withSite && layout.HasTradingPostSite)
+            {
+                if (buildings.TradingPost == null
+                    || !grid.CanReserveTradingPostSite(buildings.TradingPost.Footprint, layout.TradingPostSite))
+                {
+                    return false;
+                }
+
+                grid.ReserveTradingPostSite(buildings.TradingPost.Footprint, layout.TradingPostSite);
+            }
 
             if (layout.HasTownHall)
             {
@@ -740,8 +826,33 @@ namespace DarkFantasyMerchant.Editor
             CityLayoutDefinition layout, string undoName, int width, int height,
             IEnumerable<Vector2Int> forbidden, IEnumerable<CityLayoutDefinition.StartingHouse> houses,
             GridPlace? townHall, IEnumerable<Vector2Int> roads, PortSite? port, BuildingsDefinition buildings,
-            IEnumerable<Vector2Int> berths = null, IEnumerable<Vector2Int> walls = null)
+            IEnumerable<Vector2Int> berths = null, IEnumerable<Vector2Int> walls = null,
+            GridPlace? tradingPostSite = null, bool setSite = false)
         {
+            // The site is the layout's unless given; without the catalogue its size is unknown and it is kept as it is.
+            GridPlace? site = setSite ? tradingPostSite : layout.HasTradingPostSite ? layout.TradingPostSite : (GridPlace?)null;
+
+            if (site != null && buildings != null && buildings.TradingPost != null)
+            {
+                Vector2Int siteSize = TradingPostSize(buildings, site.Value);
+                Vector2Int origin = site.Value.Origin;
+                var forbiddenSet = new HashSet<Vector2Int>(forbidden);
+                bool fits = origin.x >= 0 && origin.y >= 0 && origin.x + siteSize.x <= width && origin.y + siteSize.y <= height;
+
+                for (int y = origin.y; fits && y < origin.y + siteSize.y; y++)
+                {
+                    for (int x = origin.x; fits && x < origin.x + siteSize.x; x++)
+                    {
+                        fits = !forbiddenSet.Contains(new Vector2Int(x, y));
+                    }
+                }
+
+                if (!fits)
+                {
+                    site = null;
+                }
+            }
+
             var keptWalls = new List<Vector2Int>();
 
             foreach (Vector2Int wall in walls ?? layout.Walls)
@@ -772,7 +883,7 @@ namespace DarkFantasyMerchant.Editor
             }
 
             Undo.RecordObject(layout, undoName);
-            layout.SetContent(width, height, forbiddenCells, houses, townHall, new List<Vector2Int>(roads), port, keptBerths, keptWalls);
+            layout.SetContent(width, height, forbiddenCells, houses, townHall, new List<Vector2Int>(roads), port, keptBerths, keptWalls, site);
             EditorUtility.SetDirty(layout);
         }
     }

@@ -45,6 +45,8 @@ paths:
 - `TryValidateWalls` reports a site with a cell outside the walls ("the trading post site at (x, y) is outside its walls").
 - Every layout has one site (`CityLayoutDefinition.HasTradingPostSite`/`TradingPostSite`, with the catalogue's `TradingPost` footprint): a layout without one, or whose site cannot stand, is unusable. `TryCreateGrid` reserves it right after the walls, before the port, while the grid does not keep inside them yet: a site outside the walls is reported by `TryValidateWalls`, not refused as one that cannot stand.
 
+- The layout window's "Trading post site" tool (after Berth): the ghost is the catalogue's footprint, green when `CityLayoutEditing.CanPlaceTradingPostSite` (the grid `TryMakeGrid` makes without the current site; walls not enforced), R turns it, the left click places or moves it (`SetTradingPostSite`, one undo step), the right click on it removes it (`RemoveTradingPostSite`). `TryMakeGrid` reserves the layout's site first, so every placement is refused on it through the grid; the town hall, which the editing checks itself, and the water, road and wall brushes go through `IsUnderTradingPostSite`. `Apply` carries the site like the port, dropping it when it no longer fits the new size or covers water; any new edit must keep it. The window warns when the layout has none.
+
 ## Roads and the town hall
 
 - The road network is kept by the grid, not recomputed by callers: a road is a 1 by 1 building, the town hall is the grid's `TownHall`, and a road is a network road (`IsNetworkRoad`) when joined to the town hall from touching cell to touching cell. The town hall alone connects nothing: a house or workshop is connected when it touches a network road.
