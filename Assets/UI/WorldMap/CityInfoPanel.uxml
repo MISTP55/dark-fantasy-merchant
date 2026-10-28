@@ -25,6 +25,7 @@
                 <ui:VisualElement class="city-panel__tabs-side">
                     <ui:VisualElement class="city-panel__tab-bar">
                         <ui:Button name="tab-market" text="Marché" class="city-panel__tab" />
+                        <ui:Button name="tab-transfer" text="Transfert" class="city-panel__tab" />
                         <ui:Button name="tab-ships" class="city-panel__tab" />
                     </ui:VisualElement>
                     <ui:VisualElement name="market-page" class="city-panel__page">
@@ -44,6 +45,25 @@
                             </ui:VisualElement>
                             <ui:ScrollView class="market__scroll">
                                 <ui:VisualElement name="market-rows" />
+                            </ui:ScrollView>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="transfer-page" class="city-panel__page">
+                        <ui:VisualElement name="transfer-section" class="market transfer">
+                            <ui:VisualElement class="market__ship-line">
+                                <ui:Label text="Navire :" class="market__ship-label" />
+                                <ui:DropdownField name="transfer-ship" class="market__ship-choice" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="market__row market__row--header">
+                                <ui:VisualElement class="market__icon" />
+                                <ui:Label text="Marchandise" class="market__cell market__cell--name" />
+                                <ui:Label name="transfer-hold-header" text="Cale" class="market__cell market__cell--number" />
+                                <ui:Label text="—" class="market__cell transfer__moves-header" />
+                                <ui:Label text="Comptoir" class="market__cell market__cell--number" />
+                            </ui:VisualElement>
+                            <ui:ScrollView class="market__scroll">
+                                <ui:Label name="no-transfer-ship" text="Aucun navire" class="city-panel__empty" />
+                                <ui:VisualElement name="transfer-rows" />
                             </ui:ScrollView>
                         </ui:VisualElement>
                     </ui:VisualElement>

@@ -335,3 +335,33 @@
 .market--trading .market__cell--trade {
     display: flex;
 }
+
+/* The transfer tab: the ship's hold and the trading post side by side. The hold's column
+   is titled with the ship's name, wider than a number. */
+.transfer .market__cell--number {
+    width: 120px;
+}
+
+/* The two buttons that move a good, "→" to the trading post and "←" to the hold, under
+   one header. */
+.transfer__move {
+    width: 36px;
+    margin: 0 0 0 6px;
+    padding: 0;
+    -unity-text-align: middle-center;
+}
+
+.transfer__moves-header {
+    width: 78px;
+    margin-left: 6px;
+    -unity-text-align: middle-center;
+}
+
+/* A move that cannot be made: nothing to move, or no room for it. */
+.transfer__move:disabled {
+    color: rgb(110, 96, 78);
+}
+
+.transfer .city-panel__empty {
+    margin-top: 6px;
+}

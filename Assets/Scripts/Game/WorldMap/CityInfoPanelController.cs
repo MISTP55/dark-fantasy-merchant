@@ -9,8 +9,9 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// Presents the hovered city's name and the selected city's information panel: the city
     /// on the left, and on the right its market and the ships in the city (waiting,
-    /// crossing its harbour or in port) in two tabs, and a button that asks for the city view. The market trades with the player's ship, or the player's
+    /// crossing its harbour or in port) in their tabs, and a button that asks for the city view. The market trades with the player's ship, or the player's
     /// trading post, chosen in its drop-down list; clicking a ship in the ships tab selects it, so that it can be ordered out.
+    /// While the city has the player's trading post, a third tab moves goods between it and a ship of the player in port.
     /// Reads the map's selection state; knows nothing about markers.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
@@ -25,6 +26,7 @@ namespace DarkFantasyMerchant.Game
         private enum Tab
         {
             Market,
+            Transfer,
             Ships,
         }
 
@@ -66,6 +68,13 @@ namespace DarkFantasyMerchant.Game
         private VisualElement marketPage;
         private VisualElement shipsPage;
         private DropdownField tradingShipField;
+        private Button transferTabButton;
+        private VisualElement transferPage;
+        private VisualElement transferElement;
+        private VisualElement transferRows;
+        private Label transferHoldHeader;
+        private Label noTransferShipLabel;
+        private DropdownField transferShipField;
 
         /// <summary>
         /// Raised by every purchase and sale of the market tab: the city, the good, the units, the gold
@@ -81,6 +90,11 @@ namespace DarkFantasyMerchant.Game
 
         // Made on the first city shown: the world's economy starts after this panel is enabled.
         private CityMarketSection marketSection;
+
+        // Made with the first trading post shown, for the same reason.
+        private TradingPostTransferSection transferSection;
+
+        private Tab openTab;
 
         // The market whose population the panel shows and follows, or null.
         private CityMarket populationMarket;
@@ -104,6 +118,9 @@ namespace DarkFantasyMerchant.Game
 
         // True while the market trades with the trading post rather than with a ship.
         private bool tradesWithTradingPost;
+
+        // The player's ship in the shown port whose hold the transfer tab shows, or null.
+        private Ship transferShip;
 
         private void OnEnable()
         {
@@ -137,9 +154,17 @@ namespace DarkFantasyMerchant.Game
             marketPage = root.Q<VisualElement>("market-page");
             shipsPage = root.Q<VisualElement>("ships-page");
             tradingShipField = root.Q<DropdownField>("trading-ship");
+            transferTabButton = root.Q<Button>("tab-transfer");
+            transferPage = root.Q<VisualElement>("transfer-page");
+            transferElement = root.Q<VisualElement>("transfer-section");
+            transferRows = root.Q<VisualElement>("transfer-rows");
+            transferHoldHeader = root.Q<Label>("transfer-hold-header");
+            noTransferShipLabel = root.Q<Label>("no-transfer-ship");
+            transferShipField = root.Q<DropdownField>("transfer-ship");
 
             // A document that is enabled again has a new tree: the sections are rebuilt in it.
             marketSection = null;
+            transferSection = null;
 
             if (cityPanel == null || hoverLabel == null || nameLabel == null || sizeLabel == null
                 || accessLabel == null || descriptionLabel == null || noShipLabel == null
@@ -148,7 +173,9 @@ namespace DarkFantasyMerchant.Game
                 || marketElement == null || marketRows == null || marketHoldLabel == null || marketStoreHeader == null
                 || viewCityButton == null || marketTabButton == null || shipsTabButton == null
                 || marketPage == null || shipsPage == null
-                || tradingShipField == null)
+                || tradingShipField == null || transferTabButton == null || transferPage == null
+                || transferElement == null || transferRows == null || transferHoldHeader == null
+                || noTransferShipLabel == null || transferShipField == null)
             {
                 Debug.LogError("CityInfoPanel.uxml is missing an expected element.", this);
                 return;
@@ -163,12 +190,16 @@ namespace DarkFantasyMerchant.Game
             marketTabButton.focusable = false;
             shipsTabButton.focusable = false;
             tradingShipField.focusable = false;
+            transferTabButton.focusable = false;
+            transferShipField.focusable = false;
 
             closeButton.clicked += OnCloseClicked;
             viewCityButton.clicked += OnViewCityClicked;
             marketTabButton.clicked += OnMarketTabClicked;
             shipsTabButton.clicked += OnShipsTabClicked;
             tradingShipField.RegisterValueChangedCallback(OnTradingShipPicked);
+            transferTabButton.clicked += OnTransferTabClicked;
+            transferShipField.RegisterValueChangedCallback(OnTransferShipPicked);
             mapView.Selection.HoveredChanged += ShowHovered;
             mapView.Selection.SelectedChanged += ShowSelected;
 
@@ -185,6 +216,10 @@ namespace DarkFantasyMerchant.Game
 
             // Hidden until a market is shown, also in a scene without an economy.
             marketElement.style.display = DisplayStyle.None;
+
+            // Hidden until a trading post is shown.
+            transferElement.style.display = DisplayStyle.None;
+            transferTabButton.style.display = DisplayStyle.None;
 
             isBound = true;
 
@@ -204,6 +239,8 @@ namespace DarkFantasyMerchant.Game
             marketTabButton.clicked -= OnMarketTabClicked;
             shipsTabButton.clicked -= OnShipsTabClicked;
             tradingShipField.UnregisterValueChangedCallback(OnTradingShipPicked);
+            transferTabButton.clicked -= OnTransferTabClicked;
+            transferShipField.UnregisterValueChangedCallback(OnTransferShipPicked);
             mapView.Selection.HoveredChanged -= ShowHovered;
             mapView.Selection.SelectedChanged -= ShowSelected;
 
@@ -218,8 +255,9 @@ namespace DarkFantasyMerchant.Game
                 worldEconomy.TradingPostOpened -= OnTradingPostOpened;
             }
 
-            // Stops listening to the market, the hold and the treasury.
+            // Stops listening to the market, the holds, the trading post and the treasury.
             marketSection?.Hide();
+            transferSection?.Hide();
             FollowPopulationOf(null);
             shownCity = null;
 
@@ -369,6 +407,7 @@ namespace DarkFantasyMerchant.Game
             {
                 cityPanel.style.display = DisplayStyle.None;
                 marketSection?.Hide();
+                transferSection?.Hide();
                 FollowPopulationOf(null);
                 shownCity = null;
                 return;
@@ -519,6 +558,72 @@ namespace DarkFantasyMerchant.Game
             tradingShipField.choices = names;
             tradingShipField.SetValueWithoutNotify(names[chosen]);
             tradingShipField.SetEnabled(tradingShips.Count > 0 || tradingPost != null);
+
+            ChooseTransferShip();
+            ShowTransfer();
+        }
+
+        // After the trading partner: the transfer ship is one of the same ships, the one kept
+        // while it is still there, otherwise the first. Chosen apart from the market's.
+        private void ChooseTransferShip()
+        {
+            transferShip = shipsView != null
+                ? TradingShipChoice.Choose(dockedShips, shipsView.IsPlayerShip, transferShip)
+                : null;
+
+            var names = new List<string>();
+
+            foreach (Ship ship in tradingShips)
+            {
+                names.Add(shipsView.DisplayNameOf(ship));
+            }
+
+            names = TradingShipLabels(names);
+
+            if (names.Count == 0)
+            {
+                names.Add(NoTradingShip);
+            }
+
+            int chosen = Mathf.Max(0, tradingShips.IndexOf(transferShip));
+            transferShipField.choices = names;
+            transferShipField.SetValueWithoutNotify(names[chosen]);
+            transferShipField.SetEnabled(tradingShips.Count > 0);
+        }
+
+        // The tab exists only while the city has the player's trading post; open when it goes,
+        // the panel falls back on the market.
+        private void ShowTransfer()
+        {
+            bool hasTradingPost = tradingPost != null;
+            transferTabButton.style.display = hasTradingPost ? DisplayStyle.Flex : DisplayStyle.None;
+
+            if (!hasTradingPost && openTab == Tab.Transfer)
+            {
+                ShowTab(Tab.Market);
+            }
+
+            if (!hasTradingPost || !TryGetTransferSection(out TradingPostTransferSection section))
+            {
+                transferSection?.Hide();
+                return;
+            }
+
+            noTransferShipLabel.style.display = transferShip == null ? DisplayStyle.Flex : DisplayStyle.None;
+            section.Show(transferShip?.Cargo, transferShipField.value, tradingPost);
+        }
+
+        private void OnTransferShipPicked(ChangeEvent<string> change)
+        {
+            int index = transferShipField.index;
+
+            if (index < 0 || index >= tradingShips.Count || mapView.Selection.Selected == null)
+            {
+                return;
+            }
+
+            transferShip = tradingShips[index];
+            ShowTransfer();
         }
 
         private void OnTradingShipPicked(ChangeEvent<string> change)
@@ -616,15 +721,7 @@ namespace DarkFantasyMerchant.Game
         {
             if (marketSection == null && worldEconomy != null && worldEconomy.IsReady)
             {
-                var goodNames = new List<string>();
-                var goodIcons = new List<Sprite>();
-
-                foreach (GoodDefinition good in worldEconomy.Economy.Goods)
-                {
-                    goodNames.Add(good.DisplayName);
-                    goodIcons.Add(good.Icon);
-                }
-
+                GetGoods(out List<string> goodNames, out List<Sprite> goodIcons);
                 Treasury treasury = playerTreasury != null && playerTreasury.IsReady ? playerTreasury.Treasury : null;
                 marketSection = new CityMarketSection(
                     marketElement, marketRows, marketHoldLabel, goodNames, treasury, goodIcons,
@@ -634,6 +731,32 @@ namespace DarkFantasyMerchant.Game
 
             section = marketSection;
             return section != null;
+        }
+
+        private bool TryGetTransferSection(out TradingPostTransferSection section)
+        {
+            if (transferSection == null && worldEconomy != null && worldEconomy.IsReady)
+            {
+                GetGoods(out List<string> goodNames, out List<Sprite> goodIcons);
+                transferSection = new TradingPostTransferSection(
+                    transferElement, transferRows, transferHoldHeader, goodNames, goodIcons);
+            }
+
+            section = transferSection;
+            return section != null;
+        }
+
+        // The names and icons of the economy's goods, by index.
+        private void GetGoods(out List<string> goodNames, out List<Sprite> goodIcons)
+        {
+            goodNames = new List<string>();
+            goodIcons = new List<Sprite>();
+
+            foreach (GoodDefinition good in worldEconomy.Economy.Goods)
+            {
+                goodNames.Add(good.DisplayName);
+                goodIcons.Add(good.Icon);
+            }
         }
 
         private void OnCloseClicked()
@@ -654,6 +777,11 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
+        private void OnTransferTabClicked()
+        {
+            ShowTab(Tab.Transfer);
+        }
+
         private void OnShipsTabClicked()
         {
             ShowTab(Tab.Ships);
@@ -662,7 +790,9 @@ namespace DarkFantasyMerchant.Game
         // A page is shown or hidden by its tab; the section in it is shown or hidden by itself.
         private void ShowTab(Tab tab)
         {
+            openTab = tab;
             ShowPage(marketPage, marketTabButton, tab == Tab.Market);
+            ShowPage(transferPage, transferTabButton, tab == Tab.Transfer);
             ShowPage(shipsPage, shipsTabButton, tab == Tab.Ships);
         }
 
