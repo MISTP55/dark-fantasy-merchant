@@ -663,7 +663,8 @@ namespace DarkFantasyMerchant.Game
                 housing,
                 social,
                 grid,
-                placement);
+                placement,
+                CreateMerchantOutputRule());
         }
 
         // One stock-less market good per active good of the catalogue, as the city produces it.

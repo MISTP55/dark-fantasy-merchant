@@ -49,6 +49,12 @@ namespace DarkFantasyMerchant.Core
         private readonly int[] playerHouses = new int[3];
         private readonly StockThresholds[] thresholds;
 
+        // By good, what the player's workshops of the good have made and not delivered yet, under a unit, and,
+        // by input of its recipe, what they owe of it and have not taken yet, under a unit, backed by units still
+        // in the trading post. Null until the good is first made.
+        private readonly double[] playerPending;
+        private readonly double[][] playerInputDebts;
+
         // By good, the workshops that take it as an input and how much for every unit they make,
         // each list in the catalogue's order of its workshops: the recipes never change once the
         // market exists.
@@ -66,6 +72,7 @@ namespace DarkFantasyMerchant.Core
         /// <param name="social">The satisfaction and the moves of the classes, only with labour; null for classes that never move.</param>
         /// <param name="grid">The city grid the houses stand on, with its placement strategy (both or neither); null for a city whose houses have no place. Every housing rule then has a footprint. The houses already connected are in the population's room; one not connected yet gives the room of its class's housing rule when it connects, and needs that rule.</param>
         /// <param name="placement">Where the city builds its own houses on the grid.</param>
+        /// <param name="merchantOutput">What the player's workshops make; null for workshops that hire but make nothing.</param>
         public CityMarket(
             IReadOnlyList<MarketGood> goods,
             ThresholdRule thresholdRule,
@@ -78,7 +85,8 @@ namespace DarkFantasyMerchant.Core
             IReadOnlyList<CityHousingRule> housing = null,
             SocialRule social = null,
             CityGrid grid = null,
-            IPlacementStrategy placement = null)
+            IPlacementStrategy placement = null,
+            MerchantOutputRule merchantOutput = null)
         {
             if (goods == null)
             {
@@ -139,6 +147,7 @@ namespace DarkFantasyMerchant.Core
 
             Grid = grid;
             this.placement = placement;
+            MerchantOutput = merchantOutput;
             this.daysPerWeek = daysPerWeek;
             weekLog = new MarketWeekLog(goods.Count, daysPerWeek);
             LastDay = new CityDayReport(goods.Count);
@@ -148,6 +157,8 @@ namespace DarkFantasyMerchant.Core
             reserves = new int[goods.Count];
             leakCounters = new double[goods.Count];
             thresholds = new StockThresholds[goods.Count];
+            playerPending = new double[goods.Count];
+            playerInputDebts = new double[goods.Count][];
 
             for (int i = 0; i < goods.Count; i++)
             {
@@ -219,6 +230,32 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>How the classes are satisfied and move; null when they never do.</summary>
         public SocialRule Social { get; }
+
+        /// <summary>What the player's workshops make; null when they make nothing.</summary>
+        public MerchantOutputRule MerchantOutput { get; }
+
+        /// <summary>
+        /// The player's trading post in the city, which the player's workshops take their inputs from and deliver
+        /// into; null until the player has one there, and their workshops make nothing until then.
+        /// </summary>
+        public IGoodStore PlayerTradingPost { get; private set; }
+
+        /// <summary>Gives the market the player's trading post, once it opens in the city.</summary>
+        /// <exception cref="InvalidOperationException">The market already has one.</exception>
+        public void SetPlayerTradingPost(IGoodStore post)
+        {
+            if (post == null)
+            {
+                throw new ArgumentNullException(nameof(post));
+            }
+
+            if (PlayerTradingPost != null)
+            {
+                throw new InvalidOperationException("The market already has the player's trading post.");
+            }
+
+            PlayerTradingPost = post;
+        }
 
         /// <summary>Houses of a class the player has built in the city.</summary>
         public int PlayerHousesOf(SocialClass housedClass)
@@ -352,9 +389,19 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
+        /// Units the player's workshops for a good make in a day with their workers of the moment, by the market's
+        /// <see cref="MerchantOutput"/>, inputs not counted; 0 without it.
+        /// </summary>
+        public double PlayerDailyOutputOf(int good)
+        {
+            RequireGood(good);
+
+            return MerchantOutput == null ? 0d : PlayerDailyOutputOf(good, MerchantOutput);
+        }
+
+        /// <summary>
         /// Units the player's workshops for a good would make in a day with their workers of
-        /// the moment, by the rule of a merchant's workshops. They produce nothing yet: this is
-        /// only what they are worth.
+        /// the moment, by a rule of a merchant's workshops, inputs not counted.
         /// </summary>
         public double PlayerDailyOutputOf(int good, MerchantOutputRule rule)
         {
@@ -812,6 +859,7 @@ namespace DarkFantasyMerchant.Core
                 }
 
                 FillVacancies();
+                RunPlayerWorkshops();
 
                 if (Social != null)
                 {
@@ -985,6 +1033,80 @@ namespace DarkFantasyMerchant.Core
                 Population.Hire(hired, Labour.InhabitantsPerWorker);
                 workshop.Workers += hired;
                 fillable -= hired;
+            }
+        }
+
+        // The player's workshops make their goods into the trading post, from its inputs, each good in the order its
+        // first workshop was built: a good made earlier is already there for the next. Only whole units move; the
+        // fractions are carried to the next day.
+        private void RunPlayerWorkshops()
+        {
+            if (MerchantOutput == null || PlayerTradingPost == null)
+            {
+                return;
+            }
+
+            var done = new HashSet<int>();
+
+            foreach (PlayerWorkshop workshop in playerWorkshops)
+            {
+                if (done.Add(workshop.Good))
+                {
+                    RunPlayerWorkshopsOf(workshop.Good);
+                }
+            }
+        }
+
+        private void RunPlayerWorkshopsOf(int good)
+        {
+            // What floating sums lose: 10 days of a tenth make a whole unit.
+            const double Tolerance = 1e-9;
+
+            double potential = PlayerDailyOutputOf(good);
+
+            if (potential <= 0d)
+            {
+                return;
+            }
+
+            IGoodStore post = PlayerTradingPost;
+            IReadOnlyList<MarketInput> inputs = goods[good].Inputs;
+            double[] debts = playerInputDebts[good] ??= new double[inputs.Count];
+            double factor = 1d;
+
+            // A debt is backed by a unit still in the post, which it does not leave for the day's needs.
+            for (int k = 0; k < inputs.Count; k++)
+            {
+                double available = Math.Max(0d, post.UnitsOf(inputs[k].Good) - debts[k]);
+                factor = Math.Min(factor, available / (potential * inputs[k].UnitsPerUnit));
+            }
+
+            double made = potential * factor;
+
+            if (made <= 0d)
+            {
+                return;
+            }
+
+            for (int k = 0; k < inputs.Count; k++)
+            {
+                debts[k] += made * inputs[k].UnitsPerUnit;
+                int taken = Math.Min((int)Math.Floor(debts[k] + Tolerance), post.UnitsOf(inputs[k].Good));
+
+                if (taken > 0)
+                {
+                    post.TryRemove(inputs[k].Good, taken);
+                    debts[k] = Math.Max(0d, debts[k] - taken);
+                }
+            }
+
+            playerPending[good] += made;
+            int delivered = (int)Math.Floor(playerPending[good] + Tolerance);
+
+            if (delivered > 0)
+            {
+                post.TryAdd(good, delivered);
+                playerPending[good] = Math.Max(0d, playerPending[good] - delivered);
             }
         }
 

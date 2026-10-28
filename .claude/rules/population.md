@@ -16,12 +16,12 @@ paths:
   1. consumption of every good, each class at its rate, before any workshop hires: a hire turns beggars, who consume nothing, into poor;
   2. the city's workshops, in the catalogue's order: hiring (from the beggars only while the poor's satisfaction is above 0), layoffs into a reserve, production (`WorkforceRule`, `LabourRule`), which takes its inputs from the stocks as they stand (a good made earlier in the catalogue's order is already there);
   3. the satisfaction of the three classes (`SocialRule`);
-  4. the player's workshops, which hire from the beggars after the city, never lay off and produce nothing yet; on a grid, only while connected to the road network (`PlayerDailyOutputOf` is known, `MerchantOutputRule`; their production will need a trading office, the "comptoir");
+  4. the player's workshops, which hire from the beggars after the city and never lay off (on a grid, only while connected to the road network), then produce (`RunPlayerWorkshops`): each good in the order its first workshop was built, `PlayerDailyOutputOf` (the market's `MerchantOutputRule`, bonus included), taking its inputs from the player's trading post of the city (`PlayerTradingPost`, set by `WorldEconomy` when the post opens) and delivering into it, never touching the market. Short of an input, in proportion to the scarcest. Without the rule or the post they hire and make nothing. The post holds whole units: per good, the output made and not delivered and each input owed and not taken are carried under a unit, an input's debt backed by units still in the post (which the day's need does not count);
   5. the rich and the wealthy take poor or give them back, then the poor without room or unhappy leave the city with their jobs (reserves first, then the city's workers above 30, then the player's);
   6. the beggars, who come or go towards `BeggarTarget`;
   7. a house for each crowded class (`CityHousingRule`, one per class, at most one house per class a day). With a grid, a house is built only with the roads that connect it: the strategy gives a place and its roads, checked with `RoadPlanner.Connects` before anything is taken; no place, or a place they would not connect, builds nothing that day. The house is placed, then its roads (owner City).
 - A family sent back to the beggars is taken from the three classes, the unhappy ones giving more (`SendToBeggars`); a worker whose family cannot be taken stays in his reserve.
-- The rules are in `CityMarketLabourTests` / `CityMarketHousingTests` / `CityMarketRoadsTests` / `CityMarketSocialTests` / `SocialRuleTests`.
+- The rules are in `CityMarketPlayerWorkshopsTests` / `CityMarketLabourTests` / `CityMarketHousingTests` / `CityMarketRoadsTests` / `CityMarketSocialTests` / `SocialRuleTests`.
 
 ## Buildings
 

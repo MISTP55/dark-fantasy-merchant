@@ -184,7 +184,7 @@ namespace DarkFantasyMerchant.Game
                 // unusable setting leaves the cities without a market, as the others do.
                 GoodUnits units = economy.CreateGoodUnits();
                 tradingPosts = new PlayerTradingPosts(buildings.TradingPost.Capacity, units);
-                tradingPosts.Opened += city => TradingPostOpened?.Invoke(city);
+                tradingPosts.Opened += OnTradingPostOpened;
                 int daysPerWeek = worldClock.Calendar.DaysPerWeek;
                 LabourRule labour = economy.CreateLabourRule();
 
@@ -338,6 +338,13 @@ namespace DarkFantasyMerchant.Game
                         city);
                 }
             }
+        }
+
+        // The city's market learns of the post first: its workshops deliver into it from the next day.
+        private void OnTradingPostOpened(CityDefinition city)
+        {
+            MarketOf(city)?.SetPlayerTradingPost(tradingPosts.Of(city));
+            TradingPostOpened?.Invoke(city);
         }
 
         private void OnDayStarted(GameDate date)
