@@ -588,6 +588,153 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(stock - 1, market.AvailableOf(0));
         }
 
+        private static CityMarket PostMarket(bool withSite)
+        {
+            var grid = new CityGrid(8, 8, new Vector2Int[0]);
+
+            if (withSite)
+            {
+                grid.ReserveTradingPostSite(new Footprint(3, 2), new GridPlace(new Vector2Int(1, 1), BuildingOrientation.Along));
+            }
+
+            return GridMarket(grid);
+        }
+
+        [Test]
+        public void MaterialSources_TakesFromTheFirstThenTheSecond()
+        {
+            var post = new Warehouse(100);
+            post.TryAdd(0, 30);
+            CargoHold hold = HoldWith(50);
+            var sources = new MaterialSources(post, hold);
+
+            Assert.AreEqual(80, sources.UnitsOf(0));
+            Assert.IsTrue(sources.TryRemove(0, 60));
+            Assert.AreEqual(0, post.UnitsOf(0));
+            Assert.AreEqual(20, hold.UnitsOf(0));
+        }
+
+        [Test]
+        public void MaterialSources_TakesNothing_WhenTheyHoldTooLittle()
+        {
+            var post = new Warehouse(100);
+            post.TryAdd(0, 30);
+            CargoHold hold = HoldWith(50);
+            var sources = new MaterialSources(post, hold);
+
+            Assert.IsFalse(sources.TryRemove(0, 81));
+            Assert.AreEqual(30, post.UnitsOf(0));
+            Assert.AreEqual(50, hold.UnitsOf(0));
+        }
+
+        [Test]
+        public void TryBuildHouse_TakesMaterialsFromThePostThenTheHoldThenBuys()
+        {
+            CityMarket market = Market();
+            var post = new Warehouse(100);
+            post.TryAdd(0, 30);
+            CargoHold hold = HoldWith(50);
+            var treasury = new Treasury(100000);
+            BuildingCost cost = Cost(100, 100);
+            var sources = new MaterialSources(post, hold);
+            ConstructionQuote quote = Construction.QuoteHouse(market, sources, treasury, cost);
+            long expected = 100;
+            double stock = market.AvailableOf(0);
+
+            for (int i = 0; i < 20; i++)
+            {
+                expected += market.BuyPriceOf(0, i);
+            }
+
+            bool built = Construction.TryBuildHouse(market, sources, treasury, cost, SocialClass.Poor, 100);
+
+            Assert.IsTrue(quote.IsPossible);
+            Assert.IsTrue(built);
+            Assert.AreEqual(expected, quote.Gold);
+            Assert.AreEqual(100000 - expected, treasury.Gold);
+            Assert.AreEqual(0, post.UnitsOf(0));
+            Assert.AreEqual(0, hold.UnitsOf(0));
+            Assert.AreEqual(stock - 20, market.AvailableOf(0));
+        }
+
+        [Test]
+        public void QuoteTradingPost_IsImpossibleWithoutASiteOrWhenBuilt()
+        {
+            var treasury = new Treasury(10000);
+            CityMarket noSite = PostMarket(false);
+            CityMarket withSite = PostMarket(true);
+
+            Assert.IsFalse(Construction.QuoteTradingPost(Market(), null, treasury, Cost()).IsPossible, "no grid");
+            Assert.IsFalse(Construction.QuoteTradingPost(noSite, null, treasury, Cost()).IsPossible, "no site");
+            Assert.IsTrue(Construction.QuoteTradingPost(withSite, HoldWith(3), treasury, Cost()).IsPossible);
+
+            withSite.Grid.PlaceTradingPost();
+
+            Assert.IsFalse(Construction.QuoteTradingPost(withSite, HoldWith(3), treasury, Cost()).IsPossible, "built");
+        }
+
+        [Test]
+        public void TryBuildTradingPost_PaysAndPlacesThePost()
+        {
+            CityMarket market = PostMarket(true);
+            var treasury = new Treasury(10000);
+            CargoHold hold = HoldWith(3);
+
+            bool built = Construction.TryBuildTradingPost(market, hold, treasury, Cost());
+
+            Assert.IsTrue(built);
+            Assert.IsFalse(market.Grid.CanPlaceTradingPost);
+            Assert.AreEqual(9900, treasury.Gold);
+            Assert.AreEqual(0, hold.UnitsOf(0));
+        }
+
+        [Test]
+        public void TryBuildTradingPost_Twice_PaysNothingTheSecondTime()
+        {
+            CityMarket market = PostMarket(true);
+            var treasury = new Treasury(10000);
+            CargoHold hold = HoldWith(6);
+            Construction.TryBuildTradingPost(market, hold, treasury, Cost());
+
+            bool again = Construction.TryBuildTradingPost(market, hold, treasury, Cost());
+
+            Assert.IsFalse(again);
+            Assert.AreEqual(9900, treasury.Gold);
+            Assert.AreEqual(3, hold.UnitsOf(0));
+        }
+
+        [Test]
+        public void TryBuildTradingPost_Free_TakesNothing()
+        {
+            CityMarket market = PostMarket(true);
+            var treasury = new Treasury(10000);
+            CargoHold hold = HoldWith(3);
+
+            bool built = Construction.TryBuildTradingPost(market, hold, treasury, Cost(), null, true);
+
+            Assert.IsTrue(built);
+            Assert.IsFalse(market.Grid.CanPlaceTradingPost);
+            Assert.AreEqual(10000, treasury.Gold);
+            Assert.AreEqual(3, hold.UnitsOf(0));
+        }
+
+        [Test]
+        public void TryBuildTradingPost_AsksOnlyWhatTheCostLists()
+        {
+            // The Game level builds the cost with BuildingDefinition.MaterialsOf, which leaves out a switched-off
+            // material (BuildingDefinitionTests); Core asks exactly the materials of the cost it is given: here
+            // only good 0, so good 1's stock is untouched.
+            CityMarket market = PostMarket(true);
+            var treasury = new Treasury(10000);
+            CargoHold hold = HoldWith(3);
+            double otherStock = market.AvailableOf(1);
+
+            Assert.IsTrue(Construction.TryBuildTradingPost(market, hold, treasury, Cost()));
+
+            Assert.AreEqual(9900, treasury.Gold);
+            Assert.AreEqual(otherStock, market.AvailableOf(1));
+        }
+
         [Test]
         public void Times_MultipliesGoldAndMaterials()
         {
