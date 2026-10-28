@@ -124,16 +124,17 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
-        /// Quotes a workshop for a good; impossible when the city does not produce it.
+        /// Quotes a workshop for a good; impossible when the city does not produce it or the player has no trading
+        /// post there, which the workshop takes its inputs from and delivers into.
         /// <paramref name="materials"/> may be null (no ship: everything is bought).
         /// </summary>
-        /// <param name="isFree">For the debug tools: the quote is possible at 0 gold when the city produces the good.</param>
+        /// <param name="isFree">For the debug tools: the quote is possible at 0 gold when the city produces the good and the player has a trading post there.</param>
         public static ConstructionQuote QuoteWorkshop(
             CityMarket market, IGoodSource materials, Treasury treasury, BuildingCost cost, int good, bool isFree = false)
         {
             Require(market, treasury, cost);
 
-            return Quote(market, materials, treasury, cost, market.MaxWorkersOf(good) > 0, isFree);
+            return Quote(market, materials, treasury, cost, market.MaxWorkersOf(good) > 0 && market.PlayerTradingPost != null, isFree);
         }
 
         /// <param name="materialBought">Told, for the debug tools, of each material bought from the market: its good, units and gold.</param>

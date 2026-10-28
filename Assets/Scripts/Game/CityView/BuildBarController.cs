@@ -25,7 +25,10 @@ namespace DarkFantasyMerchant.Game
         /// <summary>The trading post's tip once it stands in the city.</summary>
         public const string TradingPostBuiltText = "Votre comptoir est déjà construit dans cette ville.";
 
-        /// <summary>The cost tip while the debug tools make every building free.</summary>
+        /// <summary>A workshop's tip in a city where the player has no trading post.</summary>
+        public const string WorkshopNeedsTradingPostText = "Il faut un comptoir dans cette ville pour y construire un atelier.";
+
+                /// <summary>The cost tip while the debug tools make every building free.</summary>
         public const string FreeText = "Gratuit (débogage)";
 
         private const string OfferClass = "build-bar__offer";
@@ -418,6 +421,7 @@ namespace DarkFantasyMerchant.Game
         private string CostTipOf(Offer offer)
         {
             return offer.TradingPost != null && TradingPostStands ? TradingPostBuiltText
+                : offer.Workshop != null && market?.PlayerTradingPost == null ? WorkshopNeedsTradingPostText
                 : builder != null && builder.IsFree ? FreeText
                 : offer.CostText;
         }

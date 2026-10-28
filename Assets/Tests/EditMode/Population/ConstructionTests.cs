@@ -7,11 +7,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
 {
     public class ConstructionTests
     {
-        // Good 0 is the material (not produced, stock 60); good 1 is produced.
-        private static CityMarket Market()
+        // Good 0 is the material (not produced, stock 60); good 1 is produced. The player has a trading post there
+        // unless told otherwise: a workshop needs one.
+        private static CityMarket Market(bool withTradingPost = true)
         {
-            return new CityMarket(new[] { new MarketGood(10, 2, 0, 0), new MarketGood(10, 2, 30, 0.1) },
+            var market = new CityMarket(new[] { new MarketGood(10, 2, 0, 0), new MarketGood(10, 2, 30, 0.1) },
                 TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7, new CityPopulation(1000));
+            return WithTradingPost(market, withTradingPost);
+        }
+
+        private static CityMarket WithTradingPost(CityMarket market, bool withTradingPost)
+        {
+            if (withTradingPost)
+            {
+                market.SetPlayerTradingPost(new Warehouse(2000));
+            }
+
+            return market;
         }
 
         private static BuildingCost Cost(int units = 3, long gold = 100)
@@ -31,14 +43,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return hold;
         }
 
-        private static CityMarket GridMarket(CityGrid grid)
+        private static CityMarket GridMarket(CityGrid grid, bool withTradingPost = true)
         {
             var house = new CityHousingRule(SocialClass.Poor, 0.95, 100, new MaterialCost[0], new Footprint(1, 1));
 
-            return new CityMarket(new[] { new MarketGood(10, 2, 0, 0), new MarketGood(10, 2, 30, 0.1) },
+            return WithTradingPost(new CityMarket(new[] { new MarketGood(10, 2, 0, 0), new MarketGood(10, 2, 30, 0.1) },
                 TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7,
                 new CityPopulation(new PerClass<int>(0, 0, 100), 0, new PerClass<int>(0, 0, 100)), TestMarkets.Labour,
-                new[] { house }, null, grid, new RandomPlacement(new System.Random(1)));
+                new[] { house }, null, grid, new RandomPlacement(new System.Random(1))), withTradingPost);
         }
 
         [Test]
@@ -420,6 +432,47 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsFalse(Construction.QuoteHouse(market, null, new Treasury(-10), free).IsPossible);
             Assert.IsFalse(Construction.TryBuildHouse(market, null, new Treasury(-10), free, SocialClass.Poor, 100));
             Assert.AreEqual(0, market.PlayerHousesOf(SocialClass.Poor));
+        }
+
+        [Test]
+        public void QuoteWorkshop_WithoutTradingPost_IsImpossible()
+        {
+            CityMarket market = Market(withTradingPost: false);
+
+            Assert.IsFalse(Construction.QuoteWorkshop(market, HoldWith(3), new Treasury(10000), Cost(), 1).IsPossible);
+            Assert.IsFalse(Construction.QuoteWorkshop(market, null, new Treasury(10000), Cost(), 1, isFree: true).IsPossible);
+        }
+
+        [Test]
+        public void TryBuildWorkshop_WithoutTradingPost_TakesNothing()
+        {
+            CityMarket market = Market(withTradingPost: false);
+            var treasury = new Treasury(10000);
+            CargoHold hold = HoldWith(3);
+            double stock = market.AvailableOf(0);
+
+            Assert.IsFalse(Construction.TryBuildWorkshop(market, hold, treasury, Cost(), 1, 30));
+
+            Assert.AreEqual(10000, treasury.Gold);
+            Assert.AreEqual(3, hold.UnitsOf(0));
+            Assert.AreEqual(stock, market.AvailableOf(0));
+            Assert.AreEqual(0, market.PlayerWorkshopsOf(1));
+        }
+
+        [Test]
+        public void TryBuildWorkshop_OnTheGrid_WithoutTradingPost_TakesNothing()
+        {
+            var grid = new CityGrid(4, 4, new Vector2Int[0]);
+            CityMarket market = GridMarket(grid, withTradingPost: false);
+            var treasury = new Treasury(10000);
+            var place = new GridPlace(new Vector2Int(2, 2), BuildingOrientation.Along);
+
+            Assert.IsFalse(Construction.TryBuildWorkshop(market, HoldWith(3), treasury, Cost(), 1, 5, new Footprint(2, 2), place));
+            Assert.IsFalse(Construction.TryBuildWorkshop(market, null, treasury, Cost(), 1, 5, new Footprint(2, 2), place, isFree: true));
+
+            Assert.AreEqual(10000, treasury.Gold);
+            Assert.AreEqual(0, grid.Buildings.Count);
+            Assert.AreEqual(0, market.PlayerWorkshopsOf(1));
         }
 
         [Test]

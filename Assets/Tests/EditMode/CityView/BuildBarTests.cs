@@ -57,6 +57,50 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void OfferState_WorkshopWithoutTradingPost_IsDisabledWithItsTip()
+        {
+            var root = new VisualElement();
+            var offers = new VisualElement { name = "build-offers" };
+            root.Add(offers);
+            root.Add(new Button { name = "houses-button" });
+            root.Add(new Button { name = "workshops-button" });
+            root.Add(new Button { name = "roads-button" });
+            root.Add(new Button { name = "category-trading-post" });
+            root.Add(new Label { name = "build-cost-tip" });
+
+            var builderObject = new GameObject("PlayerBuilder");
+            var city = ScriptableObject.CreateInstance<CityDefinition>();
+
+            try
+            {
+                var bar = new BuildBarController(root);
+                PlayerBuilder builder = builderObject.AddComponent<PlayerBuilder>();
+                var workshop = new WorkshopOffer(0, "Brasserie", 30, new BuildingCost(5000, Array.Empty<MaterialCost>()), "5 000 or");
+                var market = new CityMarket(new[] { new MarketGood(10, 2, 30, 0.1) }, TestMarkets.Thresholds,
+                    TestMarkets.Workforce, 30, TestMarkets.Pricing, 7, new CityPopulation(1000));
+
+                bar.Show(city, builder, market, null, null, Array.Empty<HouseOffer>(), new[] { workshop }, null, null, null, null);
+                bar.Choose(BuildBarController.Category.Workshops);
+
+                Assert.AreEqual(1, offers.childCount);
+                Assert.IsFalse(offers.Q<Button>().enabledSelf);
+                Assert.AreEqual(BuildBarController.WorkshopNeedsTradingPostText, bar.CostTipAt(0));
+                Assert.AreEqual(
+                    "Il faut un comptoir dans cette ville pour y construire un atelier.",
+                    BuildBarController.WorkshopNeedsTradingPostText);
+
+                market.SetPlayerTradingPost(new Warehouse(2000));
+
+                Assert.AreEqual("5 000 or", bar.CostTipAt(0));
+            }
+            finally
+            {
+                Object.DestroyImmediate(builderObject);
+                Object.DestroyImmediate(city);
+            }
+        }
+
+        [Test]
         public void OfferState_TradingPostBuilt_IsDisabledWithItsTip()
         {
             var root = new VisualElement();
