@@ -87,7 +87,7 @@ namespace DarkFantasyMerchant.Core
 
     /// <summary>
     /// What building would cost now. <see cref="Gold"/> is the building's gold plus the price
-    /// of the materials that would be bought in the city; the materials come first from the hold,
+    /// of the materials that would be bought in the city; the materials come first from the sources given,
     /// and what is bought does not pass through a hold. When the building is impossible, Gold is
     /// the building's gold plus the price of whatever could be priced, and means nothing more.
     /// </summary>
@@ -105,8 +105,8 @@ namespace DarkFantasyMerchant.Core
     }
 
     /// <summary>
-    /// Quotes and pays for a player's building (a house, a workshop or a trace of roads): the materials come first
-    /// from a ship's hold, the rest is bought from the city's market, and the gold is taken from
+    /// Quotes and pays for a player's building (a house, a workshop, a trace of roads or the trading post): the
+    /// materials come first from the sources given (the city's trading post, then a ship's hold), the rest is bought from the city's market, and the gold is taken from
     /// the treasury, all or nothing. What is bought does not pass through a hold. The purchase is
     /// priced with the market as it is before anything is taken, and exactly that is paid. A free
     /// building (the debug tools') takes nothing and asks nothing of the treasury, not even to be
@@ -434,11 +434,11 @@ namespace DarkFantasyMerchant.Core
             foreach (MaterialCost material in cost.Materials)
             {
                 int toBuy = ToBuy(materials, material);
-                int fromHold = material.Units - toBuy;
+                int fromSources = material.Units - toBuy;
 
-                if (fromHold > 0)
+                if (fromSources > 0)
                 {
-                    materials.TryRemove(material.Good, fromHold);
+                    materials.TryRemove(material.Good, fromSources);
                 }
 
                 if (toBuy > 0)
@@ -461,9 +461,9 @@ namespace DarkFantasyMerchant.Core
 
         private static int ToBuy(IGoodSource materials, MaterialCost material)
         {
-            int fromHold = materials == null ? 0 : Math.Min(materials.UnitsOf(material.Good), material.Units);
+            int fromSources = materials == null ? 0 : Math.Min(materials.UnitsOf(material.Good), material.Units);
 
-            return material.Units - fromHold;
+            return material.Units - fromSources;
         }
 
         // A placeless building on a market with a grid has no place: refused before anything is taken.

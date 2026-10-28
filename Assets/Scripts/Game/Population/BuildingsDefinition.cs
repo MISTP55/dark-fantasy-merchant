@@ -230,6 +230,14 @@ namespace DarkFantasyMerchant.Game
             return new RoadOffer(road.DisplayName, CostOf(road, economy, unavailable), road.CostText(economy));
         }
 
+        /// <summary>The trading post as the player can build it. Only for a catalogue that <see cref="TryValidate"/> accepts.</summary>
+        /// <param name="unavailable">Told when the trading post's cost cannot be worked out, with why; may be null.</param>
+        public TradingPostOffer CreateTradingPostOffer(EconomyDefinition economy, Action<BuildingDefinition, string> unavailable)
+        {
+            return new TradingPostOffer(
+                tradingPost.DisplayName, CostOf(tradingPost, economy, unavailable), tradingPost.CostText(economy), tradingPost.Footprint);
+        }
+
         /// <summary>
         /// The workshops as the player can build them, in the catalogue's order, but for those of
         /// a good that is not active, which are left out.

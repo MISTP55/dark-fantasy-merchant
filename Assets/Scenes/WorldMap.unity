@@ -358,6 +358,7 @@ MonoBehaviour:
   shipsView: {fileID: 948842205}
   cameraController: {fileID: 1418061170}
   cityViewLoader: {fileID: 2009373777}
+  worldEconomy: {fileID: 1991110005}
 --- !u!1 &927664969
 GameObject:
   m_ObjectHideFlags: 0

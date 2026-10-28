@@ -7,8 +7,9 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// The one place through which the player builds: quotes a building in a city, builds it at a
-    /// place of the city's grid or lays the roads of a trace, pays from the treasury and, first, from the hold of the player's
-    /// ship docked in the city, announces it and tells the debug tools of each material bought.
+    /// place of the city's grid, lays the roads of a trace or builds the city's trading post, pays from the treasury
+    /// and, first, from the player's trading post in the city, then the hold of the player's ship docked there
+    /// (<see cref="MaterialsIn"/>), announces it and tells the debug tools of each material bought.
     /// The debug tools can make every building free (<see cref="SetFree"/>).
     /// </summary>
     public sealed class PlayerBuilder : MonoBehaviour
@@ -59,7 +60,7 @@ namespace DarkFantasyMerchant.Game
                 return default;
             }
 
-            return Construction.QuoteHouse(market, HoldIn(city), treasury, offer.Cost, IsFree);
+            return Construction.QuoteHouse(market, MaterialsIn(city), treasury, offer.Cost, IsFree);
         }
 
         /// <summary>What building a workshop in the city would cost now; impossible without a market, an offer with a cost or a treasury.</summary>
@@ -70,7 +71,7 @@ namespace DarkFantasyMerchant.Game
                 return default;
             }
 
-            return Construction.QuoteWorkshop(market, HoldIn(city), treasury, offer.Cost, offer.Good, IsFree);
+            return Construction.QuoteWorkshop(market, MaterialsIn(city), treasury, offer.Cost, offer.Good, IsFree);
         }
 
         /// <returns>True when the house was built at the place; nothing was paid otherwise.</returns>
@@ -82,7 +83,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             bool built = Construction.TryBuildHouse(
-                market, HoldIn(city), treasury, offer.Cost, offer.HousedClass, offer.Room, offer.Footprint, place,
+                market, MaterialsIn(city), treasury, offer.Cost, offer.HousedClass, offer.Room, offer.Footprint, place,
                 (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold), IsFree);
 
             if (built)
@@ -102,7 +103,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             bool built = Construction.TryBuildWorkshop(
-                market, HoldIn(city), treasury, offer.Cost, offer.Good, offer.Jobs, offer.Footprint, place,
+                market, MaterialsIn(city), treasury, offer.Cost, offer.Good, offer.Jobs, offer.Footprint, place,
                 (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold), IsFree);
 
             if (built)
@@ -124,7 +125,7 @@ namespace DarkFantasyMerchant.Game
                 return default;
             }
 
-            return Construction.QuoteRoadCell(market, HoldIn(city), treasury, offer.CostPerCell, IsFree);
+            return Construction.QuoteRoadCell(market, MaterialsIn(city), treasury, offer.CostPerCell, IsFree);
         }
 
         /// <summary>
@@ -138,7 +139,7 @@ namespace DarkFantasyMerchant.Game
                 return default;
             }
 
-            return Construction.QuoteRoads(market, HoldIn(city), treasury, offer.CostPerCell, cells, IsFree);
+            return Construction.QuoteRoads(market, MaterialsIn(city), treasury, offer.CostPerCell, cells, IsFree);
         }
 
         /// <summary>Lays the roads of a trace in the city, announced once for the whole trace.</summary>
@@ -152,18 +153,18 @@ namespace DarkFantasyMerchant.Game
 
             NotificationFeed feed = playerNotifications != null && playerNotifications.IsReady ? playerNotifications.Feed : null;
             return TryBuildRoads(
-                market, HoldIn(city), treasury, feed, city.DisplayName, offer, cells,
+                market, MaterialsIn(city), treasury, feed, city.DisplayName, offer, cells,
                 (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold), IsFree);
         }
 
         /// <summary>
         /// Lays the roads of a trace through <see cref="Construction.TryBuildRoads"/> and, when they are laid, posts
-        /// one notification for the trace to the feed (none when it is null). <paramref name="hold"/> may be null.
+        /// one notification for the trace to the feed (none when it is null). <paramref name="materials"/> may be null.
         /// </summary>
         /// <returns>True when they were laid; nothing was paid otherwise, nor an offer without a cost.</returns>
         internal static bool TryBuildRoads(
             CityMarket market,
-            CargoHold hold,
+            IGoodSource materials,
             Treasury treasury,
             NotificationFeed feed,
             string cityName,
@@ -173,12 +174,90 @@ namespace DarkFantasyMerchant.Game
             bool isFree)
         {
             if (offer?.CostPerCell == null
-                || !Construction.TryBuildRoads(market, hold, treasury, offer.CostPerCell, cells, materialBought, isFree))
+                || !Construction.TryBuildRoads(market, materials, treasury, offer.CostPerCell, cells, materialBought, isFree))
             {
                 return false;
             }
 
             feed?.Post(BuildingBuiltText(cityName, offer.Name));
+            return true;
+        }
+
+        /// <summary>
+        /// What building the city's trading post would cost now; impossible without a market, an offer with a cost or
+        /// a treasury, and once it stands.
+        /// </summary>
+        public ConstructionQuote QuoteTradingPost(CityDefinition city, TradingPostOffer offer)
+        {
+            if (!TryGetContext(city, out CityMarket market, out Treasury treasury))
+            {
+                return default;
+            }
+
+            return QuoteTradingPost(market, MaterialsIn(city), treasury, offer, IsFree);
+        }
+
+        /// <summary>Builds the city's trading post on its reserved site and opens it, empty.</summary>
+        /// <returns>True when it was built; nothing was paid otherwise.</returns>
+        public bool TryBuildTradingPost(CityDefinition city, TradingPostOffer offer)
+        {
+            if (!TryGetContext(city, out CityMarket market, out Treasury treasury))
+            {
+                return false;
+            }
+
+            NotificationFeed feed = playerNotifications != null && playerNotifications.IsReady ? playerNotifications.Feed : null;
+            return TryBuildTradingPost(
+                market, MaterialsIn(city), treasury, feed, city, worldEconomy.OpenTradingPost, offer,
+                (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold), IsFree);
+        }
+
+        /// <summary>Quotes the trading post through <see cref="Construction.QuoteTradingPost"/>; impossible for an offer without a cost.</summary>
+        internal static ConstructionQuote QuoteTradingPost(
+            CityMarket market, IGoodSource materials, Treasury treasury, TradingPostOffer offer, bool isFree)
+        {
+            return offer?.Cost == null ? default : Construction.QuoteTradingPost(market, materials, treasury, offer.Cost, isFree);
+        }
+
+        /// <summary>
+        /// Builds the trading post through <see cref="Construction.TryBuildTradingPost"/> and, when it stands, opens the
+        /// city's warehouse and posts the notification to the feed (none when it is null).
+        /// </summary>
+        /// <returns>True when it was built; nothing was paid otherwise, nor for an offer without a cost.</returns>
+        internal static bool TryBuildTradingPost(
+            CityMarket market,
+            IGoodSource materials,
+            Treasury treasury,
+            NotificationFeed feed,
+            CityDefinition city,
+            PlayerTradingPosts posts,
+            TradingPostOffer offer,
+            Action<int, int, long> materialBought,
+            bool isFree)
+        {
+            return TryBuildTradingPost(
+                market, materials, treasury, feed, city, builtIn => posts.Open(builtIn, market.Grid), offer, materialBought, isFree);
+        }
+
+        private static bool TryBuildTradingPost(
+            CityMarket market,
+            IGoodSource materials,
+            Treasury treasury,
+            NotificationFeed feed,
+            CityDefinition city,
+            Func<CityDefinition, Warehouse> open,
+            TradingPostOffer offer,
+            Action<int, int, long> materialBought,
+            bool isFree)
+        {
+            if (offer?.Cost == null
+                || !Construction.TryBuildTradingPost(market, materials, treasury, offer.Cost, materialBought, isFree))
+            {
+                return false;
+            }
+
+            open(city);
+            feed?.Post(BuildingBuiltText(city.DisplayName, offer.Name));
             return true;
         }
 
@@ -199,7 +278,22 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// The hold the materials come from first: that of the player's ship that trades in the city's
+        /// Where a building's materials come from in the city before the rest is bought: the player's trading post
+        /// there, then the hold of <see cref="HoldIn"/>; either may be missing.
+        /// </summary>
+        public IGoodSource MaterialsIn(CityDefinition city)
+        {
+            return MaterialsOf(worldEconomy != null ? worldEconomy.TradingPostOf(city) : null, HoldIn(city));
+        }
+
+        /// <summary>The trading post's warehouse, then the hold, as one source; either may be null.</summary>
+        internal static IGoodSource MaterialsOf(Warehouse tradingPost, CargoHold hold)
+        {
+            return new MaterialSources(tradingPost, hold);
+        }
+
+        /// <summary>
+        /// The hold the materials come from after the trading post's: that of the player's ship that trades in the city's
         /// port (the first by name), or null when none lies there: everything is then bought.
         /// </summary>
         public CargoHold HoldIn(CityDefinition city)

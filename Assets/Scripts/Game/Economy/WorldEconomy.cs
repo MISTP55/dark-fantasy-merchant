@@ -7,7 +7,7 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// Owns the market of every city of the map and makes the cities produce and consume,
-    /// and their populations grow or decline, every day of the world clock.
+    /// and their populations grow or decline, every day of the world clock. Owns the player's trading posts too.
     /// </summary>
     public sealed class WorldEconomy : MonoBehaviour
     {
@@ -21,6 +21,9 @@ namespace DarkFantasyMerchant.Game
         private readonly Dictionary<CityDefinition, Harbour> harbours = new Dictionary<CityDefinition, Harbour>();
 
         private GameClock clock;
+
+        // Made with the markets: none before then.
+        private PlayerTradingPosts tradingPosts;
 
         public EconomyDefinition Economy => economy;
 
@@ -42,6 +45,15 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         public IReadOnlyList<WorkshopOffer> WorkshopOffers { get; private set; }
 
+        /// <summary>The trading post the player can build in a city, on its reserved site; a null cost when it cannot be built.</summary>
+        public TradingPostOffer TradingPostOffer { get; private set; }
+
+        /// <summary>The warehouses of the player's trading posts, one per city that has one; none before the markets exist.</summary>
+        public IEnumerable<Warehouse> TradingPosts => tradingPosts != null ? tradingPosts.All : Array.Empty<Warehouse>();
+
+        /// <summary>Raised with the city once the player's trading post opens there, built or given.</summary>
+        public event Action<CityDefinition> TradingPostOpened;
+
         /// <summary>False until the markets exist, which is in Start, and for good when they could not be made.</summary>
         public bool IsReady { get; private set; }
 
@@ -58,6 +70,33 @@ namespace DarkFantasyMerchant.Game
         public CityGrid GridOf(CityDefinition city)
         {
             return city != null && grids.TryGetValue(city, out CityGrid grid) ? grid : null;
+        }
+
+        /// <returns>The warehouse of the player's trading post in a city, or null when the player has none there.</returns>
+        public Warehouse TradingPostOf(CityDefinition city)
+        {
+            return tradingPosts?.Of(city);
+        }
+
+        /// <summary>Opens the player's trading post in a city, empty, once it stands on the city's grid.</summary>
+        /// <exception cref="InvalidOperationException">
+        /// Before the markets exist, when the city already has one or its grid has no trading post.
+        /// </exception>
+        public Warehouse OpenTradingPost(CityDefinition city)
+        {
+            if (tradingPosts == null)
+            {
+                throw new InvalidOperationException("The markets do not exist yet.");
+            }
+
+            return tradingPosts.Open(city, GridOf(city));
+        }
+
+        /// <summary>Gives the player the city's trading post, for nothing: placed on its site and opened, empty.</summary>
+        /// <returns>False before the markets exist, for a city without a grid or whose site is taken; nothing was done then.</returns>
+        public bool TryGiveTradingPost(CityDefinition city)
+        {
+            return tradingPosts != null && tradingPosts.TryGive(city, GridOf(city));
         }
 
         /// <returns>
@@ -106,12 +145,14 @@ namespace DarkFantasyMerchant.Game
             HouseOffers = buildings.CreateHouseOffers(economy, WarnUnavailable);
             WorkshopOffers = buildings.CreateWorkshopOffers(economy, WarnUnavailable);
             RoadOffer = buildings.CreateRoadOffer(economy, WarnUnavailable);
+            TradingPostOffer = buildings.CreateTradingPostOffer(economy, WarnUnavailable);
 
             if (!TryCreateMarkets())
             {
                 markets.Clear();
                 grids.Clear();
                 harbours.Clear();
+                tradingPosts = null;
                 return;
             }
 
@@ -139,9 +180,11 @@ namespace DarkFantasyMerchant.Game
             {
                 MarketPricing pricing = economy.CreatePricing();
 
-                // Not used here, but holds and the AI merchants' planner need the units: an
+                // The trading posts, the holds and the AI merchants' planner need the units: an
                 // unusable setting leaves the cities without a market, as the others do.
-                economy.CreateGoodUnits();
+                GoodUnits units = economy.CreateGoodUnits();
+                tradingPosts = new PlayerTradingPosts(buildings.TradingPost.Capacity, units);
+                tradingPosts.Opened += city => TradingPostOpened?.Invoke(city);
                 int daysPerWeek = worldClock.Calendar.DaysPerWeek;
                 LabourRule labour = economy.CreateLabourRule();
 

@@ -100,6 +100,7 @@ paths:
 
 ## Building in the view
 
+- `PlayerBuilder` takes a building's materials first from the player's trading post in the city, then from the hold of `HoldIn`, then buys the rest (`MaterialsIn`, a `MaterialSources`): every quote and build goes through it. `QuoteTradingPost`/`TryBuildTradingPost` build the city's trading post on its reserved site from `WorldEconomy.TradingPostOffer`, then open its warehouse (`WorldEconomy.OpenTradingPost`) and announce it like any building.
 - `BuildBarController` (plain class over the view's document) shows the offers of `WorldEconomy.HouseOffers`/`WorkshopOffers`, the only offers that carry their footprint (one made elsewhere is 0 by 0, which `CityPlacementController` refuses), and in its "Routes" category the one `RoadOffer`, quoted for one cell (`PlayerBuilder.QuoteRoadCell`), its cost tip per cell. It quotes through `PlayerBuilder`, and refreshes on the market's, the treasury's and the hold's `Changed` and on `PlayerBuilder.FreeChanged` (the debug tools' free building, during which the cost tip says so), re-choosing the hold (`PlayerBuilder.HoldIn`) when a ship docks in or leaves the city; it is unbound when the view's controller is disabled.
 - The workshops category lists only the workshops of the goods the city produces (`MaxWorkersOf` above 0): one of another good could never be built there, so it is left out rather than disabled.
 - An offer's button is wrapped in an area that takes the pointer for it: a disabled button gets no pointer event, and its cost tip must still show.

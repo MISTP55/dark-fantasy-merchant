@@ -49,6 +49,28 @@ namespace DarkFantasyMerchant.Game
         public string CostText { get; }
     }
 
+    /// <summary>The trading post the player can build, one in each city, on its reserved site. A null cost: it cannot be built.</summary>
+    public sealed class TradingPostOffer
+    {
+        public TradingPostOffer(string name, BuildingCost cost, string costText, Footprint footprint)
+        {
+            Name = name;
+            Cost = cost;
+            CostText = costText;
+            Footprint = footprint;
+        }
+
+        public string Name { get; }
+
+        public BuildingCost Cost { get; }
+
+        /// <summary>"5 000 or, 20 bois", or "indisponible".</summary>
+        public string CostText { get; }
+
+        /// <summary>The cells the trading post covers, those of the site reserved for it.</summary>
+        public Footprint Footprint { get; }
+    }
+
     /// <summary>A workshop the player can build, as the city panel shows it. A null cost: it cannot be built.</summary>
     public sealed class WorkshopOffer
     {
