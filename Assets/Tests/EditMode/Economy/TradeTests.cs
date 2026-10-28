@@ -310,6 +310,20 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void Buy_IntoAWarehouse_IsLimitedByStockAndGoldOnly()
+        {
+            var warehouse = new Warehouse(5);
+
+            Assert.AreEqual(0, Trade.Buy(market, warehouse, new Treasury(0), Good, 10).Units);
+
+            TradeResult result = Trade.Buy(market, warehouse, treasury, Good, 100);
+
+            Assert.AreEqual(60, result.Units);
+            Assert.AreEqual(60, warehouse.UnitsOf(Good));
+            Assert.AreEqual(55, warehouse.Excess);
+        }
+
+        [Test]
         public void RejectsMissingArguments()
         {
             Assert.Throws<ArgumentNullException>(() => Trade.Buy(null, hold, treasury, Good, 1));

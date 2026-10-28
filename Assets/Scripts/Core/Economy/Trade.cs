@@ -25,7 +25,7 @@ namespace DarkFantasyMerchant.Core
         /// Buys up to <paramref name="units"/> units: as many as the city has, the
         /// hold has room for and the gold covers. A treasury in debt buys nothing.
         /// </summary>
-        public static TradeResult Buy(CityMarket market, CargoHold hold, Treasury treasury, int good, int units)
+        public static TradeResult Buy(CityMarket market, IGoodStore hold, Treasury treasury, int good, int units)
         {
             Require(market, hold, treasury, units);
 
@@ -62,7 +62,7 @@ namespace DarkFantasyMerchant.Core
         /// counted: as many as the city has and the hold has room for.
         /// </summary>
         /// <returns>The units bought and what they cost.</returns>
-        public static TradeResult Buy(CityMarket market, CargoHold hold, int good, int units)
+        public static TradeResult Buy(CityMarket market, IGoodStore hold, int good, int units)
         {
             Require(market, hold, units);
 
@@ -86,7 +86,7 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>Sells up to <paramref name="units"/> units: as many as are aboard.</summary>
-        public static TradeResult Sell(CityMarket market, CargoHold hold, Treasury treasury, int good, int units)
+        public static TradeResult Sell(CityMarket market, IGoodStore hold, Treasury treasury, int good, int units)
         {
             Require(market, hold, treasury, units);
 
@@ -105,7 +105,7 @@ namespace DarkFantasyMerchant.Core
         /// counted: as many as are aboard.
         /// </summary>
         /// <returns>The units sold and what they were paid.</returns>
-        public static TradeResult Sell(CityMarket market, CargoHold hold, int good, int units)
+        public static TradeResult Sell(CityMarket market, IGoodStore hold, int good, int units)
         {
             Require(market, hold, units);
 
@@ -128,7 +128,7 @@ namespace DarkFantasyMerchant.Core
             return new TradeResult(sold, gold);
         }
 
-        private static void Require(CityMarket market, CargoHold hold, Treasury treasury, int units)
+        private static void Require(CityMarket market, IGoodStore hold, Treasury treasury, int units)
         {
             Require(market, hold, units);
 
@@ -138,7 +138,7 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
-        private static void Require(CityMarket market, CargoHold hold, int units)
+        private static void Require(CityMarket market, IGoodStore hold, int units)
         {
             if (market == null)
             {

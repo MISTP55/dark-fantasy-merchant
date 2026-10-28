@@ -8,7 +8,7 @@ namespace DarkFantasyMerchant.Core
     /// catalogue and are counted in their own unit, a barrel or a bushel; the room they
     /// take is counted in barrels, a bushel taking several.
     /// </summary>
-    public sealed class CargoHold
+    public sealed class CargoHold : IGoodStore
     {
         // Units of each good, by index; grown when a good is first loaded.
         private readonly List<int> unitsByGood = new List<int>();
