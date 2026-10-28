@@ -161,6 +161,26 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void AnInputSharedByTwoGoods_BacksOnlyOneDebtAtATime()
+        {
+            // Made and Other each take one Input a unit, 0.5 and 0.6 a day; the post holds one Input, which both
+            // count on the first day.
+            var made = new MarketGood(10, 0, 1, 0.1, 0.05).WithInputs(new[] { new MarketInput(Input, 1) });
+            var other = new MarketGood(10, 0, 1, 0.1, 0.06).WithInputs(new[] { new MarketInput(Input, 1) });
+            CityMarket market = Market(new[] { made, Good(0.05), other });
+            Warehouse post = PostOf(market);
+            post.TryAdd(Input, 1);
+            market.AddPlayerWorkshop(Made, 10);
+            market.AddPlayerWorkshop(Other, 10);
+
+            Days(market, 30);
+
+            // One Input makes one unit at most, whatever the goods that share it.
+            Assert.AreEqual(1, post.UnitsOf(Made) + post.UnitsOf(Other) + post.UnitsOf(Input));
+            Assert.AreEqual(0, post.UnitsOf(Input));
+        }
+
+        [Test]
         public void AnInputMadeEarlier_ServesTheSameDay()
         {
             // 1 a day of each; Made takes one Input a unit.
