@@ -165,6 +165,33 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void TryBuildTradingPost_TakesFromThePostBeforeTheHold()
+        {
+            CityMarket market = PostMarket();
+            CityDefinition city = City("Riga");
+
+            try
+            {
+                var posts = new PlayerTradingPosts(2000, null);
+                var post = new Warehouse(2000);
+                post.TryAdd(0, 2);
+                var hold = new CargoHold(100);
+                hold.TryAdd(0, 2);
+
+                bool built = PlayerBuilder.TryBuildTradingPost(
+                    market, PlayerBuilder.MaterialsOf(post, hold), new Treasury(10000), null, city, posts, Post, null, false);
+
+                Assert.IsTrue(built);
+                Assert.AreEqual(0, post.UnitsOf(0));
+                Assert.AreEqual(1, hold.UnitsOf(0));
+            }
+            finally
+            {
+                Object.DestroyImmediate(city);
+            }
+        }
+
+        [Test]
         public void TryGiveTradingPost_PaysNothingAndStartsEmpty()
         {
             CityMarket market = PostMarket();
