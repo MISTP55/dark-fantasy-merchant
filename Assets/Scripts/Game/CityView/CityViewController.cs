@@ -70,6 +70,7 @@ namespace DarkFantasyMerchant.Game
             buildBar.HouseChosen += placement.StartPlacing;
             buildBar.WorkshopChosen += placement.StartPlacing;
             buildBar.RoadChosen += placement.StartPlacing;
+            buildBar.TradingPostChosen += placement.StartTradingPost;
             buildBar.Refreshed += placement.Refresh;
             placement.ClickedWithoutPlacing += SelectShipAt;
             isBound = true;
@@ -93,6 +94,7 @@ namespace DarkFantasyMerchant.Game
             buildBar.HouseChosen -= placement.StartPlacing;
             buildBar.WorkshopChosen -= placement.StartPlacing;
             buildBar.RoadChosen -= placement.StartPlacing;
+            buildBar.TradingPostChosen -= placement.StartTradingPost;
             buildBar.Refreshed -= placement.Refresh;
             placement.ClickedWithoutPlacing -= SelectShipAt;
             buildBar.Hide();

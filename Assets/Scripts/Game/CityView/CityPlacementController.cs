@@ -11,7 +11,9 @@ namespace DarkFantasyMerchant.Game
     /// or the player cannot pay for it, hidden over the UI and off the grid; R turns it, a click builds it through
     /// <see cref="PlayerBuilder"/> and keeps placing the same building, the right button stops. The road is traced
     /// instead: the left button pressed, dragged and released lays the L from the cell pressed to the cell released,
-    /// and keeps tracing. Placing also stops when <see cref="Refresh"/> finds what is placed cannot be paid for.
+    /// and keeps tracing. The trading post has one place, the site reserved for it: its cells are highlighted, its
+    /// ghost stands there, a click on one of them builds it and stops placing. Placing also stops when
+    /// <see cref="Refresh"/> finds what is placed cannot be paid for.
     /// </summary>
     public sealed class CityPlacementController : MonoBehaviour
     {
@@ -29,10 +31,11 @@ namespace DarkFantasyMerchant.Game
 
         private CityDefinition city;
 
-        // One of the three while placing, the others null.
+        // One of the four while placing, the others null.
         private HouseOffer house;
         private WorkshopOffer workshop;
         private RoadOffer road;
+        private TradingPostOffer tradingPost;
 
         private Vector2 lastPointer;
         private bool hasPointer;
@@ -134,6 +137,7 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
+            StopTradingPost();
             house = null;
             workshop = null;
             road = offer;
@@ -145,6 +149,32 @@ namespace DarkFantasyMerchant.Game
             {
                 Hover(lastPointer);
             }
+        }
+
+        /// <summary>
+        /// Starts placing the trading post on the city's reserved site, in place of what was being placed: the site's
+        /// cells are highlighted and the ghost stands on them. Nothing when the city has no site or its post stands.
+        /// </summary>
+        public void StartTradingPost(TradingPostOffer offer)
+        {
+            CityGrid grid = gridView.Grid;
+
+            if (offer == null || grid == null || !grid.CanPlaceTradingPost)
+            {
+                return;
+            }
+
+            // The site's footprint, which the offer's is; it never turns.
+            if (!TryStart(grid.TradingPostFootprint, offer.Name))
+            {
+                return;
+            }
+
+            house = null;
+            workshop = null;
+            tradingPost = offer;
+            gridView.ShowReservedCells(true);
+            ShowTradingPostGhost();
         }
 
         /// <summary>
@@ -160,6 +190,13 @@ namespace DarkFantasyMerchant.Game
             if (!cursor.IsPlacing)
             {
                 gridView.HideGhost();
+                return;
+            }
+
+            // Its ghost stays on its site, wherever the pointer is.
+            if (tradingPost != null)
+            {
+                ShowTradingPostGhost();
                 return;
             }
 
@@ -196,7 +233,10 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        /// <summary>Builds what is being placed at the cell under the screen position, and keeps placing it.</summary>
+        /// <summary>
+        /// Builds what is being placed at the cell under the screen position, and keeps placing it; the trading post,
+        /// on a cell of its site, is built there and placing stops.
+        /// </summary>
         /// <returns>True when it was built; nothing was paid otherwise, nor for the road, which is traced.</returns>
         public bool Click(Vector2 screenPosition)
         {
@@ -210,6 +250,18 @@ namespace DarkFantasyMerchant.Game
             if (builder == null)
             {
                 return false;
+            }
+
+            if (tradingPost != null)
+            {
+                if (!gridView.Grid.IsReserved(cell) || !builder.TryBuildTradingPost(city, tradingPost))
+                {
+                    return false;
+                }
+
+                // There is one per city: nothing is left to place.
+                Cancel();
+                return true;
             }
 
             GridPlace place = cursor.PlaceAt(cell);
@@ -277,9 +329,17 @@ namespace DarkFantasyMerchant.Game
             return built;
         }
 
-        /// <summary>Turns what is being placed; nothing for a square footprint, the road, or when not placing.</summary>
+        /// <summary>
+        /// Turns what is being placed; nothing for a square footprint, the road, the trading post, which lies as its
+        /// site does, or when not placing.
+        /// </summary>
         public void Rotate()
         {
+            if (tradingPost != null)
+            {
+                return;
+            }
+
             cursor.Rotate();
 
             if (cursor.IsPlacing && hasPointer)
@@ -295,6 +355,7 @@ namespace DarkFantasyMerchant.Game
             house = null;
             workshop = null;
             road = null;
+            StopTradingPost();
             isTracing = false;
 
             if (input != null)
@@ -337,6 +398,40 @@ namespace DarkFantasyMerchant.Game
             if (hasPointer)
             {
                 Hover(lastPointer);
+            }
+        }
+
+        // Green where the player can pay for it, red otherwise: it has one place, always free while it is placed.
+        private void ShowTradingPostGhost()
+        {
+            CityGrid grid = gridView.Grid;
+
+            if (grid == null || grid.TradingPostSite == null)
+            {
+                gridView.HideGhost();
+                return;
+            }
+
+            GridPlace site = grid.TradingPostSite.Value;
+            gridView.ShowGhost(
+                site.Origin,
+                grid.TradingPostFootprint.SizeFor(site.Orientation),
+                CanPay() ? GhostState.Connected : GhostState.Impossible);
+        }
+
+        // The site's cells lose their highlight.
+        private void StopTradingPost()
+        {
+            if (tradingPost == null)
+            {
+                return;
+            }
+
+            tradingPost = null;
+
+            if (gridView != null)
+            {
+                gridView.ShowReservedCells(false);
             }
         }
 
@@ -398,6 +493,7 @@ namespace DarkFantasyMerchant.Game
             ConstructionQuote quote = house != null ? builder.QuoteHouse(city, house)
                 : workshop != null ? builder.QuoteWorkshop(city, workshop)
                 : road != null ? builder.QuoteRoadCell(city, road)
+                : tradingPost != null ? builder.QuoteTradingPost(city, tradingPost)
                 : default;
             return quote.IsPossible;
         }
@@ -417,6 +513,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             road = null;
+            StopTradingPost();
             isTracing = false;
             input.TracesWithLeftButton = false;
             cursor.Start(footprint);

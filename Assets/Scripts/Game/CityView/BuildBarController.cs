@@ -7,18 +7,23 @@ using UnityEngine.UIElements;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The build bar of the city view, over its document: three categories at the bottom (houses, workshops, roads),
-    /// and above them the offers of the chosen one in the alphabetical order of their names, each with what it would
-    /// cost now, the road for one cell. Only the workshops of the goods the city produces are offered; an offer that
-    /// cannot be built now is disabled. The pointer over an offer, enabled or not, shows its full cost in a tip.
-    /// Follows the market, the treasury, the hold the materials come from and the debug tools' free building while it
-    /// is shown, never every frame.
+    /// The build bar of the city view, over its document: four categories at the bottom (houses, workshops, roads,
+    /// trading post), and above them the offers of the chosen one in the alphabetical order of their names, each with
+    /// what it would cost now, the road for one cell. Only the workshops of the goods the city produces are offered; an
+    /// offer that cannot be built now is disabled, the trading post once it stands. The pointer over an offer, enabled
+    /// or not, shows its full cost in a tip, or that the trading post stands. Follows the market, the treasury, the
+    /// player's trading post and the hold the materials come from, the opening of that trading post and the debug
+    /// tools' free building while it is shown, never every frame.
     /// </summary>
     public sealed class BuildBarController
     {
         public const string HousesText = "Maisons";
         public const string WorkshopsText = "Ateliers";
         public const string RoadsText = "Routes";
+        public const string TradingPostText = "Comptoir";
+
+        /// <summary>The trading post's tip once it stands in the city.</summary>
+        public const string TradingPostBuiltText = "Votre comptoir est déjà construit dans cette ville.";
 
         /// <summary>The cost tip while the debug tools make every building free.</summary>
         public const string FreeText = "Gratuit (débogage)";
@@ -36,27 +41,32 @@ namespace DarkFantasyMerchant.Game
             Houses,
             Workshops,
             Roads,
+            TradingPost,
         }
 
         private sealed class Offer
         {
-            // One of the three, the others null.
+            // One of the four, the others null.
             public HouseOffer House;
             public WorkshopOffer Workshop;
             public RoadOffer Road;
+            public TradingPostOffer TradingPost;
             public Button Button;
 
-            public string Name => House != null ? House.Name : Workshop != null ? Workshop.Name : Road.Name;
+            public string Name => House != null ? House.Name : Workshop != null ? Workshop.Name
+                : Road != null ? Road.Name : TradingPost.Name;
 
             public string CostText => House != null ? House.CostText
                 : Workshop != null ? Workshop.CostText
-                : PerCellText(Road.CostText);
+                : Road != null ? PerCellText(Road.CostText)
+                : TradingPost.CostText;
         }
 
         private readonly VisualElement offerContainer;
         private readonly Button housesButton;
         private readonly Button workshopsButton;
         private readonly Button roadsButton;
+        private readonly Button tradingPostButton;
         private readonly Label costTip;
         private readonly List<Offer> offers = new List<Offer>();
 
@@ -70,6 +80,15 @@ namespace DarkFantasyMerchant.Game
         private IReadOnlyList<HouseOffer> houseOffers;
         private IReadOnlyList<WorkshopOffer> workshopOffers;
         private RoadOffer roadOffer;
+        private TradingPostOffer tradingPostOffer;
+
+        // The city's grid, which tells whether its trading post stands, and that trading post's warehouse, whose goods
+        // pay for materials; either may be null.
+        private CityGrid grid;
+        private Warehouse tradingPost;
+
+        // Followed for the opening of the city's trading post; null when shown without a world.
+        private WorldEconomy worldEconomy;
 
         /// <param name="root">The city view's document root, which holds the bar's elements.</param>
         /// <exception cref="ArgumentException">An element of the bar is missing.</exception>
@@ -84,9 +103,11 @@ namespace DarkFantasyMerchant.Game
             housesButton = root.Q<Button>("houses-button");
             workshopsButton = root.Q<Button>("workshops-button");
             roadsButton = root.Q<Button>("roads-button");
+            tradingPostButton = root.Q<Button>("category-trading-post");
             costTip = root.Q<Label>("build-cost-tip");
 
-            if (offerContainer == null || housesButton == null || workshopsButton == null || roadsButton == null || costTip == null)
+            if (offerContainer == null || housesButton == null || workshopsButton == null || roadsButton == null
+                || tradingPostButton == null || costTip == null)
             {
                 throw new ArgumentException("CityView.uxml is missing an element of the build bar.", nameof(root));
             }
@@ -94,14 +115,17 @@ namespace DarkFantasyMerchant.Game
             housesButton.text = HousesText;
             workshopsButton.text = WorkshopsText;
             roadsButton.text = RoadsText;
+            tradingPostButton.text = TradingPostText;
 
             // Clicked, not navigated.
             housesButton.focusable = false;
             workshopsButton.focusable = false;
             roadsButton.focusable = false;
+            tradingPostButton.focusable = false;
             housesButton.clicked += () => Choose(Category.Houses);
             workshopsButton.clicked += () => Choose(Category.Workshops);
             roadsButton.clicked += () => Choose(Category.Roads);
+            tradingPostButton.clicked += () => Choose(Category.TradingPost);
 
             // The grid under the tip stays reachable.
             costTip.pickingMode = PickingMode.Ignore;
@@ -116,6 +140,9 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>Raised when the player picks the road to trace.</summary>
         public event Action<RoadOffer> RoadChosen;
+
+        /// <summary>Raised when the player picks the trading post to place on its site.</summary>
+        public event Action<TradingPostOffer> TradingPostChosen;
 
         /// <summary>
         /// Raised each time the bar quotes its offers again, while it follows a city, whether a category is open
@@ -155,12 +182,23 @@ namespace DarkFantasyMerchant.Game
                 services.ShipsView != null ? services.ShipsView.Docking : null,
                 economy.HouseOffers,
                 economy.WorkshopOffers,
-                economy.RoadOffer);
+                economy.RoadOffer,
+                economy.TradingPostOffer,
+                economy.GridOf(shownCity),
+                economy.TradingPostOf(shownCity));
+
+            // A trading post built while the view is open opens its warehouse once it stands.
+            if (city != null)
+            {
+                worldEconomy = economy;
+                worldEconomy.TradingPostOpened += OnTradingPostOpened;
+            }
         }
 
         /// <summary>
         /// Shows the offers given, quoted through the builder, in place of those shown; no category is open. The
-        /// market, the treasury and the docking are followed when not null.
+        /// market, the treasury, the docking and the city's trading post (<paramref name="shownTradingPost"/>, its
+        /// warehouse) are followed when not null; the grid tells whether the trading post stands.
         /// </summary>
         internal void Show(
             CityDefinition shownCity,
@@ -170,7 +208,10 @@ namespace DarkFantasyMerchant.Game
             ShipDocking<CityDefinition> shownDocking,
             IReadOnlyList<HouseOffer> shownHouseOffers,
             IReadOnlyList<WorkshopOffer> shownWorkshopOffers,
-            RoadOffer shownRoadOffer)
+            RoadOffer shownRoadOffer,
+            TradingPostOffer shownTradingPostOffer,
+            CityGrid shownGrid,
+            Warehouse shownTradingPost)
         {
             Hide();
 
@@ -185,6 +226,8 @@ namespace DarkFantasyMerchant.Game
             houseOffers = shownHouseOffers;
             workshopOffers = shownWorkshopOffers;
             roadOffer = shownRoadOffer;
+            tradingPostOffer = shownTradingPostOffer;
+            grid = shownGrid;
             treasury = shownTreasury;
             docking = shownDocking;
 
@@ -199,6 +242,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             builder.FreeChanged += Refresh;
+            SetTradingPost(shownTradingPost);
 
             if (docking != null)
             {
@@ -227,6 +271,11 @@ namespace DarkFantasyMerchant.Game
                 builder.FreeChanged -= Refresh;
             }
 
+            if (worldEconomy != null)
+            {
+                worldEconomy.TradingPostOpened -= OnTradingPostOpened;
+            }
+
             if (docking != null)
             {
                 docking.Docked -= OnDockingChanged;
@@ -234,6 +283,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             SetHold(null);
+            SetTradingPost(null);
             city = null;
             builder = null;
             market = null;
@@ -242,6 +292,9 @@ namespace DarkFantasyMerchant.Game
             houseOffers = null;
             workshopOffers = null;
             roadOffer = null;
+            tradingPostOffer = null;
+            grid = null;
+            worldEconomy = null;
             ShowCategory(Category.None);
         }
 
@@ -257,6 +310,7 @@ namespace DarkFantasyMerchant.Game
             housesButton.EnableInClassList(ChosenCategoryClass, category == Category.Houses);
             workshopsButton.EnableInClassList(ChosenCategoryClass, category == Category.Workshops);
             roadsButton.EnableInClassList(ChosenCategoryClass, category == Category.Roads);
+            tradingPostButton.EnableInClassList(ChosenCategoryClass, category == Category.TradingPost);
 
             HideCostTip();
             offerContainer.Clear();
@@ -283,6 +337,10 @@ namespace DarkFantasyMerchant.Game
             else if (category == Category.Roads && roadOffer != null)
             {
                 offers.Add(new Offer { Road = roadOffer });
+            }
+            else if (category == Category.TradingPost && tradingPostOffer != null)
+            {
+                offers.Add(new Offer { TradingPost = tradingPostOffer });
             }
 
             NameOrder.Sort(offers, offer => offer.Name);
@@ -323,9 +381,13 @@ namespace DarkFantasyMerchant.Game
             {
                 WorkshopChosen?.Invoke(offer.Workshop);
             }
-            else
+            else if (offer.Road != null)
             {
                 RoadChosen?.Invoke(offer.Road);
+            }
+            else
+            {
+                TradingPostChosen?.Invoke(offer.TradingPost);
             }
         }
 
@@ -355,7 +417,9 @@ namespace DarkFantasyMerchant.Game
 
         private string CostTipOf(Offer offer)
         {
-            return builder != null && builder.IsFree ? FreeText : offer.CostText;
+            return offer.TradingPost != null && TradingPostStands ? TradingPostBuiltText
+                : builder != null && builder.IsFree ? FreeText
+                : offer.CostText;
         }
 
         private void HideCostTip()
@@ -398,6 +462,39 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
+        private bool TradingPostStands => grid != null && grid.TradingPost != null;
+
+        // Its goods pay for materials: what the offers cost changes with them.
+        private void SetTradingPost(Warehouse chosen)
+        {
+            if (tradingPost == chosen)
+            {
+                return;
+            }
+
+            if (tradingPost != null)
+            {
+                tradingPost.Changed -= Refresh;
+            }
+
+            tradingPost = chosen;
+
+            if (tradingPost != null)
+            {
+                tradingPost.Changed += Refresh;
+            }
+        }
+
+        // The city's trading post now stands and has its warehouse.
+        private void OnTradingPostOpened(CityDefinition opened)
+        {
+            if (opened == city && worldEconomy != null)
+            {
+                SetTradingPost(worldEconomy.TradingPostOf(city));
+                Refresh();
+            }
+        }
+
         private void OnGoldChanged(long gold)
         {
             Refresh();
@@ -416,11 +513,13 @@ namespace DarkFantasyMerchant.Game
             {
                 ConstructionQuote quote = offer.House != null ? builder.QuoteHouse(city, offer.House)
                     : offer.Workshop != null ? builder.QuoteWorkshop(city, offer.Workshop)
-                    : builder.QuoteRoadCell(city, offer.Road);
+                    : offer.Road != null ? builder.QuoteRoadCell(city, offer.Road)
+                    : builder.QuoteTradingPost(city, offer.TradingPost);
 
                 // An impossible quote's gold means nothing: the offer shows its name alone.
                 offer.Button.text = quote.IsPossible ? OfferText(offer.Name, quote.Gold) : offer.Name;
-                offer.Button.SetEnabled(quote.IsPossible);
+                // A trading post that stands cannot be quoted either; its tip says why.
+                offer.Button.SetEnabled(quote.IsPossible && (offer.TradingPost == null || !TradingPostStands));
             }
 
             Refreshed?.Invoke();

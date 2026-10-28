@@ -7,8 +7,8 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// Draws a city's grid: its ground in one mesh (<see cref="GroundMesh"/>: a diamond per cell, tinted free,
     /// forbidden or road), and a placeholder block per other building, a house tinted by the class it shelters
-    /// (<see cref="HouseColors"/>, as in the layout window), a workshop in the workshop colour, the town hall and the walls in their own, a wall
-    /// by the walls beside it (<see cref="WallShapes"/>). A building whose definition has a view
+    /// (<see cref="HouseColors"/>, as in the layout window), a workshop in the workshop colour, the town hall, the
+    /// player's trading post and the walls in their own, a wall by the walls beside it (<see cref="WallShapes"/>). A building whose definition has a view
     /// sprite is drawn with it instead, untinted, mirrored in the orientation the sprite does not show. A house or
     /// workshop that is not connected is darkened until it is. A building placed while the grid is shown is drawn
     /// then; nothing is redrawn every frame, a road's cell being tinted on the ground at the end of the frame it is
@@ -67,6 +67,9 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private Color townHallColor = new Color32(0xC9, 0xA2, 0x27, 0xFF);
         [SerializeField] private Color portColor = new Color32(0xB0, 0x7A, 0x48, 0xFF);
         [SerializeField] private Color wallColor = new Color32(0x3A, 0x3A, 0x3A, 0xFF);
+        [SerializeField] private Color tradingPostColor = new Color32(0x2E, 0x8B, 0x82, 0xFF);
+        [Tooltip("The ground of the trading post site while the player places the trading post.")]
+        [SerializeField] private Color reservedColor = new Color32(0x6F, 0xC2, 0xB8, 0xFF);
         [SerializeField] private Color roadColor = new Color32(0x8A, 0x7B, 0x62, 0xFF);
         [Tooltip("A house or workshop that is not connected is drawn with its colour times this on red, green and blue.")]
         [SerializeField, Range(0.1f, 1f)] private float inactiveShade = 0.45f;
@@ -87,6 +90,9 @@ namespace DarkFantasyMerchant.Game
         // The buildings drawn with their definition's view sprite rather than a block: they are not tinted.
         private readonly HashSet<SpriteRenderer> viewSpriteRenderers = new HashSet<SpriteRenderer>();
         private readonly List<SpriteRenderer> roadGhostRenderers = new List<SpriteRenderer>();
+
+        // The colours of the reserved cells before they were highlighted, by cell; empty when they are not.
+        private readonly Dictionary<Vector2Int, Color> unhighlightedColors = new Dictionary<Vector2Int, Color>();
 
         private CityGrid grid;
         private BuildingsDefinition buildings;
@@ -237,6 +243,42 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
+        /// <summary>
+        /// Highlights the cells of the trading post site on the ground, or gives them back the colour they had; nothing
+        /// for a grid without a site.
+        /// </summary>
+        public void ShowReservedCells(bool shown)
+        {
+            if (ground == null || grid == null || grid.TradingPostSite == null || shown == unhighlightedColors.Count > 0)
+            {
+                return;
+            }
+
+            if (!shown)
+            {
+                foreach (KeyValuePair<Vector2Int, Color> cell in unhighlightedColors)
+                {
+                    ground.SetColor(cell.Key, cell.Value);
+                }
+
+                unhighlightedColors.Clear();
+                return;
+            }
+
+            GridPlace site = grid.TradingPostSite.Value;
+            Vector2Int size = grid.TradingPostFootprint.SizeFor(site.Orientation);
+
+            for (int y = site.Origin.y; y < site.Origin.y + size.y; y++)
+            {
+                for (int x = site.Origin.x; x < site.Origin.x + size.x; x++)
+                {
+                    var cell = new Vector2Int(x, y);
+                    unhighlightedColors[cell] = ground.ColorOf(cell);
+                    ground.SetColor(cell, reservedColor);
+                }
+            }
+        }
+
         public void HideGhost()
         {
             if (ghostRenderer != null)
@@ -352,6 +394,7 @@ namespace DarkFantasyMerchant.Game
             shadedRenderers.Clear();
             viewSpriteRenderers.Clear();
             roadGhostRenderers.Clear();
+            unhighlightedColors.Clear();
             drawOrder.Clear();
             DestroyGround();
 
@@ -383,7 +426,8 @@ namespace DarkFantasyMerchant.Game
 
             Vector2Int size = building.Size;
             string kindName = building.Kind.IsHouse ? "House" : building.Kind.IsWorkshop ? "Workshop"
-                : building.Kind.IsPort ? "Port" : building.Kind.IsWall ? "Wall" : "Town hall";
+                : building.Kind.IsPort ? "Port" : building.Kind.IsWall ? "Wall"
+                : building.Kind.IsTradingPost ? "Trading post" : "Town hall";
 
             // The port's placeholder shows its facing; a view sprite, which has only two orientations, is not used for it.
             BuildingDefinition definition = buildings != null && !building.Kind.IsPort ? buildings.DefinitionOf(building.Kind, economy) : null;
@@ -452,6 +496,12 @@ namespace DarkFantasyMerchant.Game
             if (building.Kind.IsWall)
             {
                 return isViewSprite ? Color.white : wallColor;
+            }
+
+            // Like the port, never connected: never darkened.
+            if (building.Kind.IsTradingPost)
+            {
+                return isViewSprite ? Color.white : tradingPostColor;
             }
 
             Color color = isViewSprite ? Color.white

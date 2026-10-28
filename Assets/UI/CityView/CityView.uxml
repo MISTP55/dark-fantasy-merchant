@@ -10,6 +10,7 @@
             <ui:Button name="houses-button" class="build-bar__category" />
             <ui:Button name="workshops-button" class="build-bar__category" />
             <ui:Button name="roads-button" class="build-bar__category" />
+            <ui:Button name="category-trading-post" class="build-bar__category" />
         </ui:VisualElement>
     </ui:VisualElement>
     <ui:Label name="build-cost-tip" picking-mode="Ignore" class="build-bar__cost-tip" />
