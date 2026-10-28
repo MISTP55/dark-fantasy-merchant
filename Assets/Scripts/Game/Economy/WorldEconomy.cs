@@ -48,10 +48,10 @@ namespace DarkFantasyMerchant.Game
         /// <summary>The trading post the player can build in a city, on its reserved site; a null cost when it cannot be built.</summary>
         public TradingPostOffer TradingPostOffer { get; private set; }
 
-        /// <summary>The warehouses of the player's trading posts, one per city that has one; none before the markets exist.</summary>
         /// <summary>The market of every city of the map, in no particular order; none before the markets exist.</summary>
         public IEnumerable<CityMarket> Markets => markets.Values;
 
+        /// <summary>The warehouses of the player's trading posts, one per city that has one; none before the markets exist.</summary>
         public IEnumerable<Warehouse> TradingPosts => tradingPosts != null ? tradingPosts.All : Array.Empty<Warehouse>();
 
         /// <summary>Raised with the city once the player's trading post opens there, built or given.</summary>

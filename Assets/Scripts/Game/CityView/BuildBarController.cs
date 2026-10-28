@@ -28,7 +28,7 @@ namespace DarkFantasyMerchant.Game
         /// <summary>A workshop's tip in a city where the player has no trading post.</summary>
         public const string WorkshopNeedsTradingPostText = "Il faut un comptoir dans cette ville pour y construire un atelier.";
 
-                /// <summary>The cost tip while the debug tools make every building free.</summary>
+        /// <summary>The cost tip while the debug tools make every building free.</summary>
         public const string FreeText = "Gratuit (débogage)";
 
         private const string OfferClass = "build-bar__offer";
