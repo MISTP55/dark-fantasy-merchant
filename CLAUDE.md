@@ -4,7 +4,7 @@ Dark Fantasy Merchant is a maritime trade management and simulation game, for PC
 
 ## Project state
 
-Unity **6000.6.4f1** project. What exists: the world map, the player's ship with its crew, ports, the date and fast forward, the treasury and weekly wages, the player's home city (where the player ship starts and the game opens, in its city view), notifications, the cities' economy (stocks, workshops, prices, population, buildings), trade, the AI merchants, the city view (a city's grid of buildings, its water, its town hall, its walls, its port, its roads and the ships crossing its harbour, opened from the city panel) and the in-game debug tools. Nothing else of the game exists yet.
+Unity **6000.6.4f1** project. What exists: the world map, the player's ship with its crew, ports, the date and fast forward, the treasury and weekly wages, the player's home city (where the player ship starts and the game opens, in its city view), notifications, the cities' economy (stocks, workshops, prices, population, buildings), trade, the player's trading posts (one per city, on a reserved site of its grid, with its inventory, the transfers between it and a ship, and the weekly rent above its capacity), the AI merchants, the city view (a city's grid of buildings, its water, its town hall, its walls, its port, its roads and the ships crossing its harbour, opened from the city panel) and the in-game debug tools. Nothing else of the game exists yet.
 
 ## Maintaining this file
 
