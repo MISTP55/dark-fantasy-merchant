@@ -1101,6 +1101,10 @@ MonoBehaviour:
   - {x: 61, y: 66}
   - {x: 17, y: 67}
   - {x: 61, y: 67}
+  hasTradingPostSite: 1
+  tradingPostSite:
+    origin: {x: 38, y: 47}
+    orientation: 1
   hasPort: 1
   port:
     origin: {x: 38, y: 67}
@@ -1117,107 +1121,94 @@ MonoBehaviour:
   - {x: 36, y: 68}
   - {x: 43, y: 68}
   roads:
-  - {x: 38, y: 52}
-  - {x: 38, y: 53}
-  - {x: 38, y: 54}
-  - {x: 38, y: 55}
-  - {x: 38, y: 56}
-  - {x: 38, y: 57}
-  - {x: 38, y: 58}
-  - {x: 38, y: 59}
-  - {x: 38, y: 60}
-  - {x: 38, y: 61}
-  - {x: 37, y: 61}
-  - {x: 39, y: 61}
-  - {x: 40, y: 61}
-  - {x: 40, y: 62}
-  - {x: 37, y: 60}
+  - {x: 37, y: 51}
+  - {x: 36, y: 51}
+  - {x: 35, y: 51}
+  - {x: 35, y: 52}
+  - {x: 35, y: 53}
+  - {x: 35, y: 54}
+  - {x: 35, y: 55}
+  - {x: 35, y: 56}
+  - {x: 34, y: 56}
+  - {x: 33, y: 56}
+  - {x: 36, y: 56}
+  - {x: 36, y: 57}
+  - {x: 36, y: 58}
+  - {x: 36, y: 59}
   - {x: 36, y: 60}
-  - {x: 35, y: 60}
-  - {x: 34, y: 60}
-  - {x: 34, y: 61}
-  - {x: 34, y: 62}
-  - {x: 33, y: 62}
-  - {x: 32, y: 62}
-  - {x: 31, y: 62}
-  - {x: 30, y: 62}
-  - {x: 29, y: 62}
-  - {x: 28, y: 62}
-  - {x: 27, y: 62}
-  - {x: 26, y: 62}
-  - {x: 25, y: 62}
-  - {x: 38, y: 49}
-  - {x: 37, y: 49}
-  - {x: 36, y: 49}
-  - {x: 35, y: 49}
-  - {x: 34, y: 49}
-  - {x: 33, y: 49}
-  - {x: 32, y: 49}
-  - {x: 32, y: 48}
-  - {x: 32, y: 47}
-  - {x: 32, y: 46}
-  - {x: 32, y: 45}
-  - {x: 33, y: 45}
-  - {x: 33, y: 44}
-  - {x: 33, y: 43}
+  - {x: 36, y: 61}
+  - {x: 37, y: 61}
+  - {x: 40, y: 49}
+  - {x: 41, y: 49}
+  - {x: 41, y: 48}
+  - {x: 41, y: 47}
+  - {x: 41, y: 46}
+  - {x: 41, y: 45}
+  - {x: 41, y: 44}
+  - {x: 41, y: 43}
+  - {x: 41, y: 42}
+  - {x: 40, y: 42}
+  - {x: 39, y: 42}
+  - {x: 38, y: 42}
+  - {x: 37, y: 42}
+  - {x: 36, y: 42}
+  - {x: 35, y: 42}
+  - {x: 34, y: 42}
   - {x: 33, y: 42}
+  - {x: 32, y: 42}
   - {x: 33, y: 41}
   - {x: 33, y: 40}
   - {x: 33, y: 39}
   - {x: 33, y: 38}
   - {x: 33, y: 37}
   - {x: 33, y: 36}
-  - {x: 32, y: 36}
-  - {x: 31, y: 36}
-  - {x: 30, y: 36}
-  - {x: 29, y: 36}
-  - {x: 29, y: 35}
-  - {x: 29, y: 34}
+  - {x: 33, y: 35}
+  - {x: 33, y: 34}
+  - {x: 33, y: 33}
+  - {x: 32, y: 33}
+  - {x: 31, y: 33}
+  - {x: 30, y: 33}
   - {x: 29, y: 33}
-  - {x: 28, y: 34}
-  - {x: 27, y: 34}
-  - {x: 34, y: 40}
-  - {x: 35, y: 40}
-  - {x: 36, y: 40}
-  - {x: 37, y: 40}
-  - {x: 38, y: 40}
-  - {x: 39, y: 40}
-  - {x: 40, y: 40}
-  - {x: 41, y: 40}
-  - {x: 27, y: 35}
-  - {x: 26, y: 35}
-  - {x: 25, y: 35}
-  - {x: 24, y: 35}
-  - {x: 23, y: 35}
-  - {x: 22, y: 35}
+  - {x: 28, y: 33}
+  - {x: 27, y: 33}
+  - {x: 26, y: 33}
+  - {x: 34, y: 33}
+  - {x: 35, y: 33}
+  - {x: 35, y: 32}
+  - {x: 35, y: 31}
+  - {x: 36, y: 31}
+  - {x: 37, y: 31}
+  - {x: 38, y: 31}
+  - {x: 39, y: 31}
+  - {x: 40, y: 31}
+  - {x: 26, y: 34}
+  - {x: 25, y: 34}
+  - {x: 24, y: 34}
+  - {x: 23, y: 34}
+  - {x: 22, y: 34}
+  - {x: 21, y: 34}
   - {x: 21, y: 35}
   - {x: 21, y: 36}
   - {x: 21, y: 37}
   - {x: 21, y: 38}
   - {x: 21, y: 39}
-  - {x: 41, y: 62}
-  - {x: 41, y: 63}
-  - {x: 41, y: 64}
-  - {x: 41, y: 65}
-  - {x: 41, y: 66}
-  - {x: 42, y: 66}
-  - {x: 42, y: 67}
-  - {x: 43, y: 67}
-  - {x: 44, y: 67}
-  - {x: 45, y: 67}
-  - {x: 46, y: 67}
-  - {x: 47, y: 67}
-  - {x: 48, y: 67}
-  - {x: 49, y: 67}
-  - {x: 50, y: 67}
-  - {x: 51, y: 67}
-  - {x: 52, y: 67}
-  - {x: 53, y: 67}
-  - {x: 54, y: 67}
-  - {x: 41, y: 41}
-  - {x: 41, y: 42}
-  - {x: 41, y: 43}
-  - {x: 41, y: 44}
+  - {x: 35, y: 61}
+  - {x: 34, y: 61}
+  - {x: 33, y: 61}
+  - {x: 32, y: 61}
+  - {x: 31, y: 61}
+  - {x: 30, y: 61}
+  - {x: 29, y: 61}
+  - {x: 28, y: 61}
+  - {x: 27, y: 61}
+  - {x: 26, y: 61}
+  - {x: 25, y: 61}
+  - {x: 24, y: 61}
+  - {x: 27, y: 62}
+  - {x: 27, y: 63}
+  - {x: 27, y: 64}
+  - {x: 27, y: 65}
+  - {x: 27, y: 66}
   - {x: 42, y: 44}
   - {x: 43, y: 44}
   - {x: 44, y: 44}
@@ -1234,43 +1225,54 @@ MonoBehaviour:
   - {x: 55, y: 44}
   - {x: 56, y: 44}
   - {x: 57, y: 44}
+  - {x: 56, y: 43}
+  - {x: 56, y: 42}
+  - {x: 56, y: 41}
+  - {x: 56, y: 40}
+  - {x: 56, y: 39}
+  - {x: 56, y: 38}
+  - {x: 56, y: 37}
+  - {x: 56, y: 36}
+  - {x: 56, y: 35}
+  - {x: 56, y: 34}
+  - {x: 56, y: 33}
   startingHouses:
   - socialClass: 0
-    origin: {x: 25, y: 34}
-    orientation: 0
+    origin: {x: 25, y: 32}
+    orientation: 1
   - socialClass: 0
-    origin: {x: 23, y: 62}
-    orientation: 0
+    origin: {x: 23, y: 61}
+    orientation: 1
   - socialClass: 0
-    origin: {x: 33, y: 60}
+    origin: {x: 33, y: 57}
     orientation: 1
   - socialClass: 1
-    origin: {x: 35, y: 61}
+    origin: {x: 35, y: 57}
+    orientation: 1
+  - socialClass: 1
+    origin: {x: 33, y: 32}
     orientation: 0
   - socialClass: 1
-    origin: {x: 33, y: 35}
-    orientation: 0
-  - socialClass: 1
-    origin: {x: 31, y: 44}
-    orientation: 0
+    origin: {x: 31, y: 41}
+    orientation: 1
   - socialClass: 1
     origin: {x: 58, y: 44}
     orientation: 1
   - socialClass: 1
-    origin: {x: 38, y: 62}
-    orientation: 0
-  - socialClass: 2
-    origin: {x: 28, y: 32}
-    orientation: 0
-  - socialClass: 2
-    origin: {x: 55, y: 67}
-    orientation: 0
-  - socialClass: 2
-    origin: {x: 42, y: 40}
-    orientation: 0
-  - socialClass: 2
-    origin: {x: 40, y: 63}
+    origin: {x: 38, y: 61}
     orientation: 1
+  - socialClass: 2
+    origin: {x: 27, y: 67}
+    orientation: 0
+  - socialClass: 2
+    origin: {x: 56, y: 31}
+    orientation: 1
+  - socialClass: 2
+    origin: {x: 42, y: 43}
+    orientation: 0
+  - socialClass: 2
+    origin: {x: 41, y: 31}
+    orientation: 0
   - socialClass: 2
     origin: {x: 20, y: 40}
     orientation: 0

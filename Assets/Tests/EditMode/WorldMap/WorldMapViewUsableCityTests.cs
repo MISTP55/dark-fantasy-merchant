@@ -40,7 +40,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return instance;
         }
 
-        // A 12 by 12 grid: water on its three top rows, walls on the rest of its edge, the town hall and the port inside.
+        // A 12 by 12 grid: water on its three top rows, walls on the rest of its edge, the town hall, the trading post
+        // site and the port inside.
         private void GiveLayout(params Vector2Int[] berths)
         {
             var water = new List<Vector2Int>();
@@ -63,7 +64,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             layout.SetContent(
                 12, 12, water, new CityLayoutDefinition.StartingHouse[0],
                 new GridPlace(new Vector2Int(8, 1), BuildingOrientation.Along), new Vector2Int[0],
-                new PortSite(new Vector2Int(1, 8), PortFacing.North), berths, walls);
+                new PortSite(new Vector2Int(1, 8), PortFacing.North), berths, walls,
+                new GridPlace(new Vector2Int(8, 6), BuildingOrientation.Along));
 
             var serialized = new SerializedObject(city);
             serialized.FindProperty("layout").objectReferenceValue = layout;

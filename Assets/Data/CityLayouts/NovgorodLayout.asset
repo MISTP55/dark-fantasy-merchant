@@ -1103,6 +1103,10 @@ MonoBehaviour:
   - {x: 59, y: 51}
   - {x: 60, y: 51}
   - {x: 61, y: 51}
+  hasTradingPostSite: 1
+  tradingPostSite:
+    origin: {x: 38, y: 25}
+    orientation: 1
   hasPort: 1
   port:
     origin: {x: 38, y: 10}
@@ -1119,114 +1123,115 @@ MonoBehaviour:
   - {x: 38, y: 8}
   - {x: 39, y: 8}
   roads:
-  - {x: 41, y: 28}
-  - {x: 41, y: 27}
-  - {x: 41, y: 26}
-  - {x: 42, y: 26}
-  - {x: 38, y: 27}
-  - {x: 37, y: 27}
-  - {x: 37, y: 26}
-  - {x: 37, y: 25}
-  - {x: 38, y: 25}
-  - {x: 38, y: 24}
-  - {x: 38, y: 23}
-  - {x: 38, y: 22}
-  - {x: 38, y: 21}
-  - {x: 37, y: 21}
-  - {x: 37, y: 20}
-  - {x: 37, y: 19}
-  - {x: 37, y: 18}
-  - {x: 42, y: 27}
-  - {x: 43, y: 27}
-  - {x: 44, y: 27}
-  - {x: 44, y: 26}
-  - {x: 45, y: 26}
-  - {x: 46, y: 26}
-  - {x: 47, y: 26}
-  - {x: 48, y: 26}
-  - {x: 48, y: 27}
+  - {x: 41, y: 29}
+  - {x: 42, y: 29}
+  - {x: 42, y: 30}
+  - {x: 42, y: 31}
+  - {x: 42, y: 28}
+  - {x: 43, y: 28}
+  - {x: 44, y: 28}
+  - {x: 45, y: 28}
+  - {x: 46, y: 28}
+  - {x: 47, y: 28}
   - {x: 48, y: 28}
-  - {x: 49, y: 28}
-  - {x: 50, y: 28}
-  - {x: 51, y: 28}
-  - {x: 52, y: 28}
-  - {x: 52, y: 29}
+  - {x: 48, y: 29}
+  - {x: 48, y: 30}
+  - {x: 49, y: 30}
+  - {x: 50, y: 30}
+  - {x: 51, y: 30}
   - {x: 52, y: 30}
-  - {x: 36, y: 18}
-  - {x: 35, y: 18}
-  - {x: 34, y: 18}
-  - {x: 33, y: 18}
-  - {x: 32, y: 18}
-  - {x: 31, y: 18}
-  - {x: 30, y: 18}
-  - {x: 29, y: 18}
-  - {x: 30, y: 17}
-  - {x: 30, y: 16}
+  - {x: 52, y: 31}
+  - {x: 52, y: 32}
+  - {x: 46, y: 27}
+  - {x: 46, y: 26}
   - {x: 46, y: 25}
   - {x: 46, y: 24}
   - {x: 46, y: 23}
   - {x: 46, y: 22}
   - {x: 46, y: 21}
   - {x: 46, y: 20}
-  - {x: 46, y: 19}
-  - {x: 46, y: 18}
-  - {x: 46, y: 17}
-  - {x: 49, y: 29}
-  - {x: 49, y: 30}
-  - {x: 49, y: 31}
-  - {x: 49, y: 32}
-  - {x: 49, y: 33}
-  - {x: 49, y: 34}
-  - {x: 49, y: 35}
-  - {x: 49, y: 36}
-  - {x: 49, y: 37}
-  - {x: 49, y: 38}
-  - {x: 49, y: 39}
-  - {x: 50, y: 39}
-  - {x: 51, y: 39}
-  - {x: 52, y: 39}
-  - {x: 53, y: 39}
+  - {x: 45, y: 20}
+  - {x: 44, y: 20}
+  - {x: 43, y: 20}
+  - {x: 42, y: 20}
+  - {x: 41, y: 20}
+  - {x: 40, y: 20}
+  - {x: 39, y: 20}
+  - {x: 38, y: 20}
+  - {x: 38, y: 19}
+  - {x: 38, y: 18}
+  - {x: 37, y: 18}
+  - {x: 37, y: 17}
+  - {x: 37, y: 16}
+  - {x: 37, y: 15}
+  - {x: 37, y: 14}
+  - {x: 36, y: 14}
+  - {x: 35, y: 14}
+  - {x: 34, y: 14}
+  - {x: 33, y: 14}
+  - {x: 32, y: 14}
+  - {x: 31, y: 14}
+  - {x: 30, y: 14}
+  - {x: 30, y: 15}
+  - {x: 30, y: 16}
+  - {x: 29, y: 16}
+  - {x: 53, y: 32}
+  - {x: 54, y: 32}
+  - {x: 54, y: 33}
+  - {x: 54, y: 34}
+  - {x: 54, y: 35}
+  - {x: 54, y: 36}
+  - {x: 54, y: 37}
+  - {x: 54, y: 38}
   - {x: 54, y: 39}
   - {x: 55, y: 39}
   - {x: 56, y: 39}
   - {x: 57, y: 39}
+  - {x: 53, y: 39}
+  - {x: 52, y: 39}
+  - {x: 51, y: 39}
+  - {x: 50, y: 39}
+  - {x: 50, y: 40}
+  - {x: 50, y: 41}
+  - {x: 50, y: 42}
+  - {x: 50, y: 43}
   startingHouses:
   - socialClass: 0
-    origin: {x: 49, y: 26}
+    origin: {x: 49, y: 28}
+    orientation: 1
+  - socialClass: 0
+    origin: {x: 42, y: 32}
     orientation: 0
   - socialClass: 0
-    origin: {x: 42, y: 28}
-    orientation: 0
-  - socialClass: 0
-    origin: {x: 53, y: 28}
-    orientation: 0
-  - socialClass: 1
-    origin: {x: 38, y: 20}
-    orientation: 0
-  - socialClass: 1
-    origin: {x: 43, y: 25}
+    origin: {x: 53, y: 29}
     orientation: 1
   - socialClass: 1
-    origin: {x: 46, y: 15}
+    origin: {x: 38, y: 17}
+    orientation: 0
+  - socialClass: 1
+    origin: {x: 43, y: 29}
+    orientation: 0
+  - socialClass: 1
+    origin: {x: 46, y: 18}
     orientation: 1
   - socialClass: 1
-    origin: {x: 28, y: 17}
-    orientation: 0
+    origin: {x: 28, y: 15}
+    orientation: 1
   - socialClass: 1
     origin: {x: 58, y: 39}
     orientation: 1
   - socialClass: 2
-    origin: {x: 52, y: 31}
+    origin: {x: 52, y: 33}
     orientation: 0
   - socialClass: 2
-    origin: {x: 49, y: 40}
+    origin: {x: 49, y: 44}
+    orientation: 0
+  - socialClass: 2
+    origin: {x: 29, y: 14}
     orientation: 1
   - socialClass: 2
-    origin: {x: 29, y: 15}
+    origin: {x: 36, y: 20}
     orientation: 0
   - socialClass: 2
-    origin: {x: 36, y: 24}
-    orientation: 0
-  - socialClass: 2
-    origin: {x: 37, y: 16}
+    origin: {x: 37, y: 12}
     orientation: 1

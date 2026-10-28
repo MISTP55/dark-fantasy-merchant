@@ -51,6 +51,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         // A water cell on the top edge, beside the port, which ships reach from the edge.
         private static readonly Vector2Int[] Berths = { new Vector2Int(6, 10) };
 
+        // The 2 by 3 trading post site covers x 8..9, y 6..8, inside the walls, away from the houses and water of the tests.
+        private static readonly GridPlace Site = new GridPlace(new Vector2Int(8, 6), BuildingOrientation.Along);
+
         private static IEnumerable<Vector2Int> WithWater(IEnumerable<Vector2Int> cells)
         {
             var all = new List<Vector2Int>(cells);
@@ -88,13 +91,22 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return walls;
         }
 
-        // The layout's content, its edge walled.
+        // The layout's content, its edge walled, its trading post site at Site.
         private void Set(
             int width, int height, IEnumerable<Vector2Int> water, IEnumerable<CityLayoutDefinition.StartingHouse> houses,
             GridPlace? townHall, IEnumerable<Vector2Int> roads, PortSite? port, IEnumerable<Vector2Int> berths)
         {
+            SetWithSite(width, height, water, houses, townHall, roads, port, berths, Site);
+        }
+
+        private void SetWithSite(
+            int width, int height, IEnumerable<Vector2Int> water, IEnumerable<CityLayoutDefinition.StartingHouse> houses,
+            GridPlace? townHall, IEnumerable<Vector2Int> roads, PortSite? port, IEnumerable<Vector2Int> berths,
+            GridPlace? site)
+        {
             var waterCells = new List<Vector2Int>(water);
-            layout.SetContent(width, height, waterCells, houses, townHall, roads, port, berths, EdgeWalls(width, height, waterCells));
+            layout.SetContent(
+                width, height, waterCells, houses, townHall, roads, port, berths, EdgeWalls(width, height, waterCells), site);
         }
 
         [Test]
@@ -332,7 +344,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void NoWalls_IsUnusable()
         {
-            layout.SetContent(12, 12, WithWater(new Vector2Int[0]), NoHouses, TownHall, new Vector2Int[0], Port, Berths, new Vector2Int[0]);
+            layout.SetContent(12, 12, WithWater(new Vector2Int[0]), NoHouses, TownHall, new Vector2Int[0], Port, Berths, new Vector2Int[0], Site);
 
             Assert.IsFalse(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem));
             Assert.IsNull(grid);
@@ -358,7 +370,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             // The port on x 4..7, inside, a berth beside it.
             layout.SetContent(12, 12, water, new[] { House(SocialClass.Poor, 1, 4, BuildingOrientation.Across) }, TownHall,
-                new Vector2Int[0], new PortSite(new Vector2Int(4, 8), PortFacing.North), new[] { new Vector2Int(9, 10) }, walls);
+                new Vector2Int[0], new PortSite(new Vector2Int(4, 8), PortFacing.North), new[] { new Vector2Int(9, 10) }, walls, Site);
 
             Assert.IsFalse(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem));
             Assert.IsNull(grid);
@@ -370,13 +382,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var walls = EdgeWalls(12, 12, WithWater(new Vector2Int[0]));
             walls.Add(new Vector2Int(9, 2));
-            layout.SetContent(12, 12, WithWater(new Vector2Int[0]), NoHouses, TownHall, new Vector2Int[0], Port, Berths, walls);
+            layout.SetContent(12, 12, WithWater(new Vector2Int[0]), NoHouses, TownHall, new Vector2Int[0], Port, Berths, walls, Site);
 
             Assert.IsFalse(layout.TryCreateGrid(buildings, out _, out string problem));
             StringAssert.Contains("wall at (9, 2) cannot stand", problem);
 
             walls[walls.Count - 1] = new Vector2Int(12, 3);
-            layout.SetContent(12, 12, WithWater(new Vector2Int[0]), NoHouses, TownHall, new Vector2Int[0], Port, Berths, walls);
+            layout.SetContent(12, 12, WithWater(new Vector2Int[0]), NoHouses, TownHall, new Vector2Int[0], Port, Berths, walls, Site);
 
             Assert.IsFalse(layout.TryCreateGrid(buildings, out _, out problem));
             StringAssert.Contains("wall at (12, 3) cannot stand", problem);
@@ -414,6 +426,93 @@ namespace DarkFantasyMerchant.Tests.EditMode
             copy.SetContent(grid);
 
             CollectionAssert.AreEqual(new[] { new Vector2Int(6, 10), new Vector2Int(7, 9) }, copy.Berths);
+            Assert.IsTrue(copy.TryCreateGrid(buildings, out _, out problem), problem);
+        }
+
+        [Test]
+        public void TryCreateGrid_FailsWithoutATradingPostSite()
+        {
+            SetWithSite(12, 12, WithWater(new Vector2Int[0]), NoHouses, TownHall, new Vector2Int[0], Port, Berths, null);
+
+            Assert.IsFalse(layout.HasTradingPostSite);
+            Assert.IsFalse(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem));
+            Assert.IsNull(grid);
+            StringAssert.Contains("no trading post site", problem);
+        }
+
+        [Test]
+        public void TryCreateGrid_FailsWhenTheSiteIsOnWaterOrABuilding()
+        {
+            // On the water's first row, then on the town hall, then on a wall.
+            foreach (Vector2Int origin in new[] { new Vector2Int(6, 7), new Vector2Int(8, 1), new Vector2Int(0, 3) })
+            {
+                SetWithSite(12, 12, WithWater(new Vector2Int[0]), NoHouses, TownHall, new Vector2Int[0], Port, Berths,
+                    new GridPlace(origin, BuildingOrientation.Along));
+
+                Assert.IsFalse(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem), origin.ToString());
+                Assert.IsNull(grid);
+                StringAssert.Contains($"the trading post site at ({origin.x}, {origin.y}) cannot stand", problem);
+            }
+        }
+
+        [Test]
+        public void TryCreateGrid_FailsWhenTheSiteIsOutsideTheWalls()
+        {
+            // Walls on x 3 and on y 0 between it and the edge leave the column of x 1..2 outside.
+            var walls = new List<Vector2Int>();
+            for (int y = 0; y < 9; y++)
+            {
+                walls.Add(new Vector2Int(3, y));
+                walls.Add(new Vector2Int(11, y));
+            }
+
+            for (int x = 4; x < 11; x++)
+            {
+                walls.Add(new Vector2Int(x, 0));
+            }
+
+            layout.SetContent(12, 12, WithWater(new Vector2Int[0]), NoHouses, TownHall, new Vector2Int[0],
+                new PortSite(new Vector2Int(4, 8), PortFacing.North), new[] { new Vector2Int(9, 10) }, walls,
+                new GridPlace(new Vector2Int(1, 2), BuildingOrientation.Along));
+
+            Assert.IsFalse(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem));
+            Assert.IsNull(grid);
+            StringAssert.Contains("the trading post site at (1, 2) is outside its walls", problem);
+        }
+
+        [Test]
+        public void TryCreateGrid_ReservesTheSite()
+        {
+            Set(12, 12, WithWater(new Vector2Int[0]), NoHouses, TownHall, new Vector2Int[0], Port, Berths);
+
+            Assert.IsTrue(layout.HasTradingPostSite);
+            Assert.AreEqual(Site, layout.TradingPostSite);
+            Assert.IsTrue(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem), problem);
+            Assert.AreEqual(Site, grid.TradingPostSite);
+            Assert.AreEqual(buildings.TradingPost.Footprint, grid.TradingPostFootprint);
+            for (int y = 6; y < 9; y++)
+            {
+                for (int x = 8; x < 10; x++)
+                {
+                    Assert.IsTrue(grid.IsReserved(new Vector2Int(x, y)), $"({x}, {y})");
+                }
+            }
+
+            Assert.IsFalse(grid.IsReserved(new Vector2Int(10, 6)));
+            Assert.IsNull(grid.TradingPost);
+        }
+
+        [Test]
+        public void SetContent_FromAGrid_KeepsItsTradingPostSite()
+        {
+            Set(12, 12, WithWater(new Vector2Int[0]), NoHouses, TownHall, new Vector2Int[0], Port, Berths);
+            Assert.IsTrue(layout.TryCreateGrid(buildings, out CityGrid grid, out string problem), problem);
+
+            var copy = Track(ScriptableObject.CreateInstance<CityLayoutDefinition>());
+            copy.SetContent(grid);
+
+            Assert.IsTrue(copy.HasTradingPostSite);
+            Assert.AreEqual(Site, copy.TradingPostSite);
             Assert.IsTrue(copy.TryCreateGrid(buildings, out _, out problem), problem);
         }
     }

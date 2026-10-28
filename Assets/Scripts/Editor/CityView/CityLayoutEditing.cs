@@ -369,7 +369,7 @@ namespace DarkFantasyMerchant.Editor
         /// <summary>
         /// A whole city grid of the size, from nothing: water along the side of the sea (where the mask's water lies
         /// around the city on the map; south without a mask), the port on that shore, the town hall inland of the port,
-        /// walls around it (<see cref="GeneratedWallSide"/>), then just the houses the city's starting population needs, drawn around the town hall with the seed and
+        /// walls around it (<see cref="GeneratedWallSide"/>), the trading post site inside them near the town hall, then just the houses the city's starting population needs, drawn around the town hall with the seed and
         /// connected by roads (<see cref="StartingLayout.TryBuild"/>). They are connected by sides, whatever the
         /// catalogue's contact, so that the layout works under either.
         /// </summary>
@@ -392,7 +392,7 @@ namespace DarkFantasyMerchant.Editor
 
             return StartingLayout.TryBuild(
                 width, height, shore, GeneratedWaterRows, GeneratedTownHallDistance, GeneratedHouseArea, GeneratedWallSide,
-                PortFootprintOf(buildings), GeneratedBerths, buildings.TownHall.Footprint,
+                PortFootprintOf(buildings), GeneratedBerths, buildings.TownHall.Footprint, buildings.TradingPost.Footprint,
                 houses, footprints, RoadContact.SidesOnly, new System.Random(seed),
                 out grid, out problem);
         }

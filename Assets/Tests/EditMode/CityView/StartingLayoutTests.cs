@@ -10,13 +10,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
     {
         private static readonly PortFootprint Port = new PortFootprint(new Footprint(4, 3), 2);
         private static readonly Footprint TownHall = new Footprint(3, 2);
+        private static readonly Footprint TradingPost = new Footprint(2, 3);
         private static readonly PerClass<Footprint> Houses = new PerClass<Footprint>(new Footprint(2, 1), new Footprint(2, 1), new Footprint(2, 1));
 
         private static bool TryBuild(
             PortFacing shore, PerClass<int> houses, out CityGrid grid, out string problem, int size = 40, int wallSide = 25)
         {
             return StartingLayout.TryBuild(
-                size, size, shore, 4, 6, 20, wallSide, Port, 10, TownHall, houses, Houses, RoadContact.SidesOnly,
+                size, size, shore, 4, 6, 20, wallSide, Port, 10, TownHall, TradingPost, houses, Houses, RoadContact.SidesOnly,
                 new System.Random(3), out grid, out problem);
         }
 
@@ -147,6 +148,30 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.IsTrue(grid.TryValidateWalls(out string wallProblem), wallProblem);
             Assert.IsTrue(grid.KeepsInsideWalls);
+        }
+
+        [TestCase(PortFacing.North)]
+        [TestCase(PortFacing.East)]
+        [TestCase(PortFacing.South)]
+        [TestCase(PortFacing.West)]
+        public void TryBuild_ReservesASiteInsideTheWallsThatNoHouseOrRoadCovers(PortFacing shore)
+        {
+            Assert.IsTrue(TryBuild(shore, new PerClass<int>(2, 3, 5), out CityGrid grid, out string problem), problem);
+
+            Assert.IsNotNull(grid.TradingPostSite);
+            Assert.AreEqual(TradingPost, grid.TradingPostFootprint);
+            GridPlace site = grid.TradingPostSite.Value;
+            Vector2Int size = TradingPost.SizeFor(site.Orientation);
+            for (int y = site.Origin.y; y < site.Origin.y + size.y; y++)
+            {
+                for (int x = site.Origin.x; x < site.Origin.x + size.x; x++)
+                {
+                    var cell = new Vector2Int(x, y);
+                    Assert.IsTrue(grid.IsEnclosed(cell), cell.ToString());
+                    Assert.IsTrue(grid.IsReserved(cell), cell.ToString());
+                    Assert.IsNull(grid.BuildingAt(cell), cell.ToString());
+                }
+            }
         }
 
         [Test]

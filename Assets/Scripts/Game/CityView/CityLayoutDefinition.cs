@@ -6,7 +6,8 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The grid of one city: its size, its water, its town hall, its walls, its port, its roads and the houses it starts with.
+    /// The grid of one city: its size, its water, its town hall, its walls, its trading post site, its port, its roads
+    /// and the houses it starts with.
     /// Holds no runtime state: <see cref="TryCreateGrid"/> makes the grid the market works on.
     /// </summary>
     [CreateAssetMenu(fileName = "CityLayout", menuName = "Dark Fantasy Merchant/City layout")]
@@ -45,6 +46,16 @@ namespace DarkFantasyMerchant.Game
             public BuildingOrientation orientation;
         }
 
+        /// <summary>Where the site reserved for the player's trading post lies.</summary>
+        [Serializable]
+        public struct TradingPostSiteData
+        {
+            [Tooltip("The covered cell of smallest x and y.")]
+            public Vector2Int origin;
+
+            public BuildingOrientation orientation;
+        }
+
         /// <summary>Where the city's port stands and which side its water rows are on.</summary>
         [Serializable]
         public struct PortSiteData
@@ -75,6 +86,11 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("The walls, one cell each, inside the grid and on land: with the water they close in every other building.")]
         [SerializeField] private List<Vector2Int> walls = new List<Vector2Int>();
 
+        [SerializeField] private bool hasTradingPostSite;
+
+        [Tooltip("The site reserved for the player's trading post, with the footprint of the catalogue's. Used only when the layout has one.")]
+        [SerializeField] private TradingPostSiteData tradingPostSite;
+
         [SerializeField] private bool hasPort;
 
         [Tooltip("Where the port stands, with the footprint of the catalogue's. Used only when the layout has one.")]
@@ -102,6 +118,11 @@ namespace DarkFantasyMerchant.Game
         /// <summary>Where the town hall stands; meaningful only when <see cref="HasTownHall"/>.</summary>
         public GridPlace TownHallPlace => new GridPlace(townHall.origin, townHall.orientation);
 
+        public bool HasTradingPostSite => hasTradingPostSite;
+
+        /// <summary>Where the trading post site lies; meaningful only when <see cref="HasTradingPostSite"/>.</summary>
+        public GridPlace TradingPostSite => new GridPlace(tradingPostSite.origin, tradingPostSite.orientation);
+
         public bool HasPort => hasPort;
 
         /// <summary>Where the port stands; meaningful only when <see cref="HasPort"/>.</summary>
@@ -114,12 +135,12 @@ namespace DarkFantasyMerchant.Game
         public IReadOnlyList<Vector2Int> Walls => walls;
 
         /// <summary>
-        /// The grid with the town hall, then the walls, then the port, then the berths, then the roads, then the starting
-        /// houses placed as the city's, with the footprints of the catalogue's buildings, which
+        /// The grid with the town hall, then the walls, then the trading post site reserved, then the port, then the
+        /// berths, then the roads, then the starting houses placed as the city's, with the footprints of the catalogue's buildings, which
         /// <see cref="BuildingsDefinition.TryValidate"/> accepts. The grid returned keeps inside its walls
         /// (<see cref="CityGrid.KeepsInsideWalls"/>).
         /// </summary>
-        /// <param name="problem">What is wrong, for the logs: a size under 1, a water cell outside, no town hall or no port, a town hall, a wall, a port, a berth, a road or a house that cannot stand, walls that do not close or a building outside them, no berth or a port or berth ships cannot reach; null when nothing is.</param>
+        /// <param name="problem">What is wrong, for the logs: a size under 1, a water cell outside, no town hall, no trading post site or no port, a town hall, a wall, a trading post site, a port, a berth, a road or a house that cannot stand, walls that do not close or a building or the trading post site outside them, no berth or a port or berth ships cannot reach; null when nothing is.</param>
         public bool TryCreateGrid(BuildingsDefinition buildings, out CityGrid grid, out string problem)
         {
             grid = null;
@@ -182,6 +203,29 @@ namespace DarkFantasyMerchant.Game
 
                 created.Place(BuildingKind.Wall(), BuildingOwner.City, new Footprint(1, 1), wallPlace);
             }
+
+            if (!hasTradingPostSite)
+            {
+                problem = "it has no trading post site";
+                return false;
+            }
+
+            TradingPostDefinition post = buildings.TradingPost;
+
+            if (post == null || post.FootprintSize.x < 1 || post.FootprintSize.y < 1)
+            {
+                problem = "the buildings have no trading post with a footprint";
+                return false;
+            }
+
+            // The walls stand but the grid does not keep inside them yet: a site outside is TryValidateWalls's problem.
+            if (!created.CanReserveTradingPostSite(post.Footprint, TradingPostSite))
+            {
+                problem = $"the trading post site at ({tradingPostSite.origin.x}, {tradingPostSite.origin.y}) cannot stand: it is outside the grid or on a forbidden cell or a building";
+                return false;
+            }
+
+            created.ReserveTradingPostSite(post.Footprint, TradingPostSite);
 
             if (!hasPort)
             {
@@ -262,7 +306,7 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>
         /// Editor and setup only: replaces the whole content by the grid's: its size, its water, its town hall, its
-        /// walls, its port, its berths, its roads and its houses.
+        /// walls, its trading post site, its port, its berths, its roads and its houses.
         /// </summary>
         public void SetContent(CityGrid grid)
         {
@@ -309,7 +353,7 @@ namespace DarkFantasyMerchant.Game
                 }
             }
 
-            SetContent(grid.Width, grid.Height, water, houses, hall, roadCells, portSite, grid.Berths, wallCells);
+            SetContent(grid.Width, grid.Height, water, houses, hall, roadCells, portSite, grid.Berths, wallCells, grid.TradingPostSite);
         }
 
         /// <summary>Editor and setup only: replaces the whole content.</summary>
@@ -317,11 +361,16 @@ namespace DarkFantasyMerchant.Game
         /// <param name="port">Where the port stands; null for a layout without one.</param>
         /// <param name="berths">The water cells where ships dock.</param>
         /// <param name="walls">The walls' cells; null for a layout without walls.</param>
+        /// <param name="tradingPostSite">Where the trading post site lies; null for a layout without one.</param>
         public void SetContent(
             int width, int height, IEnumerable<Vector2Int> forbidden, IEnumerable<StartingHouse> houses,
             GridPlace? townHall, IEnumerable<Vector2Int> roads, PortSite? port, IEnumerable<Vector2Int> berths,
-            IEnumerable<Vector2Int> walls = null)
+            IEnumerable<Vector2Int> walls = null, GridPlace? tradingPostSite = null)
         {
+            hasTradingPostSite = tradingPostSite.HasValue;
+            this.tradingPostSite = tradingPostSite.HasValue
+                ? new TradingPostSiteData { origin = tradingPostSite.Value.Origin, orientation = tradingPostSite.Value.Orientation }
+                : default;
             this.walls = walls != null ? new List<Vector2Int>(walls) : new List<Vector2Int>();
             this.width = width;
             this.height = height;

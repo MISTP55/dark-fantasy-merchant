@@ -1103,6 +1103,10 @@ MonoBehaviour:
   - {x: 59, y: 51}
   - {x: 60, y: 51}
   - {x: 61, y: 51}
+  hasTradingPostSite: 1
+  tradingPostSite:
+    origin: {x: 38, y: 25}
+    orientation: 1
   hasPort: 1
   port:
     origin: {x: 38, y: 10}
@@ -1119,39 +1123,43 @@ MonoBehaviour:
   - {x: 38, y: 8}
   - {x: 39, y: 8}
   roads:
-  - {x: 40, y: 27}
-  - {x: 41, y: 27}
-  - {x: 40, y: 30}
-  - {x: 40, y: 31}
-  - {x: 40, y: 32}
-  - {x: 41, y: 26}
-  - {x: 41, y: 25}
-  - {x: 41, y: 24}
-  - {x: 42, y: 24}
+  - {x: 41, y: 29}
+  - {x: 41, y: 30}
+  - {x: 41, y: 28}
+  - {x: 42, y: 28}
+  - {x: 43, y: 28}
+  - {x: 43, y: 27}
+  - {x: 43, y: 26}
+  - {x: 43, y: 25}
   - {x: 43, y: 24}
   - {x: 43, y: 23}
   - {x: 43, y: 22}
-  - {x: 43, y: 21}
-  - {x: 43, y: 20}
-  - {x: 43, y: 19}
-  - {x: 43, y: 18}
-  - {x: 44, y: 18}
-  - {x: 44, y: 17}
-  - {x: 44, y: 16}
-  - {x: 44, y: 23}
-  - {x: 45, y: 23}
-  - {x: 46, y: 23}
-  - {x: 47, y: 23}
-  - {x: 48, y: 23}
-  - {x: 49, y: 23}
-  - {x: 50, y: 23}
-  - {x: 51, y: 23}
-  - {x: 52, y: 23}
-  - {x: 53, y: 23}
+  - {x: 44, y: 22}
+  - {x: 44, y: 21}
+  - {x: 44, y: 20}
+  - {x: 44, y: 19}
+  - {x: 40, y: 30}
+  - {x: 40, y: 31}
+  - {x: 40, y: 32}
+  - {x: 40, y: 33}
+  - {x: 40, y: 34}
+  - {x: 40, y: 35}
+  - {x: 40, y: 36}
+  - {x: 44, y: 24}
+  - {x: 45, y: 24}
+  - {x: 46, y: 24}
+  - {x: 47, y: 24}
+  - {x: 48, y: 24}
+  - {x: 49, y: 24}
+  - {x: 50, y: 24}
+  - {x: 51, y: 24}
+  - {x: 52, y: 24}
   - {x: 53, y: 24}
   - {x: 53, y: 25}
-  - {x: 54, y: 25}
-  - {x: 55, y: 25}
+  - {x: 53, y: 26}
+  - {x: 54, y: 26}
+  - {x: 55, y: 26}
+  - {x: 53, y: 23}
   - {x: 53, y: 22}
   - {x: 53, y: 21}
   - {x: 53, y: 20}
@@ -1163,7 +1171,38 @@ MonoBehaviour:
   - {x: 55, y: 16}
   - {x: 56, y: 16}
   - {x: 57, y: 16}
-  - {x: 53, y: 26}
+  - {x: 39, y: 36}
+  - {x: 38, y: 36}
+  - {x: 37, y: 36}
+  - {x: 36, y: 36}
+  - {x: 35, y: 36}
+  - {x: 34, y: 36}
+  - {x: 33, y: 36}
+  - {x: 33, y: 37}
+  - {x: 33, y: 38}
+  - {x: 33, y: 39}
+  - {x: 33, y: 40}
+  - {x: 33, y: 41}
+  - {x: 33, y: 42}
+  - {x: 32, y: 42}
+  - {x: 31, y: 42}
+  - {x: 30, y: 42}
+  - {x: 29, y: 42}
+  - {x: 28, y: 42}
+  - {x: 27, y: 42}
+  - {x: 26, y: 42}
+  - {x: 25, y: 42}
+  - {x: 24, y: 42}
+  - {x: 23, y: 42}
+  - {x: 22, y: 42}
+  - {x: 22, y: 43}
+  - {x: 22, y: 41}
+  - {x: 22, y: 40}
+  - {x: 22, y: 39}
+  - {x: 22, y: 38}
+  - {x: 22, y: 37}
+  - {x: 22, y: 36}
+  - {x: 22, y: 35}
   - {x: 53, y: 27}
   - {x: 53, y: 28}
   - {x: 53, y: 29}
@@ -1179,87 +1218,53 @@ MonoBehaviour:
   - {x: 53, y: 39}
   - {x: 53, y: 40}
   - {x: 53, y: 41}
-  - {x: 52, y: 41}
-  - {x: 51, y: 41}
-  - {x: 50, y: 41}
-  - {x: 49, y: 41}
-  - {x: 48, y: 41}
+  - {x: 53, y: 42}
+  - {x: 52, y: 42}
+  - {x: 51, y: 42}
+  - {x: 50, y: 42}
+  - {x: 49, y: 42}
   - {x: 48, y: 42}
   - {x: 48, y: 43}
   - {x: 48, y: 44}
-  - {x: 47, y: 44}
-  - {x: 46, y: 44}
-  - {x: 45, y: 44}
-  - {x: 44, y: 44}
-  - {x: 43, y: 44}
-  - {x: 42, y: 44}
-  - {x: 41, y: 44}
-  - {x: 40, y: 44}
-  - {x: 39, y: 44}
-  - {x: 38, y: 44}
-  - {x: 37, y: 44}
-  - {x: 36, y: 44}
-  - {x: 35, y: 44}
-  - {x: 34, y: 44}
-  - {x: 33, y: 44}
-  - {x: 33, y: 45}
-  - {x: 32, y: 45}
-  - {x: 31, y: 45}
-  - {x: 30, y: 45}
-  - {x: 29, y: 45}
-  - {x: 28, y: 45}
-  - {x: 27, y: 45}
-  - {x: 26, y: 45}
-  - {x: 25, y: 45}
-  - {x: 24, y: 45}
-  - {x: 23, y: 45}
-  - {x: 23, y: 44}
-  - {x: 23, y: 43}
-  - {x: 23, y: 42}
-  - {x: 23, y: 41}
-  - {x: 23, y: 40}
-  - {x: 23, y: 39}
-  - {x: 23, y: 38}
-  - {x: 23, y: 37}
-  - {x: 23, y: 36}
-  - {x: 23, y: 35}
+  - {x: 48, y: 45}
+  - {x: 48, y: 46}
   startingHouses:
   - socialClass: 0
-    origin: {x: 40, y: 33}
+    origin: {x: 40, y: 37}
     orientation: 1
   - socialClass: 0
-    origin: {x: 45, y: 16}
+    origin: {x: 45, y: 19}
     orientation: 0
   - socialClass: 0
-    origin: {x: 53, y: 42}
+    origin: {x: 53, y: 43}
     orientation: 1
   - socialClass: 1
-    origin: {x: 32, y: 46}
+    origin: {x: 32, y: 43}
     orientation: 0
   - socialClass: 1
-    origin: {x: 22, y: 45}
+    origin: {x: 22, y: 44}
     orientation: 1
   - socialClass: 1
-    origin: {x: 56, y: 25}
+    origin: {x: 56, y: 26}
     orientation: 1
   - socialClass: 1
-    origin: {x: 48, y: 45}
+    origin: {x: 48, y: 47}
     orientation: 1
   - socialClass: 1
     origin: {x: 58, y: 16}
     orientation: 0
   - socialClass: 2
-    origin: {x: 43, y: 16}
+    origin: {x: 43, y: 20}
     orientation: 1
   - socialClass: 2
-    origin: {x: 22, y: 34}
-    orientation: 0
-  - socialClass: 2
-    origin: {x: 54, y: 23}
+    origin: {x: 22, y: 33}
     orientation: 1
   - socialClass: 2
-    origin: {x: 44, y: 24}
-    orientation: 0
+    origin: {x: 54, y: 24}
+    orientation: 1
   - socialClass: 2
-    origin: {x: 42, y: 26}
+    origin: {x: 44, y: 27}
+    orientation: 1
+  - socialClass: 2
+    origin: {x: 42, y: 30}
     orientation: 1
