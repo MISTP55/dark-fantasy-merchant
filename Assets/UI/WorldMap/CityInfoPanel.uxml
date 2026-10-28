@@ -30,7 +30,7 @@
                     <ui:VisualElement name="market-page" class="city-panel__page">
                         <ui:VisualElement name="market-section" class="market">
                             <ui:VisualElement name="ship-line" class="market__ship-line">
-                                <ui:Label text="Navire :" class="market__ship-label" />
+                                <ui:Label text="Avec :" class="market__ship-label" />
                                 <ui:DropdownField name="trading-ship" class="market__ship-choice" />
                                 <ui:Label name="market-hold" class="market__hold" />
                             </ui:VisualElement>
@@ -40,7 +40,7 @@
                                 <ui:Label text="Stock" class="market__cell market__cell--number" />
                                 <ui:Label text="Achat" class="market__cell market__cell--price" />
                                 <ui:Label text="Vente" class="market__cell market__cell--price" />
-                                <ui:Label text="Cale" class="market__cell market__cell--number market__cell--trade" />
+                                <ui:Label name="market-store-header" text="Cale" class="market__cell market__cell--number market__cell--trade" />
                             </ui:VisualElement>
                             <ui:ScrollView class="market__scroll">
                                 <ui:VisualElement name="market-rows" />

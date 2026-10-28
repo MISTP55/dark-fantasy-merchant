@@ -370,6 +370,74 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void FormatWarehouseFill_WritesUsedAndCapacityTheFrenchWay()
+        {
+            Assert.AreEqual("1 850 / 2 000 tonneaux", CityMarketSection.FormatWarehouseFill(1850, 2000));
+            Assert.AreEqual("0 / 2 000 tonneaux", CityMarketSection.FormatWarehouseFill(0, 2000));
+        }
+
+        [Test]
+        public void RentTipText_GivesTheExcessAndTheRentOfTheWeek()
+        {
+            Assert.AreEqual(
+                "150 tonneaux au-delà de la capacité : loyer de 150 or par semaine.",
+                CityMarketSection.RentTipText(150, 150));
+            Assert.AreEqual(
+                "1 200 tonneaux au-delà de la capacité : loyer de 2 400 or par semaine.",
+                CityMarketSection.RentTipText(1200, 2400));
+        }
+
+        [Test]
+        public void Show_WithAWarehouse_TradesWithItAndWritesItsFill()
+        {
+            var post = new Warehouse(2000);
+
+            section.Show(market, post, "Comptoir");
+            section.Buy(Wheat, 10);
+
+            Assert.AreEqual(10, post.UnitsOf(Wheat));
+            Assert.AreEqual("10", Text(Wheat, HoldCell));
+            Assert.AreEqual("10 / 2 000 tonneaux", holdLabel.text);
+            Assert.IsTrue(sectionElement.ClassListContains(CityMarketSection.TradingClass));
+            Assert.IsFalse(holdLabel.ClassListContains(CityMarketSection.OverCapacityClass));
+        }
+
+        [Test]
+        public void AWarehouseAboveItsCapacity_IsMarkedAndTipped()
+        {
+            // A rent of 1 gold per barrel above the capacity.
+            var rented = new CityMarketSection(
+                new VisualElement(), new VisualElement(), holdLabel, new[] { "Blé", "Vin" }, treasury, null, null, 1);
+            var post = new Warehouse(5);
+
+            rented.Show(market, post, "Comptoir");
+            rented.Buy(Wheat, 20);
+
+            Assert.IsTrue(holdLabel.ClassListContains(CityMarketSection.OverCapacityClass));
+            Assert.AreEqual(CityMarketSection.RentTipText(15, 15), holdLabel.tooltip);
+
+            rented.Sell(Wheat, 20);
+
+            Assert.IsFalse(holdLabel.ClassListContains(CityMarketSection.OverCapacityClass));
+            Assert.AreEqual(string.Empty, holdLabel.tooltip ?? string.Empty);
+        }
+
+        [Test]
+        public void Show_WritesTheStoreHeader()
+        {
+            var header = new Label();
+            var withHeader = new CityMarketSection(
+                new VisualElement(), new VisualElement(), holdLabel, new[] { "Blé", "Vin" }, treasury, null, header);
+
+            withHeader.Show(market, new Warehouse(100), "Comptoir");
+            Assert.AreEqual("Comptoir", header.text);
+
+            withHeader.Show(market, hold, "Cale");
+            Assert.AreEqual("Cale", header.text);
+            Assert.IsFalse(holdLabel.ClassListContains(CityMarketSection.OverCapacityClass));
+        }
+
+        [Test]
         public void FormatPopulation_WritesThousandsSeparators()
         {
             // A line that wraps breaks only after a dot: a class and its number stay together.

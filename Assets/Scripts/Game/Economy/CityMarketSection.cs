@@ -8,14 +8,21 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// The market rows of the city panel: one row per good, in the alphabetical order of their
-    /// names, with its icon, the city's stock and its prices, and, when it is given the hold of a
-    /// ship in port, the units aboard. The prices are the buttons that trade: a click on the buy
-    /// price buys, one on the sell price sells. Follows the market, the hold and the treasury.
+    /// names, with its icon, the city's stock and its prices, and, when it is given a store (the
+    /// hold of a ship in port, or the player's trading post), the units it holds. The prices are the
+    /// buttons that trade: a click on the buy price buys, one on the sell price sells. Follows the
+    /// market, the store and the treasury.
     /// </summary>
     public sealed class CityMarketSection
     {
-        /// <summary>On the section while a hold is shown: reveals the hold column.</summary>
+        /// <summary>On the section while a store is shown: reveals the store column.</summary>
         public const string TradingClass = "market--trading";
+
+        /// <summary>On the fill label while the shown trading post stores more than its capacity.</summary>
+        public const string OverCapacityClass = "market__hold--over";
+
+        /// <summary>The title of the store column for a ship's hold.</summary>
+        public const string HoldHeader = "Cale";
 
         /// <summary>Written instead of a buy price when the city has no whole unit to sell.</summary>
         public const string NoPrice = "—";
@@ -28,6 +35,7 @@ namespace DarkFantasyMerchant.Game
         private const string TradeCellClass = "market__cell--trade";
         private const string PriceCellClass = "market__cell--price";
         private const string PriceClass = "market__price";
+        private const string TipClass = "market__tip";
 
         private sealed class Row
         {
@@ -39,11 +47,17 @@ namespace DarkFantasyMerchant.Game
 
         private readonly VisualElement section;
         private readonly Label holdLabel;
+        private readonly Label storeHeaderLabel;
         private readonly Treasury treasury;
+        private readonly long rentPerBarrel;
         private readonly List<Row> rows = new List<Row>();
+        private readonly Label rentTip;
 
         private CityMarket market;
-        private CargoHold hold;
+        private bool isPointerOverFill;
+
+        // The store that trades: a ship's hold or a trading post.
+        private IGoodStore hold;
 
         /// <param name="section">The whole section, shown and hidden with the market.</param>
         /// <param name="rowContainer">Where the rows are built, one per name.</param>
@@ -51,17 +65,23 @@ namespace DarkFantasyMerchant.Game
         /// <param name="treasury">What pays and is paid. Null for a market that is only read.</param>
         /// <param name="goodIcons">The icons of the goods, by the same index as the names. Null, or a
         /// null icon, leaves the icon's place empty.</param>
+        /// <param name="storeHeaderLabel">The title of the store column, or null when there is none to write.</param>
+        /// <param name="rentPerBarrel">Gold a week for each barrel a trading post stores above its capacity.</param>
         public CityMarketSection(
             VisualElement section,
             VisualElement rowContainer,
             Label holdLabel,
             IReadOnlyList<string> goodNames,
             Treasury treasury,
-            IReadOnlyList<Sprite> goodIcons = null)
+            IReadOnlyList<Sprite> goodIcons = null,
+            Label storeHeaderLabel = null,
+            long rentPerBarrel = 0)
         {
             this.section = section ?? throw new ArgumentNullException(nameof(section));
             this.holdLabel = holdLabel ?? throw new ArgumentNullException(nameof(holdLabel));
+            this.storeHeaderLabel = storeHeaderLabel;
             this.treasury = treasury;
+            this.rentPerBarrel = rentPerBarrel;
 
             if (rowContainer == null)
             {
@@ -91,6 +111,14 @@ namespace DarkFantasyMerchant.Game
 
             ListStripes.Apply(rowContainer);
 
+            // The fill's tooltip, drawn by the section: a runtime panel shows no tooltip itself.
+            rentTip = new Label { pickingMode = PickingMode.Ignore };
+            rentTip.AddToClassList(TipClass);
+            rentTip.style.display = DisplayStyle.None;
+            section.Add(rentTip);
+            holdLabel.RegisterCallback<PointerEnterEvent>(OnPointerEnterFill);
+            holdLabel.RegisterCallback<PointerLeaveEvent>(OnPointerLeaveFill);
+
             Hide();
         }
 
@@ -105,26 +133,48 @@ namespace DarkFantasyMerchant.Game
             return shift ? 10 : 1;
         }
 
-        /// <summary>Shows a city's market, and trades with a hold when one is given.</summary>
-        /// <param name="hold">The hold of the ship in port that trades, or null to only read the market.</param>
-        public void Show(CityMarket market, CargoHold hold)
+        /// <summary>The fill of a trading post as the market writes it: "1 850 / 2 000 tonneaux".</summary>
+        public static string FormatWarehouseFill(long used, int capacity)
+        {
+            return $"{TreasuryHudController.FormatNumber(used)} / {TreasuryHudController.FormatNumber(capacity)} tonneaux";
+        }
+
+        /// <summary>
+        /// The tip of a trading post above its capacity:
+        /// "150 tonneaux au-delà de la capacité : loyer de 150 or par semaine.".
+        /// </summary>
+        public static string RentTipText(long excess, long weeklyRent)
+        {
+            return $"{GoodUnitText.FormatQuantity(excess, GoodUnit.Barrel)} au-delà de la capacité : "
+                + $"loyer de {TreasuryHudController.FormatGold(weeklyRent)} par semaine.";
+        }
+
+        /// <summary>Shows a city's market, and trades with a store when one is given.</summary>
+        /// <param name="store">The hold of the ship in port, or the trading post, that trades; null to only read the market.</param>
+        /// <param name="storeHeader">The title of the store column: <see cref="HoldHeader"/> for a hold, the trading post's for it.</param>
+        public void Show(CityMarket market, IGoodStore store, string storeHeader = HoldHeader)
         {
             Unbind();
 
             this.market = market ?? throw new ArgumentNullException(nameof(market));
 
             // Nothing pays without a treasury.
-            this.hold = treasury != null ? hold : null;
+            hold = treasury != null ? store : null;
+
+            if (storeHeaderLabel != null)
+            {
+                storeHeaderLabel.text = storeHeader;
+            }
 
             this.market.Changed += Refresh;
 
-            if (this.hold != null)
+            if (hold != null)
             {
-                this.hold.Changed += Refresh;
+                hold.Changed += Refresh;
                 treasury.Changed += OnGoldChanged;
             }
 
-            section.EnableInClassList(TradingClass, this.hold != null);
+            section.EnableInClassList(TradingClass, hold != null);
             section.style.display = DisplayStyle.Flex;
             Refresh();
         }
@@ -134,12 +184,13 @@ namespace DarkFantasyMerchant.Game
             Unbind();
             section.EnableInClassList(TradingClass, false);
             section.style.display = DisplayStyle.None;
+            ShowTip();
         }
 
         /// <summary>Raised by a purchase or a sale that moved at least one unit, for the debug tools.</summary>
         public event Action<int, TradeResult, PlayerTradeKind> Traded;
 
-        /// <summary>Buys up to that many units of a good into the shown hold; nothing without one.</summary>
+        /// <summary>Buys up to that many units of a good into the shown store; nothing without one.</summary>
         public void Buy(int good, int units)
         {
             if (hold != null && good < market.GoodCount)
@@ -148,7 +199,7 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        /// <summary>Sells up to that many units of a good from the shown hold; nothing without one.</summary>
+        /// <summary>Sells up to that many units of a good from the shown store; nothing without one.</summary>
         public void Sell(int good, int units)
         {
             if (hold != null && good < market.GoodCount)
@@ -273,7 +324,61 @@ namespace DarkFantasyMerchant.Game
                     hold != null && available > 0 && hold.RoomFor(i) > 0 && treasury.CanAfford(buyPrice));
             }
 
-            holdLabel.text = hold != null ? ShipInfoPanelController.FormatCargo(hold) : string.Empty;
+            WriteFill();
+        }
+
+        // A ship's hold reads as its panel writes it; a trading post gives its fill, and its rent
+        // while it stores more than its capacity.
+        private void WriteFill()
+        {
+            var warehouse = hold as Warehouse;
+            bool isOver = warehouse != null && warehouse.Excess > 0;
+
+            if (hold is CargoHold cargo)
+            {
+                holdLabel.text = ShipInfoPanelController.FormatCargo(cargo);
+            }
+            else if (warehouse != null)
+            {
+                holdLabel.text = FormatWarehouseFill(warehouse.Used, warehouse.Capacity);
+            }
+            else
+            {
+                holdLabel.text = string.Empty;
+            }
+
+            holdLabel.EnableInClassList(OverCapacityClass, isOver);
+            holdLabel.tooltip = isOver ? RentTipText(warehouse.Excess, warehouse.Excess * rentPerBarrel) : string.Empty;
+            ShowTip();
+        }
+
+        private void OnPointerEnterFill(PointerEnterEvent evt)
+        {
+            isPointerOverFill = true;
+            ShowTip();
+        }
+
+        private void OnPointerLeaveFill(PointerLeaveEvent evt)
+        {
+            isPointerOverFill = false;
+            ShowTip();
+        }
+
+        // Under the fill, right-aligned with it, while the pointer is over it and it has a tip.
+        private void ShowTip()
+        {
+            if (!isPointerOverFill || market == null || string.IsNullOrEmpty(holdLabel.tooltip))
+            {
+                rentTip.style.display = DisplayStyle.None;
+                return;
+            }
+
+            Rect fill = holdLabel.worldBound;
+            Rect area = section.worldBound;
+            rentTip.text = holdLabel.tooltip;
+            rentTip.style.top = fill.yMax - area.yMin + 4f;
+            rentTip.style.right = area.xMax - fill.xMax;
+            rentTip.style.display = DisplayStyle.Flex;
         }
     }
 }

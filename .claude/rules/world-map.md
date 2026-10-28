@@ -24,5 +24,6 @@ paths:
 
 - `CityInfoPanelController` hosts the market (`CityMarketSection`, see `economy.md`) and the ships in the city, in two tabs: Marché and Navires. It has no building tab: the player builds only from the city view (`PlayerBuilder`, see `population.md`). Its "Voir la ville" button, in the header beside the close button, raises `ViewCityRequested` with the shown city.
 - The ships tab lists every ship in the city (`GetShipsInCity`: waiting, arriving, docked, leaving), each row with its state (`ShipRowText`); the market's trading ships are chosen among the docked ones only (`GetShipsIn`). Both are rebuilt on `CityStateChanged`.
+- The market's "Avec :" drop-down (`TradingPartnerLabels`) lists the player's docked ships, then "Comptoir" when the player has a trading post in the city (`WorldEconomy.TradingPostOf`). What trades is the one kept while still there, otherwise the first ship, otherwise the trading post; a new city starts from its first ship. The panel follows `WorldEconomy.TradingPostOpened` for the shown city, and raises `PlayerTraded` for the trading post's trades as for a ship's.
 - Each tab's page wraps the element its section shows and hides, so the tabs and the sections never write the same `display`.
 - Its sections listen to the market, the hold and the treasury only while they are shown.

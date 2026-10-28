@@ -110,5 +110,51 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 "Navire marchand", "La Corneille", "Navire marchand (2)", "Navire marchand (3)",
             }));
         }
+
+        [Test]
+        public void TradingPartnerLabels_AppendsComptoirAfterTheShips()
+        {
+            var labels = CityInfoPanelController.TradingPartnerLabels(
+                new[] { "La Corneille", "Navire marchand", "Navire marchand" }, true);
+
+            Assert.That(labels, Is.EqualTo(new[]
+            {
+                "La Corneille", "Navire marchand", "Navire marchand (2)", "Comptoir",
+            }));
+        }
+
+        [Test]
+        public void TradingPartnerLabels_NoShipNoPost_IsAucunNavire()
+        {
+            var labels = CityInfoPanelController.TradingPartnerLabels(new string[0], false);
+
+            Assert.That(labels, Is.EqualTo(new[] { "Aucun navire" }));
+        }
+
+        [Test]
+        public void TradingPartnerLabels_NoShipWithPost_IsComptoirOnly()
+        {
+            var labels = CityInfoPanelController.TradingPartnerLabels(new string[0], true);
+
+            Assert.That(labels, Is.EqualTo(new[] { "Comptoir" }));
+        }
+
+        [Test]
+        public void TradingPartnerLabels_ShipsWithoutPost_AreTheShipLabels()
+        {
+            var labels = CityInfoPanelController.TradingPartnerLabels(new[] { "Aurore" }, false);
+
+            Assert.That(labels, Is.EqualTo(new[] { "Aurore" }));
+        }
+
+        [Test]
+        public void TheMarketLine_ReadsAvec()
+        {
+            var uxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/UI/WorldMap/CityInfoPanel.uxml");
+            VisualElement tree = uxml.CloneTree();
+
+            Assert.AreEqual("Avec :", tree.Q<Label>(className: "market__ship-label").text);
+            Assert.AreEqual("Cale", tree.Q<Label>("market-store-header").text);
+        }
     }
 }
