@@ -75,9 +75,13 @@ namespace DarkFantasyMerchant.Game
     public sealed class WorkshopOffer
     {
         /// <param name="good">The good it makes, by its index among the active goods.</param>
-        public WorkshopOffer(int good, string name, int jobs, BuildingCost cost, string costText, Footprint footprint = default)
+        /// <param name="weeklyRunningCost">Gold coins it costs a week to run, apart from its workers' wages.</param>
+        public WorkshopOffer(
+            int good, string name, int jobs, BuildingCost cost, string costText, Footprint footprint = default,
+            long weeklyRunningCost = 0)
         {
             Footprint = footprint;
+            WeeklyRunningCost = weeklyRunningCost;
             Good = good;
             Name = name;
             Jobs = jobs;
@@ -99,5 +103,8 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>"10 000 or, 10 bois, 30 métal", or "indisponible".</summary>
         public string CostText { get; }
+
+        /// <summary>Gold coins it costs a week to run, apart from its workers' wages.</summary>
+        public long WeeklyRunningCost { get; }
     }
 }

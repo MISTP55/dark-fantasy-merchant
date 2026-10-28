@@ -15,6 +15,8 @@ namespace DarkFantasyMerchant.Core
         private readonly long sailorWeeklyWage;
         private readonly Func<int> sailorCount;
         private readonly Func<long> warehouseRent;
+        private readonly Func<long> workshopRunningCosts;
+        private readonly Func<long> workshopWages;
 
         /// <param name="sailorWeeklyWage">Gold coins one sailor is paid for a week.</param>
         /// <param name="sailorCount">
@@ -25,9 +27,11 @@ namespace DarkFantasyMerchant.Core
         /// The rent of the trading posts, asked on every payment like the sailors. Null for
         /// no rent.
         /// </param>
+        /// <param name="workshopRunningCosts">The running cost of the player's workshops, asked on every payment; null for none.</param>
+        /// <param name="workshopWages">The wages of the player's workshops, asked on every payment; null for none.</param>
         public WeeklyBilling(
             Treasury treasury, int daysPerWeek, long sailorWeeklyWage, Func<int> sailorCount,
-            Func<long> warehouseRent = null)
+            Func<long> warehouseRent = null, Func<long> workshopRunningCosts = null, Func<long> workshopWages = null)
         {
             if (daysPerWeek < 1)
             {
@@ -44,6 +48,8 @@ namespace DarkFantasyMerchant.Core
             this.sailorWeeklyWage = sailorWeeklyWage;
             this.sailorCount = sailorCount ?? throw new ArgumentNullException(nameof(sailorCount));
             this.warehouseRent = warehouseRent;
+            this.workshopRunningCosts = workshopRunningCosts;
+            this.workshopWages = workshopWages;
         }
 
         /// <summary>
@@ -72,7 +78,9 @@ namespace DarkFantasyMerchant.Core
                 return;
             }
 
-            var bill = new WeeklyBill(sailorCount(), sailorWeeklyWage, warehouseRent?.Invoke() ?? 0);
+            var bill = new WeeklyBill(
+                sailorCount(), sailorWeeklyWage, warehouseRent?.Invoke() ?? 0, workshopRunningCosts?.Invoke() ?? 0,
+                workshopWages?.Invoke() ?? 0);
 
             if (bill.Total == 0)
             {

@@ -67,6 +67,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void ANewWorkshopOrHouse_HasTheGamesJobsAndRoom()
         {
             Assert.AreEqual(30, Track(ScriptableObject.CreateInstance<WorkshopDefinition>()).Jobs);
+            Assert.AreEqual(200, Track(ScriptableObject.CreateInstance<WorkshopDefinition>()).WeeklyRunningCost);
 
             HouseDefinition fresh = Track(ScriptableObject.CreateInstance<HouseDefinition>());
             Assert.AreEqual(SocialClass.Poor, fresh.SocialClass);
@@ -194,6 +195,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
             StringAssert.Contains("jobs", problem);
             Assert.IsFalse(Track(TestBuildings.CreateHouse("Maison", SocialClass.Rich, 1, 0)).TryValidate(out problem));
             StringAssert.Contains("room", problem);
+
+            var costly = new UnityEditor.SerializedObject(workshop);
+            costly.FindProperty("weeklyRunningCost").longValue = -1;
+            costly.ApplyModifiedPropertiesWithoutUndo();
+            Assert.IsFalse(workshop.TryValidate(out problem));
+            StringAssert.Contains("running cost", problem);
         }
     }
 }

@@ -27,6 +27,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void ANewDefinition_IsTheGamesExpenses()
         {
             Assert.AreEqual(10, expenses.SailorWeeklyWage);
+            Assert.AreEqual(0.8, expenses.WorkshopWageShare, 1e-9);
         }
 
         [Test]

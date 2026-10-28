@@ -415,6 +415,30 @@ namespace DarkFantasyMerchant.Core
             return rule.DailyOutputOf(PlayerWorkersOf(good), goods[good].MerchantDailyOutputPerWorker, PlayerWorkshopsOf(good));
         }
 
+        /// <summary>
+        /// The wages of the workers of all the player's workshops in the city for a week, unrounded: a share of the base
+        /// value of what they make in a week with their workers of the moment (<see cref="PlayerDailyOutputOf(int)"/>),
+        /// whatever the inputs they lack.
+        /// </summary>
+        /// <param name="wageShare">The share of that value the workers are paid, 0 or more.</param>
+        public double PlayerWeeklyWagesOf(double wageShare)
+        {
+            // The negated comparison also rejects NaN.
+            if (!(wageShare >= 0d) || double.IsInfinity(wageShare))
+            {
+                throw new ArgumentOutOfRangeException(nameof(wageShare));
+            }
+
+            double wages = 0d;
+
+            for (int good = 0; good < goods.Length; good++)
+            {
+                wages += PlayerDailyOutputOf(good) * daysPerWeek * goods[good].BasePrice * wageShare;
+            }
+
+            return wages;
+        }
+
         /// <summary>Jobs of all the player's workshops for a good in the city.</summary>
         public int PlayerJobsOf(int good)
         {

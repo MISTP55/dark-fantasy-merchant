@@ -257,7 +257,9 @@ namespace DarkFantasyMerchant.Game
                 }
 
                 BuildingCost cost = CostOf(workshop, economy, unavailable);
-                offers.Add(new WorkshopOffer(good, workshop.DisplayName, workshop.Jobs, cost, workshop.CostText(economy), workshop.Footprint));
+                offers.Add(new WorkshopOffer(
+                    good, workshop.DisplayName, workshop.Jobs, cost, workshop.CostText(economy), workshop.Footprint,
+                    workshop.WeeklyRunningCost));
             }
 
             return offers;

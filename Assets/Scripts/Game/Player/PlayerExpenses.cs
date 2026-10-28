@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DarkFantasyMerchant.Core;
 using UnityEngine;
 
@@ -15,7 +16,7 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private PlayerTreasury playerTreasury;
         [SerializeField] private ShipsView shipsView;
 
-        [Tooltip("Optional. Without it, no trading post rent is billed.")]
+        [Tooltip("Optional. Without it, no trading post rent nor workshop cost is billed.")]
         [SerializeField] private WorldEconomy worldEconomy;
 
         [Tooltip("Optional. Without it, the expenses are paid without a word.")]
@@ -76,7 +77,8 @@ namespace DarkFantasyMerchant.Game
             try
             {
                 billing = expenses.CreateBilling(
-                    playerTreasury.Treasury, worldClock.Calendar.DaysPerWeek, CountSailors, RentOfTradingPosts);
+                    playerTreasury.Treasury, worldClock.Calendar.DaysPerWeek, CountSailors, RentOfTradingPosts,
+                    RunningCostOfWorkshops, WagesOfWorkshops);
             }
             catch (ArgumentOutOfRangeException exception)
             {
@@ -112,6 +114,39 @@ namespace DarkFantasyMerchant.Game
             }
 
             return Warehouse.WeeklyRentOf(worldEconomy.TradingPosts, worldEconomy.Buildings.TradingPost.RentPerBarrel);
+        }
+
+        private long RunningCostOfWorkshops()
+        {
+            if (worldEconomy == null || !worldEconomy.IsReady)
+            {
+                return 0;
+            }
+
+            IReadOnlyList<WorkshopOffer> offers = worldEconomy.WorkshopOffers;
+
+            return PlayerWorkshopCosts.WeeklyRunningCostOf(worldEconomy.Markets, good =>
+            {
+                foreach (WorkshopOffer offer in offers)
+                {
+                    if (offer.Good == good)
+                    {
+                        return offer.WeeklyRunningCost;
+                    }
+                }
+
+                return 0;
+            });
+        }
+
+        private long WagesOfWorkshops()
+        {
+            if (worldEconomy == null || !worldEconomy.IsReady)
+            {
+                return 0;
+            }
+
+            return PlayerWorkshopCosts.WeeklyWagesOf(worldEconomy.Markets, expenses.WorkshopWageShare);
         }
 
         private void OnDayStarted(GameDate date)

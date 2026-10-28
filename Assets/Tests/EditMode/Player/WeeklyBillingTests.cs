@@ -164,6 +164,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void TheWorkshopsCosts_AreAskedOnTheBillingDay_AndWithdrawn()
+        {
+            long running = 0;
+            long wages = 0;
+            var billing = new WeeklyBilling(treasury, 7, 10, () => sailors, null, () => running, () => wages);
+            billing.Paid += bill => paid.Add(bill.Total);
+
+            StartDays(billing, 6);
+            running = 200;
+            wages = 80;
+            StartDays(billing, 1);
+
+            Assert.AreEqual(600, treasury.Gold);
+            CollectionAssert.AreEqual(new long[] { 400 }, paid);
+        }
+
+        [Test]
         public void StartDay_RentIsTakenEvenInDebt()
         {
             treasury = new Treasury(-50);

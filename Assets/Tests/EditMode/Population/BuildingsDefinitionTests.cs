@@ -337,6 +337,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void CreateWorkshopOffers_CarryTheWeeklyRunningCost()
+        {
+            Assert.AreEqual(200, buildings.CreateWorkshopOffers(economy, null)[0].WeeklyRunningCost);
+        }
+
+        [Test]
         public void CreateWorkshopOffers_SkipsAWorkshopOfAnInactiveGood()
         {
             TestEconomy.SetActive(economy, wheat, false);
