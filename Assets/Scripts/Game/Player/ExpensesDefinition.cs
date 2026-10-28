@@ -22,9 +22,11 @@ namespace DarkFantasyMerchant.Game
         /// the file.
         /// </summary>
         /// <param name="sailorCount">The sailors aboard all the player's ships.</param>
-        public WeeklyBilling CreateBilling(Treasury treasury, int daysPerWeek, Func<int> sailorCount)
+        /// <param name="warehouseRent">The rent of the player's trading posts; null for none.</param>
+        public WeeklyBilling CreateBilling(
+            Treasury treasury, int daysPerWeek, Func<int> sailorCount, Func<long> warehouseRent = null)
         {
-            return new WeeklyBilling(treasury, daysPerWeek, sailorWeeklyWage, sailorCount);
+            return new WeeklyBilling(treasury, daysPerWeek, sailorWeeklyWage, sailorCount, warehouseRent);
         }
     }
 }

@@ -38,6 +38,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void Total_AddsWarehouseRent()
+        {
+            var bill = new WeeklyBill(12, 10, 35);
+
+            Assert.AreEqual(35, bill.WarehouseRent);
+            Assert.AreEqual(155, bill.Total);
+        }
+
+        [Test]
+        public void Constructor_RefusesNegativeRent()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new WeeklyBill(12, 10, -1));
+        }
+
+        [Test]
         public void NegativeValues_AreRejected()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new WeeklyBill(-1, 10));

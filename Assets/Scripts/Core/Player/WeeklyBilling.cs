@@ -14,13 +14,20 @@ namespace DarkFantasyMerchant.Core
         private readonly int daysPerWeek;
         private readonly long sailorWeeklyWage;
         private readonly Func<int> sailorCount;
+        private readonly Func<long> warehouseRent;
 
         /// <param name="sailorWeeklyWage">Gold coins one sailor is paid for a week.</param>
         /// <param name="sailorCount">
         /// The sailors aboard all the player's ships. Asked on every payment: the bill is
         /// for the sailors aboard when the week ends.
         /// </param>
-        public WeeklyBilling(Treasury treasury, int daysPerWeek, long sailorWeeklyWage, Func<int> sailorCount)
+        /// <param name="warehouseRent">
+        /// The rent of the trading posts, asked on every payment like the sailors. Null for
+        /// no rent.
+        /// </param>
+        public WeeklyBilling(
+            Treasury treasury, int daysPerWeek, long sailorWeeklyWage, Func<int> sailorCount,
+            Func<long> warehouseRent = null)
         {
             if (daysPerWeek < 1)
             {
@@ -36,6 +43,7 @@ namespace DarkFantasyMerchant.Core
             this.daysPerWeek = daysPerWeek;
             this.sailorWeeklyWage = sailorWeeklyWage;
             this.sailorCount = sailorCount ?? throw new ArgumentNullException(nameof(sailorCount));
+            this.warehouseRent = warehouseRent;
         }
 
         /// <summary>
@@ -64,7 +72,7 @@ namespace DarkFantasyMerchant.Core
                 return;
             }
 
-            var bill = new WeeklyBill(sailorCount(), sailorWeeklyWage);
+            var bill = new WeeklyBill(sailorCount(), sailorWeeklyWage, warehouseRent?.Invoke() ?? 0);
 
             if (bill.Total == 0)
             {

@@ -1565,6 +1565,7 @@ MonoBehaviour:
   worldClock: {fileID: 1809179065}
   playerTreasury: {fileID: 516856359}
   shipsView: {fileID: 948842205}
+  worldEconomy: {fileID: 1991110005}
   playerNotifications: {fileID: 1513224809}
 --- !u!4 &1795652451
 Transform:

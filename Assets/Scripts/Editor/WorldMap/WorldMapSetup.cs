@@ -2070,6 +2070,14 @@ namespace DarkFantasyMerchant.Editor
                 changed |= FillReference(shipsView, "worldEconomy", worldEconomy);
             }
 
+            // The trading posts' rent is part of the weekly expenses.
+            var playerExpenses = FindInScene<PlayerExpenses>(scene);
+
+            if (playerExpenses != null)
+            {
+                changed |= FillReference(playerExpenses, "worldEconomy", worldEconomy);
+            }
+
             // The city panel shows the market and trades with the player's gold.
             var cityPanel = FindInScene<CityInfoPanelController>(scene);
 

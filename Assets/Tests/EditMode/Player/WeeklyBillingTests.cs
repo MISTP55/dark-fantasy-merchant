@@ -149,6 +149,33 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void StartDay_OnBillingDay_WithdrawsTheRentReadThatDay()
+        {
+            long rent = 5;
+            var billing = new WeeklyBilling(treasury, 7, 10, () => sailors, () => rent);
+            billing.Paid += bill => paid.Add(bill.Total);
+
+            StartDays(billing, 6);
+            rent = 30;
+            StartDays(billing, 1);
+
+            Assert.AreEqual(850, treasury.Gold);
+            CollectionAssert.AreEqual(new long[] { 150 }, paid);
+        }
+
+        [Test]
+        public void StartDay_RentIsTakenEvenInDebt()
+        {
+            treasury = new Treasury(-50);
+            sailors = 0;
+            var billing = new WeeklyBilling(treasury, 7, 10, () => sailors, () => 40);
+
+            StartDays(billing, 7);
+
+            Assert.AreEqual(-90, treasury.Gold);
+        }
+
+        [Test]
         public void AWeek_LastsTheGivenDays()
         {
             WeeklyBilling billing = CreateBilling(daysPerWeek: 1);

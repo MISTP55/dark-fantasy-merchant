@@ -15,6 +15,8 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private PlayerTreasury playerTreasury;
         [SerializeField] private ShipsView shipsView;
 
+        [SerializeField] private WorldEconomy worldEconomy;
+
         [Tooltip("Optional. Without it, the expenses are paid without a word.")]
         [SerializeField] private PlayerNotifications playerNotifications;
 
@@ -24,10 +26,11 @@ namespace DarkFantasyMerchant.Game
 
         private void OnEnable()
         {
-            if (expenses == null || worldClock == null || playerTreasury == null || shipsView == null)
+            if (expenses == null || worldClock == null || playerTreasury == null || shipsView == null
+                || worldEconomy == null)
             {
                 Debug.LogError(
-                    "PlayerExpenses needs an expenses definition, a world clock, the player's treasury and a ships view.",
+                    "PlayerExpenses needs an expenses definition, a world clock, the player's treasury and a ships view and the world economy.",
                     this);
                 return;
             }
@@ -73,7 +76,7 @@ namespace DarkFantasyMerchant.Game
             try
             {
                 billing = expenses.CreateBilling(
-                    playerTreasury.Treasury, worldClock.Calendar.DaysPerWeek, CountSailors);
+                    playerTreasury.Treasury, worldClock.Calendar.DaysPerWeek, CountSailors, RentOfTradingPosts);
             }
             catch (ArgumentOutOfRangeException exception)
             {
@@ -98,6 +101,17 @@ namespace DarkFantasyMerchant.Game
             }
 
             return sailors;
+        }
+
+        // Read on the billing day: the economy may not be ready when the billing is made.
+        private long RentOfTradingPosts()
+        {
+            if (!worldEconomy.IsReady)
+            {
+                return 0;
+            }
+
+            return Warehouse.WeeklyRentOf(worldEconomy.TradingPosts, worldEconomy.Buildings.TradingPost.RentPerBarrel);
         }
 
         private void OnDayStarted(GameDate date)
