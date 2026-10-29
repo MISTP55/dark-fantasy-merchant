@@ -209,7 +209,7 @@ namespace DarkFantasyMerchant.Core
 
             foreach (PlacedBuilding building in buildings)
             {
-                if (building.Kind.IsWall)
+                if (building.Kind.ClosesWalls)
                 {
                     continue;
                 }
@@ -219,7 +219,7 @@ namespace DarkFantasyMerchant.Core
                     if (!forbidden[Index(cell)] && !enclosed[Index(cell)])
                     {
                         Vector2Int origin = building.Place.Origin;
-                        problem = $"the {KindName(building.Kind)} at ({origin.x}, {origin.y}) stands outside the walls";
+                        problem = $"the {building.Kind.Name} at ({origin.x}, {origin.y}) stands outside the walls";
                         return false;
                     }
                 }
@@ -244,12 +244,6 @@ namespace DarkFantasyMerchant.Core
 
             problem = null;
             return true;
-        }
-
-        private static string KindName(BuildingKind kind)
-        {
-            return kind.IsHouse ? "house" : kind.IsWorkshop ? "workshop" : kind.IsRoad ? "road"
-                : kind.IsPort ? "port" : kind.IsTradingPost ? "trading post" : "town hall";
         }
 
         // Floods from the town hall, by sides, stopping at walls and water, when a wall or the town hall was placed.
@@ -307,7 +301,7 @@ namespace DarkFantasyMerchant.Core
 
             int index = Index(cell);
             PlacedBuilding there = occupancy[index];
-            if (enclosed[index] || forbidden[index] || (there != null && there.Kind.IsWall))
+            if (enclosed[index] || forbidden[index] || (there != null && there.Kind.ClosesWalls))
             {
                 return;
             }
@@ -404,7 +398,7 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentException("Place the trading post with PlaceTradingPost.", nameof(kind));
             }
 
-            if (!Fits(footprint, place, KeepsInsideWalls && !kind.IsWall))
+            if (!Fits(footprint, place, KeepsInsideWalls && !kind.ClosesWalls))
             {
                 throw new InvalidOperationException("The footprint does not fit at this place.");
             }
@@ -511,14 +505,9 @@ namespace DarkFantasyMerchant.Core
         {
             BuildingKind kind = building.Kind;
             GridPlace place = building.Place;
-            if (kind.IsRoad && (building.Footprint.Width != 1 || building.Footprint.Depth != 1))
+            if (kind.CoversOneCell && (building.Footprint.Width != 1 || building.Footprint.Depth != 1))
             {
-                throw new ArgumentException("A road covers exactly one cell.", nameof(building));
-            }
-
-            if (kind.IsWall && (building.Footprint.Width != 1 || building.Footprint.Depth != 1))
-            {
-                throw new ArgumentException("A wall covers exactly one cell.", nameof(building));
+                throw new ArgumentException($"A {kind.Name} covers exactly one cell.", nameof(building));
             }
 
             if (kind.IsTownHall && TownHall != null)
@@ -549,7 +538,8 @@ namespace DarkFantasyMerchant.Core
                 TradingPost = building;
             }
 
-            if (kind.IsTownHall || kind.IsWall)
+            // The enclosure is flooded from the town hall and stops at the walls.
+            if (kind.IsTownHall || kind.ClosesWalls)
             {
                 enclosureStale = true;
             }
@@ -560,12 +550,12 @@ namespace DarkFantasyMerchant.Core
 
         private void UpdateNetwork(PlacedBuilding placed)
         {
-            if (placed.Kind.IsRoad || placed.Kind.IsTownHall)
+            if (placed.Kind.CarriesNetwork)
             {
                 FloodNetwork();
                 ConnectTouchingBuildings();
             }
-            else if (TouchesNetwork(CellsOf(placed)))
+            else if (placed.Kind.NeedsConnection && TouchesNetwork(CellsOf(placed)))
             {
                 Connect(placed);
             }
@@ -584,7 +574,7 @@ namespace DarkFantasyMerchant.Core
             {
                 PlacedBuilding building = buildings[i];
                 if (!building.IsConnected
-                    && (building.Kind.IsHouse || building.Kind.IsWorkshop)
+                    && building.Kind.NeedsConnection
                     && TouchesNetwork(CellsOf(building)))
                 {
                     Connect(building);

@@ -425,9 +425,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             Vector2Int size = building.Size;
-            string kindName = building.Kind.IsHouse ? "House" : building.Kind.IsWorkshop ? "Workshop"
-                : building.Kind.IsPort ? "Port" : building.Kind.IsWall ? "Wall"
-                : building.Kind.IsTradingPost ? "Trading post" : "Town hall";
+            string kindName = char.ToUpperInvariant(building.Kind.Name[0]) + building.Kind.Name.Substring(1);
 
             // The port's placeholder shows its facing; a view sprite, which has only two orientations, is not used for it.
             BuildingDefinition definition = buildings != null && !building.Kind.IsPort ? buildings.DefinitionOf(building.Kind, economy) : null;
@@ -455,7 +453,8 @@ namespace DarkFantasyMerchant.Game
 
             buildingRenderer.color = ColorOf(building, buildingRenderer);
 
-            if (building.Kind.IsHouse || building.Kind.IsWorkshop)
+            // Darkened until it connects.
+            if (building.Kind.NeedsConnection)
             {
                 shadedRenderers.Add(building, buildingRenderer);
             }
@@ -481,39 +480,41 @@ namespace DarkFantasyMerchant.Game
 
         private Color ColorOf(PlacedBuilding building, SpriteRenderer buildingRenderer)
         {
-            bool isViewSprite = viewSpriteRenderers.Contains(buildingRenderer);
+            // A view sprite is drawn untinted; the port never has one.
+            Color color = viewSpriteRenderers.Contains(buildingRenderer) ? Color.white : TintOf(building.Kind);
 
-            if (building.Kind.IsTownHall)
-            {
-                return isViewSprite ? Color.white : townHallColor;
-            }
-
-            if (building.Kind.IsPort)
-            {
-                return portColor;
-            }
-
-            if (building.Kind.IsWall)
-            {
-                return isViewSprite ? Color.white : wallColor;
-            }
-
-            // Like the port, never connected: never darkened.
-            if (building.Kind.IsTradingPost)
-            {
-                return isViewSprite ? Color.white : tradingPostColor;
-            }
-
-            Color color = isViewSprite ? Color.white
-                : building.Kind.IsHouse ? HouseColors.Of(building.Kind.HousedClass)
-                : workshopColor;
-
-            if (building.IsConnected)
+            if (!building.Kind.NeedsConnection || building.IsConnected)
             {
                 return color;
             }
 
             return new Color(color.r * inactiveShade, color.g * inactiveShade, color.b * inactiveShade, color.a);
+        }
+
+        // The tint of a building's placeholder block; a road is a cell of the ground, tinted roadColor.
+        private Color TintOf(BuildingKind kind)
+        {
+            if (kind.IsHouse)
+            {
+                return HouseColors.Of(kind.HousedClass);
+            }
+
+            if (kind.IsWorkshop)
+            {
+                return workshopColor;
+            }
+
+            if (kind.IsTownHall)
+            {
+                return townHallColor;
+            }
+
+            if (kind.IsPort)
+            {
+                return portColor;
+            }
+
+            return kind.IsWall ? wallColor : tradingPostColor;
         }
 
         // The scale of a building's block, and of the ghost, which shows the building as it will stand.

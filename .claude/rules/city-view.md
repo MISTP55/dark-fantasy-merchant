@@ -15,6 +15,7 @@ paths:
 - `CanPlace` refuses a footprint with a side under 1 (`default(Footprint)` is 0 by 0) and `Place` throws for it: it would give room with no place.
 - The grid only knows footprints, kinds and owners; it never knows who builds, what it costs or why. Rules about that (money, materials, class housing) stay in the callers.
 - `BuildingKind.HousedClass` throws for a workshop and `Good` for a house: test `IsHouse` first.
+- What a kind of building does on the grid is in `BuildingKind`'s traits, one table (`TraitsOf`): `CarriesNetwork` (road, town hall), `NeedsConnection` (house, workshop: nothing else is ever connected), `CoversOneCell` (road, wall), `ClosesWalls` (wall) and its `Name` for the grid's messages. `CityGrid` and `CityGridView` ask the traits, never which kind it is, so a new kind gives its behaviour there and is followed everywhere. `IsX` stays for what is one of its kind (the town hall, the port and the trading post have their own slot or placement), for the houses of a class, for the road cells the network floods (the town hall alone connects nothing) and for what is drawn its own way (the road on the ground, the port's and the walls' sprites).
 - `GetPlaces` lists by x then y, `Along` before `Across`; callers that pick "the first place" rely on that order.
 
 ## The walls
