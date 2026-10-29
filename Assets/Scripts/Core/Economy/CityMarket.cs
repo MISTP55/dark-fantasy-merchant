@@ -28,32 +28,15 @@ namespace DarkFantasyMerchant.Core
 
         private readonly MarketGood[] goods;
         private readonly double[] stocks;
-        private readonly int[] workers;
-        private readonly int[] reserves;
-        private readonly double[] leakCounters;
-        private readonly List<PlayerWorkshop> playerWorkshops = new List<PlayerWorkshop>();
-        private readonly IPlacementStrategy placement;
-        private readonly List<Vector2Int> roadsToLay = new List<Vector2Int>();
-        private readonly List<Vector2Int> houseCells = new List<Vector2Int>();
-
-        // The room of each house on the grid that is not connected yet, given to its class when it connects.
-        private readonly Dictionary<PlacedBuilding, int> roomUntilConnected = new Dictionary<PlacedBuilding, int>();
-
-        // The room of the house the market is placing, set only for the time of the placement.
-        private int roomOfPlacedHouse;
+        private readonly CityWorkforce cityWorkforce;
+        private readonly PlayerWorkshops playerWorkshops;
+        private readonly CityHousing cityHousing;
         private readonly ThresholdRule thresholdRule;
-        private readonly WorkforceRule workforce;
+        private readonly WorkforceRule workforceRule;
         private readonly MarketPricing pricing;
         private readonly int daysPerWeek;
         private readonly MarketWeekLog weekLog;
-        private readonly int[] playerHouses = new int[3];
         private readonly StockThresholds[] thresholds;
-
-        // By good, what the player's workshops of the good have made and not delivered yet, under a unit, and,
-        // by input of its recipe, what they owe of it and have not taken yet, under a unit, backed by units still
-        // in the trading post. Null until the good is first made.
-        private readonly double[] playerPending;
-        private readonly double[][] playerInputDebts;
 
         // By good, the workshops that take it as an input and how much for every unit they make,
         // each list in the catalogue's order of its workshops: the recipes never change once the
@@ -94,7 +77,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             this.thresholdRule = thresholdRule ?? throw new ArgumentNullException(nameof(thresholdRule));
-            this.workforce = workforce ?? throw new ArgumentNullException(nameof(workforce));
+            workforceRule = workforce ?? throw new ArgumentNullException(nameof(workforce));
 
             // The negated comparisons also reject NaN.
             if (!(startingDays >= 0d) || double.IsInfinity(startingDays))
@@ -115,50 +98,17 @@ namespace DarkFantasyMerchant.Core
             }
 
             Labour = labour;
-            Housing = CopyOf(housing);
             Social = social;
-
-            if ((grid == null) != (placement == null))
-            {
-                throw new ArgumentException("A grid and a placement strategy come together.", nameof(grid));
-            }
-
-            if (grid != null)
-            {
-                foreach (CityHousingRule rule in Housing)
-                {
-                    if (rule.Footprint == null)
-                    {
-                        throw new ArgumentException("A market with a grid needs a footprint for every housing rule.", nameof(housing));
-                    }
-                }
-
-                foreach (PlacedBuilding building in grid.Buildings)
-                {
-                    if (building.Kind.IsHouse && !building.IsConnected)
-                    {
-                        CityHousingRule rule = RuleOf(Housing, building.Kind.HousedClass)
-                            ?? throw new ArgumentException(
-                                "A house of the grid is not connected and its class has no housing rule to give its room.", nameof(grid));
-                        roomUntilConnected[building] = rule.Room;
-                    }
-                }
-            }
-
+            cityHousing = new CityHousing(Population, housing, grid, placement);
             Grid = grid;
-            this.placement = placement;
-            MerchantOutput = merchantOutput;
             this.daysPerWeek = daysPerWeek;
             weekLog = new MarketWeekLog(goods.Count, daysPerWeek);
             LastDay = new CityDayReport(goods.Count);
             this.goods = new MarketGood[goods.Count];
             stocks = new double[goods.Count];
-            workers = StartingWorkersOf(goods, workforce);
-            reserves = new int[goods.Count];
-            leakCounters = new double[goods.Count];
+            cityWorkforce = new CityWorkforce(CityWorkforce.StartingWorkersOf(goods, workforce), Population, labour, social);
+            playerWorkshops = new PlayerWorkshops(this.goods, daysPerWeek, merchantOutput);
             thresholds = new StockThresholds[goods.Count];
-            playerPending = new double[goods.Count];
-            playerInputDebts = new double[goods.Count][];
 
             for (int i = 0; i < goods.Count; i++)
             {
@@ -205,11 +155,7 @@ namespace DarkFantasyMerchant.Core
                 }
             }
 
-            if (grid != null)
-            {
-                grid.BuildingPlaced += OnBuildingPlaced;
-                grid.BuildingConnected += OnBuildingConnected;
-            }
+            cityHousing.FollowGrid();
         }
 
         public int GoodCount => goods.Length;
@@ -223,7 +169,7 @@ namespace DarkFantasyMerchant.Core
         public int BeggarTarget => Labour?.BeggarTargetFor(Population.Inhabitants) ?? 0;
 
         /// <summary>When the city builds a house of its own for each class; empty when it never does.</summary>
-        public IReadOnlyList<CityHousingRule> Housing { get; }
+        public IReadOnlyList<CityHousingRule> Housing => cityHousing.Rules;
 
         /// <summary>The grid the houses and the player's workshops stand on; null for a city whose buildings have no place.</summary>
         public CityGrid Grid { get; }
@@ -232,39 +178,29 @@ namespace DarkFantasyMerchant.Core
         public SocialRule Social { get; }
 
         /// <summary>What the player's workshops make; null when they make nothing.</summary>
-        public MerchantOutputRule MerchantOutput { get; }
+        public MerchantOutputRule MerchantOutput => playerWorkshops.Output;
 
         /// <summary>
         /// The player's trading post in the city, which the player's workshops take their inputs from and deliver
         /// into; null until the player has one there, and their workshops make nothing until then.
         /// </summary>
-        public IGoodStore PlayerTradingPost { get; private set; }
+        public IGoodStore PlayerTradingPost => playerWorkshops.TradingPost;
 
         /// <summary>Gives the market the player's trading post, once it opens in the city.</summary>
         /// <exception cref="InvalidOperationException">The market already has one.</exception>
         public void SetPlayerTradingPost(IGoodStore post)
         {
-            if (post == null)
-            {
-                throw new ArgumentNullException(nameof(post));
-            }
-
-            if (PlayerTradingPost != null)
-            {
-                throw new InvalidOperationException("The market already has the player's trading post.");
-            }
-
-            PlayerTradingPost = post;
+            playerWorkshops.SetTradingPost(post);
         }
 
         /// <summary>Houses of a class the player has built in the city.</summary>
         public int PlayerHousesOf(SocialClass housedClass)
         {
-            return playerHouses[(int)housedClass];
+            return cityHousing.PlayerHousesOf(housedClass);
         }
 
         /// <summary>Houses the city has built of its own since the game started, not the player's.</summary>
-        public int CityHouses { get; private set; }
+        public int CityHouses => cityHousing.CityHouses;
 
         /// <summary>What happened in the last <see cref="StartDay"/>, for the debug tools; the same object every day.</summary>
         public CityDayReport LastDay { get; }
@@ -352,7 +288,7 @@ namespace DarkFantasyMerchant.Core
         {
             RequireGood(good);
 
-            return workers[good];
+            return cityWorkforce.WorkersOf(good);
         }
 
         /// <summary>Laid-off workers of the city's workshop for a good, still housed, waiting to be hired back.</summary>
@@ -360,7 +296,7 @@ namespace DarkFantasyMerchant.Core
         {
             RequireGood(good);
 
-            return reserves[good];
+            return cityWorkforce.ReserveOf(good);
         }
 
         /// <summary>Workshops the player has built for a good in the city.</summary>
@@ -368,24 +304,15 @@ namespace DarkFantasyMerchant.Core
         {
             RequireGood(good);
 
-            return playerWorkshops.FindAll(workshop => workshop.Good == good).Count;
+            return playerWorkshops.CountOf(good);
         }
 
         /// <summary>Workers of all the player's workshops for a good in the city.</summary>
         public int PlayerWorkersOf(int good)
         {
             RequireGood(good);
-            int sum = 0;
 
-            foreach (PlayerWorkshop workshop in playerWorkshops)
-            {
-                if (workshop.Good == good)
-                {
-                    sum += workshop.Workers;
-                }
-            }
-
-            return sum;
+            return playerWorkshops.WorkersOf(good);
         }
 
         /// <summary>
@@ -396,7 +323,7 @@ namespace DarkFantasyMerchant.Core
         {
             RequireGood(good);
 
-            return MerchantOutput == null ? 0d : PlayerDailyOutputOf(good, MerchantOutput);
+            return playerWorkshops.DailyOutputOf(good);
         }
 
         /// <summary>
@@ -412,7 +339,7 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentNullException(nameof(rule));
             }
 
-            return rule.DailyOutputOf(PlayerWorkersOf(good), goods[good].MerchantDailyOutputPerWorker, PlayerWorkshopsOf(good));
+            return playerWorkshops.DailyOutputOf(good, rule);
         }
 
         /// <summary>
@@ -423,37 +350,15 @@ namespace DarkFantasyMerchant.Core
         /// <param name="wageShare">The share of that value the workers are paid, 0 or more.</param>
         public double PlayerWeeklyWagesOf(double wageShare)
         {
-            // The negated comparison also rejects NaN.
-            if (!(wageShare >= 0d) || double.IsInfinity(wageShare))
-            {
-                throw new ArgumentOutOfRangeException(nameof(wageShare));
-            }
-
-            double wages = 0d;
-
-            for (int good = 0; good < goods.Length; good++)
-            {
-                wages += PlayerDailyOutputOf(good) * daysPerWeek * goods[good].BasePrice * wageShare;
-            }
-
-            return wages;
+            return playerWorkshops.WeeklyWagesOf(wageShare);
         }
 
         /// <summary>Jobs of all the player's workshops for a good in the city.</summary>
         public int PlayerJobsOf(int good)
         {
             RequireGood(good);
-            int sum = 0;
 
-            foreach (PlayerWorkshop workshop in playerWorkshops)
-            {
-                if (workshop.Good == good)
-                {
-                    sum += workshop.Jobs;
-                }
-            }
-
-            return sum;
+            return playerWorkshops.JobsOf(good);
         }
 
         /// <summary>
@@ -464,7 +369,7 @@ namespace DarkFantasyMerchant.Core
         {
             int sum = 0;
 
-            foreach (int count in StartingWorkersOf(goods, workforce))
+            foreach (int count in CityWorkforce.StartingWorkersOf(goods, workforce))
             {
                 sum += count;
             }
@@ -481,7 +386,7 @@ namespace DarkFantasyMerchant.Core
         {
             RequireNoGrid();
             RequireWorkshop(good, jobs);
-            playerWorkshops.Add(new PlayerWorkshop(good, jobs));
+            playerWorkshops.Add(good, jobs);
             Changed?.Invoke();
         }
 
@@ -495,7 +400,7 @@ namespace DarkFantasyMerchant.Core
             RequireStandable(footprint, place);
             RequireWorkshop(good, jobs);
             PlacedBuilding building = Grid.Place(BuildingKind.Workshop(good), BuildingOwner.Player, footprint, place);
-            playerWorkshops.Add(new PlayerWorkshop(good, jobs, building));
+            playerWorkshops.Add(good, jobs, building);
             Changed?.Invoke();
         }
 
@@ -503,8 +408,7 @@ namespace DarkFantasyMerchant.Core
         public void AddPlayerHouse(SocialClass housedClass, int room)
         {
             RequireNoGrid();
-            Population.AddRoom(housedClass, room);
-            playerHouses[(int)housedClass]++;
+            cityHousing.AddPlayerHouse(housedClass, room);
             Changed?.Invoke();
         }
 
@@ -527,8 +431,7 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentOutOfRangeException(nameof(room));
             }
 
-            PlaceHouse(housedClass, BuildingOwner.Player, room, footprint, place);
-            playerHouses[(int)housedClass]++;
+            cityHousing.AddPlayerHouse(housedClass, room, footprint, place);
             Changed?.Invoke();
         }
 
@@ -596,54 +499,6 @@ namespace DarkFantasyMerchant.Core
             return true;
         }
 
-        // Places a house whose room waits for its connection, which may come at once.
-        private void PlaceHouse(SocialClass housedClass, BuildingOwner owner, int room, Footprint footprint, GridPlace place)
-        {
-            roomOfPlacedHouse = room;
-
-            try
-            {
-                Grid.Place(BuildingKind.House(housedClass), owner, footprint, place);
-            }
-            finally
-            {
-                roomOfPlacedHouse = 0;
-            }
-        }
-
-        // Before the house can connect: the grid raises BuildingPlaced first.
-        private void OnBuildingPlaced(PlacedBuilding building)
-        {
-            // Only the houses the market places: their room is known.
-            if (building.Kind.IsHouse && roomOfPlacedHouse > 0)
-            {
-                roomUntilConnected[building] = roomOfPlacedHouse;
-                roomOfPlacedHouse = 0;
-            }
-        }
-
-        private void OnBuildingConnected(PlacedBuilding building)
-        {
-            if (roomUntilConnected.TryGetValue(building, out int room))
-            {
-                roomUntilConnected.Remove(building);
-                Population.AddRoom(building.Kind.HousedClass, room);
-            }
-        }
-
-        private static CityHousingRule RuleOf(IReadOnlyList<CityHousingRule> housing, SocialClass housedClass)
-        {
-            foreach (CityHousingRule rule in housing)
-            {
-                if (rule.HousedClass == housedClass)
-                {
-                    return rule;
-                }
-            }
-
-            return null;
-        }
-
         private void RequireNoGrid()
         {
             if (Grid != null)
@@ -691,7 +546,7 @@ namespace DarkFantasyMerchant.Core
         /// <summary>Units the workshop makes in a week with the workers of the moment, while the stock is not above T3.</summary>
         public double NominalWeeklyProductionOf(int good)
         {
-            return workers[good] * goods[good].DailyOutputPerWorker * daysPerWeek;
+            return cityWorkforce.WorkersOf(good) * goods[good].DailyOutputPerWorker * daysPerWeek;
         }
 
         /// <summary>Units the city consumes in a week while it has them.</summary>
@@ -730,7 +585,7 @@ namespace DarkFantasyMerchant.Core
         {
             RequireGood(good);
 
-            return workers[good] * goods[good].DailyOutputPerWorker;
+            return cityWorkforce.WorkersOf(good) * goods[good].DailyOutputPerWorker;
         }
 
         /// <summary>
@@ -846,22 +701,9 @@ namespace DarkFantasyMerchant.Core
                 if (good.IsProduced)
                 {
                     StockThresholds goodThresholds = thresholds[i];
-                    int target = workforce.NextWorkers(workers[i], good.MaxWorkers, stocks[i], goodThresholds);
+                    cityWorkforce.MoveTo(i, workforceRule.NextWorkers(cityWorkforce.WorkersOf(i), good.MaxWorkers, stocks[i], goodThresholds));
 
-                    if (Labour == null)
-                    {
-                        workers[i] = target;
-                    }
-                    else if (target > workers[i])
-                    {
-                        Hire(i, target - workers[i]);
-                    }
-                    else if (target < workers[i])
-                    {
-                        LayOff(i, workers[i] - target);
-                    }
-
-                    double potential = workers[i] * good.DailyOutputPerWorker;
+                    double potential = cityWorkforce.WorkersOf(i) * good.DailyOutputPerWorker;
                     double made = potential * TakeInputs(good, potential);
 
                     // Above T3 the inputs are taken all the same, and lost.
@@ -882,8 +724,8 @@ namespace DarkFantasyMerchant.Core
                     UpdateSatisfactions();
                 }
 
-                FillVacancies();
-                RunPlayerWorkshops();
+                playerWorkshops.FillVacancies(Population, Labour);
+                playerWorkshops.Run();
 
                 if (Social != null)
                 {
@@ -892,7 +734,7 @@ namespace DarkFantasyMerchant.Core
                 }
 
                 Population.SetBeggars(Labour.NextBeggars(Population.Beggars, Population.Inhabitants));
-                BuildCityHouses();
+                cityHousing.BuildCityHouses(AvailableOf, TakeMaterial);
             }
 
             // Last, so that the next day starts on the thresholds of the population this day leaves.
@@ -954,262 +796,6 @@ namespace DarkFantasyMerchant.Core
             return Array.ConvertAll(consumers, list => list.ToArray());
         }
 
-        private static int[] StartingWorkersOf(IReadOnlyList<MarketGood> goods, WorkforceRule workforce)
-        {
-            if (goods == null)
-            {
-                throw new ArgumentNullException(nameof(goods));
-            }
-
-            if (workforce == null)
-            {
-                throw new ArgumentNullException(nameof(workforce));
-            }
-
-            int workshops = 0;
-
-            for (int i = 0; i < goods.Count; i++)
-            {
-                if (goods[i].IsProduced)
-                {
-                    workshops++;
-                }
-            }
-
-            var starting = new int[goods.Count];
-
-            for (int i = 0; i < goods.Count; i++)
-            {
-                starting[i] = goods[i].IsProduced ? workforce.StartingWorkersOf(goods[i].MaxWorkers, workshops) : 0;
-            }
-
-            return starting;
-        }
-
-        // In this order: the workshop's own reserve, the beggars within the free room,
-        // then the reserves of the other workshops in the order of the catalogue. What is still
-        // missing is not hired today.
-        private void Hire(int good, int wanted)
-        {
-            wanted -= TakeFromReserve(good, good, wanted);
-
-            // The beggars are hired only while the poor are satisfied.
-            bool poorSatisfied = Social == null || Population.SatisfactionOf(SocialClass.Poor) > 0;
-            int fromBeggars = poorSatisfied
-                ? Math.Min(wanted, Labour.WorkersHireableFrom(Population.Beggars, Population.FreeRoomOf(SocialClass.Poor)))
-                : 0;
-            Population.Hire(fromBeggars, Labour.InhabitantsPerWorker);
-            workers[good] += fromBeggars;
-            wanted -= fromBeggars;
-
-            for (int other = 0; other < goods.Length && wanted > 0; other++)
-            {
-                if (other != good)
-                {
-                    wanted -= TakeFromReserve(other, good, wanted);
-                }
-            }
-        }
-
-        // Moves up to the wanted workers from a workshop's reserve to a workshop; housed inhabitants do not change.
-        private int TakeFromReserve(int reserve, int good, int wanted)
-        {
-            int taken = Math.Min(wanted, reserves[reserve]);
-            reserves[reserve] -= taken;
-            workers[good] += taken;
-
-            return taken;
-        }
-
-        // The laid-off workers stay housed in the reserve, which leaks back to the beggars.
-        private void LayOff(int good, int laidOff)
-        {
-            workers[good] -= laidOff;
-            reserves[good] += laidOff;
-
-            ReserveLeak leak = Labour.LeakAfterLayoff(leakCounters[good], workers[good], reserves[good]);
-            leakCounters[good] = leak.Counter;
-            reserves[good] -= leak.Leaving;
-
-            // A worker whose family cannot be taken stays in the reserve.
-            reserves[good] += Population.SendToBeggars(leak.Leaving, Labour.InhabitantsPerWorker);
-        }
-
-        // The second hiring: the beggars fill the player's workshops in the order
-        // they were built, each up to its jobs; a workshop of the grid only while it is connected.
-        private void FillVacancies()
-        {
-            int fillable = Labour.VacanciesFillable(Population.Beggars, Population.FreeRoomOf(SocialClass.Poor));
-
-            foreach (PlayerWorkshop workshop in playerWorkshops)
-            {
-                if (fillable == 0)
-                {
-                    break;
-                }
-
-                if (workshop.Building != null && !workshop.Building.IsConnected)
-                {
-                    continue;
-                }
-
-                int hired = Math.Min(fillable, workshop.Jobs - workshop.Workers);
-                Population.Hire(hired, Labour.InhabitantsPerWorker);
-                workshop.Workers += hired;
-                fillable -= hired;
-            }
-        }
-
-        // The player's workshops make their goods into the trading post, from its inputs, each good in the order its
-        // first workshop was built: a good made earlier is already there for the next. Only whole units move; the
-        // fractions are carried to the next day.
-        private void RunPlayerWorkshops()
-        {
-            if (MerchantOutput == null || PlayerTradingPost == null)
-            {
-                return;
-            }
-
-            var done = new HashSet<int>();
-
-            foreach (PlayerWorkshop workshop in playerWorkshops)
-            {
-                if (done.Add(workshop.Good))
-                {
-                    RunPlayerWorkshopsOf(workshop.Good);
-                }
-            }
-        }
-
-        private void RunPlayerWorkshopsOf(int good)
-        {
-            // What floating sums lose: 10 days of a tenth make a whole unit.
-            const double Tolerance = 1e-9;
-
-            double potential = PlayerDailyOutputOf(good);
-
-            if (potential <= 0d)
-            {
-                return;
-            }
-
-            IGoodStore post = PlayerTradingPost;
-            IReadOnlyList<MarketInput> inputs = goods[good].Inputs;
-            double[] debts = playerInputDebts[good] ??= new double[inputs.Count];
-            double factor = 1d;
-
-            // A debt is backed by a unit still in the post, which it does not leave for the day's needs.
-            for (int k = 0; k < inputs.Count; k++)
-            {
-                double available = Math.Max(0d, post.UnitsOf(inputs[k].Good) - debts[k]);
-                factor = Math.Min(factor, available / (potential * inputs[k].UnitsPerUnit));
-            }
-
-            double made = potential * factor;
-
-            if (made <= 0d)
-            {
-                return;
-            }
-
-            for (int k = 0; k < inputs.Count; k++)
-            {
-                debts[k] += made * inputs[k].UnitsPerUnit;
-                int taken = Math.Min((int)Math.Floor(debts[k] + Tolerance), post.UnitsOf(inputs[k].Good));
-
-                if (taken > 0)
-                {
-                    post.TryRemove(inputs[k].Good, taken);
-                    debts[k] = Math.Max(0d, debts[k] - taken);
-                }
-            }
-
-            playerPending[good] += made;
-            int delivered = (int)Math.Floor(playerPending[good] + Tolerance);
-
-            if (delivered > 0)
-            {
-                post.TryAdd(good, delivered);
-                playerPending[good] = Math.Max(0d, playerPending[good] - delivered);
-            }
-        }
-
-        // One house a day at most for each class, with every material or none taken. What it
-        // takes is not consumption: the week's log does not count it.
-        private void BuildCityHouses()
-        {
-            foreach (CityHousingRule rule in Housing)
-            {
-                if (rule.IsCrowded(Population))
-                {
-                    BuildCityHouse(rule);
-                }
-            }
-        }
-
-        private void BuildCityHouse(CityHousingRule rule)
-        {
-            foreach (MaterialCost material in rule.Materials)
-            {
-                if (AvailableOf(material.Good) < material.Units)
-                {
-                    return;
-                }
-            }
-
-            // With a grid the house needs a place and the roads that connect it, found before anything is taken:
-            // a place off the network, without the roads to join it, builds nothing.
-            GridPlace place = default;
-
-            if (Grid != null)
-            {
-                if (!placement.TryChoose(Grid, rule.Footprint.Value, out place, roadsToLay))
-                {
-                    return;
-                }
-
-                CellsOf(rule.Footprint.Value, place, houseCells);
-
-                if (!Grid.CanPlace(rule.Footprint.Value, place) || !RoadPlanner.Connects(Grid, houseCells, roadsToLay))
-                {
-                    return;
-                }
-            }
-
-            foreach (MaterialCost material in rule.Materials)
-            {
-                // Not below nothing: the last unit can be a hair short.
-                stocks[material.Good] = Math.Max(0d, stocks[material.Good] - material.Units);
-            }
-
-            if (Grid != null)
-            {
-                // Its room comes when it connects: at once or through its roads.
-                PlaceHouse(rule.HousedClass, BuildingOwner.City, rule.Room, rule.Footprint.Value, place);
-                Grid.PlaceRoads(roadsToLay, BuildingOwner.City);
-            }
-            else
-            {
-                Population.AddRoom(rule.HousedClass, rule.Room);
-            }
-
-            CityHouses++;
-        }
-
-        private static void CellsOf(Footprint footprint, GridPlace place, List<Vector2Int> cells)
-        {
-            cells.Clear();
-            Vector2Int size = footprint.SizeFor(place.Orientation);
-
-            for (int y = 0; y < size.y; y++)
-            {
-                for (int x = 0; x < size.x; x++)
-                {
-                    cells.Add(new Vector2Int(place.Origin.x + x, place.Origin.y + y));
-                }
-            }
-        }
-
         // Each class's satisfaction takes a step towards the target the stocks of the goods it
         // consumes give.
         private void UpdateSatisfactions()
@@ -1250,15 +836,7 @@ namespace DarkFantasyMerchant.Core
         // workshops, in the order they were built.
         private int TakeWorkersAway(int wanted)
         {
-            int removed = 0;
-
-            for (int good = 0; good < goods.Length && wanted > 0; good++)
-            {
-                int taken = Math.Min(wanted, reserves[good]);
-                reserves[good] -= taken;
-                wanted -= taken;
-                removed += taken;
-            }
+            int removed = cityWorkforce.TakeReserves(ref wanted);
 
             if (wanted == 0)
             {
@@ -1266,98 +844,20 @@ namespace DarkFantasyMerchant.Core
             }
 
             int protectedWorkers = Social.ProtectedWorkers;
-            int takeable = 0;
-
-            for (int good = 0; good < goods.Length; good++)
-            {
-                takeable += Math.Max(0, workers[good] - protectedWorkers);
-            }
-
-            foreach (PlayerWorkshop workshop in playerWorkshops)
-            {
-                takeable += workshop.Workers;
-            }
-
+            int takeable = cityWorkforce.TakeableAbove(protectedWorkers) + playerWorkshops.Workers;
             int step = Math.Max(2, takeable / wanted);
             int accumulated = 0;
 
-            for (int good = 0; good < goods.Length; good++)
-            {
-                if (workers[good] <= protectedWorkers)
-                {
-                    continue;
-                }
-
-                accumulated += workers[good] - protectedWorkers;
-
-                if (accumulated >= step)
-                {
-                    int taken = Math.Min(accumulated / step, wanted);
-
-                    if (taken >= workers[good])
-                    {
-                        taken = workers[good] - 1;
-                    }
-
-                    workers[good] -= taken;
-                    wanted -= taken;
-                    accumulated -= taken * step;
-                    removed += taken;
-                }
-            }
-
-            foreach (PlayerWorkshop workshop in playerWorkshops)
-            {
-                if (wanted < 1)
-                {
-                    break;
-                }
-
-                if (workshop.Workers == 0)
-                {
-                    continue;
-                }
-
-                accumulated += workshop.Workers;
-
-                if (accumulated >= step)
-                {
-                    int taken = Math.Min(Math.Min(accumulated / step, wanted), workshop.Workers);
-                    workshop.Workers -= taken;
-                    accumulated -= taken * step;
-                    wanted -= taken;
-                    removed += taken;
-                }
-            }
+            removed += cityWorkforce.TakeAbove(protectedWorkers, step, ref wanted, ref accumulated);
+            removed += playerWorkshops.TakeAway(step, ref wanted, ref accumulated);
 
             return removed;
         }
 
-        private static IReadOnlyList<CityHousingRule> CopyOf(IReadOnlyList<CityHousingRule> housing)
+        // Takes the materials of a house the city builds of its own; not below nothing: the last unit can be a hair short.
+        private void TakeMaterial(int good, int units)
         {
-            var copy = new List<CityHousingRule>();
-
-            if (housing == null)
-            {
-                return copy;
-            }
-
-            foreach (CityHousingRule rule in housing)
-            {
-                if (rule == null)
-                {
-                    throw new ArgumentNullException(nameof(housing));
-                }
-
-                if (copy.Exists(other => other.HousedClass == rule.HousedClass))
-                {
-                    throw new ArgumentException("A class has two housing rules.", nameof(housing));
-                }
-
-                copy.Add(rule);
-            }
-
-            return copy;
+            stocks[good] = Math.Max(0d, stocks[good] - units);
         }
 
         private void RequireGood(int good)
@@ -1382,26 +882,6 @@ namespace DarkFantasyMerchant.Core
             {
                 throw new ArgumentOutOfRangeException(name);
             }
-        }
-
-        /// <summary>A workshop the player has built: its good, its jobs, the workers it has and its building on the grid.</summary>
-        private sealed class PlayerWorkshop
-        {
-            public PlayerWorkshop(int good, int jobs, PlacedBuilding building = null)
-            {
-                Good = good;
-                Jobs = jobs;
-                Building = building;
-            }
-
-            /// <summary>Null for a workshop of a market without grid.</summary>
-            public PlacedBuilding Building { get; }
-
-            public int Good { get; }
-
-            public int Jobs { get; }
-
-            public int Workers { get; set; }
         }
     }
 }
