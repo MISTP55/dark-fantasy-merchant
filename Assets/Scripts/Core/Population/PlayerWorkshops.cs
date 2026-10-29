@@ -73,8 +73,8 @@ namespace DarkFantasyMerchant.Core
             TradingPost = post;
         }
 
-        /// <param name="building">Its building on the grid, null for a market without grid.</param>
-        public void Add(int good, int jobs, PlacedBuilding building = null)
+        /// <param name="building">Its building on the grid.</param>
+        public void Add(int good, int jobs, PlacedBuilding building)
         {
             workshops.Add(new Workshop(good, jobs, building));
         }
@@ -146,8 +146,8 @@ namespace DarkFantasyMerchant.Core
             return wages;
         }
 
-        // The second hiring: the beggars fill the workshops in the order they were built, each up to its jobs; a
-        // workshop of the grid only while it is connected.
+        // The second hiring: the beggars fill the workshops in the order they were built, each up to its jobs, only
+        // while it is connected.
         public void FillVacancies(CityPopulation population, LabourRule labour)
         {
             int fillable = labour.VacanciesFillable(population.Beggars, population.FreeRoomOf(SocialClass.Poor));
@@ -159,7 +159,7 @@ namespace DarkFantasyMerchant.Core
                     break;
                 }
 
-                if (workshop.Building != null && !workshop.Building.IsConnected)
+                if (!workshop.Building.IsConnected)
                 {
                     continue;
                 }
@@ -288,7 +288,6 @@ namespace DarkFantasyMerchant.Core
                 Building = building;
             }
 
-            /// <summary>Null for a workshop of a market without grid.</summary>
             public PlacedBuilding Building { get; }
 
             public int Good { get; }

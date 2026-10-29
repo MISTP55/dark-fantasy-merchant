@@ -327,15 +327,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void AddPlayerHouse_WithoutPlace_Throws_WhenTheMarketHasAGrid()
-        {
-            CityMarket market = GridMarket(new CityPopulation(960, 0, 1000), Grid(3, 3), new RandomPlacement(new System.Random(1)));
-
-            Assert.Throws<InvalidOperationException>(() => market.AddPlayerHouse(SocialClass.Poor, 100));
-            Assert.Throws<InvalidOperationException>(() => market.AddPlayerWorkshop(0, 5));
-        }
-
-        [Test]
         public void IsCrowded_IsAboveTheOccupancy_StrictlyOverTheRoom()
         {
             CityHousingRule housing = Housing;

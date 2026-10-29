@@ -35,7 +35,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static CityMarket Market(MarketGood[] goods, MerchantOutputRule merchantOutput = null)
         {
             return new CityMarket(goods, TestMarkets.Thresholds, Workforce, 100, TestMarkets.Pricing, 7, Roomy,
-                TestMarkets.Labour, merchantOutput: merchantOutput ?? Bonus);
+                TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement, merchantOutput: merchantOutput ?? Bonus);
         }
 
         private static Warehouse PostOf(CityMarket market, int capacity = 2000)
@@ -59,7 +59,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // 10 workers making 0.015 each, with nothing to take: 0.15 a day.
             CityMarket market = Market(Goods(0.015));
             Warehouse post = PostOf(market);
-            market.AddPlayerWorkshop(Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
 
             Days(market, 6);
 
@@ -84,7 +84,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityMarket withoutPlayer = Market(goods);
             Warehouse post = PostOf(market);
             post.TryAdd(Input, 100);
-            market.AddPlayerWorkshop(Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
 
             Days(market, 10);
             Days(withoutPlayer, 10);
@@ -103,7 +103,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Warehouse post = PostOf(market);
             post.TryAdd(Input, 10);
             post.TryAdd(Other, 2);
-            market.AddPlayerWorkshop(Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
 
             Days(market, 1);
 
@@ -124,7 +124,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityMarket market = Market(Goods(0.01, new MarketInput(Input, 1)));
             Warehouse post = PostOf(market);
             post.TryAdd(Input, 5);
-            market.AddPlayerWorkshop(Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
 
             Days(market, 9);
 
@@ -143,7 +143,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityMarket market = Market(Goods(0.01, new MarketInput(Input, 1)));
             Warehouse post = PostOf(market);
             post.TryAdd(Input, 1);
-            market.AddPlayerWorkshop(Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
             Days(market, 1);
 
             Assert.IsTrue(post.TryRemove(Input, 1));
@@ -170,8 +170,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityMarket market = Market(new[] { made, Good(0.05), other });
             Warehouse post = PostOf(market);
             post.TryAdd(Input, 1);
-            market.AddPlayerWorkshop(Made, 10);
-            market.AddPlayerWorkshop(Other, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Other, 10);
 
             Days(market, 30);
 
@@ -186,8 +186,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // 1 a day of each; Made takes one Input a unit.
             CityMarket market = Market(Goods(0.1, new MarketInput(Input, 1)));
             Warehouse post = PostOf(market);
-            market.AddPlayerWorkshop(Input, 10);
-            market.AddPlayerWorkshop(Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Input, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
 
             Days(market, 1);
 
@@ -200,8 +200,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityMarket market = Market(Goods(0.1, new MarketInput(Input, 1)));
             Warehouse post = PostOf(market);
-            market.AddPlayerWorkshop(Made, 10);
-            market.AddPlayerWorkshop(Input, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Input, 10);
 
             Days(market, 1);
 
@@ -232,7 +232,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void WithoutTradingPost_MakesNothing_ButHires()
         {
             CityMarket market = Market(Goods(0.1));
-            market.AddPlayerWorkshop(Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
 
             Days(market, 10);
 
@@ -244,9 +244,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void WithoutMerchantOutputRule_MakesNothing()
         {
             var market = new CityMarket(Goods(0.1), TestMarkets.Thresholds, Workforce, 100, TestMarkets.Pricing, 7,
-                Roomy, TestMarkets.Labour);
+                Roomy, TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
             Warehouse post = PostOf(market);
-            market.AddPlayerWorkshop(Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
 
             Days(market, 10);
 
@@ -260,9 +260,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // 3 workshops of 10: 3 a day, 3 % more.
             CityMarket market = Market(Goods(0.1));
             Warehouse post = PostOf(market);
-            market.AddPlayerWorkshop(Made, 10);
-            market.AddPlayerWorkshop(Made, 10);
-            market.AddPlayerWorkshop(Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
 
             Days(market, 10);
 
@@ -276,7 +276,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityMarket market = Market(Goods(0.1));
             Warehouse post = PostOf(market, 0);
-            market.AddPlayerWorkshop(Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
 
             Days(market, 5);
 
@@ -291,7 +291,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityMarket withoutPlayer = Market(goods);
             Warehouse post = PostOf(market);
             post.TryAdd(Input, 100);
-            market.AddPlayerWorkshop(Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
 
             Days(market, 7);
             Days(withoutPlayer, 7);

@@ -263,9 +263,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         // What a worker of the player's workshop for the good makes in a day: one workshop, no bonus.
         private double MerchantOutputOf(EconomyDefinition definition, CityDefinition city, int good)
         {
-            CityMarket market = definition.CreateMarket(city, definition.CreatePricing(), DaysPerWeek, definition.CreateLabourRule(), PerClass<int>.All(100));
-            market.AddPlayerHouse(SocialClass.Poor, 1000);
-            market.AddPlayerWorkshop(good, 30);
+            // On a grid without houses, the city starts without room: the player's house gives it to every poor and more.
+            CityMarket market = definition.CreateMarket(city, definition.CreatePricing(), DaysPerWeek, definition.CreateLabourRule(), PerClass<int>.All(100),
+                grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
+            TestMarkets.AddPlayerHouse(market, SocialClass.Poor, 100000);
+            TestMarkets.AddPlayerWorkshop(market, good, 30);
 
             // Full stocks: the city's workshops hire nobody and leave the beggars to the player.
             for (int i = 0; i < market.GoodCount; i++)

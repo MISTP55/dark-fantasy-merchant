@@ -25,7 +25,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             WorkforceRule workforce = null)
         {
             return new CityMarket(Enumerable.Repeat(Good, goods).ToArray(), TestMarkets.Thresholds, workforce ?? Workforce, startingDays,
-                TestMarkets.Pricing, 7, population, labour ?? TestMarkets.Labour);
+                TestMarkets.Pricing, 7, population, labour ?? TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
         }
 
         private static CityMarket TwoGoodsMarket(double startingDays, CityPopulation population)
@@ -36,7 +36,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static CityMarket MarketWithoutLabour(double startingDays, CityPopulation population)
         {
             return new CityMarket(new[] { Good }, TestMarkets.Thresholds, Workforce, startingDays,
-                TestMarkets.Pricing, 7, population, null);
+                TestMarkets.Pricing, 7, population, null, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
         }
 
         [Test]
@@ -209,9 +209,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int startingWorkers = CityMarket.StartingWorkforceOf(goods, workforce);
             CityPopulation population = CityPopulation.AtStart(startingWorkers, 4, 4d / 17d, new PerClass<int>(20, 60, 120));
             var market = new CityMarket(goods, TestMarkets.Thresholds, workforce, 7, TestMarkets.Pricing, 7,
-                population, TestMarkets.Labour);
-            market.AddPlayerHouse(SocialClass.Poor, 100);
-            market.AddPlayerWorkshop(0, 30);
+                population, TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
+            TestMarkets.AddPlayerHouse(market, SocialClass.Poor, 100);
+            TestMarkets.AddPlayerWorkshop(market, 0, 30);
 
             int leaks = 0;
             int previousCityWorkers = CityWorkersAndReserves(market);
@@ -298,7 +298,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TheCity_HiresBeforeThePlayer()
         {
             CityMarket market = Market(0, new CityPopulation(1000, 40, 1100));
-            market.AddPlayerWorkshop(0, 30);
+            TestMarkets.AddPlayerWorkshop(market, 0, 30);
 
             market.StartDay();
 
@@ -310,7 +310,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void Vacancies_AreFilledFromTheBeggars()
         {
             CityMarket market = Market(100, new CityPopulation(1000, 50, 1100));
-            market.AddPlayerWorkshop(0, 30);
+            TestMarkets.AddPlayerWorkshop(market, 0, 30);
 
             market.StartDay();
 
@@ -327,8 +327,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void Vacancies_FillThePlayersWorkshopsInTheOrderTheyWereBuilt()
         {
             CityMarket market = TwoGoodsMarket(100, new CityPopulation(1000, 200, 1200));
-            market.AddPlayerWorkshop(1, 30);
-            market.AddPlayerWorkshop(0, 30);
+            TestMarkets.AddPlayerWorkshop(market, 1, 30);
+            TestMarkets.AddPlayerWorkshop(market, 0, 30);
 
             market.StartDay();
 
@@ -344,14 +344,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // A merchant's worker makes a twentieth. Three workshops of 10 jobs: 3 % more.
             var good = new MarketGood(10, 2, 60, 0.1, 0.05);
             var market = new CityMarket(new[] { good }, TestMarkets.Thresholds, Workforce, 100,
-                TestMarkets.Pricing, 7, new CityPopulation(1000, 200, 1200), TestMarkets.Labour);
+                TestMarkets.Pricing, 7, new CityPopulation(1000, 200, 1200), TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
             var rule = new MerchantOutputRule(3, 1.03, 6, 1.06, 9, 1.1);
 
             Assert.AreEqual(0, market.PlayerDailyOutputOf(0, rule));
 
-            market.AddPlayerWorkshop(0, 10);
-            market.AddPlayerWorkshop(0, 10);
-            market.AddPlayerWorkshop(0, 10);
+            TestMarkets.AddPlayerWorkshop(market, 0, 10);
+            TestMarkets.AddPlayerWorkshop(market, 0, 10);
+            TestMarkets.AddPlayerWorkshop(market, 0, 10);
             market.StartDay();
 
             Assert.AreEqual(30, market.PlayerWorkersOf(0));
@@ -364,7 +364,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void Vacancies_NeedFiveBeggars()
         {
             CityMarket market = Market(100, new CityPopulation(1000, 4, 1100));
-            market.AddPlayerWorkshop(0, 30);
+            TestMarkets.AddPlayerWorkshop(market, 0, 30);
 
             market.StartDay();
 
@@ -378,7 +378,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int changes = 0;
             market.Changed += () => changes++;
 
-            market.AddPlayerHouse(SocialClass.Poor, 100);
+            TestMarkets.AddPlayerHouse(market, SocialClass.Poor, 100);
 
             Assert.AreEqual(1100, market.Population.Room);
             Assert.AreEqual(1, market.PlayerHousesOf(SocialClass.Poor));
@@ -392,7 +392,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int changes = 0;
             market.Changed += () => changes++;
 
-            market.AddPlayerWorkshop(0, 30);
+            TestMarkets.AddPlayerWorkshop(market, 0, 30);
 
             Assert.AreEqual(1, market.PlayerWorkshopsOf(0));
             Assert.AreEqual(30, market.PlayerJobsOf(0));
@@ -404,11 +404,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AddPlayerWorkshop_RefusesAGoodNotProduced()
         {
             var market = new CityMarket(new[] { new MarketGood(10, 2, 0, 0), Good }, TestMarkets.Thresholds, Workforce, 30,
-                TestMarkets.Pricing, 7, new CityPopulation(1000), TestMarkets.Labour);
+                TestMarkets.Pricing, 7, new CityPopulation(1000), TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => market.AddPlayerWorkshop(0, 30));
-            Assert.Throws<ArgumentOutOfRangeException>(() => market.AddPlayerWorkshop(1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => market.AddPlayerWorkshop(2, 30));
+            Assert.Throws<ArgumentOutOfRangeException>(() => TestMarkets.AddPlayerWorkshop(market, 0, 30));
+            Assert.Throws<ArgumentOutOfRangeException>(() => TestMarkets.AddPlayerWorkshop(market, 1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => TestMarkets.AddPlayerWorkshop(market, 2, 30));
             Assert.AreEqual(0, market.PlayerWorkshopsOf(1));
         }
 
@@ -429,8 +429,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void WithoutLabour_ThePlayersWorkshopsHireNobody()
         {
             CityMarket market = MarketWithoutLabour(100, new CityPopulation(1000, 50, 1100));
-            market.AddPlayerWorkshop(0, 30);
-            market.AddPlayerHouse(SocialClass.Poor, 100);
+            TestMarkets.AddPlayerWorkshop(market, 0, 30);
+            TestMarkets.AddPlayerHouse(market, SocialClass.Poor, 100);
 
             market.StartDay();
 

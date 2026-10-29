@@ -137,60 +137,6 @@ namespace DarkFantasyMerchant.Core
             return Quote(market, materials, treasury, cost, market.MaxWorkersOf(good) > 0 && market.PlayerTradingPost != null, isFree);
         }
 
-        /// <param name="materialBought">Told, for the debug tools, of each material bought from the market: its good, units and gold.</param>
-        /// <returns>False when the quote is impossible; nothing was taken then.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">A room under 1, before anything is taken.</exception>
-        public static bool TryBuildHouse(
-            CityMarket market,
-            IGoodSource materials,
-            Treasury treasury,
-            BuildingCost cost,
-            SocialClass housedClass,
-            int room,
-            Action<int, int, long> materialBought = null)
-        {
-            RequireAtLeastOne(room, nameof(room));
-            RequireNoGrid(market);
-
-            ConstructionQuote quote = QuoteHouse(market, materials, treasury, cost);
-
-            if (!quote.IsPossible)
-            {
-                return false;
-            }
-
-            Pay(market, materials, treasury, cost, quote, materialBought, false);
-            market.AddPlayerHouse(housedClass, room);
-            return true;
-        }
-
-        /// <param name="materialBought">Told, for the debug tools, of each material bought from the market: its good, units and gold.</param>
-        /// <returns>False when the quote is impossible; nothing was taken then.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">Jobs under 1, before anything is taken.</exception>
-        public static bool TryBuildWorkshop(
-            CityMarket market,
-            IGoodSource materials,
-            Treasury treasury,
-            BuildingCost cost,
-            int good,
-            int jobs,
-            Action<int, int, long> materialBought = null)
-        {
-            RequireAtLeastOne(jobs, nameof(jobs));
-            RequireNoGrid(market);
-
-            ConstructionQuote quote = QuoteWorkshop(market, materials, treasury, cost, good);
-
-            if (!quote.IsPossible)
-            {
-                return false;
-            }
-
-            Pay(market, materials, treasury, cost, quote, materialBought, false);
-            market.AddPlayerWorkshop(good, jobs);
-            return true;
-        }
-
         /// <summary>Whether the market has a grid where the footprint fits at the place.</summary>
         public static bool CanStand(CityMarket market, Footprint footprint, GridPlace place)
         {
@@ -465,15 +411,6 @@ namespace DarkFantasyMerchant.Core
             int fromSources = materials == null ? 0 : Math.Min(materials.UnitsOf(material.Good), material.Units);
 
             return material.Units - fromSources;
-        }
-
-        // A placeless building on a market with a grid has no place: refused before anything is taken.
-        private static void RequireNoGrid(CityMarket market)
-        {
-            if (market != null && market.Grid != null)
-            {
-                throw new InvalidOperationException("A market with a grid builds at a place.");
-            }
         }
 
         private static void RequireClass(SocialClass housedClass)

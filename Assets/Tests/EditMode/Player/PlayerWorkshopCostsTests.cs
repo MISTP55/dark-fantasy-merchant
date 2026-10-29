@@ -19,7 +19,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var made = new MarketGood(basePrice, 0, 1, 0.1, merchantOutput).WithInputs(new[] { new MarketInput(Input, 1) });
             var input = new MarketGood(10, 0, 1, 0.1, merchantOutput);
             return new CityMarket(new[] { made, input }, TestMarkets.Thresholds, Workforce, 100, TestMarkets.Pricing, 7,
-                new CityPopulation(1000, 200, 2000), TestMarkets.Labour, merchantOutput: Bonus);
+                new CityPopulation(1000, 200, 2000), TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement, merchantOutput: Bonus);
         }
 
         // The workshops, an empty trading post, and a day for them to hire.
@@ -27,7 +27,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             foreach (int jobs in jobsOfEachWorkshop)
             {
-                market.AddPlayerWorkshop(Made, jobs);
+                TestMarkets.AddPlayerWorkshop(market, Made, jobs);
             }
 
             market.SetPlayerTradingPost(new Warehouse(2000));
@@ -100,9 +100,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // Without labour, nobody is ever hired.
             var market = new CityMarket(new[] { new MarketGood(100, 0, 1, 0.1, 0.1) }, TestMarkets.Thresholds, Workforce, 100,
-                TestMarkets.Pricing, 7, new CityPopulation(1000));
-            market.AddPlayerWorkshop(Made, 10);
-            market.AddPlayerWorkshop(Made, 10);
+                TestMarkets.Pricing, 7, new CityPopulation(1000), grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
+            TestMarkets.AddPlayerWorkshop(market, Made, 10);
             market.StartDay();
 
             Assert.AreEqual(0, market.PlayerWorkersOf(Made));

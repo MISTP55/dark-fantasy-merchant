@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using DarkFantasyMerchant.Core;
 using UnityEngine;
 
@@ -42,6 +44,57 @@ namespace DarkFantasyMerchant.Tests.EditMode
             grid.Place(BuildingKind.TownHall(), BuildingOwner.City, new Footprint(3, 2),
                 new GridPlace(Vector2Int.zero, BuildingOrientation.Along));
             return grid;
+        }
+
+        /// <summary>
+        /// A 40 by 4 grid for a market the player builds in: the town hall of <see cref="GridWithTownHall"/> and a city
+        /// road along y = 0 from x = 3 to the edge, which joins it, so that a 1 by 1 building on y = 1 is connected. Give
+        /// it, with <see cref="Placement"/>, to a market without housing rules: it then changes nothing but where the
+        /// player's buildings stand.
+        /// </summary>
+        public static CityGrid GridWithRoad()
+        {
+            CityGrid grid = GridWithTownHall(40, 4);
+            var road = new List<Vector2Int>();
+
+            for (int x = 3; x < grid.Width; x++)
+            {
+                road.Add(new Vector2Int(x, 0));
+            }
+
+            grid.PlaceRoads(road, BuildingOwner.City);
+            return grid;
+        }
+
+        /// <summary>The placement strategy of a market on <see cref="GridWithRoad"/>, which builds no house of its own.</summary>
+        public static IPlacementStrategy Placement => new RandomPlacement(new System.Random(1));
+
+        /// <summary>Builds a player's house of 1 by 1 on the first free cell along the road of <see cref="GridWithRoad"/>: it is connected at once.</summary>
+        public static void AddPlayerHouse(CityMarket market, SocialClass housedClass, int room)
+        {
+            market.AddPlayerHouse(housedClass, room, new Footprint(1, 1), PlaceOnTheRoad(market.Grid));
+        }
+
+        /// <summary>Builds a player's workshop of 1 by 1 on the first free cell along the road of <see cref="GridWithRoad"/>: it is connected at once.</summary>
+        public static void AddPlayerWorkshop(CityMarket market, int good, int jobs)
+        {
+            market.AddPlayerWorkshop(good, jobs, new Footprint(1, 1), PlaceOnTheRoad(market.Grid));
+        }
+
+        /// <summary>The first free cell along the road of <see cref="GridWithRoad"/>, where a building of one cell is connected.</summary>
+        public static GridPlace PlaceOnTheRoad(CityGrid grid)
+        {
+            for (int x = 3; x < grid.Width; x++)
+            {
+                var place = new GridPlace(new Vector2Int(x, 1), BuildingOrientation.Along);
+
+                if (grid.CanPlace(new Footprint(1, 1), place))
+                {
+                    return place;
+                }
+            }
+
+            throw new InvalidOperationException("The road has no free cell left.");
         }
     }
 }

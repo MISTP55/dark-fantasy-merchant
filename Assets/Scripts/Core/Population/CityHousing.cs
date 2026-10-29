@@ -89,13 +89,6 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
-        /// <summary>A house of the player without a place: its room is given at once.</summary>
-        public void AddPlayerHouse(SocialClass housedClass, int room)
-        {
-            population.AddRoom(housedClass, room);
-            playerHouses[(int)housedClass]++;
-        }
-
         /// <summary>A house of the player on the grid, at a place it can stand: its room is given when it connects.</summary>
         public void AddPlayerHouse(SocialClass housedClass, int room, Footprint footprint, GridPlace place)
         {

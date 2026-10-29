@@ -378,21 +378,9 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
-        /// Adds a workshop of the player for a good the city produces, with no worker yet: its
-        /// vacancies are filled from the beggars, after the city's workshops have hired, and
-        /// only with labour.
-        /// </summary>
-        public void AddPlayerWorkshop(int good, int jobs)
-        {
-            RequireNoGrid();
-            RequireWorkshop(good, jobs);
-            playerWorkshops.Add(good, jobs);
-            Changed?.Invoke();
-        }
-
-        /// <summary>
-        /// Adds a workshop of the player on the grid, as <see cref="AddPlayerWorkshop(int, int)"/> does; it fills its
-        /// vacancies only while it is connected to the road network.
+        /// Adds a workshop of the player on the grid for a good the city produces, with no worker yet: its vacancies
+        /// are filled from the beggars, after the city's workshops have hired, only with labour and only while it is
+        /// connected to the road network.
         /// </summary>
         /// <exception cref="InvalidOperationException">The market has no grid, or the footprint cannot stand at the place; nothing has changed then.</exception>
         public void AddPlayerWorkshop(int good, int jobs, Footprint footprint, GridPlace place)
@@ -404,17 +392,9 @@ namespace DarkFantasyMerchant.Core
             Changed?.Invoke();
         }
 
-        /// <summary>Adds a house of the player for a class: its room is the city's, open to any inhabitant of the class.</summary>
-        public void AddPlayerHouse(SocialClass housedClass, int room)
-        {
-            RequireNoGrid();
-            cityHousing.AddPlayerHouse(housedClass, room);
-            Changed?.Invoke();
-        }
-
         /// <summary>
-        /// Adds a house of the player on the grid, as <see cref="AddPlayerHouse(SocialClass, int)"/> does, except that
-        /// its room is given only when it connects to the road network: at once when it touches a network road.
+        /// Adds a house of the player on the grid for a class: its room is the city's, open to any inhabitant of the
+        /// class, given only when it connects to the road network: at once when it touches a network road.
         /// </summary>
         /// <exception cref="InvalidOperationException">The market has no grid, or the footprint cannot stand at the place; nothing has changed then.</exception>
         public void AddPlayerHouse(SocialClass housedClass, int room, Footprint footprint, GridPlace place)
@@ -497,14 +477,6 @@ namespace DarkFantasyMerchant.Core
             }
 
             return true;
-        }
-
-        private void RequireNoGrid()
-        {
-            if (Grid != null)
-            {
-                throw new InvalidOperationException("A market with a grid builds at a place.");
-            }
         }
 
         private void RequireStandable(Footprint footprint, GridPlace place)
