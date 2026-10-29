@@ -6,16 +6,13 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// Owns the ships of the map, the player's and the others, their views, the ship
-    /// selection state and which ships lie in which city's port, sails the ships at every
-    /// step of the world's time and shows the route of the selected one.
+    /// Makes the ships of the map, the player's and the others, and holds them in a <see cref="ShipFleet{TPort}"/>,
+    /// which it steps at every step of the world's time; shows them, keeps the ship selection state and shows the
+    /// route of the selected one.
     /// </summary>
     public sealed class ShipsView : MonoBehaviour
     {
         private static readonly Vector2 MapCenter = new Vector2(0.5f, 0.5f);
-
-        // CityPicker skips NaN positions.
-        private static readonly Vector2 NotOnMap = new Vector2(float.NaN, float.NaN);
 
         [SerializeField] private WorldMapView mapView;
         [SerializeField] private ShipView shipPrefab;
@@ -41,16 +38,10 @@ namespace DarkFantasyMerchant.Game
 
         private GoodUnits goodUnits;
 
-        // Parallel lists, by index: a ship is added to and removed from all of them at once (RemoveShip).
-        private readonly List<Ship> ships = new List<Ship>();
-        private readonly List<Vector2> shipWorldPositions = new List<Vector2>();
-        private readonly List<ShipView> views = new List<ShipView>();
-        // Name of each entry of ships, in the same order: several ships can share a definition.
-        private readonly List<string> displayNames = new List<string>();
+        // The view of every ship of the fleet.
+        private readonly Dictionary<Ship, ShipView> views = new Dictionary<Ship, ShipView>();
 
-        private readonly List<Ship> playerShips = new List<Ship>();
-
-        private ShipArrivals<CityDefinition> arrivals;
+        private ShipFleet<CityDefinition> fleet;
 
         // Null on a map without a navigation mask: ships then sail in a straight line.
         private NavigationPathfinder navigation;
@@ -61,8 +52,6 @@ namespace DarkFantasyMerchant.Game
         // Null without a usable world clock: ships then sail in real time, once per frame.
         private GameClock clock;
 
-        private ShipDocking<CityDefinition> docking;
-
         public MapSelectionState<Ship> Selection { get; } = new MapSelectionState<Ship>();
 
         /// <summary>
@@ -70,39 +59,39 @@ namespace DarkFantasyMerchant.Game
         /// enters the city it was sent to and leaves the one it is in. Made on first use: other
         /// components listen to it in their OnEnable, which can come before this one's Awake.
         /// </summary>
-        public ShipDocking<CityDefinition> Docking
-        {
-            get
-            {
-                if (docking == null)
-                {
-                    // The economy makes the harbours with the grids, in its Start, before any ship enters a city.
-                    docking = new ShipDocking<CityDefinition>(city => worldEconomy != null ? worldEconomy.HarbourOf(city) : null);
-                }
-
-                return docking;
-            }
-        }
+        public ShipDocking<CityDefinition> Docking => Fleet.Docking;
 
         /// <summary>
         /// Raised when a ship arrives (see <see cref="ShipArrivals{TPort}"/>), with the city
         /// whose port it has entered, or null when it stopped at sea.
         /// </summary>
-        public event Action<Ship, CityDefinition> ShipArrived;
+        public event Action<Ship, CityDefinition> ShipArrived
+        {
+            add => Fleet.Arrived += value;
+            remove => Fleet.Arrived -= value;
+        }
 
         /// <summary>Raised when a ship enters a city's queue, every berth being taken, with the city.</summary>
-        public event Action<Ship, CityDefinition> ShipQueued;
+        public event Action<Ship, CityDefinition> ShipQueued
+        {
+            add => Fleet.Queued += value;
+            remove => Fleet.Queued -= value;
+        }
 
         /// <summary>
         /// Raised at every step of the world's time, with its simulated seconds, before the
         /// ships sail it: what gives ships their orders for the step listens to it.
         /// </summary>
-        public event Action<float> StepStarted;
+        public event Action<float> StepStarted
+        {
+            add => Fleet.StepStarted += value;
+            remove => Fleet.StepStarted -= value;
+        }
 
-        public IReadOnlyList<Ship> Ships => ships;
+        public IReadOnlyList<Ship> Ships => Fleet.Ships;
 
         /// <summary>The ships of <see cref="Ships"/> that the player owns and orders about.</summary>
-        public IReadOnlyList<Ship> PlayerShips => playerShips;
+        public IReadOnlyList<Ship> PlayerShips => Fleet.PlayerShips;
 
         /// <summary>Where ships can sail. Null before Start, and on a map without a navigation mask.</summary>
         public NavigationPathfinder Navigation => navigation;
@@ -111,9 +100,25 @@ namespace DarkFantasyMerchant.Game
         /// World position of each entry of <see cref="Ships"/>, in the same order. NaN for
         /// a ship in a city: it is not on the map and cannot be picked there.
         /// </summary>
-        public IReadOnlyList<Vector2> ShipWorldPositions => shipWorldPositions;
+        public IReadOnlyList<Vector2> ShipWorldPositions => Fleet.WorldPositions;
 
-        public bool IsReady => ships.Count > 0;
+        public bool IsReady => Fleet.Ships.Count > 0;
+
+        // Made on first use, as the docking is: listeners of the docking and of the arrivals can come before Start.
+        private ShipFleet<CityDefinition> Fleet
+        {
+            get
+            {
+                if (fleet == null)
+                {
+                    // The economy makes the harbours with the grids, in its Start, before any ship enters a city.
+                    fleet = new ShipFleet<CityDefinition>(new ShipDocking<CityDefinition>(
+                        city => worldEconomy != null ? worldEconomy.HarbourOf(city) : null));
+                }
+
+                return fleet;
+            }
+        }
 
         // Start, not Awake: WorldMapView lays the map out in its Awake.
         private void Start()
@@ -139,15 +144,13 @@ namespace DarkFantasyMerchant.Game
             }
 
             navigation = CreateNavigation();
-            arrivals = new ShipArrivals<CityDefinition>(Docking);
-            arrivals.Arrived += OnShipArrived;
-            arrivals.Queued += OnShipQueued;
-            playerShips.Add(Spawn(
+            Spawn(
                 playerShipDefinition,
                 StartPosition(),
                 CreatePlayerCrew(playerShipDefinition.CrewCapacity),
                 playerShipDefinition.DisplayName,
-                null));
+                null,
+                true);
             Selection.HoveredChanged += OnHoveredChanged;
             Selection.SelectedChanged += OnSelectedChanged;
             Docking.CityStateChanged += OnCityStateChanged;
@@ -181,31 +184,17 @@ namespace DarkFantasyMerchant.Game
             }
 
             // Once per frame, after all the steps of the frame.
-            for (int i = 0; i < ships.Count; i++)
+            Fleet.UpdatePositions();
+
+            foreach (ShipView view in views.Values)
             {
-                shipWorldPositions[i] = Docking.IsInCity(ships[i]) ? NotOnMap : ships[i].WorldPosition;
-                views[i].Refresh();
+                view.Refresh();
             }
         }
 
         private void Step(float deltaTime)
         {
-            StepStarted?.Invoke(deltaTime);
-
-            // A ship in a city keeps its route for when it is back at sea: it does not sail it there.
-            foreach (Ship ship in ships)
-            {
-                if (!Docking.IsInCity(ship))
-                {
-                    ship.Advance(deltaTime);
-                }
-            }
-
-            // After the ships: it lets into the cities the ships that have reached their anchorage.
-            Docking.Update(deltaTime);
-
-            // After the docking's update, so that a ship that arrived at its port is in it.
-            arrivals.Report();
+            Fleet.Step(deltaTime);
         }
 
         // LateUpdate, not Update: the selection and the orders of this frame are in.
@@ -225,20 +214,18 @@ namespace DarkFantasyMerchant.Game
         /// <returns>The name of the ship, or null for a ship that is not on this map.</returns>
         public string DisplayNameOf(Ship ship)
         {
-            int index = ship != null ? ships.IndexOf(ship) : -1;
-
-            return index >= 0 ? displayNames[index] : null;
+            return Fleet.NameOf(ship);
         }
 
         public bool IsPlayerShip(Ship ship)
         {
-            return ship != null && playerShips.Contains(ship);
+            return Fleet.IsPlayerShip(ship);
         }
 
         /// <returns>Whether the ship is one of this map's: false once it was removed.</returns>
         public bool Contains(Ship ship)
         {
-            return ship != null && ships.Contains(ship);
+            return Fleet.Contains(ship);
         }
 
         /// <summary>
@@ -249,9 +236,7 @@ namespace DarkFantasyMerchant.Game
         /// <returns>False for a ship that is not on this map.</returns>
         public bool RemoveShip(Ship ship)
         {
-            int index = ship != null ? ships.IndexOf(ship) : -1;
-
-            if (index < 0)
+            if (!Fleet.Contains(ship))
             {
                 return false;
             }
@@ -266,16 +251,14 @@ namespace DarkFantasyMerchant.Game
                 Selection.ClearSelection();
             }
 
-            // While the ship is still listed: leaving its port tells the panels that show it there.
-            Docking.Remove(ship);
-            arrivals.Forget(ship);
+            // The fleet takes it out of its port while it is still listed, which tells the panels that show it there.
+            Fleet.Remove(ship);
 
-            Destroy(views[index].gameObject);
-            ships.RemoveAt(index);
-            shipWorldPositions.RemoveAt(index);
-            views.RemoveAt(index);
-            displayNames.RemoveAt(index);
-            playerShips.Remove(ship);
+            if (views.Remove(ship, out ShipView view))
+            {
+                Destroy(view.gameObject);
+            }
+
             return true;
         }
 
@@ -300,14 +283,14 @@ namespace DarkFantasyMerchant.Game
                 return null;
             }
 
-            return IsUsable(definition) ? Spawn(definition, position, crew, displayName, tint) : null;
+            return IsUsable(definition) ? Spawn(definition, position, crew, displayName, tint, false) : null;
         }
 
         public void SetShipScale(float worldUnitsPerPixel)
         {
             float scale = worldUnitsPerPixel * shipScreenPixelsPerUnit;
 
-            foreach (ShipView view in views)
+            foreach (ShipView view in views.Values)
             {
                 view.SetBaseScale(scale);
             }
@@ -401,7 +384,7 @@ namespace DarkFantasyMerchant.Game
             return true;
         }
 
-        private Ship Spawn(ShipDefinition definition, Vector2 position, ShipCrew crew, string displayName, Color? tint)
+        private Ship Spawn(ShipDefinition definition, Vector2 position, ShipCrew crew, string displayName, Color? tint, bool isPlayerShip)
         {
             // A NaN city position would be rejected by the ship.
             if (float.IsNaN(position.x) || float.IsNaN(position.y))
@@ -415,12 +398,8 @@ namespace DarkFantasyMerchant.Game
             var ship = new Ship(mapView.Projection, position, definition.Speed, crew, navigation, cargo);
             ShipView view = Instantiate(shipPrefab, transform);
             view.Initialize(ship, definition, displayName, tint);
-            arrivals.Track(ship);
-
-            ships.Add(ship);
-            shipWorldPositions.Add(ship.WorldPosition);
-            views.Add(view);
-            displayNames.Add(displayName);
+            Fleet.Add(ship, displayName, isPlayerShip);
+            views.Add(ship, view);
             return ship;
         }
 
@@ -460,15 +439,13 @@ namespace DarkFantasyMerchant.Game
         // and stays selected through the city's states; it is back on the map at sea.
         private void OnCityStateChanged(Ship ship, CityDefinition city)
         {
-            int index = ships.IndexOf(ship);
-
-            if (index < 0)
+            if (!views.TryGetValue(ship, out ShipView view))
             {
                 return;
             }
 
             bool isInCity = Docking.IsInCity(ship);
-            bool wasOnMap = views[index].gameObject.activeSelf;
+            bool wasOnMap = view.gameObject.activeSelf;
 
             if (isInCity == !wasOnMap)
             {
@@ -487,24 +464,14 @@ namespace DarkFantasyMerchant.Game
                     Selection.ClearSelection();
                 }
 
-                shipWorldPositions[index] = NotOnMap;
-                views[index].gameObject.SetActive(false);
+                Fleet.UpdatePositionOf(ship);
+                view.gameObject.SetActive(false);
                 return;
             }
 
-            shipWorldPositions[index] = ship.WorldPosition;
-            views[index].gameObject.SetActive(true);
-            views[index].Refresh();
-        }
-
-        private void OnShipArrived(Ship ship, CityDefinition city)
-        {
-            ShipArrived?.Invoke(ship, city);
-        }
-
-        private void OnShipQueued(Ship ship, CityDefinition city)
-        {
-            ShipQueued?.Invoke(ship, city);
+            Fleet.UpdatePositionOf(ship);
+            view.gameObject.SetActive(true);
+            view.Refresh();
         }
 
         private void OnHoveredChanged(Ship ship)
@@ -523,9 +490,7 @@ namespace DarkFantasyMerchant.Game
 
         private ShipView ViewOf(Ship ship)
         {
-            int index = ship != null ? ships.IndexOf(ship) : -1;
-
-            return index >= 0 ? views[index] : null;
+            return ship != null && views.TryGetValue(ship, out ShipView view) ? view : null;
         }
     }
 }

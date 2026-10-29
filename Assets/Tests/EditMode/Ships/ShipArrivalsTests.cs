@@ -86,7 +86,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             arrivals.Track(ship);
         }
 
-        // One frame of ShipsView.
+        // One step of ShipFleet.
         private void Step(float deltaTime)
         {
             if (!docking.IsInCity(ship))
