@@ -45,7 +45,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return instance;
         }
 
-        private static string Gold(long gold) => TreasuryHudController.FormatGold(gold);
+        private static string Gold(long gold) => NumberText.FormatGold(gold);
 
         [Test]
         public void TryValidate_Fails_ForAFootprintSideUnderOne()

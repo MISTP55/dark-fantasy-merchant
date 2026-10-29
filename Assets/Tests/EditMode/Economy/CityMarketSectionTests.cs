@@ -319,9 +319,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("Blé", ((TextElement)container[0][NameCell]).text);
             Assert.AreEqual("Vin", ((TextElement)container[1][NameCell]).text);
             Assert.AreEqual(
-                TreasuryHudController.FormatNumber(swapped.AvailableOf(1)), ((TextElement)container[0][StockCell]).text);
+                NumberText.Format(swapped.AvailableOf(1)), ((TextElement)container[0][StockCell]).text);
             Assert.AreEqual(
-                TreasuryHudController.FormatNumber(swapped.AvailableOf(0)), ((TextElement)container[1][StockCell]).text);
+                NumberText.Format(swapped.AvailableOf(0)), ((TextElement)container[1][StockCell]).text);
         }
 
         [Test]
@@ -367,13 +367,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             section.Show(market, bushelHold);
 
             Assert.IsFalse(IsEnabled(Wheat, BuyCell));
-        }
-
-        [Test]
-        public void FormatWarehouseFill_WritesUsedAndCapacityTheFrenchWay()
-        {
-            Assert.AreEqual("1 850 / 2 000 tonneaux", CityMarketSection.FormatWarehouseFill(1850, 2000));
-            Assert.AreEqual("0 / 2 000 tonneaux", CityMarketSection.FormatWarehouseFill(0, 2000));
         }
 
         [Test]

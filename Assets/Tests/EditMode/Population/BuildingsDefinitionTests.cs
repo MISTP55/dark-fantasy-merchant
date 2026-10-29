@@ -63,7 +63,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return instance;
         }
 
-        private static string Gold(long gold) => TreasuryHudController.FormatGold(gold);
+        private static string Gold(long gold) => NumberText.FormatGold(gold);
 
         private void SetCatalogue(HouseDefinition[] houses, WorkshopDefinition[] workshops)
         {

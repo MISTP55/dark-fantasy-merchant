@@ -39,7 +39,7 @@ Inside each assembly folder, scripts are in one subfolder per subsystem, with th
 | `AiMerchants` | `ai-merchants.md` | AI merchant ships and their planning |
 | `CityView` | `city-view.md` | City grid, placement, city view scene, build bar, layout Editor tool |
 | `Debug` | `debug-tools.md` | In-game debug tools |
-| `Common` | — | Shared helpers (`NameOrder`, `ListStripes`, `SimulationServices`, test helpers) |
+| `Common` | — | Shared helpers (`NameOrder`, `ListStripes`, `NumberText`, `SimulationServices`, test helpers) |
 
 A new script goes in the subfolder of its subsystem; a new subsystem gets its subfolder in every assembly that needs one, and its rule, with `paths` matching those subfolders.
 
@@ -61,7 +61,7 @@ A new script goes in the subfolder of its subsystem; a new subsystem gets its su
 ## Conventions
 
 - **Language**: all code is in English — identifiers, comments, log messages, asset and folder names. Conversation with the user is in French.
-- **Interface language**: everything the player reads is in French — UXML texts, the strings the controllers write, and the names and descriptions held by the data assets (and the defaults `WorldMapSetup` gives them). Numbers are written the French way (thousands separated by a no-break space). There is no localization system: the French text is written directly. City names are proper names and are not translated.
+- **Interface language**: everything the player reads is in French — UXML texts, the strings the controllers write, and the names and descriptions held by the data assets (and the defaults `WorldMapSetup` gives them). Numbers are written the French way (thousands separated by a no-break space), always through `NumberText` (`Format`, `FormatGold`), and the quantities and fills of goods through `GoodUnitText`; a panel never calls another panel's controller to write a text. There is no localization system: the French text is written directly. City names are proper names and are not translated.
 - **Alphabetical lists**: every list the player reads is in the alphabetical order of its names, accents and case aside ("Étoffe" between "Cuir" and "Fer"). Sort with `NameOrder`, never in the catalogue's order or the order things were added; the goods stay identified by their index, only what is shown is sorted. A fixed sequence that is not a list of items (tabs, columns, the parts of a sentence) and a chronological one (the notifications) keep their order.
 - **Switched-off materials**: every construction, the player's or a city's, leaves out the materials that are not active goods and asks only for the others, its gold alone when none is active; a switched-off material never makes a building unavailable. Go through `BuildingDefinition.MaterialsOf`.
 - **UI**: UI Toolkit (UXML + USS) for all runtime UI. Do not build uGUI Canvas hierarchies, even though `com.unity.ugui` is installed.

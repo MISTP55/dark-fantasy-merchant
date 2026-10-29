@@ -69,7 +69,7 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         public static string FormatPayment(long total)
         {
-            return $"Dépenses de la semaine : {TreasuryHudController.FormatGold(total)}.";
+            return $"Dépenses de la semaine : {NumberText.FormatGold(total)}.";
         }
 
         private bool TryCreateBilling()

@@ -213,13 +213,13 @@ namespace DarkFantasyMerchant.Game
         /// <summary>The barrels of room taken out of the capacity: "60 / 200".</summary>
         public static string FormatHold(CargoHold hold)
         {
-            return $"{TreasuryHudController.FormatNumber(hold.Used)} / {TreasuryHudController.FormatNumber(hold.Capacity)}";
+            return $"{NumberText.Format(hold.Used)} / {NumberText.Format(hold.Capacity)}";
         }
 
         /// <summary>A cumulated profit: "1 250 or", or nothing for a ship that has none.</summary>
         public static string FormatProfit(long? profit)
         {
-            return profit.HasValue ? TreasuryHudController.FormatGold(profit.Value) : NoValue;
+            return profit.HasValue ? NumberText.FormatGold(profit.Value) : NoValue;
         }
 
         /// <summary>Writes a row per ship, in order: rows are added and removed to match.</summary>
@@ -300,7 +300,7 @@ namespace DarkFantasyMerchant.Game
 
             for (int column = 0; column < goodCount; column++)
             {
-                row.Goods[column].text = TreasuryHudController.FormatNumber(ship.Cargo.UnitsOf(goodOrder[column]));
+                row.Goods[column].text = NumberText.Format(ship.Cargo.UnitsOf(goodOrder[column]));
             }
         }
 

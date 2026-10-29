@@ -88,15 +88,15 @@ namespace DarkFantasyMerchant.Game
 
         private static void WriteFigures(Label[] cells, long received, long shipped)
         {
-            cells[1].text = TreasuryHudController.FormatNumber(received);
-            cells[2].text = TreasuryHudController.FormatNumber(shipped);
+            cells[1].text = NumberText.Format(received);
+            cells[2].text = NumberText.Format(shipped);
             cells[3].text = Signed(received - shipped);
         }
 
         // "+30" in green, "-30" in red, a plain "0".
         private static string Signed(long value)
         {
-            string text = TreasuryHudController.FormatNumber(value);
+            string text = NumberText.Format(value);
 
             if (value > 0)
             {

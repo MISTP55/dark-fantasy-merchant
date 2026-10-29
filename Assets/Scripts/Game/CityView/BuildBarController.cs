@@ -156,7 +156,7 @@ namespace DarkFantasyMerchant.Game
         /// <summary>"Maison de pauvres\n5 000 or": the offer's name over its gold.</summary>
         public static string OfferText(string name, long gold)
         {
-            return $"{name}\n{TreasuryHudController.FormatGold(gold)}";
+            return $"{name}\n{NumberText.FormatGold(gold)}";
         }
 
         /// <summary>"50 or par case": the road's cost tip, the cost of one cell.</summary>

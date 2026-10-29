@@ -309,8 +309,8 @@ namespace DarkFantasyMerchant.Game
         public static string FormatPopulation(int rich, int wealthy, int poor, int beggars)
         {
             // No-break spaces but after the dots: a line that wraps breaks only there.
-            return $"Riches\u00A0:\u00A0{TreasuryHudController.FormatNumber(rich)}\u00A0· Aisés\u00A0:\u00A0{TreasuryHudController.FormatNumber(wealthy)}\u00A0· "
-                + $"Pauvres\u00A0:\u00A0{TreasuryHudController.FormatNumber(poor)}\u00A0· Mendiants\u00A0:\u00A0{TreasuryHudController.FormatNumber(beggars)}";
+            return $"Riches\u00A0:\u00A0{NumberText.Format(rich)}\u00A0· Aisés\u00A0:\u00A0{NumberText.Format(wealthy)}\u00A0· "
+                + $"Pauvres\u00A0:\u00A0{NumberText.Format(poor)}\u00A0· Mendiants\u00A0:\u00A0{NumberText.Format(beggars)}";
         }
 
         /// <summary>What the market's drop-down list reads when no ship of the player lies in the port.</summary>
@@ -364,7 +364,7 @@ namespace DarkFantasyMerchant.Game
         /// <summary>The title of the ships tab, which counts every ship in the city: "Navires (3)".</summary>
         public static string ShipsTabText(int shipCount)
         {
-            return $"Navires ({TreasuryHudController.FormatNumber(shipCount)})";
+            return $"Navires ({NumberText.Format(shipCount)})";
         }
 
         /// <summary>Where a ship of the ships tab stands in the city: "à quai", "en attente", "arrive", "repart".</summary>

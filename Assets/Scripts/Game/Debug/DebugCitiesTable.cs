@@ -203,7 +203,7 @@ namespace DarkFantasyMerchant.Game
         /// <summary>Beggars as the table writes them, with the number they tend to: "59 (62)".</summary>
         public static string FormatBeggars(long beggars, long target)
         {
-            return $"{TreasuryHudController.FormatNumber(beggars)} ({TreasuryHudController.FormatNumber(target)})";
+            return $"{NumberText.Format(beggars)} ({NumberText.Format(target)})";
         }
 
         /// <summary>
@@ -212,7 +212,7 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         public static string FormatClass(long count, long room, int? satisfaction)
         {
-            string text = $"{TreasuryHudController.FormatNumber(count)} / {TreasuryHudController.FormatNumber(room)}";
+            string text = $"{NumberText.Format(count)} / {NumberText.Format(room)}";
 
             return satisfaction.HasValue ? $"{text} ({satisfaction.Value.ToString(CultureInfo.InvariantCulture)})" : text;
         }
@@ -370,7 +370,7 @@ namespace DarkFantasyMerchant.Game
         {
             CityMarket market = row.Market;
 
-            row.Population.text = TreasuryHudController.FormatNumber(market.Population.Inhabitants);
+            row.Population.text = NumberText.Format(market.Population.Inhabitants);
             row.Beggars.text = FormatBeggars(market.Population.Beggars, market.BeggarTarget);
             row.Rich.text = FormatClassOf(market.Population, SocialClass.Rich);
             row.Wealthy.text = FormatClassOf(market.Population, SocialClass.Wealthy);
@@ -449,7 +449,7 @@ namespace DarkFantasyMerchant.Game
                 startingInhabitants += row.Market.Population.StartingInhabitants;
             }
 
-            totalPopulation.text = TreasuryHudController.FormatNumber(inhabitants);
+            totalPopulation.text = NumberText.Format(inhabitants);
             totalBeggars.text = FormatBeggars(beggars, beggarTargets);
 
             // The growth of the world: all its inhabitants together, against all those it started with.
@@ -521,7 +521,7 @@ namespace DarkFantasyMerchant.Game
             long maxWorkers,
             long reserve)
         {
-            cells.Stock.text = TreasuryHudController.FormatNumber(stock);
+            cells.Stock.text = NumberText.Format(stock);
             cells.Production.text = FormatFigure(nominalProduction, recentProduction);
             cells.Consumption.text = FormatFigure(nominalConsumption, recentConsumption);
             cells.Inputs.text = FormatFigure(nominalInputs, recentInputs);

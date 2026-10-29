@@ -102,13 +102,6 @@ namespace DarkFantasyMerchant.Game
             return $"Équipage : {crew.Count} / {crew.Capacity}";
         }
 
-        /// <summary>The hold as the panels write it: "Cale : 60 / 200 tonneaux", the barrels of room taken out of the capacity.</summary>
-        public static string FormatCargo(CargoHold hold)
-        {
-            return $"Cale : {TreasuryHudController.FormatNumber(hold.Used)} / "
-                + $"{TreasuryHudController.FormatNumber(hold.Capacity)} tonneaux";
-        }
-
         /// <summary>A line per good aboard (<see cref="FormatCargoLine"/>), in the alphabetical order of the goods.</summary>
         /// <param name="goods">The goods of the economy, by the hold's indices.</param>
         public static List<string> CargoLines(IReadOnlyList<GoodDefinition> goods, CargoHold hold)
@@ -177,7 +170,7 @@ namespace DarkFantasyMerchant.Game
         // Rebuilt on every change: a hold has a line per good aboard, a handful at most.
         private void ShowCargo()
         {
-            cargoLabel.text = FormatCargo(shownCargo);
+            cargoLabel.text = GoodUnitText.FormatCargo(shownCargo);
             cargoList.Clear();
 
             if (economy == null)

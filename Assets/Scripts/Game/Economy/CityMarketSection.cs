@@ -133,12 +133,6 @@ namespace DarkFantasyMerchant.Game
             return shift ? 10 : 1;
         }
 
-        /// <summary>The fill of a trading post as the market writes it: "1 850 / 2 000 tonneaux".</summary>
-        public static string FormatWarehouseFill(long used, int capacity)
-        {
-            return $"{TreasuryHudController.FormatNumber(used)} / {TreasuryHudController.FormatNumber(capacity)} tonneaux";
-        }
-
         /// <summary>
         /// The tip of a trading post above its capacity:
         /// "150 tonneaux au-delà de la capacité : loyer de 150 or par semaine.".
@@ -146,7 +140,7 @@ namespace DarkFantasyMerchant.Game
         public static string RentTipText(long excess, long weeklyRent)
         {
             return $"{GoodUnitText.FormatQuantity(excess, GoodUnit.Barrel)} au-delà de la capacité : "
-                + $"loyer de {TreasuryHudController.FormatGold(weeklyRent)} par semaine.";
+                + $"loyer de {NumberText.FormatGold(weeklyRent)} par semaine.";
         }
 
         /// <summary>Shows a city's market, and trades with a store when one is given.</summary>
@@ -314,10 +308,10 @@ namespace DarkFantasyMerchant.Game
                 long buyPrice = isInMarket ? market.BuyPriceOf(i) : 0;
                 int held = hold != null ? hold.UnitsOf(i) : 0;
 
-                row.Stock.text = TreasuryHudController.FormatNumber(available);
-                row.BuyPrice.text = available > 0 ? TreasuryHudController.FormatNumber(buyPrice) : NoPrice;
-                row.SellPrice.text = isInMarket ? TreasuryHudController.FormatNumber(market.SellPriceOf(i)) : NoPrice;
-                row.Held.text = TreasuryHudController.FormatNumber(held);
+                row.Stock.text = NumberText.Format(available);
+                row.BuyPrice.text = available > 0 ? NumberText.Format(buyPrice) : NoPrice;
+                row.SellPrice.text = isInMarket ? NumberText.Format(market.SellPriceOf(i)) : NoPrice;
+                row.Held.text = NumberText.Format(held);
 
                 // Without a hold nothing is held and nothing is bought: both prices are only read.
                 row.SellPrice.SetEnabled(isInMarket && held > 0);
@@ -337,11 +331,11 @@ namespace DarkFantasyMerchant.Game
 
             if (hold is CargoHold cargo)
             {
-                holdLabel.text = ShipInfoPanelController.FormatCargo(cargo);
+                holdLabel.text = GoodUnitText.FormatCargo(cargo);
             }
             else if (warehouse != null)
             {
-                holdLabel.text = FormatWarehouseFill(warehouse.Used, warehouse.Capacity);
+                holdLabel.text = GoodUnitText.FormatFill(warehouse.Used, warehouse.Capacity);
             }
             else
             {

@@ -84,7 +84,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("Cologne", Text(0, NameCell));
             Assert.AreEqual("Édimbourg", Text(1, NameCell));
             Assert.AreEqual("Lübeck", Text(2, NameCell));
-            Assert.AreEqual(TreasuryHudController.FormatNumber(500), Text(1, PopulationCell));
+            Assert.AreEqual(NumberText.Format(500), Text(1, PopulationCell));
         }
 
         [Test]
@@ -93,7 +93,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             table.AddCity("Cologne", Market(1000));
             table.AddCity("Lübeck", Market(500));
 
-            Assert.AreEqual(TreasuryHudController.FormatNumber(1500), ((Label)totals[0][PopulationCell]).text);
+            Assert.AreEqual(NumberText.Format(1500), ((Label)totals[0][PopulationCell]).text);
             Assert.AreEqual("Total", ((Label)totals[0][NameCell]).text);
         }
 

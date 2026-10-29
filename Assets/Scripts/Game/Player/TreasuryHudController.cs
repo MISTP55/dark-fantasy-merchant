@@ -1,4 +1,3 @@
-using System.Globalization;
 using DarkFantasyMerchant.Core;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -13,9 +12,6 @@ namespace DarkFantasyMerchant.Game
     public sealed class TreasuryHudController : MonoBehaviour
     {
         private const string DebtClass = "treasury-hud__gold--debt";
-
-        // Not the French culture: its separator and its minus sign depend on the platform.
-        private static readonly NumberFormatInfo GoldFormat = new NumberFormatInfo { NumberGroupSeparator = "\u00A0" };
 
         [SerializeField] private PlayerTreasury playerTreasury;
 
@@ -76,24 +72,9 @@ namespace DarkFantasyMerchant.Game
             isBound = false;
         }
 
-        /// <summary>A whole number as the interface writes it: "6 000", thousands separated by a no-break space.</summary>
-        public static string FormatNumber(long value)
-        {
-            return value.ToString("N0", GoldFormat);
-        }
-
-        /// <summary>
-        /// The gold as the HUD writes it: "10 000 or", or "-250 or" for a debt. Thousands
-        /// are separated by a no-break space, as in French.
-        /// </summary>
-        public static string FormatGold(long gold)
-        {
-            return FormatNumber(gold) + " or";
-        }
-
         private void ShowGold(long gold)
         {
-            goldLabel.text = FormatGold(gold);
+            goldLabel.text = NumberText.FormatGold(gold);
             goldLabel.EnableInClassList(DebtClass, gold < 0);
         }
     }

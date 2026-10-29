@@ -185,7 +185,7 @@ namespace DarkFantasyMerchant.Game
             CityPopulation population = market.Population;
             Label[] cells = row.Cells;
 
-            cells[1].text = TreasuryHudController.FormatNumber(population.Inhabitants);
+            cells[1].text = NumberText.Format(population.Inhabitants);
             cells[2].text = DebugCitiesTable.FormatBeggars(population.Beggars, market.BeggarTarget);
 
             for (int i = 0; i < Classes.Length; i++)
@@ -196,7 +196,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             cells[6].text = DebugCitiesTable.FormatRate(population.GrowthSinceStart);
-            cells[7].text = TreasuryHudController.FormatNumber(market.CityHouses);
+            cells[7].text = NumberText.Format(market.CityHouses);
         }
 
         // Summed again at most once a frame: a handful of cities.
@@ -226,7 +226,7 @@ namespace DarkFantasyMerchant.Game
                 }
             }
 
-            totals[1].text = TreasuryHudController.FormatNumber(inhabitants);
+            totals[1].text = NumberText.Format(inhabitants);
             totals[2].text = DebugCitiesTable.FormatBeggars(beggars, beggarTargets);
 
             // The classes of every city together; their satisfactions do not add up.
@@ -238,7 +238,7 @@ namespace DarkFantasyMerchant.Game
             // The growth of the world: all its inhabitants together, against all those it started with.
             totals[6].text = DebugCitiesTable.FormatRate(
                 startingInhabitants > 0 ? (double)inhabitants / startingInhabitants - 1d : 0d);
-            totals[7].text = TreasuryHudController.FormatNumber(houses);
+            totals[7].text = NumberText.Format(houses);
         }
 
         private static Label[] AddCells(VisualElement row)

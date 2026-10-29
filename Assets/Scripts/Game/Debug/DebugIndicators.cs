@@ -125,7 +125,7 @@ namespace DarkFantasyMerchant.Game
                 return DebugCitiesTable.FormatQuantity(value);
             }
 
-            return TreasuryHudController.FormatNumber((long)Math.Round(value));
+            return NumberText.Format((long)Math.Round(value));
         }
 
         private static IReadOnlyList<DebugIndicator> Sorted(DebugIndicator[] indicators)

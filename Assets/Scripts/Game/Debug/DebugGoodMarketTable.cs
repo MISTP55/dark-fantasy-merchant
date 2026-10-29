@@ -216,13 +216,13 @@ namespace DarkFantasyMerchant.Game
             }
 
             StockThresholds thresholds = market.ThresholdsOf(good);
-            cells[1].text = TreasuryHudController.FormatNumber(market.AvailableOf(good));
+            cells[1].text = NumberText.Format(market.AvailableOf(good));
             cells[2].text = DebugCitiesTable.FormatQuantity(thresholds.T0);
             cells[3].text = DebugCitiesTable.FormatQuantity(thresholds.T1);
             cells[4].text = DebugCitiesTable.FormatQuantity(thresholds.T2);
             cells[5].text = DebugCitiesTable.FormatQuantity(thresholds.T3);
-            cells[6].text = TreasuryHudController.FormatNumber(market.BuyPriceOf(good));
-            cells[7].text = TreasuryHudController.FormatNumber(market.SellPriceOf(good));
+            cells[6].text = NumberText.Format(market.BuyPriceOf(good));
+            cells[7].text = NumberText.Format(market.SellPriceOf(good));
             WriteFigures(
                 cells,
                 market.NominalWeeklyProductionOf(good),
@@ -274,7 +274,7 @@ namespace DarkFantasyMerchant.Game
                 underWay += row.UnderWay(good);
             }
 
-            totals[1].text = TreasuryHudController.FormatNumber(stock);
+            totals[1].text = NumberText.Format(stock);
 
             // Thresholds and prices are a city's own: they do not add up.
             for (int i = 2; i <= 7; i++)
@@ -315,7 +315,7 @@ namespace DarkFantasyMerchant.Game
             cells[11].text = $"{DebugCitiesTable.FormatNet(nominalProduction - nominalConsumption - nominalInputs)} "
                 + $"({DebugCitiesTable.FormatNet(recentProduction - recentConsumption - recentInputs)})";
             cells[12].text = DebugCitiesTable.FormatWorkers(workers, maxWorkers, reserve);
-            cells[13].text = TreasuryHudController.FormatNumber(underWay);
+            cells[13].text = NumberText.Format(underWay);
         }
 
         private static Label[] AddCells(VisualElement row)

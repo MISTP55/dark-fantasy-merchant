@@ -166,7 +166,7 @@ namespace DarkFantasyMerchant.Game
 
                 ChartSeries price = Series("Prix d'achat", DebugChartColors.Price, ChartSeriesStyle.Dashed, Fill("price-" + good, history, GoodIndicator.BuyPrice, good));
                 price.OwnScale = true;
-                price.Format = value => TreasuryHudController.FormatNumber((long)Math.Round(value));
+                price.Format = value => NumberText.Format((long)Math.Round(value));
 
                 goodCharts[good].SetData(
                     first,

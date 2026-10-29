@@ -144,8 +144,8 @@ namespace DarkFantasyMerchant.Game
                 int inHold = hold.UnitsOf(good);
                 int inPost = post.UnitsOf(good);
 
-                row.InHold.text = TreasuryHudController.FormatNumber(inHold);
-                row.InPost.text = TreasuryHudController.FormatNumber(inPost);
+                row.InHold.text = NumberText.Format(inHold);
+                row.InPost.text = NumberText.Format(inPost);
                 row.ToPost.SetEnabled(inHold > 0);
                 row.ToHold.SetEnabled(inPost > 0 && hold.RoomFor(good) > 0);
                 rowContainer.Add(row.Element);

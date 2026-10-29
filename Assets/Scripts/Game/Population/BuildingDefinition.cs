@@ -147,7 +147,7 @@ namespace DarkFantasyMerchant.Game
                 return UnavailableText;
             }
 
-            var text = new StringBuilder(TreasuryHudController.FormatGold(cost.Gold));
+            var text = new StringBuilder(NumberText.FormatGold(cost.Gold));
 
             // In the alphabetical order of the materials, as every list the player reads.
             var costs = new List<MaterialCost>(cost.Materials);

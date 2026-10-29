@@ -86,8 +86,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("60", Text(0, StockCell));
             Assert.AreEqual(DebugCitiesTable.FormatQuantity(market.ThresholdsOf(Fish).T0), Text(0, T0Cell));
             Assert.AreEqual(DebugCitiesTable.FormatQuantity(market.ThresholdsOf(Fish).T3), Text(0, T3Cell));
-            Assert.AreEqual(TreasuryHudController.FormatNumber(market.BuyPriceOf(Fish)), Text(0, BuyCell));
-            Assert.AreEqual(TreasuryHudController.FormatNumber(market.SellPriceOf(Fish)), Text(0, SellCell));
+            Assert.AreEqual(NumberText.Format(market.BuyPriceOf(Fish)), Text(0, BuyCell));
+            Assert.AreEqual(NumberText.Format(market.SellPriceOf(Fish)), Text(0, SellCell));
         }
 
         [Test]
