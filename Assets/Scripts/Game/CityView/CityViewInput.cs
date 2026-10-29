@@ -257,19 +257,7 @@ namespace DarkFantasyMerchant.Game
         /// <param name="screenPosition">Screen position with the origin at the bottom-left.</param>
         public bool IsOverUi(Vector2 screenPosition)
         {
-            IPanel panel = document != null && document.rootVisualElement != null
-                ? document.rootVisualElement.panel
-                : null;
-
-            if (panel == null)
-            {
-                return false;
-            }
-
-            // Panel coordinates have their origin at the top-left.
-            Vector2 flipped = new Vector2(screenPosition.x, Screen.height - screenPosition.y);
-            Vector2 panelPosition = RuntimePanelUtils.ScreenToPanel(panel, flipped);
-            return panel.Pick(panelPosition) != null;
+            return UiPointer.IsOver(document, screenPosition);
         }
     }
 }

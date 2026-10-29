@@ -285,20 +285,6 @@ namespace DarkFantasyMerchant.Game
             hoverLabel.style.top = panelPosition.y + hoverLabelOffset.y;
         }
 
-        /// <param name="screenPosition">Screen position with the origin at the bottom-left.</param>
-        public bool IsPointerOverUi(Vector2 screenPosition)
-        {
-            if (!isBound || root.panel == null)
-            {
-                return false;
-            }
-
-            // Panel coordinates have their origin at the top-left.
-            Vector2 flipped = new Vector2(screenPosition.x, Screen.height - screenPosition.y);
-            Vector2 panelPosition = RuntimePanelUtils.ScreenToPanel(root.panel, flipped);
-            return root.panel.Pick(panelPosition) != null;
-        }
-
         /// <summary>What the panel shows of a city that has no market: its population is the market's.</summary>
         public const string NoPopulation = "Habitants : —";
 

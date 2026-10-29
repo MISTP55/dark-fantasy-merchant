@@ -3,6 +3,7 @@ using DarkFantasyMerchant.Core;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
+using UnityEngine.UIElements;
 
 namespace DarkFantasyMerchant.Game
 {
@@ -14,7 +15,8 @@ namespace DarkFantasyMerchant.Game
     {
         private const string ActionMapName = "WorldMap";
 
-        [SerializeField] private CityInfoPanelController ui;
+        [Tooltip("A document of the map's UI. Its panel is the one every game document shares: the pointer over any of them is over the UI.")]
+        [SerializeField] private UIDocument uiDocument;
 
         [Tooltip("A press that moves farther than this before release is a drag, not a click.")]
         [SerializeField, Min(0f)] private float dragThresholdPixels = 6f;
@@ -113,7 +115,7 @@ namespace DarkFantasyMerchant.Game
         {
             PointerPosition = pointAction.ReadValue<Vector2>();
             MoveAxis = panMoveAction.ReadValue<Vector2>();
-            IsPointerOverUi = ui != null && ui.IsPointerOverUi(PointerPosition);
+            IsPointerOverUi = UiPointer.IsOver(uiDocument, PointerPosition);
 
             // Scroll magnitude differs between devices and platforms; only its direction is used.
             float scroll = zoomAction.ReadValue<Vector2>().y;

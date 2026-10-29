@@ -39,7 +39,7 @@ Inside each assembly folder, scripts are in one subfolder per subsystem, with th
 | `AiMerchants` | `ai-merchants.md` | AI merchant ships and their planning |
 | `CityView` | `city-view.md` | City grid, placement, city view scene, build bar, layout Editor tool |
 | `Debug` | `debug-tools.md` | In-game debug tools |
-| `Common` | — | Shared helpers (`NameOrder`, `ListStripes`, `NumberText`, `SimulationServices`, test helpers) |
+| `Common` | — | Shared helpers (`NameOrder`, `ListStripes`, `NumberText`, `UiPointer`, `SimulationServices`, test helpers) |
 
 A new script goes in the subfolder of its subsystem; a new subsystem gets its subfolder in every assembly that needs one, and its rule, with `paths` matching those subfolders.
 
@@ -53,7 +53,7 @@ A new script goes in the subfolder of its subsystem; a new subsystem gets its su
 
 ### Runtime UI
 
-- Every `UIDocument` of the game (city panel, ship panel, time HUD, treasury HUD, notifications, debug panel, city view) shares one `PanelSettings`: that is what lets `CityInfoPanelController.IsPointerOverUi` see them all and the map take no click or wheel step on them. A new panel goes on the same `PanelSettings`.
+- Every `UIDocument` of the game (city panel, ship panel, time HUD, treasury HUD, notifications, debug panel, city view) shares one `PanelSettings`: that is what lets `UiPointer.IsOver`, given any one of them (the city panel's for `WorldMapInput`, the view's for `CityViewInput`), see them all and the map take no click or wheel step on them. A new panel goes on the same `PanelSettings`.
 - Labels drawn over the map (treasury, notifications) ignore the pointer, so the map under them stays reachable.
 - Labels are rewritten on the event that changes them (`Changed`, `DayStarted`…), not every frame. The exceptions are the debug ships table, rewritten every frame, and the debug views of the past, rewritten at most once a frame.
 - The city and ship panels share their frame, title and close button styles (`InfoPanel.uss`).

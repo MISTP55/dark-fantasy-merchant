@@ -374,6 +374,7 @@ namespace DarkFantasyMerchant.Editor
 
             AssetDatabase.SaveAssets();
             BuildScene();
+            AddMapInputDocumentToScene(mapSceneHadUnsavedChanges);
             AddShipsToScene(mapSceneHadUnsavedChanges);
             AddTimeToScene(mapSceneHadUnsavedChanges);
             AddTreasuryToScene(mapSceneHadUnsavedChanges);
@@ -1585,7 +1586,7 @@ namespace DarkFantasyMerchant.Editor
             SetReference(panelController, "mapCamera", mapCamera);
 
             var input = mapObject.AddComponent<WorldMapInput>();
-            SetReference(input, "ui", panelController);
+            SetReference(input, "uiDocument", document);
 
             var cameraController = cameraObject.AddComponent<WorldMapCameraController>();
             SetReference(cameraController, "mapView", mapView);
@@ -1598,6 +1599,30 @@ namespace DarkFantasyMerchant.Editor
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = WithSceneFirst(EditorBuildSettings.scenes, ScenePath);
+        }
+
+        // The map's input tells the UI under the pointer through a document of the shared panel, the city panel's; a
+        // scene built when it asked the city panel itself gets the document.
+        private static void AddMapInputDocumentToScene(bool sceneHadUnsavedChanges)
+        {
+            if (!TryOpenMapScene("The map input's document", out Scene scene))
+            {
+                return;
+            }
+
+            var input = FindInScene<WorldMapInput>(scene);
+            var cityPanel = FindInScene<CityInfoPanelController>(scene);
+
+            if (input == null || cityPanel == null)
+            {
+                Debug.LogWarning($"{ScenePath} lacks the map input or the city panel; the map input's document not set.");
+                return;
+            }
+
+            if (FillReference(input, "uiDocument", cityPanel.GetComponent<UIDocument>()))
+            {
+                SaveSceneChanges(scene, sceneHadUnsavedChanges, "The map input's document");
+            }
         }
 
         // Unlike the rest of the scene, the ships object is also added to a scene that

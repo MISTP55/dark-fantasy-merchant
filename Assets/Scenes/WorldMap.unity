@@ -496,7 +496,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e1e03d9794fd9a7499da016e81c164a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.WorldMapInput
-  ui: {fileID: 950679376}
+  uiDocument: {fileID: 950679377}
   dragThresholdPixels: 6
 --- !u!1 &948842204
 GameObject:
