@@ -12,8 +12,7 @@ namespace DarkFantasyMerchant.Editor
 {
     /// <summary>
     /// Builds the city view scene, its placeholder sprites and its layer, and lists the scene after the map's in the
-    /// build list. Like <see cref="WorldMapSetup"/>, which calls it, it creates what is missing and leaves what
-    /// exists untouched.
+    /// build list. It creates what is missing and leaves what exists untouched.
     /// </summary>
     public static class CityViewSetup
     {
@@ -36,6 +35,7 @@ namespace DarkFantasyMerchant.Editor
         private const string PortFrontSpritePath = ArtFolder + "/PortFront.png";
         private const string WallSpritePrefix = ArtFolder + "/Wall";
         private const string ShipSpritePath = ArtFolder + "/ShipCylinder.png";
+        private const string UnlitSpriteShaderName = "Universal Render Pipeline/2D/Sprite-Unlit-Default";
 
         // A cell is 1 world unit across (IsoProjection.CellWidth): 64 by 32 pixels.
         private const int PixelsPerUnit = 64;
@@ -64,8 +64,15 @@ namespace DarkFantasyMerchant.Editor
         // Below the grid, where nothing is drawn.
         private static readonly Color BackgroundColor = new Color(0.06f, 0.05f, 0.04f, 1f);
 
+        [MenuItem("Tools/Dark Fantasy Merchant/Build City View Scene")]
         public static void Build()
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError("The city view setup cannot run in Play mode.");
+                return;
+            }
+
             Directory.CreateDirectory(ArtFolder);
             AssetDatabase.Refresh();
 
@@ -97,7 +104,7 @@ namespace DarkFantasyMerchant.Editor
 
             BuildScene(layer);
             EditorBuildSettings.scenes =
-                WorldMapSetup.WithSceneAfter(EditorBuildSettings.scenes, ScenePath, WorldMapSetup.ScenePath);
+                SceneEditing.WithSceneAfter(EditorBuildSettings.scenes, ScenePath, SceneEditing.WorldMapScenePath);
         }
 
         /// <returns>The layer's index, made in the first free user layer when missing; -1 when none is free.</returns>
@@ -135,11 +142,11 @@ namespace DarkFantasyMerchant.Editor
                 return;
             }
 
-            Shader shader = Shader.Find(WorldMapSetup.UnlitSpriteShaderName);
+            Shader shader = Shader.Find(UnlitSpriteShaderName);
 
             if (shader == null)
             {
-                throw new FileNotFoundException($"Shader '{WorldMapSetup.UnlitSpriteShaderName}' is missing.");
+                throw new FileNotFoundException($"Shader '{UnlitSpriteShaderName}' is missing.");
             }
 
             AssetDatabase.CreateAsset(new Material(shader), MaterialPath);
@@ -571,7 +578,7 @@ namespace DarkFantasyMerchant.Editor
         {
             // Loaded only now: opening a scene unloads unreferenced assets.
             var template = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(TemplatePath);
-            var panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(WorldMapSetup.PanelSettingsPath);
+            var panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(SceneEditing.PanelSettingsPath);
 
             if (template == null || panelSettings == null)
             {
@@ -580,20 +587,20 @@ namespace DarkFantasyMerchant.Editor
 
             bool changed = false;
 
-            var input = WorldMapSetup.FindInScene<CityViewInput>(scene);
+            var input = SceneEditing.FindInScene<CityViewInput>(scene);
 
             if (input == null)
             {
-                input = WorldMapSetup.CreateInGroup(scene, WorldMapSetup.WorldGroup, "City View Input")
+                input = SceneEditing.CreateInGroup(scene, SceneEditing.WorldGroup, "City View Input")
                     .AddComponent<CityViewInput>();
                 changed = true;
             }
 
-            var viewCamera = WorldMapSetup.FindInScene<CityViewCamera>(scene);
+            var viewCamera = SceneEditing.FindInScene<CityViewCamera>(scene);
 
             if (viewCamera == null)
             {
-                GameObject cameraObject = WorldMapSetup.CreateInGroup(scene, WorldMapSetup.RenderingGroup, "City View Camera");
+                GameObject cameraObject = SceneEditing.CreateInGroup(scene, SceneEditing.RenderingGroup, "City View Camera");
                 cameraObject.transform.position = new Vector3(0f, 0f, -10f);
 
                 // The map's camera, which carries the other listener, is off while the view is open.
@@ -611,40 +618,40 @@ namespace DarkFantasyMerchant.Editor
                 changed = true;
             }
 
-            var gridView = WorldMapSetup.FindInScene<CityGridView>(scene);
+            var gridView = SceneEditing.FindInScene<CityGridView>(scene);
 
             if (gridView == null)
             {
-                GameObject gridObject = WorldMapSetup.CreateInGroup(scene, WorldMapSetup.WorldGroup, "City Grid");
+                GameObject gridObject = SceneEditing.CreateInGroup(scene, SceneEditing.WorldGroup, "City Grid");
                 gridObject.layer = layer;
                 gridView = gridObject.AddComponent<CityGridView>();
                 changed = true;
             }
 
-            var placement = WorldMapSetup.FindInScene<CityPlacementController>(scene);
+            var placement = SceneEditing.FindInScene<CityPlacementController>(scene);
 
             if (placement == null)
             {
-                placement = WorldMapSetup.CreateInGroup(scene, WorldMapSetup.WorldGroup, "City Placement")
+                placement = SceneEditing.CreateInGroup(scene, SceneEditing.WorldGroup, "City Placement")
                     .AddComponent<CityPlacementController>();
                 changed = true;
             }
 
-            var harbourView = WorldMapSetup.FindInScene<HarbourView>(scene);
+            var harbourView = SceneEditing.FindInScene<HarbourView>(scene);
 
             if (harbourView == null)
             {
-                GameObject harbourObject = WorldMapSetup.CreateInGroup(scene, WorldMapSetup.WorldGroup, "City Harbour");
+                GameObject harbourObject = SceneEditing.CreateInGroup(scene, SceneEditing.WorldGroup, "City Harbour");
                 harbourObject.layer = layer;
                 harbourView = harbourObject.AddComponent<HarbourView>();
                 changed = true;
             }
 
-            var controller = WorldMapSetup.FindInScene<CityViewController>(scene);
+            var controller = SceneEditing.FindInScene<CityViewController>(scene);
 
             if (controller == null)
             {
-                GameObject uiObject = WorldMapSetup.CreateInGroup(scene, WorldMapSetup.UiGroup, "City View UI");
+                GameObject uiObject = SceneEditing.CreateInGroup(scene, SceneEditing.UiGroup, "City View UI");
 
                 // The panel every game document shares: the view's input sees the HUDs as UI too.
                 var document = uiObject.AddComponent<UIDocument>();
@@ -655,27 +662,27 @@ namespace DarkFantasyMerchant.Editor
                 changed = true;
             }
 
-            changed |= WorldMapSetup.FillReference(viewCamera, "input", input);
-            changed |= WorldMapSetup.FillReference(input, "document", controller.GetComponent<UIDocument>());
-            changed |= WorldMapSetup.FillReference(controller, "gridView", gridView);
-            changed |= WorldMapSetup.FillReference(controller, "viewCamera", viewCamera);
-            changed |= WorldMapSetup.FillReference(controller, "placement", placement);
-            changed |= WorldMapSetup.FillReference(controller, "harbourView", harbourView);
-            changed |= WorldMapSetup.FillReference(harbourView, "gridView", gridView);
-            changed |= WorldMapSetup.FillReference(harbourView, "spriteMaterial", AssetDatabase.LoadAssetAtPath<Material>(MaterialPath));
-            changed |= WorldMapSetup.FillReference(harbourView, "shipSprite", AssetDatabase.LoadAssetAtPath<Sprite>(ShipSpritePath));
-            changed |= WorldMapSetup.FillReference(placement, "input", input);
-            changed |= WorldMapSetup.FillReference(placement, "viewCamera", viewCamera);
-            changed |= WorldMapSetup.FillReference(placement, "gridView", gridView);
-            changed |= WorldMapSetup.FillReference(gridView, "spriteMaterial", AssetDatabase.LoadAssetAtPath<Material>(MaterialPath));
-            changed |= WorldMapSetup.FillReference(gridView, "cellSprite", AssetDatabase.LoadAssetAtPath<Sprite>(CellSpritePath));
-            changed |= WorldMapSetup.FillReference(gridView, "block2x1Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block2x1SpritePath));
-            changed |= WorldMapSetup.FillReference(gridView, "block1x2Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block1x2SpritePath));
-            changed |= WorldMapSetup.FillReference(gridView, "block2x2Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block2x2SpritePath));
-            changed |= WorldMapSetup.FillReference(gridView, "block3x2Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block3x2SpritePath));
-            changed |= WorldMapSetup.FillReference(gridView, "block2x3Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block2x3SpritePath));
-            changed |= WorldMapSetup.FillReference(gridView, "portBackSprite", AssetDatabase.LoadAssetAtPath<Sprite>(PortBackSpritePath));
-            changed |= WorldMapSetup.FillReference(gridView, "portFrontSprite", AssetDatabase.LoadAssetAtPath<Sprite>(PortFrontSpritePath));
+            changed |= SceneEditing.FillReference(viewCamera, "input", input);
+            changed |= SceneEditing.FillReference(input, "document", controller.GetComponent<UIDocument>());
+            changed |= SceneEditing.FillReference(controller, "gridView", gridView);
+            changed |= SceneEditing.FillReference(controller, "viewCamera", viewCamera);
+            changed |= SceneEditing.FillReference(controller, "placement", placement);
+            changed |= SceneEditing.FillReference(controller, "harbourView", harbourView);
+            changed |= SceneEditing.FillReference(harbourView, "gridView", gridView);
+            changed |= SceneEditing.FillReference(harbourView, "spriteMaterial", AssetDatabase.LoadAssetAtPath<Material>(MaterialPath));
+            changed |= SceneEditing.FillReference(harbourView, "shipSprite", AssetDatabase.LoadAssetAtPath<Sprite>(ShipSpritePath));
+            changed |= SceneEditing.FillReference(placement, "input", input);
+            changed |= SceneEditing.FillReference(placement, "viewCamera", viewCamera);
+            changed |= SceneEditing.FillReference(placement, "gridView", gridView);
+            changed |= SceneEditing.FillReference(gridView, "spriteMaterial", AssetDatabase.LoadAssetAtPath<Material>(MaterialPath));
+            changed |= SceneEditing.FillReference(gridView, "cellSprite", AssetDatabase.LoadAssetAtPath<Sprite>(CellSpritePath));
+            changed |= SceneEditing.FillReference(gridView, "block2x1Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block2x1SpritePath));
+            changed |= SceneEditing.FillReference(gridView, "block1x2Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block1x2SpritePath));
+            changed |= SceneEditing.FillReference(gridView, "block2x2Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block2x2SpritePath));
+            changed |= SceneEditing.FillReference(gridView, "block3x2Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block3x2SpritePath));
+            changed |= SceneEditing.FillReference(gridView, "block2x3Sprite", AssetDatabase.LoadAssetAtPath<Sprite>(Block2x3SpritePath));
+            changed |= SceneEditing.FillReference(gridView, "portBackSprite", AssetDatabase.LoadAssetAtPath<Sprite>(PortBackSpritePath));
+            changed |= SceneEditing.FillReference(gridView, "portFrontSprite", AssetDatabase.LoadAssetAtPath<Sprite>(PortFrontSpritePath));
             changed |= FillWallSprites(gridView);
             return changed;
         }

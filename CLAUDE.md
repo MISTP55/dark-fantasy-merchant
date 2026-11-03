@@ -29,7 +29,7 @@ Inside each assembly folder, scripts are in one subfolder per subsystem, with th
 
 | Subfolder | Rule | Content |
 |---|---|---|
-| `WorldMap` | `world-map.md` | Map, camera, picking, cities, city panel, scene setup |
+| `WorldMap` | `world-map.md` | Map, camera, picking, cities, city panel |
 | `Ships` | `ships.md` | Ships, routes, crew, ports, ship panel |
 | `Navigation` | `navigation.md` | Navigation mask, its Editor tool, pathfinding |
 | `Time` | `time.md` | Clock, calendar, fast forward |
@@ -39,15 +39,16 @@ Inside each assembly folder, scripts are in one subfolder per subsystem, with th
 | `AiMerchants` | `ai-merchants.md` | AI merchant ships and their planning |
 | `CityView` | `city-view.md` | City grid, placement, city view scene, build bar, layout Editor tool |
 | `Debug` | `debug-tools.md` | In-game debug tools |
-| `Common` | — | Shared helpers (`NameOrder`, `ListStripes`, `NumberText`, `UiPointer`, `SimulationServices`, test helpers) |
+| `Common` | — | Shared helpers (`NameOrder`, `ListStripes`, `NumberText`, `UiPointer`, `SimulationServices`, `SceneEditing` and `SceneCheck` for the scenes, test helpers) |
 
 A new script goes in the subfolder of its subsystem; a new subsystem gets its subfolder in every assembly that needs one, and its rule, with `paths` matching those subfolders.
 
-### Scene setup
+### Scenes
 
-- `Tools > Dark Fantasy Merchant > Build World Map Scene` (`WorldMapSetup.Build`) recreates whatever is missing (scene, prefabs, panel settings, data assets, scene objects and the references between them) and leaves what exists untouched. Every new scene object, data asset or reference between components must be added to it, so that an existing scene gets it too. It saves the scene unless it already had unsaved changes, and gives cities that produce nothing the productions of the sample content.
-- The city view scene, `Assets/Scenes/CityView.unity`, is built by `CityViewSetup`, which `WorldMapSetup.Build` calls from the same menu item, in the same way: what is missing is created, what exists is left as it is. It also makes the view's placeholder sprites and its layer, and lists the scene after `WorldMap.unity` in the build list.
-- The scene's root holds only empty groups at the origin (`Rendering`, `World`, `UI`, `Simulation`, `Debug`), which hold every object. `WorldMapSetup` puts each object it creates in its group (`CreateInGroup`), and makes the group when it is missing; an object made again goes last in its group. Do not reorder the panels and HUDs of `UI`: UI documents of equal `sortingOrder` may be drawn in that order.
+- The world map scene, its prefabs and the data assets are versioned as they are: nothing regenerates them. A new scene object, data asset or reference between components is made once, in the Editor, by a one-off script run through `Unity_RunCommand` (or by hand), and only its result is committed; the script is not kept. Such a script goes through `SceneEditing` (`Editor/Common`): the scenes' paths, the shared panel settings, `CreateInGroup`, `FindInScene`, `FillReference`, `SetReference`. A new asset is filled in before `AssetDatabase.CreateAsset`, so its file is written complete.
+- After editing a scene, run `Tools > Dark Fantasy Merchant > Check Scenes` (`SceneCheck.Run`, which changes nothing): it reports an object at the root outside the groups, a missing script, an empty or broken object reference on a component of the game, and a UI document without its UXML or the shared panel settings. A reference left empty on purpose has no place in the scenes: the check knows no exception.
+- The city view scene, `Assets/Scenes/CityView.unity`, is built by `CityViewSetup` (`Tools > Dark Fantasy Merchant > Build City View Scene`): what is missing is created, what exists is left as it is. It also makes the view's placeholder sprites and its layer, and lists the scene after `WorldMap.unity` in the build list.
+- A scene's root holds only empty groups at the origin (`Rendering`, `World`, `UI`, `Simulation`, `Debug`), which hold every object. `SceneEditing.CreateInGroup` puts an object last in its group, and makes the group when it is missing. Do not reorder the panels and HUDs of `UI`: UI documents of equal `sortingOrder` may be drawn in that order.
 - Components that others read in `Awake`/`Start` are created first: `WorldClock`, `PlayerTreasury`, `PlayerNotifications` and `SimulationServices` run at execution order -100.
 - `SimulationServices.Current` is the entry point to the components that run the world (clock, treasury, notifications, economy, ships, AI merchants). Code that has no serialized reference to them, in particular the objects of another scene, which cannot hold one, goes through it; the world map scene's own objects keep their serialized references. It is set in the world map scene's `Awake`: an object of a scene loaded with it, or before it, finds it null in its own `Awake`. A new service of the simulation is added to it.
 
@@ -61,7 +62,7 @@ A new script goes in the subfolder of its subsystem; a new subsystem gets its su
 ## Conventions
 
 - **Language**: all code is in English — identifiers, comments, log messages, asset and folder names. Conversation with the user is in French.
-- **Interface language**: everything the player reads is in French — UXML texts, the strings the controllers write, and the names and descriptions held by the data assets (and the defaults `WorldMapSetup` gives them). Numbers are written the French way (thousands separated by a no-break space), always through `NumberText` (`Format`, `FormatGold`), and the quantities and fills of goods through `GoodUnitText`; a panel never calls another panel's controller to write a text. There is no localization system: the French text is written directly. City names are proper names and are not translated.
+- **Interface language**: everything the player reads is in French — UXML texts, the strings the controllers write, and the names and descriptions held by the data assets. Numbers are written the French way (thousands separated by a no-break space), always through `NumberText` (`Format`, `FormatGold`), and the quantities and fills of goods through `GoodUnitText`; a panel never calls another panel's controller to write a text. There is no localization system: the French text is written directly. City names are proper names and are not translated.
 - **Alphabetical lists**: every list the player reads is in the alphabetical order of its names, accents and case aside ("Étoffe" between "Cuir" and "Fer"). Sort with `NameOrder`, never in the catalogue's order or the order things were added; the goods stay identified by their index, only what is shown is sorted. A fixed sequence that is not a list of items (tabs, columns, the parts of a sentence) and a chronological one (the notifications) keep their order.
 - **Switched-off materials**: every construction, the player's or a city's, leaves out the materials that are not active goods and asks only for the others, its gold alone when none is active; a switched-off material never makes a building unavailable. Go through `BuildingDefinition.MaterialsOf`.
 - **UI**: UI Toolkit (UXML + USS) for all runtime UI. Do not build uGUI Canvas hierarchies, even though `com.unity.ugui` is installed.

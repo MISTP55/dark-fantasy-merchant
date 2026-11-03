@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace DarkFantasyMerchant.Tests.EditMode
 {
-    /// <summary>The default layout the scene setup gives a city without one.</summary>
+    /// <summary>The default layout the layout window's "Create layout" gives a city without one.</summary>
     public class DefaultLayoutTests
     {
         private const string CityName = "DefaultLayoutTestsCity";
@@ -33,12 +33,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void TryCreateLayout_GivesWaterAndAPort_AndTheLayoutIsUsable()
+        public void TryCreate_GivesWaterAndAPort_AndTheLayoutIsUsable()
         {
             var economy = AssetDatabase.LoadAssetAtPath<EconomyDefinition>("Assets/Data/Economy/Economy.asset");
             Assert.IsNull(AssetDatabase.LoadMainAssetAtPath(LayoutPath), "a layout is already at the test's path");
 
-            Assert.IsTrue(WorldMapSetup.TryCreateLayout(city, economy, buildings, null, 0));
+            Assert.IsTrue(CityLayoutCreation.TryCreate(city, economy, buildings, null, 0));
 
             CityLayoutDefinition layout = city.Layout;
             Assert.IsNotNull(layout);

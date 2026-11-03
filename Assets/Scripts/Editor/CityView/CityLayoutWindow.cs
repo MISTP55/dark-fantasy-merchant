@@ -172,7 +172,7 @@ namespace DarkFantasyMerchant.Editor
             if (economy == null || buildings == null)
             {
                 CancelTrace();
-                EditorGUILayout.HelpBox("The economy or the buildings asset is missing: build the scene first.", MessageType.Warning);
+                EditorGUILayout.HelpBox("The economy or the buildings asset is missing.", MessageType.Warning);
                 return;
             }
 
@@ -193,7 +193,7 @@ namespace DarkFantasyMerchant.Editor
 
                 if (GUILayout.Button("Create layout"))
                 {
-                    WorldMapSetup.TryCreateLayout(city, economy, buildings, MaskOfMap(), IndexInMap(city));
+                    CityLayoutCreation.TryCreate(city, economy, buildings, MaskOfMap(), IndexInMap(city));
                     AssetDatabase.SaveAssets();
                 }
 
@@ -815,7 +815,7 @@ namespace DarkFantasyMerchant.Editor
             }
         }
 
-        // The seed of the default layout is the city's index in the map, as in the scene setup.
+        // The seed of the default layout is the city's index in the map, as in Regenerate All City Layouts.
         internal static int IndexInMap(CityDefinition city)
         {
             WorldMapDefinition map = FindAsset<WorldMapDefinition>();

@@ -35,7 +35,7 @@ namespace DarkFantasyMerchant.Editor
 
             if (map == null || economy == null || buildings == null)
             {
-                Debug.LogError("The map, the economy or the buildings asset is missing: build the scene first.");
+                Debug.LogError("The map, the economy or the buildings asset is missing.");
                 return 0;
             }
 

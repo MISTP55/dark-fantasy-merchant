@@ -66,7 +66,7 @@ namespace DarkFantasyMerchant.Game
             public PortFacing facing;
         }
 
-        /// <summary>Cells on each side of a new layout, and of the default grids the scene setup makes.</summary>
+        /// <summary>Cells on each side of a new layout, and of the default grids the layout window makes.</summary>
         public const int DefaultSize = 80;
 
         [Tooltip("Cells on x, at least 1.")]
