@@ -70,7 +70,7 @@ namespace DarkFantasyMerchant.Game
             public Label Wealthy;
             public Label Poor;
             public Label GrowthSinceStart;
-            public CityMarket Market;
+            public City City;
             public GoodCells[] Goods;
             public Action Refresh;
             public bool IsDirty;
@@ -236,11 +236,11 @@ namespace DarkFantasyMerchant.Game
         /// Adds the row of a city, among the others in alphabetical order. It is written at once,
         /// and then follows the market while the table is shown.
         /// </summary>
-        public void AddCity(string cityName, CityMarket market)
+        public void AddCity(string cityName, City city)
         {
-            if (market == null)
+            if (city == null)
             {
-                throw new ArgumentNullException(nameof(market));
+                throw new ArgumentNullException(nameof(city));
             }
 
             VisualElement element = NewRow();
@@ -257,7 +257,7 @@ namespace DarkFantasyMerchant.Game
                 Wealthy = AddLabel(element, ClassCellClass),
                 Poor = AddLabel(element, ClassCellClass),
                 GrowthSinceStart = AddLabel(element, GrowthSinceStartCellClass),
-                Market = market,
+                City = city,
                 Goods = AddGoodCells(goodElement, goodCount),
             };
 
@@ -289,7 +289,7 @@ namespace DarkFantasyMerchant.Game
 
             if (isShown)
             {
-                market.Changed += row.Refresh;
+                city.Changed += row.Refresh;
             }
         }
 
@@ -300,7 +300,7 @@ namespace DarkFantasyMerchant.Game
             {
                 if (!isShown)
                 {
-                    row.Market.Changed += row.Refresh;
+                    row.City.Changed += row.Refresh;
                 }
 
                 Write(row);
@@ -346,7 +346,7 @@ namespace DarkFantasyMerchant.Game
 
             foreach (Row row in rows)
             {
-                row.Market.Changed -= row.Refresh;
+                row.City.Changed -= row.Refresh;
             }
 
             isShown = false;
@@ -368,14 +368,14 @@ namespace DarkFantasyMerchant.Game
 
         private void Write(Row row)
         {
-            CityMarket market = row.Market;
+            City city = row.City;
 
-            row.Population.text = NumberText.Format(market.Population.Inhabitants);
-            row.Beggars.text = FormatBeggars(market.Population.Beggars, market.BeggarTarget);
-            row.Rich.text = FormatClassOf(market.Population, SocialClass.Rich);
-            row.Wealthy.text = FormatClassOf(market.Population, SocialClass.Wealthy);
-            row.Poor.text = FormatClassOf(market.Population, SocialClass.Poor);
-            row.GrowthSinceStart.text = FormatRate(market.Population.GrowthSinceStart);
+            row.Population.text = NumberText.Format(city.Population.Inhabitants);
+            row.Beggars.text = FormatBeggars(city.Population.Beggars, city.BeggarTarget);
+            row.Rich.text = FormatClassOf(city.Population, SocialClass.Rich);
+            row.Wealthy.text = FormatClassOf(city.Population, SocialClass.Wealthy);
+            row.Poor.text = FormatClassOf(city.Population, SocialClass.Poor);
+            row.GrowthSinceStart.text = FormatRate(city.Population.GrowthSinceStart);
 
             for (int column = 0; column < row.Goods.Length; column++)
             {
@@ -383,7 +383,7 @@ namespace DarkFantasyMerchant.Game
                 int i = goodOrder[column];
 
                 // A market made from another catalogue than the columns: nothing to show there.
-                if (i >= market.GoodCount)
+                if (i >= city.Market.GoodCount)
                 {
                     cells.Stock.text = NoFigure;
                     cells.Production.text = NoFigure;
@@ -396,16 +396,16 @@ namespace DarkFantasyMerchant.Game
 
                 Write(
                     cells,
-                    market.AvailableOf(i),
-                    market.NominalWeeklyProductionOf(i),
-                    market.NominalWeeklyConsumptionOf(i),
-                    market.NominalWeeklyInputNeedOf(i),
-                    market.RecentProductionOf(i),
-                    market.RecentConsumptionOf(i),
-                    market.RecentInputsOf(i),
-                    market.WorkersOf(i),
-                    market.MaxWorkersOf(i),
-                    market.ReserveOf(i));
+                    city.Market.AvailableOf(i),
+                    city.NominalWeeklyProductionOf(i),
+                    city.NominalWeeklyConsumptionOf(i),
+                    city.NominalWeeklyInputNeedOf(i),
+                    city.RecentProductionOf(i),
+                    city.RecentConsumptionOf(i),
+                    city.RecentInputsOf(i),
+                    city.WorkersOf(i),
+                    city.MaxWorkersOf(i),
+                    city.ReserveOf(i));
             }
         }
 
@@ -422,8 +422,8 @@ namespace DarkFantasyMerchant.Game
 
             foreach (Row row in rows)
             {
-                count += row.Market.Population.CountOf(housedClass);
-                room += row.Market.Population.RoomOf(housedClass);
+                count += row.City.Population.CountOf(housedClass);
+                room += row.City.Population.RoomOf(housedClass);
             }
 
             return FormatClass(count, room, null);
@@ -443,10 +443,10 @@ namespace DarkFantasyMerchant.Game
 
             foreach (Row row in rows)
             {
-                beggars += row.Market.Population.Beggars;
-                beggarTargets += row.Market.BeggarTarget;
-                inhabitants += row.Market.Population.Inhabitants;
-                startingInhabitants += row.Market.Population.StartingInhabitants;
+                beggars += row.City.Population.Beggars;
+                beggarTargets += row.City.BeggarTarget;
+                inhabitants += row.City.Population.Inhabitants;
+                startingInhabitants += row.City.Population.StartingInhabitants;
             }
 
             totalPopulation.text = NumberText.Format(inhabitants);
@@ -472,25 +472,25 @@ namespace DarkFantasyMerchant.Game
 
                 foreach (Row row in rows)
                 {
-                    CityMarket market = row.Market;
+                    City city = row.City;
 
                     // A market that does not have the good adds nothing to its totals.
-                    if (i >= market.GoodCount)
+                    if (i >= city.Market.GoodCount)
                     {
                         continue;
                     }
 
                     // The whole units, as the rows write them.
-                    stock += market.AvailableOf(i);
-                    nominalProduction += market.NominalWeeklyProductionOf(i);
-                    nominalConsumption += market.NominalWeeklyConsumptionOf(i);
-                    nominalInputs += market.NominalWeeklyInputNeedOf(i);
-                    recentProduction += market.RecentProductionOf(i);
-                    recentConsumption += market.RecentConsumptionOf(i);
-                    recentInputs += market.RecentInputsOf(i);
-                    workers += market.WorkersOf(i);
-                    maxWorkers += market.MaxWorkersOf(i);
-                    reserve += market.ReserveOf(i);
+                    stock += city.Market.AvailableOf(i);
+                    nominalProduction += city.NominalWeeklyProductionOf(i);
+                    nominalConsumption += city.NominalWeeklyConsumptionOf(i);
+                    nominalInputs += city.NominalWeeklyInputNeedOf(i);
+                    recentProduction += city.RecentProductionOf(i);
+                    recentConsumption += city.RecentConsumptionOf(i);
+                    recentInputs += city.RecentInputsOf(i);
+                    workers += city.WorkersOf(i);
+                    maxWorkers += city.MaxWorkersOf(i);
+                    reserve += city.ReserveOf(i);
                 }
 
                 Write(

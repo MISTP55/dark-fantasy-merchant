@@ -21,9 +21,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         // Fish: 2 barrels a day for a thousand, not produced. Iron: 2 barrels a day, and a full workshop of 30 workers making 3.
-        private static CityMarket FishAndIron(double startingDays)
+        private static City FishAndIron(double startingDays)
         {
-            return new CityMarket(
+            return new City(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 30, 0.1) },
                 TestMarkets.Thresholds,
                 TestMarkets.Workforce,
@@ -33,62 +33,62 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 new CityPopulation(1000));
         }
 
-        private static CityMarket LabourMarket(double startingDays, CityPopulation population, bool withSocial = false)
+        private static City LabourCity(double startingDays, CityPopulation population, bool withSocial = false)
         {
-            return new CityMarket(new[] { Good }, TestMarkets.Thresholds, Workforce, startingDays,
+            return new City(new[] { Good }, TestMarkets.Thresholds, Workforce, startingDays,
                 TestMarkets.Pricing, 7, population, TestMarkets.Labour, null, withSocial ? TestMarkets.Social : null);
         }
 
         [Test]
         public void Shortage_IsWhatTheCityNeededAndDidNotGet()
         {
-            CityMarket market = FishAndIron(0);
+            City city = FishAndIron(0);
 
-            market.StartDay();
+            city.StartDay();
 
-            Assert.AreEqual(2d, market.LastDay.NeededOf(Fish), 1e-9);
-            Assert.AreEqual(0d, market.LastDay.ConsumedOf(Fish), 1e-9);
-            Assert.AreEqual(2d, market.LastDay.MissingOf(Fish), 1e-9);
+            Assert.AreEqual(2d, city.LastDay.NeededOf(Fish), 1e-9);
+            Assert.AreEqual(0d, city.LastDay.ConsumedOf(Fish), 1e-9);
+            Assert.AreEqual(2d, city.LastDay.MissingOf(Fish), 1e-9);
         }
 
         [Test]
         public void Shortage_OfAProducedGood_IsSeenEvenWhenTheEveningStockIsNotEmpty()
         {
-            CityMarket market = FishAndIron(0);
+            City city = FishAndIron(0);
 
-            market.StartDay();
+            city.StartDay();
 
-            Assert.AreEqual(2d, market.LastDay.MissingOf(Iron), 1e-9);
-            Assert.AreEqual(3d, market.StockOf(Iron), 1e-9);
+            Assert.AreEqual(2d, city.LastDay.MissingOf(Iron), 1e-9);
+            Assert.AreEqual(3d, city.Market.StockOf(Iron), 1e-9);
         }
 
         [Test]
         public void Report_IsClearedEveryDay()
         {
-            CityMarket market = FishAndIron(0);
-            market.StartDay();
+            City city = FishAndIron(0);
+            city.StartDay();
 
-            market.Put(Fish, 100);
-            market.StartDay();
+            city.Market.Put(Fish, 100);
+            city.StartDay();
 
-            Assert.AreEqual(0d, market.LastDay.MissingOf(Fish), 1e-9);
-            Assert.AreEqual(2d, market.LastDay.ConsumedOf(Fish), 1e-9);
+            Assert.AreEqual(0d, city.LastDay.MissingOf(Fish), 1e-9);
+            Assert.AreEqual(2d, city.LastDay.ConsumedOf(Fish), 1e-9);
         }
 
         [Test]
         public void Report_BeforeAnyDay_IsEmpty()
         {
-            CityMarket market = FishAndIron(0);
+            City city = FishAndIron(0);
 
-            Assert.AreEqual(0d, market.LastDay.MissingOf(Fish));
-            Assert.AreEqual(0d, market.LastDay.NeededOf(Iron));
+            Assert.AreEqual(0d, city.LastDay.MissingOf(Fish));
+            Assert.AreEqual(0d, city.LastDay.NeededOf(Iron));
         }
 
         [Test]
         public void Report_ChangesNoFigureOfTheSimulation()
         {
-            CityMarket watched = LabourMarket(3, Population(60, 180, 600, 50, 200, 400, 700), true);
-            CityMarket alone = LabourMarket(3, Population(60, 180, 600, 50, 200, 400, 700), true);
+            City watched = LabourCity(3, Population(60, 180, 600, 50, 200, 400, 700), true);
+            City alone = LabourCity(3, Population(60, 180, 600, 50, 200, 400, 700), true);
             double read = 0d;
 
             for (int day = 0; day < 60; day++)
@@ -98,7 +98,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 read += watched.LastDay.MissingOf(0) + watched.LastDay.NeededOf(0);
             }
 
-            Assert.AreEqual(alone.StockOf(0), watched.StockOf(0), 1e-9);
+            Assert.AreEqual(alone.Market.StockOf(0), watched.Market.StockOf(0), 1e-9);
             Assert.AreEqual(alone.WorkersOf(0), watched.WorkersOf(0));
             Assert.AreEqual(alone.ReserveOf(0), watched.ReserveOf(0));
             Assert.AreEqual(alone.Population.Beggars, watched.Population.Beggars);

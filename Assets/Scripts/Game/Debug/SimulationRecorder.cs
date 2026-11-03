@@ -119,16 +119,16 @@ namespace DarkFantasyMerchant.Game
 
         private void Begin()
         {
-            var markets = new List<CityMarket>();
+            var cityStates = new List<City>();
 
             foreach (CityDefinition city in mapView.Cities)
             {
-                CityMarket market = worldEconomy.MarketOf(city);
+                City cityState = worldEconomy.CityOf(city);
 
-                if (market != null)
+                if (cityState != null)
                 {
                     cities.Add(city);
-                    markets.Add(market);
+                    cityStates.Add(cityState);
                 }
             }
 
@@ -141,7 +141,7 @@ namespace DarkFantasyMerchant.Game
             clock = worldClock.Clock;
             CalendarDefinition calendar = Calendar;
             ChartCalendar = new ChartCalendar(calendar.StartYear, calendar.MonthsPerYear, calendar.DaysPerMonth, calendar.MonthName);
-            Record = new SimulationRecord(markets, goodNames.Count, HorizonChoices.DaysOf(HorizonIndex, Calendar.DaysPerMonth));
+            Record = new SimulationRecord(cityStates, goodNames.Count, HorizonChoices.DaysOf(HorizonIndex, Calendar.DaysPerMonth));
 
             // The cities as the game starts, then at the end of every day.
             Record.RecordDay(clock.ElapsedDays, UnderWay);

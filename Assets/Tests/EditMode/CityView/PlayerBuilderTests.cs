@@ -24,7 +24,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityGrid grid = TestMarkets.GridWithTownHall(10, 6);
             var house = new CityHousingRule(SocialClass.Poor, 0.95, 100, new MaterialCost[0], new Footprint(1, 1));
-            var market = new CityMarket(new[] { new MarketGood(10, 2, 0, 0) },
+            var cityState = new City(new[] { new MarketGood(10, 2, 0, 0) },
                 TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7,
                 new CityPopulation(new PerClass<int>(0, 0, 100), 0, new PerClass<int>(0, 0, 100)), TestMarkets.Labour,
                 new[] { house }, null, grid, new RandomPlacement(new System.Random(1)));
@@ -32,13 +32,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var feed = new NotificationFeed(5f, 1f);
             var trace = new[] { new Vector2Int(3, 0), new Vector2Int(4, 0), new Vector2Int(5, 0) };
 
-            bool built = PlayerBuilder.TryBuildRoads(market, null, treasury, feed, "Riga", Road, trace, null, false);
+            bool built = PlayerBuilder.TryBuildRoads(cityState, null, treasury, feed, "Riga", Road, trace, null, false);
 
             Assert.IsTrue(built);
             Assert.AreEqual(850, treasury.Gold);
             Assert.AreEqual(1, feed.Notifications.Count);
             Assert.AreEqual("Construction achevée à Riga : Route.", feed.Notifications[0].Text);
-            Assert.IsFalse(PlayerBuilder.TryBuildRoads(market, null, treasury, feed, "Riga", Road, trace, null, false));
+            Assert.IsFalse(PlayerBuilder.TryBuildRoads(cityState, null, treasury, feed, "Riga", Road, trace, null, false));
             Assert.AreEqual(1, feed.Notifications.Count);
         }
 
@@ -46,13 +46,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             "Comptoir", new BuildingCost(500, new[] { new MaterialCost(0, 3) }), "500 or, 3 bois", new Footprint(3, 2));
 
         // A market on a grid whose trading post site is reserved at (1, 1).
-        private static CityMarket PostMarket()
+        private static City PostCity()
         {
             var grid = new CityGrid(8, 8, new Vector2Int[0]);
             grid.ReserveTradingPostSite(new Footprint(3, 2), new GridPlace(new Vector2Int(1, 1), BuildingOrientation.Along));
             var house = new CityHousingRule(SocialClass.Poor, 0.95, 100, new MaterialCost[0], new Footprint(1, 1));
 
-            return new CityMarket(new[] { new MarketGood(10, 2, 0, 0) },
+            return new City(new[] { new MarketGood(10, 2, 0, 0) },
                 TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7,
                 new CityPopulation(new PerClass<int>(0, 0, 100), 0, new PerClass<int>(0, 0, 100)), TestMarkets.Labour,
                 new[] { house }, null, grid, new RandomPlacement(new System.Random(1)));
@@ -70,22 +70,22 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void QuoteTradingPost_CostsTheOffersGoldAndMaterials()
         {
-            CityMarket market = PostMarket();
+            City cityState = PostCity();
             var treasury = new Treasury(10000);
-            long expected = 500 + market.BuyPriceOf(0, 0) + market.BuyPriceOf(0, 1) + market.BuyPriceOf(0, 2);
+            long expected = 500 + cityState.Market.BuyPriceOf(0, 0) + cityState.Market.BuyPriceOf(0, 1) + cityState.Market.BuyPriceOf(0, 2);
 
-            ConstructionQuote quote = PlayerBuilder.QuoteTradingPost(market, null, treasury, Post, false);
+            ConstructionQuote quote = PlayerBuilder.QuoteTradingPost(cityState, null, treasury, Post, false);
             var unavailable = new TradingPostOffer("Comptoir", null, "indisponible", new Footprint(3, 2));
 
             Assert.IsTrue(quote.IsPossible);
             Assert.AreEqual(expected, quote.Gold);
-            Assert.IsFalse(PlayerBuilder.QuoteTradingPost(market, null, treasury, unavailable, false).IsPossible);
+            Assert.IsFalse(PlayerBuilder.QuoteTradingPost(cityState, null, treasury, unavailable, false).IsPossible);
         }
 
         [Test]
         public void TryBuildTradingPost_OpensTheCitysTradingPostAndAnnouncesIt()
         {
-            CityMarket market = PostMarket();
+            City cityState = PostCity();
             CityDefinition city = City("Riga");
 
             try
@@ -100,11 +100,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 hold.TryAdd(0, 1);
 
                 bool built = PlayerBuilder.TryBuildTradingPost(
-                    market, PlayerBuilder.MaterialsOf(null, hold), treasury, feed, city, posts, Post,
+                    cityState, PlayerBuilder.MaterialsOf(null, hold), treasury, feed, city, posts, Post,
                     (good, units, gold) => bought += units, false);
 
                 Assert.IsTrue(built);
-                Assert.IsNotNull(market.Grid.TradingPost);
+                Assert.IsNotNull(cityState.Grid.TradingPost);
                 Assert.IsNotNull(posts.Of(city));
                 Assert.AreEqual(2000, posts.Of(city).Capacity);
                 Assert.AreSame(city, opened);
@@ -122,7 +122,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryBuildTradingPost_WhenOneStands_IsRefused()
         {
-            CityMarket market = PostMarket();
+            City cityState = PostCity();
             CityDefinition city = City("Riga");
 
             try
@@ -130,17 +130,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 var posts = new PlayerTradingPosts(2000, null);
                 var treasury = new Treasury(10000);
                 var feed = new NotificationFeed(5f, 1f);
-                PlayerBuilder.TryBuildTradingPost(market, null, treasury, feed, city, posts, Post, null, false);
+                PlayerBuilder.TryBuildTradingPost(cityState, null, treasury, feed, city, posts, Post, null, false);
                 long gold = treasury.Gold;
                 Warehouse first = posts.Of(city);
 
-                bool again = PlayerBuilder.TryBuildTradingPost(market, null, treasury, feed, city, posts, Post, null, false);
+                bool again = PlayerBuilder.TryBuildTradingPost(cityState, null, treasury, feed, city, posts, Post, null, false);
 
                 Assert.IsFalse(again);
                 Assert.AreEqual(gold, treasury.Gold);
                 Assert.AreSame(first, posts.Of(city));
                 Assert.AreEqual(1, feed.Notifications.Count);
-                Assert.Throws<InvalidOperationException>(() => posts.Open(city, market.Grid));
+                Assert.Throws<InvalidOperationException>(() => posts.Open(city, cityState.Grid));
             }
             finally
             {
@@ -151,14 +151,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void QuoteHouse_CountsMaterialsInTheTradingPost()
         {
-            CityMarket market = PostMarket();
+            City cityState = PostCity();
             var post = new Warehouse(2000);
             post.TryAdd(0, 2);
             var hold = new CargoHold(100);
             hold.TryAdd(0, 1);
             var cost = new BuildingCost(100, new[] { new MaterialCost(0, 3) });
 
-            ConstructionQuote quote = Construction.QuoteHouse(market, PlayerBuilder.MaterialsOf(post, hold), new Treasury(10000), cost);
+            ConstructionQuote quote = Construction.QuoteHouse(cityState, PlayerBuilder.MaterialsOf(post, hold), new Treasury(10000), cost);
 
             Assert.IsTrue(quote.IsPossible);
             Assert.AreEqual(100, quote.Gold);
@@ -167,7 +167,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryBuildTradingPost_TakesFromThePostBeforeTheHold()
         {
-            CityMarket market = PostMarket();
+            City cityState = PostCity();
             CityDefinition city = City("Riga");
 
             try
@@ -179,7 +179,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 hold.TryAdd(0, 2);
 
                 bool built = PlayerBuilder.TryBuildTradingPost(
-                    market, PlayerBuilder.MaterialsOf(post, hold), new Treasury(10000), null, city, posts, Post, null, false);
+                    cityState, PlayerBuilder.MaterialsOf(post, hold), new Treasury(10000), null, city, posts, Post, null, false);
 
                 Assert.IsTrue(built);
                 Assert.AreEqual(0, post.UnitsOf(0));
@@ -194,7 +194,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryGiveTradingPost_PaysNothingAndStartsEmpty()
         {
-            CityMarket market = PostMarket();
+            City cityState = PostCity();
             CityDefinition city = City("Riga");
 
             try
@@ -202,16 +202,16 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 var posts = new PlayerTradingPosts(2000, null);
                 CityDefinition opened = null;
                 posts.Opened += openedCity => opened = openedCity;
-                int stock = market.AvailableOf(0);
+                int stock = cityState.Market.AvailableOf(0);
 
-                Assert.IsTrue(posts.TryGive(city, market.Grid));
+                Assert.IsTrue(posts.TryGive(city, cityState.Grid));
 
-                Assert.IsNotNull(market.Grid.TradingPost);
-                Assert.AreEqual(BuildingOwner.Player, market.Grid.TradingPost.Owner);
+                Assert.IsNotNull(cityState.Grid.TradingPost);
+                Assert.AreEqual(BuildingOwner.Player, cityState.Grid.TradingPost.Owner);
                 Assert.AreSame(city, opened);
                 Assert.AreEqual(0, posts.Of(city).Used);
-                Assert.AreEqual(stock, market.AvailableOf(0));
-                Assert.IsFalse(posts.TryGive(city, market.Grid), "already given");
+                Assert.AreEqual(stock, cityState.Market.AvailableOf(0));
+                Assert.IsFalse(posts.TryGive(city, cityState.Grid), "already given");
                 Assert.IsFalse(posts.TryGive(city, null), "no grid");
                 CollectionAssert.AreEqual(new[] { posts.Of(city) }, posts.All);
             }

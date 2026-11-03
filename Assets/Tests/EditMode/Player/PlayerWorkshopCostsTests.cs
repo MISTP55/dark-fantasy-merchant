@@ -14,73 +14,73 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static MerchantOutputRule Bonus => new MerchantOutputRule(3, 1.03, 6, 1.06, 9, 1.1);
 
         // The city's workshops have one worker, so that the beggars are left to the player's; Made needs one Input a unit.
-        private static CityMarket Market(double basePrice, double merchantOutput)
+        private static City NewCity(double basePrice, double merchantOutput)
         {
             var made = new MarketGood(basePrice, 0, 1, 0.1, merchantOutput).WithInputs(new[] { new MarketInput(Input, 1) });
             var input = new MarketGood(10, 0, 1, 0.1, merchantOutput);
-            return new CityMarket(new[] { made, input }, TestMarkets.Thresholds, Workforce, 100, TestMarkets.Pricing, 7,
+            return new City(new[] { made, input }, TestMarkets.Thresholds, Workforce, 100, TestMarkets.Pricing, 7,
                 new CityPopulation(1000, 200, 2000), TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement, merchantOutput: Bonus);
         }
 
         // The workshops, an empty trading post, and a day for them to hire.
-        private static CityMarket Hired(CityMarket market, params int[] jobsOfEachWorkshop)
+        private static City Hired(City city, params int[] jobsOfEachWorkshop)
         {
             foreach (int jobs in jobsOfEachWorkshop)
             {
-                TestMarkets.AddPlayerWorkshop(market, Made, jobs);
+                TestMarkets.AddPlayerWorkshop(city, Made, jobs);
             }
 
-            market.SetPlayerTradingPost(new Warehouse(2000));
-            market.StartDay();
-            return market;
+            city.SetPlayerTradingPost(new Warehouse(2000));
+            city.StartDay();
+            return city;
         }
 
         [Test]
         public void Wages_AreEightyPercentOfTheWeeksBaseValue()
         {
             // 10 workers making a seventieth each: one unit a week of a good worth 100.
-            CityMarket market = Hired(Market(100, 1d / 70), 10);
+            City city = Hired(NewCity(100, 1d / 70), 10);
 
-            Assert.AreEqual(10, market.PlayerWorkersOf(Made));
-            Assert.AreEqual(80, PlayerWorkshopCosts.WeeklyWagesOf(new[] { market }, 0.8));
+            Assert.AreEqual(10, city.PlayerWorkersOf(Made));
+            Assert.AreEqual(80, PlayerWorkshopCosts.WeeklyWagesOf(new[] { city }, 0.8));
         }
 
         [Test]
         public void Wages_FollowTheWorkersPresent()
         {
             // More jobs than a day fills.
-            CityMarket market = Hired(Market(100, 0.1), 1000);
-            int workers = market.PlayerWorkersOf(Made);
+            City city = Hired(NewCity(100, 0.1), 1000);
+            int workers = city.PlayerWorkersOf(Made);
 
             Assert.That(workers, Is.InRange(1, 999));
-            Assert.AreEqual(workers * 0.1 * 7 * 100 * 0.8, market.PlayerWeeklyWagesOf(0.8), 1e-6);
+            Assert.AreEqual(workers * 0.1 * 7 * 100 * 0.8, city.PlayerWeeklyWagesOf(0.8), 1e-6);
         }
 
         [Test]
         public void Wages_ArePaidInFull_WhenShortOfInputs()
         {
             // The trading post holds no Input: the workshop makes nothing and pays its workers all the same.
-            CityMarket market = Hired(Market(100, 1d / 70), 10);
+            City city = Hired(NewCity(100, 1d / 70), 10);
 
-            Assert.AreEqual(0, market.PlayerTradingPost.UnitsOf(Made));
-            Assert.AreEqual(80, PlayerWorkshopCosts.WeeklyWagesOf(new[] { market }, 0.8));
+            Assert.AreEqual(0, city.PlayerTradingPost.UnitsOf(Made));
+            Assert.AreEqual(80, PlayerWorkshopCosts.WeeklyWagesOf(new[] { city }, 0.8));
         }
 
         [Test]
         public void Wages_CountTheBonus()
         {
-            CityMarket market = Hired(Market(100, 1d / 70), 10, 10, 10);
+            City city = Hired(NewCity(100, 1d / 70), 10, 10, 10);
 
-            Assert.AreEqual(30, market.PlayerWorkersOf(Made));
-            Assert.AreEqual(247, PlayerWorkshopCosts.WeeklyWagesOf(new[] { market }, 0.8));
+            Assert.AreEqual(30, city.PlayerWorkersOf(Made));
+            Assert.AreEqual(247, PlayerWorkshopCosts.WeeklyWagesOf(new[] { city }, 0.8));
         }
 
         [Test]
         public void Wages_AreRoundedOnce_AfterSumming()
         {
             // 0.4 gold in each city.
-            CityMarket first = Hired(Market(1, 1d / 140), 10);
-            CityMarket second = Hired(Market(1, 1d / 140), 10);
+            City first = Hired(NewCity(1, 1d / 140), 10);
+            City second = Hired(NewCity(1, 1d / 140), 10);
 
             Assert.AreEqual(0.4, first.PlayerWeeklyWagesOf(0.8), 1e-9);
             Assert.AreEqual(1, PlayerWorkshopCosts.WeeklyWagesOf(new[] { first, second }, 0.8));
@@ -89,24 +89,24 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void Wages_RefuseANegativeShare()
         {
-            CityMarket market = Market(100, 0.1);
+            City city = NewCity(100, 0.1);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => market.PlayerWeeklyWagesOf(-0.1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => market.PlayerWeeklyWagesOf(double.NaN));
+            Assert.Throws<ArgumentOutOfRangeException>(() => city.PlayerWeeklyWagesOf(-0.1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => city.PlayerWeeklyWagesOf(double.NaN));
         }
 
         [Test]
         public void RunningCost_IsOwedForEveryWorkshop_WithOrWithoutWorkers()
         {
             // Without labour, nobody is ever hired.
-            var market = new CityMarket(new[] { new MarketGood(100, 0, 1, 0.1, 0.1) }, TestMarkets.Thresholds, Workforce, 100,
+            var city = new City(new[] { new MarketGood(100, 0, 1, 0.1, 0.1) }, TestMarkets.Thresholds, Workforce, 100,
                 TestMarkets.Pricing, 7, new CityPopulation(1000), grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
-            TestMarkets.AddPlayerWorkshop(market, Made, 10);
-            TestMarkets.AddPlayerWorkshop(market, Made, 10);
-            market.StartDay();
+            TestMarkets.AddPlayerWorkshop(city, Made, 10);
+            TestMarkets.AddPlayerWorkshop(city, Made, 10);
+            city.StartDay();
 
-            Assert.AreEqual(0, market.PlayerWorkersOf(Made));
-            Assert.AreEqual(400, PlayerWorkshopCosts.WeeklyRunningCostOf(new[] { market }, good => good == Made ? 200 : 0));
+            Assert.AreEqual(0, city.PlayerWorkersOf(Made));
+            Assert.AreEqual(400, PlayerWorkshopCosts.WeeklyRunningCostOf(new[] { city }, good => good == Made ? 200 : 0));
         }
     }
 }

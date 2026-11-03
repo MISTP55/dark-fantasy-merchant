@@ -10,7 +10,7 @@ namespace DarkFantasyMerchant.Game
     /// Static definition of a building: its name and what it costs. Not every building is the player's: the
     /// town hall and the port are placed by the city's layout and cost nothing. Each
     /// kind of building adds what it gives. Holds no runtime state: what a city has built is in its
-    /// <see cref="CityMarket"/>.
+    /// <see cref="City"/>.
     /// </summary>
     public abstract class BuildingDefinition : ScriptableObject
     {

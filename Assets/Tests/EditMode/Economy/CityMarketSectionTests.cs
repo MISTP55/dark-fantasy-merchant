@@ -22,6 +22,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private VisualElement sectionElement;
         private VisualElement rows;
         private Label holdLabel;
+        private City cityState;
         private CityMarket market;
         private CargoHold hold;
         private Treasury treasury;
@@ -35,7 +36,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             holdLabel = new Label();
 
             // Wheat: 2 barrels a day, 60 in stock. Wine: not consumed here, none in stock.
-            market = new CityMarket(
+            cityState = new City(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(60, 0, 0, 0) },
                 TestMarkets.Thresholds,
                 TestMarkets.Workforce,
@@ -43,6 +44,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 TestMarkets.Pricing,
                 7,
                 new CityPopulation(1000));
+            market = cityState.Market;
             hold = new CargoHold(200);
             treasury = new Treasury(10000);
             section = new CityMarketSection(sectionElement, rows, holdLabel, new[] { "Blé", "Vin" }, treasury);
@@ -264,7 +266,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             section.Show(market, hold);
 
-            market.StartDay();
+            cityState.StartDay();
 
             Assert.AreEqual("58", Text(Wheat, StockCell));
         }
@@ -294,7 +296,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             section.Show(market, hold);
             section.Hide();
 
-            market.StartDay();
+            cityState.StartDay();
 
             Assert.AreEqual("60", Text(Wheat, StockCell));
         }
@@ -305,14 +307,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // Wine is good 0 here, wheat good 1: the rows list wheat first all the same.
             var container = new VisualElement();
             var sorted = new CityMarketSection(new VisualElement(), container, new Label(), new[] { "Vin", "Blé" }, treasury);
-            var swapped = new CityMarket(
+            var swapped = new City(
                 new[] { new MarketGood(60, 0, 0, 0), new MarketGood(10, 2, 0, 0) },
                 TestMarkets.Thresholds,
                 TestMarkets.Workforce,
                 30,
                 TestMarkets.Pricing,
                 7,
-                new CityPopulation(1000));
+                new CityPopulation(1000)).Market;
 
             sorted.Show(swapped, null);
 
@@ -338,10 +340,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AMarketWithFewerGoodsThanRows_LeavesTheExtraRowsEmpty()
         {
-            var small = new CityMarket(
+            var small = new City(
                 new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing,
                 7,
-                new CityPopulation(1000));
+                new CityPopulation(1000)).Market;
 
             Assert.DoesNotThrow(() => section.Show(small, hold));
             Assert.AreEqual(CityMarketSection.NoPrice, Text(Wine, BuyCell));

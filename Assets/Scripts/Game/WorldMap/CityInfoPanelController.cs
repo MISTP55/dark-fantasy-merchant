@@ -96,8 +96,8 @@ namespace DarkFantasyMerchant.Game
 
         private Tab openTab;
 
-        // The market whose population the panel shows and follows, or null.
-        private CityMarket populationMarket;
+        // The city whose population the panel shows and follows, or null.
+        private City populationCity;
 
         private bool isBound;
 
@@ -421,9 +421,9 @@ namespace DarkFantasyMerchant.Game
         // The inhabitants of the game are in the market; a city without one has none to show.
         private void ShowPopulationOf(CityDefinition city)
         {
-            FollowPopulationOf(worldEconomy != null ? worldEconomy.MarketOf(city) : null);
+            FollowPopulationOf(worldEconomy != null ? worldEconomy.CityOf(city) : null);
 
-            if (populationMarket != null)
+            if (populationCity != null)
             {
                 WritePopulation();
             }
@@ -433,36 +433,36 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        private void FollowPopulationOf(CityMarket market)
+        private void FollowPopulationOf(City cityState)
         {
-            if (ReferenceEquals(market, populationMarket))
+            if (ReferenceEquals(cityState, populationCity))
             {
                 return;
             }
 
-            if (populationMarket != null)
+            if (populationCity != null)
             {
-                populationMarket.Changed -= WritePopulation;
+                populationCity.Changed -= WritePopulation;
             }
 
-            populationMarket = market;
+            populationCity = cityState;
 
-            if (populationMarket != null)
+            if (populationCity != null)
             {
-                populationMarket.Changed += WritePopulation;
+                populationCity.Changed += WritePopulation;
             }
         }
 
-        // Also on a trade, which changes no inhabitant: a market has one event.
+        // Also on a trade, which changes no inhabitant: a city has one event.
         private void WritePopulation()
         {
             // Another listener of the same change may have closed the panel.
-            if (populationMarket == null)
+            if (populationCity == null)
             {
                 return;
             }
 
-            CityPopulation population = populationMarket.Population;
+            CityPopulation population = populationCity.Population;
             populationLabel.text = FormatPopulation(
                 population.CountOf(SocialClass.Rich),
                 population.CountOf(SocialClass.Wealthy),

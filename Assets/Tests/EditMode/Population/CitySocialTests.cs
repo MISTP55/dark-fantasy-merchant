@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace DarkFantasyMerchant.Tests.EditMode
 {
-    public class CityMarketSocialTests
+    public class CitySocialTests
     {
         private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
 
@@ -20,7 +20,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return new CityPopulation(new PerClass<int>(rich, wealthy, poor), beggars, new PerClass<int>(richRoom, wealthyRoom, poorRoom));
         }
 
-        private static CityMarket Market(
+        private static City NewCity(
             CityPopulation population,
             double startingDays,
             MarketGood[] goods = null,
@@ -30,30 +30,30 @@ namespace DarkFantasyMerchant.Tests.EditMode
             bool withSocial = true,
             bool onGrid = false)
         {
-            return new CityMarket(goods ?? new[] { Good }, TestMarkets.Thresholds, workforce ?? Workforce, startingDays,
+            return new City(goods ?? new[] { Good }, TestMarkets.Thresholds, workforce ?? Workforce, startingDays,
                 TestMarkets.Pricing, 7, population, TestMarkets.Labour, housing, withSocial ? social ?? TestMarkets.Social : null,
                 onGrid ? TestMarkets.GridWithRoad() : null, onGrid ? TestMarkets.Placement : null);
         }
 
-        private static void AssertSatisfactions(CityMarket market, int rich, int wealthy, int poor)
+        private static void AssertSatisfactions(City city, int rich, int wealthy, int poor)
         {
-            Assert.AreEqual(rich, market.Population.SatisfactionOf(SocialClass.Rich), "rich");
-            Assert.AreEqual(wealthy, market.Population.SatisfactionOf(SocialClass.Wealthy), "wealthy");
-            Assert.AreEqual(poor, market.Population.SatisfactionOf(SocialClass.Poor), "poor");
+            Assert.AreEqual(rich, city.Population.SatisfactionOf(SocialClass.Rich), "rich");
+            Assert.AreEqual(wealthy, city.Population.SatisfactionOf(SocialClass.Wealthy), "wealthy");
+            Assert.AreEqual(poor, city.Population.SatisfactionOf(SocialClass.Poor), "poor");
         }
 
         [Test]
         public void ASocialRule_SetsTheStartingSatisfactions()
         {
-            CityMarket market = Market(Population(100, 300, 600, 0, 120, 350, 700), 7);
+            City city = NewCity(Population(100, 300, 600, 0, 120, 350, 700), 7);
 
-            AssertSatisfactions(market, 50, 50, 50);
+            AssertSatisfactions(city, 50, 50, 50);
         }
 
         [Test]
         public void ASocialRule_NeedsLabour()
         {
-            Assert.Throws<ArgumentException>(() => new CityMarket(new[] { Good }, TestMarkets.Thresholds, Workforce, 7,
+            Assert.Throws<ArgumentException>(() => new City(new[] { Good }, TestMarkets.Thresholds, Workforce, 7,
                 TestMarkets.Pricing, 7, new CityPopulation(1000), null, null, TestMarkets.Social));
         }
 
@@ -62,11 +62,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // Targets -13 - 5 + 9, -18 - 4 + 9, -27 - 8 + 9.
             var notProduced = new MarketGood(10, PerClass<double>.All(2), 0, 0, 0, new PerClass<int>(5, 4, 8));
-            CityMarket market = Market(Population(100, 300, 600, 0, 120, 350, 700), 0, new[] { notProduced });
+            City city = NewCity(Population(100, 300, 600, 0, 120, 350, 700), 0, new[] { notProduced });
 
-            market.StartDay();
+            city.StartDay();
 
-            AssertSatisfactions(market, 49, 49, 49);
+            AssertSatisfactions(city, 49, 49, 49);
         }
 
         [Test]
@@ -77,9 +77,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // would raise the satisfactions while the others fall.
             var pitch = new MarketGood(10, PerClass<double>.All(0), 0, 0, 0, PerClass<int>.All(40));
             var ships = new MarketGood(10, PerClass<double>.All(0), 60, 0.1, 0, PerClass<int>.All(0));
-            CityMarket withInputs = Market(
+            City withInputs = NewCity(
                 Population(100, 300, 600, 0, 120, 350, 700), 100, new[] { pitch, ships.WithInputs(new[] { new MarketInput(0, 0.5) }) });
-            CityMarket without = Market(Population(100, 300, 600, 0, 120, 350, 700), 100, new[] { pitch, ships });
+            City without = NewCity(Population(100, 300, 600, 0, 120, 350, 700), 100, new[] { pitch, ships });
 
             withInputs.StartDay();
             without.StartDay();
@@ -97,11 +97,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // Above twice T0: targets 36, 31, 22.
             var notProduced = new MarketGood(10, PerClass<double>.All(2), 0, 0, 0, PerClass<int>.All(40));
-            CityMarket market = Market(Population(100, 300, 600, 0, 120, 350, 700), 100, new[] { notProduced });
+            City city = NewCity(Population(100, 300, 600, 0, 120, 350, 700), 100, new[] { notProduced });
 
-            market.StartDay();
+            city.StartDay();
 
-            AssertSatisfactions(market, 52, 52, 49);
+            AssertSatisfactions(city, 52, 52, 49);
         }
 
         [Test]
@@ -109,55 +109,55 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var notProduced = new MarketGood(10, PerClass<double>.All(2), 0, 0, 0, new PerClass<int>(5, 4, 8));
             var unwanted = new MarketGood(10, PerClass<double>.All(0), 0, 0, 0, PerClass<int>.All(9));
-            CityMarket market = Market(Population(100, 300, 600, 0, 120, 350, 700), 0, new[] { notProduced, unwanted });
+            City city = NewCity(Population(100, 300, 600, 0, 120, 350, 700), 0, new[] { notProduced, unwanted });
 
-            market.StartDay();
+            city.StartDay();
 
-            AssertSatisfactions(market, 49, 49, 49);
+            AssertSatisfactions(city, 49, 49, 49);
         }
 
         [Test]
         public void StartDay_DoesNotHireBeggarsWhileThePoorAreUnhappy()
         {
-            CityMarket market = Market(Population(0, 0, 1000, 100, 0, 0, 1100), 0);
-            market.Population.SetSatisfaction(SocialClass.Poor, 0);
+            City city = NewCity(Population(0, 0, 1000, 100, 0, 0, 1100), 0);
+            city.Population.SetSatisfaction(SocialClass.Poor, 0);
 
-            market.StartDay();
+            city.StartDay();
 
-            Assert.AreEqual(10, market.WorkersOf(0));
+            Assert.AreEqual(10, city.WorkersOf(0));
         }
 
         [Test]
         public void StartDay_HiresBeggarsWhileThePoorAreHappy()
         {
-            CityMarket market = Market(Population(0, 0, 1000, 100, 0, 0, 1100), 0);
+            City city = NewCity(Population(0, 0, 1000, 100, 0, 0, 1100), 0);
 
-            market.StartDay();
+            city.StartDay();
 
-            Assert.AreEqual(26, market.WorkersOf(0));
+            Assert.AreEqual(26, city.WorkersOf(0));
         }
 
         [Test]
         public void StartDay_MovesPoorUpAfterTheSatisfaction()
         {
-            CityMarket market = Market(Population(60, 180, 600, 0, 200, 400, 700), 7);
+            City city = NewCity(Population(60, 180, 600, 0, 200, 400, 700), 7);
 
-            market.StartDay();
+            city.StartDay();
 
-            Assert.AreEqual(66, market.Population.CountOf(SocialClass.Rich));
-            Assert.AreEqual(184, market.Population.CountOf(SocialClass.Wealthy));
+            Assert.AreEqual(66, city.Population.CountOf(SocialClass.Rich));
+            Assert.AreEqual(184, city.Population.CountOf(SocialClass.Wealthy));
         }
 
         [Test]
         public void WithoutASocialRule_TheClassesNeverMove()
         {
-            CityMarket market = Market(Population(60, 180, 600, 0, 200, 400, 700), 7, withSocial: false);
+            City city = NewCity(Population(60, 180, 600, 0, 200, 400, 700), 7, withSocial: false);
 
-            market.StartDay();
+            city.StartDay();
 
-            Assert.AreEqual(60, market.Population.CountOf(SocialClass.Rich));
-            Assert.AreEqual(180, market.Population.CountOf(SocialClass.Wealthy));
-            AssertSatisfactions(market, 0, 0, 0);
+            Assert.AreEqual(60, city.Population.CountOf(SocialClass.Rich));
+            Assert.AreEqual(180, city.Population.CountOf(SocialClass.Wealthy));
+            AssertSatisfactions(city, 0, 0, 0);
         }
 
         [Test]
@@ -165,24 +165,24 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // Above T3, the workshop keeps 1 worker and 9 go to its reserve. One rich and one
             // wealthy rise, then (998 - 980) / 4 + 1 = 5 poor want to leave: one worker's family.
-            CityMarket market = Market(Population(0, 0, 1000, 0, 0, 0, 980), 100);
+            City city = NewCity(Population(0, 0, 1000, 0, 0, 0, 980), 100);
 
-            market.StartDay();
+            city.StartDay();
 
-            Assert.AreEqual(8, market.ReserveOf(0));
-            Assert.AreEqual(994, market.Population.CountOf(SocialClass.Poor));
-            Assert.AreEqual(996, market.Population.Housed);
+            Assert.AreEqual(8, city.ReserveOf(0));
+            Assert.AreEqual(994, city.Population.CountOf(SocialClass.Poor));
+            Assert.AreEqual(996, city.Population.Housed);
         }
 
         [Test]
         public void LeavingPoor_TakeTheWorkersAbove30_WhenThereIsNoReserve()
         {
-            CityMarket market = Market(Population(0, 0, 1000, 0, 0, 0, 980), 0, workforce: new WorkforceRule(16, 8, 4, 1, 1, 50));
+            City city = NewCity(Population(0, 0, 1000, 0, 0, 0, 980), 0, workforce: new WorkforceRule(16, 8, 4, 1, 1, 50));
 
-            market.StartDay();
+            city.StartDay();
 
-            Assert.AreEqual(49, market.WorkersOf(0));
-            Assert.AreEqual(994, market.Population.CountOf(SocialClass.Poor));
+            Assert.AreEqual(49, city.WorkersOf(0));
+            Assert.AreEqual(994, city.Population.CountOf(SocialClass.Poor));
         }
 
         [Test]
@@ -191,16 +191,16 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // The poor are unhappy: the city's workshop (stock between T0 and T1) hires no beggar
             // and stays at 10, the player's fills its 10 jobs. Their satisfaction falls below 0:
             // a hundredth of the 1 038 poor want to leave, two workers' families, both from the player.
-            CityMarket market = Market(Population(0, 0, 1000, 60, 0, 0, 1100), 15, onGrid: true);
-            TestMarkets.AddPlayerWorkshop(market, 0, 10);
-            market.Population.SetSatisfaction(SocialClass.Poor, 0);
+            City city = NewCity(Population(0, 0, 1000, 60, 0, 0, 1100), 15, onGrid: true);
+            TestMarkets.AddPlayerWorkshop(city, 0, 10);
+            city.Population.SetSatisfaction(SocialClass.Poor, 0);
 
-            market.StartDay();
+            city.StartDay();
 
-            Assert.AreEqual(10, market.WorkersOf(0));
-            Assert.AreEqual(0, market.ReserveOf(0));
-            Assert.AreEqual(8, market.PlayerWorkersOf(0));
-            Assert.AreEqual(1030, market.Population.CountOf(SocialClass.Poor));
+            Assert.AreEqual(10, city.WorkersOf(0));
+            Assert.AreEqual(0, city.ReserveOf(0));
+            Assert.AreEqual(8, city.PlayerWorkersOf(0));
+            Assert.AreEqual(1030, city.Population.CountOf(SocialClass.Poor));
         }
 
         [Test]
@@ -215,17 +215,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 new CityHousingRule(SocialClass.Wealthy, 0.96, 70, materials),
                 new CityHousingRule(SocialClass.Poor, 0.95, 140, materials),
             };
-            CityMarket market = Market(Population(117, 100, 600, 0, 120, 350, 700), 7, new[] { Good, material }, housing: housing);
-            market.Put(Timber, 30);
+            City city = NewCity(Population(117, 100, 600, 0, 120, 350, 700), 7, new[] { Good, material }, housing: housing);
+            city.Market.Put(Timber, 30);
 
-            market.StartDay();
+            city.StartDay();
 
-            Assert.AreEqual(120, market.Population.CountOf(SocialClass.Rich));
-            Assert.AreEqual(160, market.Population.RoomOf(SocialClass.Rich));
-            Assert.AreEqual(350, market.Population.RoomOf(SocialClass.Wealthy));
-            Assert.AreEqual(700, market.Population.RoomOf(SocialClass.Poor));
-            Assert.AreEqual(1, market.CityHouses);
-            Assert.AreEqual(20, market.AvailableOf(Timber));
+            Assert.AreEqual(120, city.Population.CountOf(SocialClass.Rich));
+            Assert.AreEqual(160, city.Population.RoomOf(SocialClass.Rich));
+            Assert.AreEqual(350, city.Population.RoomOf(SocialClass.Wealthy));
+            Assert.AreEqual(700, city.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(1, city.CityHouses);
+            Assert.AreEqual(20, city.Market.AvailableOf(Timber));
         }
 
         [Test]
@@ -236,12 +236,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
             MarketGood[] goods = { new MarketGood(10, 2, 20, 0.1), new MarketGood(10, 2, 60, 0.1), new MarketGood(10, 2, 0, 0) };
             var workforce = new WorkforceRule(16, 8, 4, 1, 1, 60);
             CityPopulation population = CityPopulation.AtStart(
-                CityMarket.StartingWorkforceOf(goods, workforce), 4, 4d / 17d, new PerClass<int>(40, 70, 140));
-            var market = new CityMarket(goods, TestMarkets.Thresholds, workforce, 7, TestMarkets.Pricing, 7,
+                City.StartingWorkforceOf(goods, workforce), 4, 4d / 17d, new PerClass<int>(40, 70, 140));
+            var city = new City(goods, TestMarkets.Thresholds, workforce, 7, TestMarkets.Pricing, 7,
                 population, TestMarkets.Labour, null, TestMarkets.Social, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
-            TestMarkets.AddPlayerHouse(market, SocialClass.Poor, 140);
-            TestMarkets.AddPlayerWorkshop(market, 0, 30);
-            AssertFourPerWorker(market, "at the start");
+            TestMarkets.AddPlayerHouse(city, SocialClass.Poor, 140);
+            TestMarkets.AddPlayerWorkshop(city, 0, 30);
+            AssertFourPerWorker(city, "at the start");
 
             for (int day = 0; day < 200; day++)
             {
@@ -250,31 +250,31 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 {
                     if (day % 6 == 0)
                     {
-                        market.Put(good, 10000);
+                        city.Market.Put(good, 10000);
                     }
-                    else if (day % 6 == 3 && market.AvailableOf(good) > 0)
+                    else if (day % 6 == 3 && city.Market.AvailableOf(good) > 0)
                     {
-                        market.Take(good, market.AvailableOf(good));
+                        city.Market.Take(good, city.Market.AvailableOf(good));
                     }
                 }
 
-                market.StartDay();
-                AssertFourPerWorker(market, $"on day {day}");
+                city.StartDay();
+                AssertFourPerWorker(city, $"on day {day}");
             }
 
-            Assert.Less(market.Population.SatisfactionOf(SocialClass.Poor), 0);
+            Assert.Less(city.Population.SatisfactionOf(SocialClass.Poor), 0);
         }
 
-        private static void AssertFourPerWorker(CityMarket market, string when)
+        private static void AssertFourPerWorker(City city, string when)
         {
             int employed = 0;
 
-            for (int good = 0; good < market.GoodCount; good++)
+            for (int good = 0; good < city.Market.GoodCount; good++)
             {
-                employed += market.WorkersOf(good) + market.ReserveOf(good) + market.PlayerWorkersOf(good);
+                employed += city.WorkersOf(good) + city.ReserveOf(good) + city.PlayerWorkersOf(good);
             }
 
-            Assert.AreEqual(4 * employed, market.Population.Housed, when);
+            Assert.AreEqual(4 * employed, city.Population.Housed, when);
         }
 
         [Test]
@@ -286,19 +286,19 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 new CityHousingRule(SocialClass.Poor, 0.95, 140, Array.Empty<MaterialCost>()),
             };
 
-            Assert.Throws<ArgumentException>(() => Market(new CityPopulation(1000), 7, housing: twice));
+            Assert.Throws<ArgumentException>(() => NewCity(new CityPopulation(1000), 7, housing: twice));
         }
 
         [Test]
         public void APlayersHouse_AddsRoomToItsClass()
         {
-            CityMarket market = Market(new CityPopulation(1000), 7, onGrid: true);
+            City city = NewCity(new CityPopulation(1000), 7, onGrid: true);
 
-            TestMarkets.AddPlayerHouse(market, SocialClass.Wealthy, 70);
+            TestMarkets.AddPlayerHouse(city, SocialClass.Wealthy, 70);
 
-            Assert.AreEqual(70, market.Population.RoomOf(SocialClass.Wealthy));
-            Assert.AreEqual(1, market.PlayerHousesOf(SocialClass.Wealthy));
-            Assert.AreEqual(0, market.PlayerHousesOf(SocialClass.Poor));
+            Assert.AreEqual(70, city.Population.RoomOf(SocialClass.Wealthy));
+            Assert.AreEqual(1, city.PlayerHousesOf(SocialClass.Wealthy));
+            Assert.AreEqual(0, city.PlayerHousesOf(SocialClass.Poor));
         }
     }
 }

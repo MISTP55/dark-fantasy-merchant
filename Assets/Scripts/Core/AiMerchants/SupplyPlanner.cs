@@ -8,7 +8,7 @@ namespace DarkFantasyMerchant.Core
     /// plentiful to one where it will be short, by the quantity <see cref="ShipmentQuantity"/>
     /// gives and for the gap of the factors of the two prices times the weight of the good. From that
     /// it chooses a ship's final destination from its home, a stopover on its way back, and a cargo.
-    /// The length of a trip divides nothing. Ports are indices into the markets it was given, goods
+    /// The length of a trip divides nothing. Ports are indices into the cities it was given, goods
     /// are indices into the catalogue.
     /// </summary>
     public sealed class SupplyPlanner
@@ -19,7 +19,7 @@ namespace DarkFantasyMerchant.Core
         // The margin CityMarket uses: days of fractional consumption leave a whole quantity a hair short.
         private const double WholeUnitMargin = 1e-9;
 
-        private readonly IReadOnlyList<CityMarket> markets;
+        private readonly IReadOnlyList<City> cities;
         private readonly double[,] travelDays;
         private readonly GoodUnits goodUnits;
         private readonly int[] weights;
@@ -39,32 +39,32 @@ namespace DarkFantasyMerchant.Core
         /// or every good without it, weighs 1.
         /// </param>
         public SupplyPlanner(
-            IReadOnlyList<CityMarket> markets,
+            IReadOnlyList<City> cities,
             double[,] travelDays,
             GoodUnits units = null,
             IReadOnlyList<int> weights = null)
         {
-            this.markets = markets ?? throw new ArgumentNullException(nameof(markets));
+            this.cities = cities ?? throw new ArgumentNullException(nameof(cities));
             this.travelDays = travelDays ?? throw new ArgumentNullException(nameof(travelDays));
 
-            if (travelDays.GetLength(0) != markets.Count || travelDays.GetLength(1) != markets.Count)
+            if (travelDays.GetLength(0) != cities.Count || travelDays.GetLength(1) != cities.Count)
             {
-                throw new ArgumentException("The travel days must have a row and a column per market.", nameof(travelDays));
+                throw new ArgumentException("The travel days must have a row and a column per city.", nameof(travelDays));
             }
 
             goodUnits = units ?? GoodUnits.AllBarrels;
 
-            // Markets made from different catalogues only trade the goods they all have.
-            int goodCount = markets.Count > 0 ? int.MaxValue : 0;
+            // Cities made from different catalogues only trade the goods they all have.
+            int goodCount = cities.Count > 0 ? int.MaxValue : 0;
 
-            foreach (CityMarket market in markets)
+            foreach (City city in cities)
             {
-                if (market == null)
+                if (city == null)
                 {
-                    throw new ArgumentException("A market is missing.", nameof(markets));
+                    throw new ArgumentException("A city is missing.", nameof(cities));
                 }
 
-                goodCount = Math.Min(goodCount, market.GoodCount);
+                goodCount = Math.Min(goodCount, city.Market.GoodCount);
             }
 
             GoodCount = goodCount;
@@ -87,7 +87,7 @@ namespace DarkFantasyMerchant.Core
             order = new int[goodCount];
         }
 
-        public int PortCount => markets.Count;
+        public int PortCount => cities.Count;
 
         public int GoodCount { get; }
 
@@ -110,10 +110,10 @@ namespace DarkFantasyMerchant.Core
             RequirePort(port, nameof(port));
             RequireGood(good);
 
-            CityMarket market = markets[port];
-            double net = market.DailyProductionOf(good) - market.DailyDemandOf(good);
+            City city = cities[port];
+            double net = city.DailyProductionOf(good) - city.DailyDemandOf(good);
 
-            return Math.Max(0d, market.StockOf(good) + underWay + net * travelDays);
+            return Math.Max(0d, city.Market.StockOf(good) + underWay + net * travelDays);
         }
 
         /// <summary>
@@ -291,7 +291,7 @@ namespace DarkFantasyMerchant.Core
                 order[position] = good;
             }
 
-            CityMarket source = markets[from];
+            CityMarket source = cities[from].Market;
             int taken = 0;
 
             for (int i = 0; i < count; i++)
@@ -320,8 +320,8 @@ namespace DarkFantasyMerchant.Core
                 return false;
             }
 
-            CityMarket source = markets[from];
-            CityMarket destination = markets[to];
+            CityMarket source = cities[from].Market;
+            CityMarket destination = cities[to].Market;
             double sourceStock = source.StockOf(good);
             double projected = ProjectedStockOf(to, good, travelDays[from, to], underWay != null ? underWay[to, good] : 0);
 

@@ -8,11 +8,11 @@ namespace DarkFantasyMerchant.Core
     {
         /// <summary>The running cost of every workshop of the player, whether it has workers or not.</summary>
         /// <param name="runningCostOfGood">The weekly running cost of a workshop of a good, by the good's index.</param>
-        public static long WeeklyRunningCostOf(IEnumerable<CityMarket> markets, Func<int, long> runningCostOfGood)
+        public static long WeeklyRunningCostOf(IEnumerable<City> cities, Func<int, long> runningCostOfGood)
         {
-            if (markets == null)
+            if (cities == null)
             {
-                throw new ArgumentNullException(nameof(markets));
+                throw new ArgumentNullException(nameof(cities));
             }
 
             if (runningCostOfGood == null)
@@ -22,11 +22,11 @@ namespace DarkFantasyMerchant.Core
 
             long cost = 0;
 
-            foreach (CityMarket market in markets)
+            foreach (City city in cities)
             {
-                for (int good = 0; good < market.GoodCount; good++)
+                for (int good = 0; good < city.Market.GoodCount; good++)
                 {
-                    int workshops = market.PlayerWorkshopsOf(good);
+                    int workshops = city.PlayerWorkshopsOf(good);
 
                     if (workshops > 0)
                     {
@@ -39,22 +39,22 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
-        /// The wages of the workers of every workshop of the player (<see cref="CityMarket.PlayerWeeklyWagesOf"/>),
+        /// The wages of the workers of every workshop of the player (<see cref="City.PlayerWeeklyWagesOf"/>),
         /// summed over the cities and only then rounded to the nearest gold.
         /// </summary>
         /// <param name="wageShare">The share of the base value of what the workers make in a week that they are paid.</param>
-        public static long WeeklyWagesOf(IEnumerable<CityMarket> markets, double wageShare)
+        public static long WeeklyWagesOf(IEnumerable<City> cities, double wageShare)
         {
-            if (markets == null)
+            if (cities == null)
             {
-                throw new ArgumentNullException(nameof(markets));
+                throw new ArgumentNullException(nameof(cities));
             }
 
             double wages = 0d;
 
-            foreach (CityMarket market in markets)
+            foreach (City city in cities)
             {
-                wages += market.PlayerWeeklyWagesOf(wageShare);
+                wages += city.PlayerWeeklyWagesOf(wageShare);
             }
 
             return (long)Math.Round(wages, MidpointRounding.AwayFromZero);

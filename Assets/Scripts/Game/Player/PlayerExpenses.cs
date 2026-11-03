@@ -125,7 +125,7 @@ namespace DarkFantasyMerchant.Game
 
             IReadOnlyList<WorkshopOffer> offers = worldEconomy.WorkshopOffers;
 
-            return PlayerWorkshopCosts.WeeklyRunningCostOf(worldEconomy.Markets, good =>
+            return PlayerWorkshopCosts.WeeklyRunningCostOf(worldEconomy.Cities, good =>
             {
                 foreach (WorkshopOffer offer in offers)
                 {
@@ -146,7 +146,7 @@ namespace DarkFantasyMerchant.Game
                 return 0;
             }
 
-            return PlayerWorkshopCosts.WeeklyWagesOf(worldEconomy.Markets, expenses.WorkshopWageShare);
+            return PlayerWorkshopCosts.WeeklyWagesOf(worldEconomy.Cities, expenses.WorkshopWageShare);
         }
 
         private void OnDayStarted(GameDate date)

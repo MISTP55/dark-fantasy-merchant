@@ -27,8 +27,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private VisualElement header;
         private VisualElement rows;
         private VisualElement totals;
-        private CityMarket market;
-        private CityMarket village;
+        private City city;
+        private City village;
         private DebugGoodMarketTable table;
 
         [SetUp]
@@ -40,17 +40,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             // A thousand inhabitants. Fish: 2 barrels a day, not produced, 60 in stock.
             // Iron: 2 barrels a day, and a full workshop of 30 workers making 3; 60 in stock.
-            market = new CityMarket(
+            city = new City(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 30, 0.1) },
                 TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7, new CityPopulation(1000));
 
             // A village of 500 that has only fish: 1 barrel a day, 30 in stock.
-            village = new CityMarket(new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, TestMarkets.Workforce, 30,
+            village = new City(new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, TestMarkets.Workforce, 30,
                 TestMarkets.Pricing, 7, new CityPopulation(500));
 
             table = new DebugGoodMarketTable(header, rows, totals);
             table.AddCity("Lübeck", village, good => 0);
-            table.AddCity("Cologne", market, good => good == Fish ? 40 : 0);
+            table.AddCity("Cologne", city, good => good == Fish ? 40 : 0);
             table.SetGood(Fish);
             table.Show();
         }
@@ -84,10 +84,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // Cologne before Lübeck.
             Assert.AreEqual("Cologne", Text(0, NameCell));
             Assert.AreEqual("60", Text(0, StockCell));
-            Assert.AreEqual(DebugCitiesTable.FormatQuantity(market.ThresholdsOf(Fish).T0), Text(0, T0Cell));
-            Assert.AreEqual(DebugCitiesTable.FormatQuantity(market.ThresholdsOf(Fish).T3), Text(0, T3Cell));
-            Assert.AreEqual(NumberText.Format(market.BuyPriceOf(Fish)), Text(0, BuyCell));
-            Assert.AreEqual(NumberText.Format(market.SellPriceOf(Fish)), Text(0, SellCell));
+            Assert.AreEqual(DebugCitiesTable.FormatQuantity(city.Market.ThresholdsOf(Fish).T0), Text(0, T0Cell));
+            Assert.AreEqual(DebugCitiesTable.FormatQuantity(city.Market.ThresholdsOf(Fish).T3), Text(0, T3Cell));
+            Assert.AreEqual(NumberText.Format(city.Market.BuyPriceOf(Fish)), Text(0, BuyCell));
+            Assert.AreEqual(NumberText.Format(city.Market.SellPriceOf(Fish)), Text(0, SellCell));
         }
 
         [Test]
@@ -105,7 +105,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(DebugCitiesTable.FormatWorkers(30, 30), Text(0, WorkersCell));
             Assert.AreEqual(
-                $"{DebugCitiesTable.FormatQuantity(market.NominalWeeklyProductionOf(Iron))} ({DebugCitiesTable.FormatQuantity(0)})",
+                $"{DebugCitiesTable.FormatQuantity(city.NominalWeeklyProductionOf(Iron))} ({DebugCitiesTable.FormatQuantity(0)})",
                 Text(0, ProductionCell));
         }
 
@@ -135,7 +135,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void GoodMarket_WritesTheInputs_AndANetThatTakesThemOff()
         {
             // A smithy whose iron workshop takes half a barrel of fish for every barrel it makes: 10.5 a week.
-            var smithy = new CityMarket(
+            var smithy = new City(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 30, 0.1).WithInputs(new[] { new MarketInput(Fish, 0.5) }) },
                 TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7, new CityPopulation(1000));
             var alone = new DebugGoodMarketTable(new VisualElement(), rows = new VisualElement(), totals = new VisualElement());
@@ -158,7 +158,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void GoodMarket_FollowsTheMarkets_WhileShown()
         {
-            market.Take(Fish, 10);
+            city.Market.Take(Fish, 10);
             Assert.AreEqual("60", Text(0, StockCell));
 
             table.WriteChanges();

@@ -51,9 +51,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         /// One good, base price 10, consumed by the day, no workshop. Thresholds in days of its
         /// consumption: T0 10, T1 30, their middle 20, the target point 17.5, T3 40.
         /// </summary>
-        private static CityMarket Market(double days, double dailyConsumption = 2)
+        private static City NewCity(double days, double dailyConsumption = 2)
         {
-            return new CityMarket(
+            return new City(
                 new[] { new MarketGood(10, dailyConsumption, 0, 0) },
                 TestMarkets.Thresholds,
                 TestMarkets.Workforce,
@@ -64,7 +64,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         /// <summary>Three ports: H to D 2 days, D to S 1 day, S to H 1.1 days, both ways.</summary>
-        private void CreateFleet(CityMarket home, CityMarket destination, CityMarket stopover)
+        private void CreateFleet(City home, City destination, City stopover)
         {
             var days = new double[3, 3];
             days[H, D] = days[D, H] = 2d;
@@ -74,9 +74,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CreateFleet(days, home, destination, stopover);
         }
 
-        private void CreateFleet(double[,] days, params CityMarket[] cityMarkets)
+        private void CreateFleet(double[,] days, params City[] cities)
         {
-            markets = cityMarkets;
+            markets = System.Array.ConvertAll(cities, city => city.Market);
 
             var allPositions = new[]
             {
@@ -93,19 +93,19 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 positions[i] = allPositions[i];
             }
 
-            fleet = new AiMerchantFleet<Port>(docking, ports, positions, markets, new SupplyPlanner(markets, days), Stopover, routes);
+            fleet = new AiMerchantFleet<Port>(docking, ports, positions, markets, new SupplyPlanner(cities, days), Stopover, routes);
         }
 
         /// <summary>H with 60 days of fish, D with none, S with 20.</summary>
         private void CreateOutAndBack()
         {
-            CreateFleet(Market(60), Market(0), Market(20));
+            CreateFleet(NewCity(60), NewCity(0), NewCity(20));
         }
 
         /// <summary>H with no fish, D with 100 days of it, S with 20.</summary>
         private void CreateHomeShort()
         {
-            CreateFleet(Market(0), Market(100), Market(20));
+            CreateFleet(NewCity(0), NewCity(100), NewCity(20));
         }
 
         private Ship AddShip(int home)
@@ -174,7 +174,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void FromHome_ItSailsStraightToItsFinalDestination()
         {
             // D needs 60 (score 1.4), S 22 (0.62): D. S would be a short detour, but none is made on the way out.
-            CreateFleet(Market(60), Market(0), Market(20));
+            CreateFleet(NewCity(60), NewCity(0), NewCity(20));
             Ship ship = AddShip(H);
 
             Assert.AreEqual(D, fleet.FinalDestinationOf(ship));
@@ -464,7 +464,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AtHomeWithNoDestination_ItWaitsAndTriesAgain()
         {
             // Every port at 15 days, under the middle of T0 and T1: no port gives anything.
-            CreateFleet(Market(15), Market(15), Market(15));
+            CreateFleet(NewCity(15), NewCity(15), NewCity(15));
             Ship ship = AddShip(H);
             Assert.AreEqual(-1, fleet.FinalDestinationOf(ship));
 
@@ -485,7 +485,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void WithAQuarterOfTheHoldOrLessFree_ItDropsTheStopover()
         {
             // H consumes 6 a day (T1 180). At D, S is the stopover (it needs 60), but home takes 180 of the 200 barrels.
-            CreateFleet(Market(0, 6), Market(120), Market(0));
+            CreateFleet(NewCity(0, 6), NewCity(120), NewCity(0));
             Ship ship = AddShip(H);
             Depart();
             Arrive(ship);
@@ -508,7 +508,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             days[S, S2] = days[S2, S] = 0.5d;
             days[S, H] = days[H, S] = 3.5d;
             days[S2, H] = days[H, S2] = 3.5d;
-            CreateFleet(days, Market(20), Market(100), Market(0), Market(0));
+            CreateFleet(days, NewCity(20), NewCity(100), NewCity(0), NewCity(0));
             Ship ship = AddShip(H);
             Assert.AreEqual(D, fleet.FinalDestinationOf(ship));
             Depart();

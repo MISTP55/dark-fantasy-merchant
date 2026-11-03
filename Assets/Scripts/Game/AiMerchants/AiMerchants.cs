@@ -23,9 +23,10 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private WorldMapView mapView;
         [SerializeField] private WorldClock worldClock;
 
-        // The cities that have a market, their positions and their markets, in the same order.
+        // The cities that have a market, their positions, the cities in play and their markets, in the same order.
         private readonly List<CityDefinition> ports = new List<CityDefinition>();
         private readonly List<Vector2> portPositions = new List<Vector2>();
+        private readonly List<City> cityStates = new List<City>();
         private readonly List<CityMarket> markets = new List<CityMarket>();
 
         private readonly Stopwatch stopwatch = new Stopwatch();
@@ -208,17 +209,18 @@ namespace DarkFantasyMerchant.Game
 
             foreach (CityDefinition city in mapView.Cities)
             {
-                CityMarket market = worldEconomy.MarketOf(city);
+                City cityState = worldEconomy.CityOf(city);
 
                 // A city without a market is not traded with.
-                if (market == null)
+                if (cityState == null)
                 {
                     continue;
                 }
 
                 ports.Add(city);
                 portPositions.Add(city.MapPosition);
-                markets.Add(market);
+                cityStates.Add(cityState);
+                markets.Add(cityState.Market);
                 anchorages.Add(AnchorageOf(city, navigation));
             }
 
@@ -244,7 +246,7 @@ namespace DarkFantasyMerchant.Game
             try
             {
                 var planner = new SupplyPlanner(
-                    markets, travelTable.Days, worldEconomy.Economy.CreateGoodUnits(), worldEconomy.Economy.CreateAiWeights());
+                    cityStates, travelTable.Days, worldEconomy.Economy.CreateGoodUnits(), worldEconomy.Economy.CreateAiWeights());
                 fleet = new AiMerchantFleet<CityDefinition>(
                     shipsView.Docking,
                     ports,

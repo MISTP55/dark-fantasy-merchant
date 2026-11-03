@@ -76,10 +76,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 var bar = new BuildBarController(root);
                 PlayerBuilder builder = builderObject.AddComponent<PlayerBuilder>();
                 var workshop = new WorkshopOffer(0, "Brasserie", 30, new BuildingCost(5000, Array.Empty<MaterialCost>()), "5 000 or");
-                var market = new CityMarket(new[] { new MarketGood(10, 2, 30, 0.1) }, TestMarkets.Thresholds,
+                var cityState = new City(new[] { new MarketGood(10, 2, 30, 0.1) }, TestMarkets.Thresholds,
                     TestMarkets.Workforce, 30, TestMarkets.Pricing, 7, new CityPopulation(1000));
 
-                bar.Show(city, builder, market, null, null, Array.Empty<HouseOffer>(), new[] { workshop }, null, null, null, null);
+                bar.Show(city, builder, cityState, null, null, Array.Empty<HouseOffer>(), new[] { workshop }, null, null, null, null);
                 bar.Choose(BuildBarController.Category.Workshops);
 
                 Assert.AreEqual(1, offers.childCount);
@@ -89,7 +89,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                     "Il faut un comptoir dans cette ville pour y construire un atelier.",
                     BuildBarController.WorkshopNeedsTradingPostText);
 
-                market.SetPlayerTradingPost(new Warehouse(2000));
+                cityState.SetPlayerTradingPost(new Warehouse(2000));
 
                 Assert.AreEqual("5 000 or", bar.CostTipAt(0));
             }

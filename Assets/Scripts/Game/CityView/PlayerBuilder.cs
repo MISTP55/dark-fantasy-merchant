@@ -55,35 +55,35 @@ namespace DarkFantasyMerchant.Game
         /// <summary>What building a house in the city would cost now; impossible without a market, an offer with a cost or a treasury.</summary>
         public ConstructionQuote QuoteHouse(CityDefinition city, HouseOffer offer)
         {
-            if (!TryGetContext(city, out CityMarket market, out Treasury treasury) || offer?.Cost == null)
+            if (!TryGetContext(city, out City cityState, out Treasury treasury) || offer?.Cost == null)
             {
                 return default;
             }
 
-            return Construction.QuoteHouse(market, MaterialsIn(city), treasury, offer.Cost, IsFree);
+            return Construction.QuoteHouse(cityState, MaterialsIn(city), treasury, offer.Cost, IsFree);
         }
 
         /// <summary>What building a workshop in the city would cost now; impossible without a market, an offer with a cost or a treasury.</summary>
         public ConstructionQuote QuoteWorkshop(CityDefinition city, WorkshopOffer offer)
         {
-            if (!TryGetContext(city, out CityMarket market, out Treasury treasury) || offer?.Cost == null)
+            if (!TryGetContext(city, out City cityState, out Treasury treasury) || offer?.Cost == null)
             {
                 return default;
             }
 
-            return Construction.QuoteWorkshop(market, MaterialsIn(city), treasury, offer.Cost, offer.Good, IsFree);
+            return Construction.QuoteWorkshop(cityState, MaterialsIn(city), treasury, offer.Cost, offer.Good, IsFree);
         }
 
         /// <returns>True when the house was built at the place; nothing was paid otherwise.</returns>
         public bool TryBuildHouse(CityDefinition city, HouseOffer offer, GridPlace place)
         {
-            if (!TryGetContext(city, out CityMarket market, out Treasury treasury) || offer?.Cost == null)
+            if (!TryGetContext(city, out City cityState, out Treasury treasury) || offer?.Cost == null)
             {
                 return false;
             }
 
             bool built = Construction.TryBuildHouse(
-                market, MaterialsIn(city), treasury, offer.Cost, offer.HousedClass, offer.Room, offer.Footprint, place,
+                cityState, MaterialsIn(city), treasury, offer.Cost, offer.HousedClass, offer.Room, offer.Footprint, place,
                 (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold), IsFree);
 
             if (built)
@@ -97,13 +97,13 @@ namespace DarkFantasyMerchant.Game
         /// <returns>True when the workshop was built at the place; nothing was paid otherwise.</returns>
         public bool TryBuildWorkshop(CityDefinition city, WorkshopOffer offer, GridPlace place)
         {
-            if (!TryGetContext(city, out CityMarket market, out Treasury treasury) || offer?.Cost == null)
+            if (!TryGetContext(city, out City cityState, out Treasury treasury) || offer?.Cost == null)
             {
                 return false;
             }
 
             bool built = Construction.TryBuildWorkshop(
-                market, MaterialsIn(city), treasury, offer.Cost, offer.Good, offer.Jobs, offer.Footprint, place,
+                cityState, MaterialsIn(city), treasury, offer.Cost, offer.Good, offer.Jobs, offer.Footprint, place,
                 (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold), IsFree);
 
             if (built)
@@ -120,12 +120,12 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         public ConstructionQuote QuoteRoadCell(CityDefinition city, RoadOffer offer)
         {
-            if (!TryGetContext(city, out CityMarket market, out Treasury treasury) || offer?.CostPerCell == null)
+            if (!TryGetContext(city, out City cityState, out Treasury treasury) || offer?.CostPerCell == null)
             {
                 return default;
             }
 
-            return Construction.QuoteRoadCell(market, MaterialsIn(city), treasury, offer.CostPerCell, IsFree);
+            return Construction.QuoteRoadCell(cityState, MaterialsIn(city), treasury, offer.CostPerCell, IsFree);
         }
 
         /// <summary>
@@ -134,26 +134,26 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         public ConstructionQuote QuoteRoads(CityDefinition city, RoadOffer offer, IReadOnlyList<Vector2Int> cells)
         {
-            if (!TryGetContext(city, out CityMarket market, out Treasury treasury) || offer?.CostPerCell == null)
+            if (!TryGetContext(city, out City cityState, out Treasury treasury) || offer?.CostPerCell == null)
             {
                 return default;
             }
 
-            return Construction.QuoteRoads(market, MaterialsIn(city), treasury, offer.CostPerCell, cells, IsFree);
+            return Construction.QuoteRoads(cityState, MaterialsIn(city), treasury, offer.CostPerCell, cells, IsFree);
         }
 
         /// <summary>Lays the roads of a trace in the city, announced once for the whole trace.</summary>
         /// <returns>True when they were laid; nothing was paid otherwise.</returns>
         public bool TryBuildRoads(CityDefinition city, RoadOffer offer, IReadOnlyList<Vector2Int> cells)
         {
-            if (!TryGetContext(city, out CityMarket market, out Treasury treasury))
+            if (!TryGetContext(city, out City cityState, out Treasury treasury))
             {
                 return false;
             }
 
             NotificationFeed feed = playerNotifications != null && playerNotifications.IsReady ? playerNotifications.Feed : null;
             return TryBuildRoads(
-                market, MaterialsIn(city), treasury, feed, city.DisplayName, offer, cells,
+                cityState, MaterialsIn(city), treasury, feed, city.DisplayName, offer, cells,
                 (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold), IsFree);
         }
 
@@ -163,7 +163,7 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         /// <returns>True when they were laid; nothing was paid otherwise, nor an offer without a cost.</returns>
         internal static bool TryBuildRoads(
-            CityMarket market,
+            City cityState,
             IGoodSource materials,
             Treasury treasury,
             NotificationFeed feed,
@@ -174,7 +174,7 @@ namespace DarkFantasyMerchant.Game
             bool isFree)
         {
             if (offer?.CostPerCell == null
-                || !Construction.TryBuildRoads(market, materials, treasury, offer.CostPerCell, cells, materialBought, isFree))
+                || !Construction.TryBuildRoads(cityState, materials, treasury, offer.CostPerCell, cells, materialBought, isFree))
             {
                 return false;
             }
@@ -189,34 +189,34 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         public ConstructionQuote QuoteTradingPost(CityDefinition city, TradingPostOffer offer)
         {
-            if (!TryGetContext(city, out CityMarket market, out Treasury treasury))
+            if (!TryGetContext(city, out City cityState, out Treasury treasury))
             {
                 return default;
             }
 
-            return QuoteTradingPost(market, MaterialsIn(city), treasury, offer, IsFree);
+            return QuoteTradingPost(cityState, MaterialsIn(city), treasury, offer, IsFree);
         }
 
         /// <summary>Builds the city's trading post on its reserved site and opens it, empty.</summary>
         /// <returns>True when it was built; nothing was paid otherwise.</returns>
         public bool TryBuildTradingPost(CityDefinition city, TradingPostOffer offer)
         {
-            if (!TryGetContext(city, out CityMarket market, out Treasury treasury))
+            if (!TryGetContext(city, out City cityState, out Treasury treasury))
             {
                 return false;
             }
 
             NotificationFeed feed = playerNotifications != null && playerNotifications.IsReady ? playerNotifications.Feed : null;
             return TryBuildTradingPost(
-                market, MaterialsIn(city), treasury, feed, city, worldEconomy.OpenTradingPost, offer,
+                cityState, MaterialsIn(city), treasury, feed, city, worldEconomy.OpenTradingPost, offer,
                 (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold), IsFree);
         }
 
         /// <summary>Quotes the trading post through <see cref="Construction.QuoteTradingPost"/>; impossible for an offer without a cost.</summary>
         internal static ConstructionQuote QuoteTradingPost(
-            CityMarket market, IGoodSource materials, Treasury treasury, TradingPostOffer offer, bool isFree)
+            City cityState, IGoodSource materials, Treasury treasury, TradingPostOffer offer, bool isFree)
         {
-            return offer?.Cost == null ? default : Construction.QuoteTradingPost(market, materials, treasury, offer.Cost, isFree);
+            return offer?.Cost == null ? default : Construction.QuoteTradingPost(cityState, materials, treasury, offer.Cost, isFree);
         }
 
         /// <summary>
@@ -225,7 +225,7 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         /// <returns>True when it was built; nothing was paid otherwise, nor for an offer without a cost.</returns>
         internal static bool TryBuildTradingPost(
-            CityMarket market,
+            City cityState,
             IGoodSource materials,
             Treasury treasury,
             NotificationFeed feed,
@@ -236,11 +236,11 @@ namespace DarkFantasyMerchant.Game
             bool isFree)
         {
             return TryBuildTradingPost(
-                market, materials, treasury, feed, city, builtIn => posts.Open(builtIn, market.Grid), offer, materialBought, isFree);
+                cityState, materials, treasury, feed, city, builtIn => posts.Open(builtIn, cityState.Grid), offer, materialBought, isFree);
         }
 
         private static bool TryBuildTradingPost(
-            CityMarket market,
+            City cityState,
             IGoodSource materials,
             Treasury treasury,
             NotificationFeed feed,
@@ -251,7 +251,7 @@ namespace DarkFantasyMerchant.Game
             bool isFree)
         {
             if (offer?.Cost == null
-                || !Construction.TryBuildTradingPost(market, materials, treasury, offer.Cost, materialBought, isFree))
+                || !Construction.TryBuildTradingPost(cityState, materials, treasury, offer.Cost, materialBought, isFree))
             {
                 return false;
             }
@@ -261,9 +261,9 @@ namespace DarkFantasyMerchant.Game
             return true;
         }
 
-        private bool TryGetContext(CityDefinition city, out CityMarket market, out Treasury treasury)
+        private bool TryGetContext(CityDefinition city, out City cityState, out Treasury treasury)
         {
-            market = null;
+            cityState = null;
             treasury = null;
 
             if (city == null || worldEconomy == null || !worldEconomy.IsReady
@@ -272,9 +272,9 @@ namespace DarkFantasyMerchant.Game
                 return false;
             }
 
-            market = worldEconomy.MarketOf(city);
+            cityState = worldEconomy.CityOf(city);
             treasury = playerTreasury.Treasury;
-            return market != null;
+            return cityState != null;
         }
 
         /// <summary>

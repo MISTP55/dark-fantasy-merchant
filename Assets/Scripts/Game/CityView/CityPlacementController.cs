@@ -200,7 +200,7 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            bool onGrid = TryGetHoveredCell(screenPosition, out Vector2Int cell, out CityMarket market);
+            bool onGrid = TryGetHoveredCell(screenPosition, out Vector2Int cell, out City cityState);
 
             if (road != null)
             {
@@ -215,7 +215,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             GridPlace place = cursor.PlaceAt(cell);
-            GhostState state = !Construction.CanStand(market, cursor.Footprint, place) || !CanPay() ? GhostState.Impossible
+            GhostState state = !Construction.CanStand(cityState, cursor.Footprint, place) || !CanPay() ? GhostState.Impossible
                 : gridView.Grid.WouldConnect(cursor.Footprint, place) ? GhostState.Connected
                 : GhostState.Unconnected;
             gridView.ShowGhost(cell, cursor.Footprint.SizeFor(cursor.Orientation), state);
@@ -526,10 +526,10 @@ namespace DarkFantasyMerchant.Game
             return true;
         }
 
-        private bool TryGetHoveredCell(Vector2 screenPosition, out Vector2Int cell, out CityMarket market)
+        private bool TryGetHoveredCell(Vector2 screenPosition, out Vector2Int cell, out City cityState)
         {
             cell = default;
-            market = null;
+            cityState = null;
             CityGrid grid = gridView.Grid;
             WorldEconomy economy = SimulationServices.Current != null ? SimulationServices.Current.WorldEconomy : null;
 
@@ -538,10 +538,10 @@ namespace DarkFantasyMerchant.Game
                 return false;
             }
 
-            market = economy.MarketOf(city);
+            cityState = economy.CityOf(city);
             Vector2 world = gridView.transform.InverseTransformPoint(viewCamera.ScreenToWorld(screenPosition));
             cell = IsoProjection.CellAt(world);
-            return market != null && grid.Contains(cell);
+            return cityState != null && grid.Contains(cell);
         }
     }
 }

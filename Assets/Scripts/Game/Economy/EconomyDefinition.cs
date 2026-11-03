@@ -9,7 +9,7 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// Static definition of the economy: the catalogue of goods, in the order they are
     /// listed everywhere, and the settings of production and prices. Holds no runtime
-    /// state: the stocks are in a <see cref="CityMarket"/> per city.
+    /// state: the stocks are in the <see cref="CityMarket"/> of each <see cref="City"/>.
     /// </summary>
     [CreateAssetMenu(fileName = "Economy", menuName = "Dark Fantasy Merchant/Economy")]
     public sealed class EconomyDefinition : ScriptableObject, ISerializationCallbackReceiver
@@ -589,11 +589,11 @@ namespace DarkFantasyMerchant.Game
             }
 
             return CityPopulation.RoomAtStart(
-                CityMarket.StartingWorkforceOf(CreateMarketGoods(city, 1), CreateWorkforceRule()), inhabitantsPerWorker, roomPerHouse);
+                City.StartingWorkforceOf(CreateMarketGoods(city, 1), CreateWorkforceRule()), inhabitantsPerWorker, roomPerHouse);
         }
 
         /// <summary>
-        /// The market of a city at the start of the game, with one stock per active good and its
+        /// A city in play at the start of the game, with one stock per active good and its
         /// population: the starting population, the same in every city, or, with a labour rule,
         /// the one of a new game (housed families, beggars, houses). Call
         /// <see cref="TryValidate"/> first. Throws when a setting or a good's figure is unusable.
@@ -605,7 +605,7 @@ namespace DarkFantasyMerchant.Game
         /// <param name="social">The satisfaction and moves of the classes, only with a labour rule; null for classes that never move.</param>
         /// <param name="grid">The city's grid, only with a labour rule: its connected houses give the room of each class (instead of the whole houses the population needs); the others give theirs when they connect. With a placement strategy and a footprint on every housing rule.</param>
         /// <param name="placement">Where the city's buildings are put on the grid; comes with the grid.</param>
-        public CityMarket CreateMarket(
+        public City CreateCity(
             CityDefinition city,
             MarketPricing pricing,
             int daysPerWeek,
@@ -636,7 +636,7 @@ namespace DarkFantasyMerchant.Game
             WorkforceRule workforce = CreateWorkforceRule();
 
             // The labour relies on housed = inhabitants per worker x workers: only the start gives that.
-            int workers = CityMarket.StartingWorkforceOf(marketGoods, workforce);
+            int workers = City.StartingWorkforceOf(marketGoods, workforce);
             CityPopulation population = labour == null
                 ? new CityPopulation(StartingPopulation)
                 : CityPopulation.AtStart(
@@ -651,7 +651,7 @@ namespace DarkFantasyMerchant.Game
                             grid.ConnectedHousesOf(SocialClass.Wealthy) * roomPerHouse.Wealthy,
                             grid.ConnectedHousesOf(SocialClass.Poor) * roomPerHouse.Poor));
 
-            return new CityMarket(
+            return new City(
                 marketGoods,
                 CreateThresholdRule(),
                 workforce,

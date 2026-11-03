@@ -5,7 +5,7 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// The houses of a city, held by its <see cref="CityMarket"/>: the player's, and those the city builds of its own
+    /// The houses of a city, held by its <see cref="City"/>: the player's, and those the city builds of its own
     /// for each crowded class by its <see cref="CityHousingRule"/>s. On a grid, a house gives its room to its class only
     /// once connected to the road network, and the city builds one only with the roads that connect it.
     /// </summary>
@@ -41,7 +41,7 @@ namespace DarkFantasyMerchant.Core
                 {
                     if (rule.Footprint == null)
                     {
-                        throw new ArgumentException("A market with a grid needs a footprint for every housing rule.", nameof(housing));
+                        throw new ArgumentException("A city with a grid needs a footprint for every housing rule.", nameof(housing));
                     }
                 }
 
@@ -78,7 +78,7 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// From now on, a house the grid places takes its room when it connects. Apart from the constructor, so that a
-        /// market that fails to be made leaves nothing listening to its grid.
+        /// city that fails to be made leaves nothing listening to its grid.
         /// </summary>
         public void FollowGrid()
         {

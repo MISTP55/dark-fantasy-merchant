@@ -10,9 +10,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Iron = 1;
 
         // Fish: 2 barrels a day for a thousand, not produced, 60 in stock. Iron: a full workshop of 30 making 3.
-        private static CityMarket Market(double startingDays = 30)
+        private static City NewCity(double startingDays = 30)
         {
-            return new CityMarket(
+            return new City(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 30, 0.1) },
                 TestMarkets.Thresholds,
                 TestMarkets.Workforce,
@@ -38,28 +38,28 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void Capture_WritesEveryIndicator()
         {
-            CityMarket market = Market(0);
-            market.StartDay();
+            City city = NewCity(0);
+            city.StartDay();
             var history = new SimulationHistory(1, 2, null);
 
-            CitySnapshot.Capture(market, good => good == Fish ? 7 : 0, history.BeginDay(1)[0]);
+            CitySnapshot.Capture(city, good => good == Fish ? 7 : 0, history.BeginDay(1)[0]);
 
-            Assert.AreEqual((float)market.StockOf(Iron), history.ValueOf(0, 0, GoodIndicator.Stock, Iron), 1e-4);
-            Assert.AreEqual((float)market.ThresholdsOf(Fish).T0, history.ValueOf(0, 0, GoodIndicator.T0, Fish), 1e-4);
-            Assert.AreEqual((float)market.ThresholdsOf(Fish).T3, history.ValueOf(0, 0, GoodIndicator.T3, Fish), 1e-4);
-            Assert.AreEqual(market.BuyPriceOf(Fish), history.ValueOf(0, 0, GoodIndicator.BuyPrice, Fish), 1e-4);
-            Assert.AreEqual(market.SellPriceOf(Iron), history.ValueOf(0, 0, GoodIndicator.SellPrice, Iron), 1e-4);
+            Assert.AreEqual((float)city.Market.StockOf(Iron), history.ValueOf(0, 0, GoodIndicator.Stock, Iron), 1e-4);
+            Assert.AreEqual((float)city.Market.ThresholdsOf(Fish).T0, history.ValueOf(0, 0, GoodIndicator.T0, Fish), 1e-4);
+            Assert.AreEqual((float)city.Market.ThresholdsOf(Fish).T3, history.ValueOf(0, 0, GoodIndicator.T3, Fish), 1e-4);
+            Assert.AreEqual(city.Market.BuyPriceOf(Fish), history.ValueOf(0, 0, GoodIndicator.BuyPrice, Fish), 1e-4);
+            Assert.AreEqual(city.Market.SellPriceOf(Iron), history.ValueOf(0, 0, GoodIndicator.SellPrice, Iron), 1e-4);
             Assert.AreEqual(2f, history.ValueOf(0, 0, GoodIndicator.Missing, Fish), 1e-4);
-            Assert.AreEqual((float)market.RecentProductionOf(Iron), history.ValueOf(0, 0, GoodIndicator.RecentProduction, Iron), 1e-4);
-            Assert.AreEqual((float)market.NominalWeeklyConsumptionOf(Fish), history.ValueOf(0, 0, GoodIndicator.NominalWeeklyConsumption, Fish), 1e-4);
-            Assert.AreEqual(market.WorkersOf(Iron), history.ValueOf(0, 0, GoodIndicator.Workers, Iron), 1e-4);
+            Assert.AreEqual((float)city.RecentProductionOf(Iron), history.ValueOf(0, 0, GoodIndicator.RecentProduction, Iron), 1e-4);
+            Assert.AreEqual((float)city.NominalWeeklyConsumptionOf(Fish), history.ValueOf(0, 0, GoodIndicator.NominalWeeklyConsumption, Fish), 1e-4);
+            Assert.AreEqual(city.WorkersOf(Iron), history.ValueOf(0, 0, GoodIndicator.Workers, Iron), 1e-4);
             Assert.AreEqual(7f, history.ValueOf(0, 0, GoodIndicator.UnderWay, Fish));
             Assert.AreEqual(0f, history.ValueOf(0, 0, GoodIndicator.UnderWay, Iron));
             Assert.AreEqual(1000f, history.ValueOf(0, 0, CityIndicator.Inhabitants));
             Assert.AreEqual(1000f, history.ValueOf(0, 0, CityIndicator.Poor));
-            Assert.AreEqual(market.Population.RoomOf(SocialClass.Poor), history.ValueOf(0, 0, CityIndicator.PoorRoom));
-            Assert.AreEqual(market.Population.SatisfactionOf(SocialClass.Rich), history.ValueOf(0, 0, CityIndicator.RichSatisfaction));
-            Assert.AreEqual(market.BeggarTarget, history.ValueOf(0, 0, CityIndicator.BeggarTarget));
+            Assert.AreEqual(city.Population.RoomOf(SocialClass.Poor), history.ValueOf(0, 0, CityIndicator.PoorRoom));
+            Assert.AreEqual(city.Population.SatisfactionOf(SocialClass.Rich), history.ValueOf(0, 0, CityIndicator.RichSatisfaction));
+            Assert.AreEqual(city.BeggarTarget, history.ValueOf(0, 0, CityIndicator.BeggarTarget));
             Assert.AreEqual(0f, history.ValueOf(0, 0, CityIndicator.CityHouses));
         }
 
@@ -144,7 +144,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void Capture_WritesTheInputs()
         {
             // Iron takes half a barrel of fish for every barrel: 1.5 a day, 10.5 a week.
-            var smithy = new CityMarket(
+            var smithy = new City(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 30, 0.1).WithInputs(new[] { new MarketInput(Fish, 0.5) }) },
                 TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7, new CityPopulation(1000));
             smithy.StartDay();
@@ -160,7 +160,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AGoodTheMarketLacks_IsNaN()
         {
-            var village = new CityMarket(new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, TestMarkets.Workforce, 30,
+            var village = new City(new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, TestMarkets.Workforce, 30,
                 TestMarkets.Pricing, 7, new CityPopulation(500));
             var history = new SimulationHistory(1, 2, null);
 

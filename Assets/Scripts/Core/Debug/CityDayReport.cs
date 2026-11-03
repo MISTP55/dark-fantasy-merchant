@@ -4,7 +4,7 @@ namespace DarkFantasyMerchant.Core
 {
     /// <summary>
     /// What the inhabitants of a city needed of each good in its last day, and what they consumed,
-    /// and what its workshops needed and took of it as inputs, for the debug tools. Filled by <see cref="CityMarket.StartDay"/>, which it changes nothing
+    /// and what its workshops needed and took of it as inputs, for the debug tools. Filled by <see cref="City.StartDay"/>, which it changes nothing
     /// of; all zeros before the first day.
     /// </summary>
     public sealed class CityDayReport

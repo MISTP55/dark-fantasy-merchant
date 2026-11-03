@@ -158,7 +158,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                     Assert.IsTrue(seen.Add(good), $"{city.name}: {good.name} is listed twice");
                 }
 
-                Assert.DoesNotThrow(() => economy.CreateMarket(city, economy.CreatePricing(), 7), city.name);
+                Assert.DoesNotThrow(() => economy.CreateCity(city, economy.CreatePricing(), 7), city.name);
             }
         }
 

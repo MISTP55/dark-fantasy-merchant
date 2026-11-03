@@ -5,25 +5,25 @@ namespace DarkFantasyMerchant.Core
 {
     /// <summary>
     /// What the debug tools keep of the simulation: the figures of every city at the end of each
-    /// day and the trades in their markets, both over the same horizon. It reads the markets and
+    /// day and the trades in their markets, both over the same horizon. It reads the cities and
     /// changes nothing of them.
     /// </summary>
     public sealed class SimulationRecord
     {
-        private readonly IReadOnlyList<CityMarket> markets;
+        private readonly IReadOnlyList<City> cities;
         private readonly Dictionary<CityMarket, int> cityIndices = new Dictionary<CityMarket, int>();
         private readonly TrimmedList<TradeRecord> trades = new TrimmedList<TradeRecord>();
 
-        /// <param name="markets">The cities recorded, in the order of their indices.</param>
+        /// <param name="cities">The cities recorded, in the order of their indices.</param>
         /// <param name="horizonDays">Days kept, 1 or more; null for the whole game.</param>
-        public SimulationRecord(IReadOnlyList<CityMarket> markets, int goodCount, int? horizonDays)
+        public SimulationRecord(IReadOnlyList<City> cities, int goodCount, int? horizonDays)
         {
-            this.markets = markets ?? throw new ArgumentNullException(nameof(markets));
-            History = new SimulationHistory(markets.Count, goodCount, horizonDays);
+            this.cities = cities ?? throw new ArgumentNullException(nameof(cities));
+            History = new SimulationHistory(cities.Count, goodCount, horizonDays);
 
-            for (int city = 0; city < markets.Count; city++)
+            for (int city = 0; city < cities.Count; city++)
             {
-                cityIndices[markets[city] ?? throw new ArgumentNullException(nameof(markets))] = city;
+                cityIndices[(cities[city] ?? throw new ArgumentNullException(nameof(cities))).Market] = city;
             }
         }
 
@@ -35,7 +35,7 @@ namespace DarkFantasyMerchant.Core
         /// <summary>Raised after a day is recorded and after the horizon changes.</summary>
         public event Action Recorded;
 
-        /// <summary>Records every city at the end of a day, after its <see cref="CityMarket.StartDay"/>.</summary>
+        /// <summary>Records every city at the end of a day, after its <see cref="City.StartDay"/>.</summary>
         /// <param name="underWay">Units of a good the AI merchants carry to a city: (city, good).</param>
         public void RecordDay(int day, Func<int, int, int> underWay)
         {
@@ -46,10 +46,10 @@ namespace DarkFantasyMerchant.Core
 
             float[][] rows = History.BeginDay(day);
 
-            for (int city = 0; city < markets.Count; city++)
+            for (int city = 0; city < cities.Count; city++)
             {
                 int cityIndex = city;
-                CitySnapshot.Capture(markets[city], good => underWay(cityIndex, good), rows[city]);
+                CitySnapshot.Capture(cities[city], good => underWay(cityIndex, good), rows[city]);
             }
 
             Trim();

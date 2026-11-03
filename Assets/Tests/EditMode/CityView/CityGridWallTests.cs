@@ -317,9 +317,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             grid.KeepsInsideWalls = true;
             var newCells = new List<Vector2Int>();
 
-            Assert.IsFalse(CityMarket.TryCollectNewRoads(grid, new[] { new Vector2Int(3, 4), new Vector2Int(0, 4) }, newCells));
+            Assert.IsFalse(City.TryCollectNewRoads(grid, new[] { new Vector2Int(3, 4), new Vector2Int(0, 4) }, newCells));
             Assert.IsEmpty(newCells);
-            Assert.IsTrue(CityMarket.TryCollectNewRoads(grid, new[] { new Vector2Int(3, 4) }, newCells));
+            Assert.IsTrue(City.TryCollectNewRoads(grid, new[] { new Vector2Int(3, 4) }, newCells));
         }
     }
 }

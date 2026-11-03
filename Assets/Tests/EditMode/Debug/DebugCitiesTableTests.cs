@@ -38,8 +38,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private VisualElement goodHeader;
         private VisualElement goodRows;
         private VisualElement goodTotals;
-        private CityMarket market;
-        private CityMarket village;
+        private City city;
+        private City village;
         private DebugCitiesTable table;
 
         [SetUp]
@@ -54,7 +54,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             // A thousand inhabitants. Fish: 2 barrels a day, not produced, 60 in stock.
             // Iron: 2 barrels a day, and a full workshop of 30 workers making 3; 60 in stock.
-            market = new CityMarket(
+            city = new City(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 30, 0.1) },
                 TestMarkets.Thresholds,
                 TestMarkets.Workforce,
@@ -64,7 +64,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 new CityPopulation(1000));
 
             // A village of 500: 1 barrel of fish a day, 30 in stock, and half a barrel of iron, 15 in stock.
-            village = new CityMarket(
+            village = new City(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 1, 0, 0) },
                 TestMarkets.Thresholds,
                 TestMarkets.Workforce,
@@ -144,7 +144,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AddCity_AddsARow_WithItsNameAndPopulation()
         {
             table.AddCity("Elforth", village);
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
 
             Assert.AreEqual(2, rows.childCount);
             Assert.AreEqual(2, goodRows.childCount);
@@ -159,9 +159,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void ACityInsertedBetweenOthers_RestripesBothSidesOfTheRows()
         {
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
             table.AddCity("Elforth", village);
-            table.AddCity("Kivar", FedMarket(startingDays: 0, new CityPopulation(700)));
+            table.AddCity("Kivar", FedCity(startingDays: 0, new CityPopulation(700)));
 
             for (int i = 0; i < 3; i++)
             {
@@ -174,8 +174,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TheCities_AreInAlphabeticalOrder_AccentsAndCaseAside()
         {
-            CityMarket edimbourg = FedMarket(startingDays: 0, new CityPopulation(700));
-            table.AddCity("Sparia", market);
+            City edimbourg = FedCity(startingDays: 0, new CityPopulation(700));
+            table.AddCity("Sparia", city);
             table.AddCity("elforth", village);
             table.AddCity("Édimbourg", edimbourg);
 
@@ -193,7 +193,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void WhileShown_ADayThatStarts_RewritesThePopulation_AndTheTotals()
         {
-            CityMarket city = FedMarket(startingDays: 0, new CityPopulation(900, 100, 1000));
+            City city = FedCity(startingDays: 0, new CityPopulation(900, 100, 1000));
             table.AddCity("Elforth", city);
             table.Show();
 
@@ -208,8 +208,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void ARow_WritesTheGrowthSinceTheStart_AndTheTotalTheOneOfAllTheInhabitants()
         {
-            CityMarket shrinking = FedMarket(startingDays: 0, new CityPopulation(900, 100, 1000));
-            CityMarket growing = FedMarket(startingDays: 0, new CityPopulation(1000, 0, 1100));
+            City shrinking = FedCity(startingDays: 0, new CityPopulation(900, 100, 1000));
+            City growing = FedCity(startingDays: 0, new CityPopulation(1000, 0, 1100));
             table.AddCity("Elforth", shrinking);
             table.AddCity("Sparia", growing);
 
@@ -240,9 +240,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         // One good, 2 barrels a day per thousand inhabitants, in a city with the given population.
-        private static CityMarket FedMarket(double startingDays, CityPopulation population)
+        private static City FedCity(double startingDays, CityPopulation population)
         {
-            return new CityMarket(
+            return new City(
                 new[] { new MarketGood(10, 2, 0, 0) },
                 TestMarkets.Thresholds,
                 TestMarkets.Workforce,
@@ -255,7 +255,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void ARow_WritesTheStock_AndTheNominalFiguresBeforeTheRecentOnes()
         {
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
 
             // Nothing has happened yet: the recent figures are all zero.
             Assert.AreEqual("60", Text(0, Fish, Stock));
@@ -272,7 +272,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void ARow_WritesTheInputs_AndANetThatTakesThemOff()
         {
             // The same city, whose iron workshop takes half a barrel of fish for every barrel it makes.
-            var smithy = new CityMarket(
+            var smithy = new City(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 30, 0.1).WithInputs(new[] { new MarketInput(Fish, 0.5) }) },
                 TestMarkets.Thresholds,
                 TestMarkets.Workforce,
@@ -302,10 +302,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void WhileShown_ADayThatStarts_RewritesTheRow()
         {
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
             table.Show();
 
-            market.StartDay();
+            city.StartDay();
             table.WriteChanges();
 
             Assert.AreEqual("58", Text(0, Fish, Stock));
@@ -319,10 +319,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void WhileShown_ATrade_RewritesTheStock()
         {
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
             table.Show();
 
-            market.Take(Fish, 25);
+            city.Market.Take(Fish, 25);
             table.WriteChanges();
 
             Assert.AreEqual("35", Text(0, Fish, Stock));
@@ -331,11 +331,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void WhileShown_AChange_IsWrittenByWriteChanges_NotAtOnce()
         {
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
             table.Show();
 
-            market.Take(Fish, 25);
-            market.Take(Fish, 5);
+            city.Market.Take(Fish, 25);
+            city.Market.Take(Fish, 5);
             Assert.AreEqual("60", Text(0, Fish, Stock));
             Assert.AreEqual("60", Total(Fish, Stock));
 
@@ -348,15 +348,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void BeforeItIsShown_AndOnceHidden_TheTableDoesNotFollowTheMarkets()
         {
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
 
-            market.StartDay();
+            city.StartDay();
             table.WriteChanges();
             Assert.AreEqual("60", Text(0, Fish, Stock));
 
             table.Show();
             table.Hide();
-            market.StartDay();
+            city.StartDay();
             table.WriteChanges();
 
             Assert.AreEqual("58", Text(0, Fish, Stock));
@@ -365,8 +365,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void Show_WritesWhatChangedWhileHidden()
         {
-            table.AddCity("Sparia", market);
-            market.StartDay();
+            table.AddCity("Sparia", city);
+            city.StartDay();
 
             table.Show();
 
@@ -376,12 +376,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void Show_Twice_FollowsAMarketOnce()
         {
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
             table.Show();
             table.Show();
             table.Hide();
 
-            market.StartDay();
+            city.StartDay();
             table.WriteChanges();
 
             Assert.AreEqual("60", Text(0, Fish, Stock));
@@ -391,14 +391,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void ACityAddedWhileShown_IsFollowedToo()
         {
             table.Show();
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
 
-            market.StartDay();
+            city.StartDay();
             table.WriteChanges();
             Assert.AreEqual("58", Text(0, Fish, Stock));
 
             table.Hide();
-            market.StartDay();
+            city.StartDay();
             table.WriteChanges();
             Assert.AreEqual("58", Text(0, Fish, Stock));
         }
@@ -406,7 +406,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AMarketWithFewerGoodsThanColumns_LeavesTheExtraCellsEmpty()
         {
-            var small = new CityMarket(
+            var small = new City(
                 new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7, new CityPopulation(1000));
 
             Assert.DoesNotThrow(() => table.AddCity("Sparia", small));
@@ -433,7 +433,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TheTotals_SumEveryColumnOfTheCities()
         {
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
             table.AddCity("Elforth", village);
 
             Assert.AreEqual("1\u00A0500", Total(PopulationCell));
@@ -452,11 +452,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void WhileShown_TheTotalsFollowEveryMarket()
         {
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
             table.AddCity("Elforth", village);
             table.Show();
 
-            market.StartDay();
+            city.StartDay();
             village.StartDay();
             table.WriteChanges();
 
@@ -472,11 +472,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void OnceHidden_TheTotalsDoNotFollowTheMarkets()
         {
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
             table.Show();
             table.Hide();
 
-            market.StartDay();
+            city.StartDay();
             table.WriteChanges();
 
             Assert.AreEqual("60", Total(Fish, Stock));
@@ -485,10 +485,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TheTotals_LeaveOutAGoodThatAMarketDoesNotHave()
         {
-            var small = new CityMarket(
+            var small = new City(
                 new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7, new CityPopulation(1000));
 
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
             table.AddCity("Elforth", small);
 
             Assert.AreEqual("120", Total(Fish, Stock));
@@ -499,7 +499,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void ARow_WritesTheWorkersOfEveryWorkshop()
         {
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
 
             // Fish is not produced; iron has a full workshop of 30.
             Assert.AreEqual(DebugCitiesTable.NoFigure, Text(0, Fish, Workers));
@@ -509,11 +509,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void WhileShown_TheWorkersFollowTheMarket()
         {
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
             table.Show();
-            market.Put(Iron, 100);
+            city.Market.Put(Iron, 100);
 
-            market.StartDay();
+            city.StartDay();
             table.WriteChanges();
 
             // 158 iron once consumed, above T3: the workshop keeps one worker.
@@ -523,7 +523,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TheTotals_SumTheWorkersAndTheirMaxima()
         {
-            var other = new CityMarket(
+            var other = new City(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(50, 2, 40, 0.1) },
                 TestMarkets.Thresholds,
                 new WorkforceRule(16, 8, 4, 1, 1, 10),
@@ -532,7 +532,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 7,
                 new CityPopulation(1000));
 
-            table.AddCity("Sparia", market);
+            table.AddCity("Sparia", city);
             table.AddCity("Elforth", other);
 
             Assert.AreEqual("40/70", Total(Iron, Workers));
@@ -563,9 +563,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         // A thousand housed in a room of 1 100, 100 beggars. Iron is stocked above T3: the workshop lays off to 1 worker.
-        private static CityMarket LabourMarket()
+        private static City LabourCity()
         {
-            return new CityMarket(
+            return new City(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(10, 2, 60, 0.1) },
                 TestMarkets.Thresholds,
                 new WorkforceRule(16, 8, 4, 1, 1, 10),
@@ -579,7 +579,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void ARow_WritesTheBeggarsTheirTarget_TheClasses_AndAReserveAfterALayoff()
         {
-            CityMarket city = LabourMarket();
+            City city = LabourCity();
             table.AddCity("Sparia", city);
             table.Show();
 
@@ -604,8 +604,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TheTotalRow_SumsTheBeggarsAndTheirTargets_TheClasses_AndTheReserves()
         {
-            CityMarket first = LabourMarket();
-            CityMarket second = LabourMarket();
+            City first = LabourCity();
+            City second = LabourCity();
             table.AddCity("Sparia", first);
             table.AddCity("Elforth", second);
             table.Show();

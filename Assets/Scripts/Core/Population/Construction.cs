@@ -116,11 +116,11 @@ namespace DarkFantasyMerchant.Core
     {
         /// <summary>Quotes a house; <paramref name="materials"/> may be null (no ship: everything is bought).</summary>
         /// <param name="isFree">For the debug tools: the quote is possible at 0 gold.</param>
-        public static ConstructionQuote QuoteHouse(CityMarket market, IGoodSource materials, Treasury treasury, BuildingCost cost, bool isFree = false)
+        public static ConstructionQuote QuoteHouse(City city, IGoodSource materials, Treasury treasury, BuildingCost cost, bool isFree = false)
         {
-            Require(market, treasury, cost);
+            Require(city, treasury, cost);
 
-            return Quote(market, materials, treasury, cost, true, isFree);
+            return Quote(city, materials, treasury, cost, true, isFree);
         }
 
         /// <summary>
@@ -130,31 +130,31 @@ namespace DarkFantasyMerchant.Core
         /// </summary>
         /// <param name="isFree">For the debug tools: the quote is possible at 0 gold when the city produces the good and the player has a trading post there.</param>
         public static ConstructionQuote QuoteWorkshop(
-            CityMarket market, IGoodSource materials, Treasury treasury, BuildingCost cost, int good, bool isFree = false)
+            City city, IGoodSource materials, Treasury treasury, BuildingCost cost, int good, bool isFree = false)
         {
-            Require(market, treasury, cost);
+            Require(city, treasury, cost);
 
-            return Quote(market, materials, treasury, cost, market.MaxWorkersOf(good) > 0 && market.PlayerTradingPost != null, isFree);
+            return Quote(city, materials, treasury, cost, city.MaxWorkersOf(good) > 0 && city.PlayerTradingPost != null, isFree);
         }
 
-        /// <summary>Whether the market has a grid where the footprint fits at the place.</summary>
-        public static bool CanStand(CityMarket market, Footprint footprint, GridPlace place)
+        /// <summary>Whether the city has a grid where the footprint fits at the place.</summary>
+        public static bool CanStand(City city, Footprint footprint, GridPlace place)
         {
-            if (market == null)
+            if (city == null)
             {
-                throw new ArgumentNullException(nameof(market));
+                throw new ArgumentNullException(nameof(city));
             }
 
-            return market.Grid != null && market.Grid.CanPlace(footprint, place);
+            return city.Grid != null && city.Grid.CanPlace(footprint, place);
         }
 
-        /// <summary>Builds a house at a place of the market's grid; the place is checked before anything is paid.</summary>
+        /// <summary>Builds a house at a place of the city's grid; the place is checked before anything is paid.</summary>
         /// <param name="materialBought">Told, for the debug tools, of each material bought from the market: its good, units and gold.</param>
         /// <param name="isFree">For the debug tools: nothing is taken, nothing is bought.</param>
         /// <returns>False when the quote is impossible or the house cannot stand there; nothing was taken then.</returns>
         /// <exception cref="ArgumentOutOfRangeException">A room under 1, before anything is taken.</exception>
         public static bool TryBuildHouse(
-            CityMarket market,
+            City city,
             IGoodSource materials,
             Treasury treasury,
             BuildingCost cost,
@@ -168,30 +168,30 @@ namespace DarkFantasyMerchant.Core
             RequireAtLeastOne(room, nameof(room));
             RequireClass(housedClass);
 
-            if (!CanStand(market, footprint, place))
+            if (!CanStand(city, footprint, place))
             {
                 return false;
             }
 
-            ConstructionQuote quote = QuoteHouse(market, materials, treasury, cost, isFree);
+            ConstructionQuote quote = QuoteHouse(city, materials, treasury, cost, isFree);
 
             if (!quote.IsPossible)
             {
                 return false;
             }
 
-            Pay(market, materials, treasury, cost, quote, materialBought, isFree);
-            market.AddPlayerHouse(housedClass, room, footprint, place);
+            Pay(city, materials, treasury, cost, quote, materialBought, isFree);
+            city.AddPlayerHouse(housedClass, room, footprint, place);
             return true;
         }
 
-        /// <summary>Builds a workshop at a place of the market's grid; the place is checked before anything is paid.</summary>
+        /// <summary>Builds a workshop at a place of the city's grid; the place is checked before anything is paid.</summary>
         /// <param name="materialBought">Told, for the debug tools, of each material bought from the market: its good, units and gold.</param>
         /// <param name="isFree">For the debug tools: nothing is taken, nothing is bought.</param>
         /// <returns>False when the quote is impossible or the workshop cannot stand there; nothing was taken then.</returns>
         /// <exception cref="ArgumentOutOfRangeException">Jobs under 1, before anything is taken.</exception>
         public static bool TryBuildWorkshop(
-            CityMarket market,
+            City city,
             IGoodSource materials,
             Treasury treasury,
             BuildingCost cost,
@@ -204,41 +204,41 @@ namespace DarkFantasyMerchant.Core
         {
             RequireAtLeastOne(jobs, nameof(jobs));
 
-            if (!CanStand(market, footprint, place))
+            if (!CanStand(city, footprint, place))
             {
                 return false;
             }
 
-            ConstructionQuote quote = QuoteWorkshop(market, materials, treasury, cost, good, isFree);
+            ConstructionQuote quote = QuoteWorkshop(city, materials, treasury, cost, good, isFree);
 
             if (!quote.IsPossible)
             {
                 return false;
             }
 
-            Pay(market, materials, treasury, cost, quote, materialBought, isFree);
-            market.AddPlayerWorkshop(good, jobs, footprint, place);
+            Pay(city, materials, treasury, cost, quote, materialBought, isFree);
+            city.AddPlayerWorkshop(good, jobs, footprint, place);
             return true;
         }
 
         /// <summary>
         /// The cells of a trace that are not roads yet, each counted once; -1 when one cannot hold a road (off the
-        /// grid, forbidden, under a building that is not a road) or the market has no grid.
+        /// grid, forbidden, under a building that is not a road) or the city has no grid.
         /// </summary>
-        public static int NewRoadCellsOf(CityMarket market, IReadOnlyList<Vector2Int> cells)
+        public static int NewRoadCellsOf(City city, IReadOnlyList<Vector2Int> cells)
         {
-            if (market == null)
+            if (city == null)
             {
-                throw new ArgumentNullException(nameof(market));
+                throw new ArgumentNullException(nameof(city));
             }
 
-            if (market.Grid == null)
+            if (city.Grid == null)
             {
                 return -1;
             }
 
             var newCells = new List<Vector2Int>();
-            return CityMarket.TryCollectNewRoads(market.Grid, cells, newCells) ? newCells.Count : -1;
+            return City.TryCollectNewRoads(city.Grid, cells, newCells) ? newCells.Count : -1;
         }
 
         /// <summary>
@@ -247,14 +247,14 @@ namespace DarkFantasyMerchant.Core
         /// </summary>
         /// <param name="isFree">For the debug tools: the quote is possible at 0 gold when the trace can be laid.</param>
         public static ConstructionQuote QuoteRoads(
-            CityMarket market, IGoodSource materials, Treasury treasury, BuildingCost costPerCell, IReadOnlyList<Vector2Int> cells, bool isFree = false)
+            City city, IGoodSource materials, Treasury treasury, BuildingCost costPerCell, IReadOnlyList<Vector2Int> cells, bool isFree = false)
         {
-            Require(market, treasury, costPerCell);
-            int count = NewRoadCellsOf(market, cells);
+            Require(city, treasury, costPerCell);
+            int count = NewRoadCellsOf(city, cells);
 
             return count < 1
-                ? Quote(market, materials, treasury, costPerCell, false, isFree)
-                : Quote(market, materials, treasury, costPerCell.Times(count), true, isFree);
+                ? Quote(city, materials, treasury, costPerCell, false, isFree)
+                : Quote(city, materials, treasury, costPerCell.Times(count), true, isFree);
         }
 
         /// <summary>
@@ -263,11 +263,11 @@ namespace DarkFantasyMerchant.Core
         /// </summary>
         /// <param name="isFree">For the debug tools: the quote is possible at 0 gold.</param>
         public static ConstructionQuote QuoteRoadCell(
-            CityMarket market, IGoodSource materials, Treasury treasury, BuildingCost costPerCell, bool isFree = false)
+            City city, IGoodSource materials, Treasury treasury, BuildingCost costPerCell, bool isFree = false)
         {
-            Require(market, treasury, costPerCell);
+            Require(city, treasury, costPerCell);
 
-            return Quote(market, materials, treasury, costPerCell, true, isFree);
+            return Quote(city, materials, treasury, costPerCell, true, isFree);
         }
 
         /// <summary>Pays for and lays the new roads of a trace, all or nothing.</summary>
@@ -275,7 +275,7 @@ namespace DarkFantasyMerchant.Core
         /// <param name="isFree">For the debug tools: nothing is taken, nothing is bought.</param>
         /// <returns>False when the quote is impossible; nothing was taken then.</returns>
         public static bool TryBuildRoads(
-            CityMarket market,
+            City city,
             IGoodSource materials,
             Treasury treasury,
             BuildingCost costPerCell,
@@ -283,29 +283,29 @@ namespace DarkFantasyMerchant.Core
             Action<int, int, long> materialBought = null,
             bool isFree = false)
         {
-            ConstructionQuote quote = QuoteRoads(market, materials, treasury, costPerCell, cells, isFree);
+            ConstructionQuote quote = QuoteRoads(city, materials, treasury, costPerCell, cells, isFree);
 
             if (!quote.IsPossible)
             {
                 return false;
             }
 
-            Pay(market, materials, treasury, costPerCell.Times(NewRoadCellsOf(market, cells)), quote, materialBought, isFree);
-            market.AddPlayerRoads(cells);
+            Pay(city, materials, treasury, costPerCell.Times(NewRoadCellsOf(city, cells)), quote, materialBought, isFree);
+            city.AddPlayerRoads(cells);
             return true;
         }
 
         /// <summary>
-        /// Quotes the trading post of the city; impossible when the market has no grid, no reserved site, or the post
+        /// Quotes the trading post of the city; impossible when the city has no grid, no reserved site, or the post
         /// is already built. <paramref name="materials"/> may be null.
         /// </summary>
         /// <param name="isFree">For the debug tools: the quote is possible at 0 gold when the post can be built.</param>
         public static ConstructionQuote QuoteTradingPost(
-            CityMarket market, IGoodSource materials, Treasury treasury, BuildingCost cost, bool isFree = false)
+            City city, IGoodSource materials, Treasury treasury, BuildingCost cost, bool isFree = false)
         {
-            Require(market, treasury, cost);
+            Require(city, treasury, cost);
 
-            return Quote(market, materials, treasury, cost, market.Grid != null && market.Grid.CanPlaceTradingPost, isFree);
+            return Quote(city, materials, treasury, cost, city.Grid != null && city.Grid.CanPlaceTradingPost, isFree);
         }
 
         /// <summary>Pays for and places the trading post on its reserved site, all or nothing.</summary>
@@ -313,27 +313,27 @@ namespace DarkFantasyMerchant.Core
         /// <param name="isFree">For the debug tools: nothing is taken, nothing is bought.</param>
         /// <returns>False when the quote is impossible; nothing was taken then.</returns>
         public static bool TryBuildTradingPost(
-            CityMarket market,
+            City city,
             IGoodSource materials,
             Treasury treasury,
             BuildingCost cost,
             Action<int, int, long> materialBought = null,
             bool isFree = false)
         {
-            ConstructionQuote quote = QuoteTradingPost(market, materials, treasury, cost, isFree);
+            ConstructionQuote quote = QuoteTradingPost(city, materials, treasury, cost, isFree);
 
             if (!quote.IsPossible)
             {
                 return false;
             }
 
-            Pay(market, materials, treasury, cost, quote, materialBought, isFree);
-            market.Grid.PlaceTradingPost();
+            Pay(city, materials, treasury, cost, quote, materialBought, isFree);
+            city.Grid.PlaceTradingPost();
             return true;
         }
 
         private static ConstructionQuote Quote(
-            CityMarket market, IGoodSource materials, Treasury treasury, BuildingCost cost, bool buildable, bool isFree)
+            City city, IGoodSource materials, Treasury treasury, BuildingCost cost, bool buildable, bool isFree)
         {
             if (isFree)
             {
@@ -346,7 +346,7 @@ namespace DarkFantasyMerchant.Core
             foreach (MaterialCost material in cost.Materials)
             {
                 int toBuy = ToBuy(materials, material);
-                int available = market.AvailableOf(material.Good);
+                int available = city.Market.AvailableOf(material.Good);
 
                 if (toBuy > available)
                 {
@@ -355,7 +355,7 @@ namespace DarkFantasyMerchant.Core
 
                 for (int i = 0; i < Math.Min(toBuy, available); i++)
                 {
-                    gold += market.BuyPriceOf(material.Good, i);
+                    gold += city.Market.BuyPriceOf(material.Good, i);
                 }
             }
 
@@ -365,7 +365,7 @@ namespace DarkFantasyMerchant.Core
         }
 
         private static void Pay(
-            CityMarket market,
+            City city,
             IGoodSource materials,
             Treasury treasury,
             BuildingCost cost,
@@ -395,10 +395,10 @@ namespace DarkFantasyMerchant.Core
 
                     for (int i = 0; materialBought != null && i < toBuy; i++)
                     {
-                        gold += market.BuyPriceOf(material.Good, i);
+                        gold += city.Market.BuyPriceOf(material.Good, i);
                     }
 
-                    market.Take(material.Good, toBuy);
+                    city.Market.Take(material.Good, toBuy);
                     materialBought?.Invoke(material.Good, toBuy, gold);
                 }
             }
@@ -429,11 +429,11 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
-        private static void Require(CityMarket market, Treasury treasury, BuildingCost cost)
+        private static void Require(City city, Treasury treasury, BuildingCost cost)
         {
-            if (market == null)
+            if (city == null)
             {
-                throw new ArgumentNullException(nameof(market));
+                throw new ArgumentNullException(nameof(city));
             }
 
             if (treasury == null)

@@ -11,7 +11,7 @@ namespace DarkFantasyMerchant.Game
     /// trading post), and above them the offers of the chosen one in the alphabetical order of their names, each with
     /// what it would cost now, the road for one cell. Only the workshops of the goods the city produces are offered; an
     /// offer that cannot be built now is disabled, the trading post once it stands. The pointer over an offer, enabled
-    /// or not, shows its full cost in a tip, or that the trading post stands. Follows the market, the treasury, the
+    /// or not, shows its full cost in a tip, or that the trading post stands. Follows the city, the treasury, the
     /// player's trading post and the hold the materials come from, the opening of that trading post and the debug
     /// tools' free building while it is shown, never every frame.
     /// </summary>
@@ -76,7 +76,7 @@ namespace DarkFantasyMerchant.Game
         private Category category;
         private CityDefinition city;
         private PlayerBuilder builder;
-        private CityMarket market;
+        private City cityState;
         private Treasury treasury;
         private CargoHold hold;
         private ShipDocking<CityDefinition> docking;
@@ -180,7 +180,7 @@ namespace DarkFantasyMerchant.Game
             Show(
                 shownCity,
                 services.PlayerBuilder,
-                economy.MarketOf(shownCity),
+                economy.CityOf(shownCity),
                 services.PlayerTreasury != null && services.PlayerTreasury.IsReady ? services.PlayerTreasury.Treasury : null,
                 services.ShipsView != null ? services.ShipsView.Docking : null,
                 economy.HouseOffers,
@@ -200,13 +200,13 @@ namespace DarkFantasyMerchant.Game
 
         /// <summary>
         /// Shows the offers given, quoted through the builder, in place of those shown; no category is open. The
-        /// market, the treasury, the docking and the city's trading post (<paramref name="shownTradingPost"/>, its
+        /// city, the treasury, the docking and the city's trading post (<paramref name="shownTradingPost"/>, its
         /// warehouse) are followed when not null; the grid tells whether the trading post stands.
         /// </summary>
         internal void Show(
             CityDefinition shownCity,
             PlayerBuilder shownBuilder,
-            CityMarket shownMarket,
+            City shownCityState,
             Treasury shownTreasury,
             ShipDocking<CityDefinition> shownDocking,
             IReadOnlyList<HouseOffer> shownHouseOffers,
@@ -225,7 +225,7 @@ namespace DarkFantasyMerchant.Game
 
             city = shownCity;
             builder = shownBuilder;
-            market = shownMarket;
+            cityState = shownCityState;
             houseOffers = shownHouseOffers;
             workshopOffers = shownWorkshopOffers;
             roadOffer = shownRoadOffer;
@@ -234,9 +234,9 @@ namespace DarkFantasyMerchant.Game
             treasury = shownTreasury;
             docking = shownDocking;
 
-            if (market != null)
+            if (cityState != null)
             {
-                market.Changed += Refresh;
+                cityState.Changed += Refresh;
             }
 
             if (treasury != null)
@@ -259,9 +259,9 @@ namespace DarkFantasyMerchant.Game
         /// <summary>Closes the open category and stops following the city.</summary>
         public void Hide()
         {
-            if (market != null)
+            if (cityState != null)
             {
-                market.Changed -= Refresh;
+                cityState.Changed -= Refresh;
             }
 
             if (treasury != null)
@@ -289,7 +289,7 @@ namespace DarkFantasyMerchant.Game
             SetTradingPost(null);
             city = null;
             builder = null;
-            market = null;
+            cityState = null;
             treasury = null;
             docking = null;
             houseOffers = null;
@@ -421,7 +421,7 @@ namespace DarkFantasyMerchant.Game
         private string CostTipOf(Offer offer)
         {
             return offer.TradingPost != null && TradingPostStands ? TradingPostBuiltText
-                : offer.Workshop != null && market?.PlayerTradingPost == null ? WorkshopNeedsTradingPostText
+                : offer.Workshop != null && cityState?.PlayerTradingPost == null ? WorkshopNeedsTradingPostText
                 : builder != null && builder.IsFree ? FreeText
                 : offer.CostText;
         }
@@ -531,7 +531,7 @@ namespace DarkFantasyMerchant.Game
 
         private bool IsProduced(int good)
         {
-            return market != null && good >= 0 && good < market.GoodCount && market.MaxWorkersOf(good) > 0;
+            return cityState != null && good >= 0 && good < cityState.Market.GoodCount && cityState.MaxWorkersOf(good) > 0;
         }
     }
 }

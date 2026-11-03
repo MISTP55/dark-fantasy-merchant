@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// The workers of a city's own workshops, held by its <see cref="CityMarket"/>: by good, the workers and the
+    /// The workers of a city's own workshops, held by its <see cref="City"/>: by good, the workers and the
     /// reserve of the laid-off. Given a <see cref="LabourRule"/>, a workshop hires from its reserve, the beggars
     /// within the free room of the houses and the other reserves, and lays off into its reserve, which leaks back
     /// to the beggars; without one, a workshop has at once the workers it wants and its layoffs vanish.

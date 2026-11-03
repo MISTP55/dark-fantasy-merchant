@@ -35,7 +35,7 @@ namespace DarkFantasyMerchant.Game
         private sealed class Row
         {
             public string Name;
-            public CityMarket Market;
+            public City City;
             public Func<int, int> UnderWay;
             public Label[] Cells;
             public Action Refresh;
@@ -86,15 +86,15 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <param name="underWay">Units of a good the AI ships carry to the city.</param>
-        public void AddCity(string cityName, CityMarket market, Func<int, int> underWay)
+        public void AddCity(string cityName, City city, Func<int, int> underWay)
         {
-            if (market == null)
+            if (city == null)
             {
-                throw new ArgumentNullException(nameof(market));
+                throw new ArgumentNullException(nameof(city));
             }
 
             VisualElement element = NewRow();
-            var row = new Row { Name = cityName, Market = market, UnderWay = underWay ?? (_ => 0), Cells = AddCells(element) };
+            var row = new Row { Name = cityName, City = city, UnderWay = underWay ?? (_ => 0), Cells = AddCells(element) };
             row.Cells[0].text = cityName;
 
             // Marked only: a market changes at every trade, many times a frame at high speed, and the row and the
@@ -120,7 +120,7 @@ namespace DarkFantasyMerchant.Game
 
             if (isShown)
             {
-                market.Changed += row.Refresh;
+                city.Changed += row.Refresh;
             }
         }
 
@@ -138,7 +138,7 @@ namespace DarkFantasyMerchant.Game
             {
                 foreach (Row row in rows)
                 {
-                    row.Market.Changed += row.Refresh;
+                    row.City.Changed += row.Refresh;
                 }
             }
 
@@ -156,7 +156,7 @@ namespace DarkFantasyMerchant.Game
 
             foreach (Row row in rows)
             {
-                row.Market.Changed -= row.Refresh;
+                row.City.Changed -= row.Refresh;
             }
 
             isShown = false;
@@ -202,10 +202,10 @@ namespace DarkFantasyMerchant.Game
         private void Write(Row row)
         {
             Label[] cells = row.Cells;
-            CityMarket market = row.Market;
+            City city = row.City;
 
             // A market made from another catalogue than the table's: nothing to show there.
-            if (good >= market.GoodCount)
+            if (good >= city.Market.GoodCount)
             {
                 for (int i = 1; i < cells.Length; i++)
                 {
@@ -215,25 +215,25 @@ namespace DarkFantasyMerchant.Game
                 return;
             }
 
-            StockThresholds thresholds = market.ThresholdsOf(good);
-            cells[1].text = NumberText.Format(market.AvailableOf(good));
+            StockThresholds thresholds = city.Market.ThresholdsOf(good);
+            cells[1].text = NumberText.Format(city.Market.AvailableOf(good));
             cells[2].text = DebugCitiesTable.FormatQuantity(thresholds.T0);
             cells[3].text = DebugCitiesTable.FormatQuantity(thresholds.T1);
             cells[4].text = DebugCitiesTable.FormatQuantity(thresholds.T2);
             cells[5].text = DebugCitiesTable.FormatQuantity(thresholds.T3);
-            cells[6].text = NumberText.Format(market.BuyPriceOf(good));
-            cells[7].text = NumberText.Format(market.SellPriceOf(good));
+            cells[6].text = NumberText.Format(city.Market.BuyPriceOf(good));
+            cells[7].text = NumberText.Format(city.Market.SellPriceOf(good));
             WriteFigures(
                 cells,
-                market.NominalWeeklyProductionOf(good),
-                market.NominalWeeklyConsumptionOf(good),
-                market.NominalWeeklyInputNeedOf(good),
-                market.RecentProductionOf(good),
-                market.RecentConsumptionOf(good),
-                market.RecentInputsOf(good),
-                market.WorkersOf(good),
-                market.MaxWorkersOf(good),
-                market.ReserveOf(good),
+                city.NominalWeeklyProductionOf(good),
+                city.NominalWeeklyConsumptionOf(good),
+                city.NominalWeeklyInputNeedOf(good),
+                city.RecentProductionOf(good),
+                city.RecentConsumptionOf(good),
+                city.RecentInputsOf(good),
+                city.WorkersOf(good),
+                city.MaxWorkersOf(good),
+                city.ReserveOf(good),
                 row.UnderWay(good));
         }
 
@@ -253,24 +253,24 @@ namespace DarkFantasyMerchant.Game
 
             foreach (Row row in rows)
             {
-                CityMarket market = row.Market;
+                City city = row.City;
 
                 // A market that does not have the good adds nothing to its totals.
-                if (good >= market.GoodCount)
+                if (good >= city.Market.GoodCount)
                 {
                     continue;
                 }
 
-                stock += market.AvailableOf(good);
-                nominalProduction += market.NominalWeeklyProductionOf(good);
-                nominalConsumption += market.NominalWeeklyConsumptionOf(good);
-                nominalInputs += market.NominalWeeklyInputNeedOf(good);
-                recentProduction += market.RecentProductionOf(good);
-                recentConsumption += market.RecentConsumptionOf(good);
-                recentInputs += market.RecentInputsOf(good);
-                workers += market.WorkersOf(good);
-                maxWorkers += market.MaxWorkersOf(good);
-                reserve += market.ReserveOf(good);
+                stock += city.Market.AvailableOf(good);
+                nominalProduction += city.NominalWeeklyProductionOf(good);
+                nominalConsumption += city.NominalWeeklyConsumptionOf(good);
+                nominalInputs += city.NominalWeeklyInputNeedOf(good);
+                recentProduction += city.RecentProductionOf(good);
+                recentConsumption += city.RecentConsumptionOf(good);
+                recentInputs += city.RecentInputsOf(good);
+                workers += city.WorkersOf(good);
+                maxWorkers += city.MaxWorkersOf(good);
+                reserve += city.ReserveOf(good);
                 underWay += row.UnderWay(good);
             }
 

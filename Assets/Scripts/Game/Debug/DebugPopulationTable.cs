@@ -30,7 +30,7 @@ namespace DarkFantasyMerchant.Game
         private sealed class Row
         {
             public string Name;
-            public CityMarket Market;
+            public City City;
             public Label[] Cells;
             public Action Refresh;
             public bool IsDirty;
@@ -81,15 +81,15 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>Adds the row of a city, among the others in alphabetical order, written at once.</summary>
-        public void AddCity(string cityName, CityMarket market)
+        public void AddCity(string cityName, City city)
         {
-            if (market == null)
+            if (city == null)
             {
-                throw new ArgumentNullException(nameof(market));
+                throw new ArgumentNullException(nameof(city));
             }
 
             VisualElement element = NewRow();
-            var row = new Row { Name = cityName, Market = market, Cells = AddCells(element) };
+            var row = new Row { Name = cityName, City = city, Cells = AddCells(element) };
             row.Cells[0].text = cityName;
 
             // Marked only: a market changes at every trade, many times a frame at high speed, and the row and the
@@ -116,7 +116,7 @@ namespace DarkFantasyMerchant.Game
 
             if (isShown)
             {
-                market.Changed += row.Refresh;
+                city.Changed += row.Refresh;
             }
         }
 
@@ -127,7 +127,7 @@ namespace DarkFantasyMerchant.Game
             {
                 if (!isShown)
                 {
-                    row.Market.Changed += row.Refresh;
+                    row.City.Changed += row.Refresh;
                 }
 
                 Write(row);
@@ -173,7 +173,7 @@ namespace DarkFantasyMerchant.Game
 
             foreach (Row row in rows)
             {
-                row.Market.Changed -= row.Refresh;
+                row.City.Changed -= row.Refresh;
             }
 
             isShown = false;
@@ -181,12 +181,12 @@ namespace DarkFantasyMerchant.Game
 
         private static void Write(Row row)
         {
-            CityMarket market = row.Market;
-            CityPopulation population = market.Population;
+            City city = row.City;
+            CityPopulation population = city.Population;
             Label[] cells = row.Cells;
 
             cells[1].text = NumberText.Format(population.Inhabitants);
-            cells[2].text = DebugCitiesTable.FormatBeggars(population.Beggars, market.BeggarTarget);
+            cells[2].text = DebugCitiesTable.FormatBeggars(population.Beggars, city.BeggarTarget);
 
             for (int i = 0; i < Classes.Length; i++)
             {
@@ -196,7 +196,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             cells[6].text = DebugCitiesTable.FormatRate(population.GrowthSinceStart);
-            cells[7].text = NumberText.Format(market.CityHouses);
+            cells[7].text = NumberText.Format(city.CityHouses);
         }
 
         // Summed again at most once a frame: a handful of cities.
@@ -212,12 +212,12 @@ namespace DarkFantasyMerchant.Game
 
             foreach (Row row in rows)
             {
-                CityPopulation population = row.Market.Population;
+                CityPopulation population = row.City.Population;
                 inhabitants += population.Inhabitants;
                 startingInhabitants += population.StartingInhabitants;
                 beggars += population.Beggars;
-                beggarTargets += row.Market.BeggarTarget;
-                houses += row.Market.CityHouses;
+                beggarTargets += row.City.BeggarTarget;
+                houses += row.City.CityHouses;
 
                 for (int i = 0; i < Classes.Length; i++)
                 {

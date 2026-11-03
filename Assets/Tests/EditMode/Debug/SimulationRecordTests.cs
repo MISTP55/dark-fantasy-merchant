@@ -8,14 +8,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Fish = 0;
         private const int Timber = 1;
 
-        private CityMarket first;
-        private CityMarket second;
+        private City first;
+        private City second;
         private SimulationRecord record;
 
         // Fish: 2 barrels a day for a thousand, none in stock: a shortage every day. Timber: consumed by no one.
-        private static CityMarket Market()
+        private static City NewCity()
         {
-            return new CityMarket(
+            return new City(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(10, 0, 0, 0) },
                 TestMarkets.Thresholds,
                 TestMarkets.Workforce,
@@ -28,8 +28,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [SetUp]
         public void SetUp()
         {
-            first = Market();
-            second = Market();
+            first = NewCity();
+            second = NewCity();
             record = new SimulationRecord(new[] { first, second }, 2, null);
         }
 
@@ -40,7 +40,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 first.StartDay();
                 second.StartDay();
                 record.RecordDay(day, (city, good) => city * 10 + good);
-                record.AddPlayerTrade(day, first, Timber, 1, PlayerTradeKind.Buy);
+                record.AddPlayerTrade(day, first.Market, Timber, 1, PlayerTradeKind.Buy);
             }
         }
 
@@ -89,10 +89,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var ship = new Ship(new MapProjection(40f, 2f), UnityEngine.Vector2.zero, 4f, TestCrew.Full,
                 new NavigationPathfinder(GridAssert.FromRows("....")), new CargoHold(200));
-            record.AddTrade(1, second, new FleetTrade(ship, second, Fish, 40, 2640, true));
-            record.AddTrade(1, first, new FleetTrade(ship, first, Fish, 30, 900, false));
-            record.AddPlayerTrade(1, second, Timber, 6, PlayerTradeKind.Construction);
-            record.AddPlayerTrade(1, second, Fish, 5, PlayerTradeKind.Sell);
+            record.AddTrade(1, second.Market, new FleetTrade(ship, second.Market, Fish, 40, 2640, true));
+            record.AddTrade(1, first.Market, new FleetTrade(ship, first.Market, Fish, 30, 900, false));
+            record.AddPlayerTrade(1, second.Market, Timber, 6, PlayerTradeKind.Construction);
+            record.AddPlayerTrade(1, second.Market, Fish, 5, PlayerTradeKind.Sell);
 
             record.FlowOf(1, Fish, out long received, out long shipped);
             Assert.AreEqual(45, received);
@@ -111,10 +111,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var ship = new Ship(new MapProjection(40f, 2f), UnityEngine.Vector2.zero, 4f, TestCrew.Full,
                 new NavigationPathfinder(GridAssert.FromRows("....")), new CargoHold(200));
-            record.AddTrade(1, second, new FleetTrade(ship, second, Fish, 40, 2640, true));
-            record.AddTrade(1, first, new FleetTrade(ship, first, Fish, 30, 900, false));
-            record.AddPlayerTrade(1, second, Fish, 5, PlayerTradeKind.Sell);
-            record.AddPlayerTrade(1, second, Timber, 6, PlayerTradeKind.Construction);
+            record.AddTrade(1, second.Market, new FleetTrade(ship, second.Market, Fish, 40, 2640, true));
+            record.AddTrade(1, first.Market, new FleetTrade(ship, first.Market, Fish, 30, 900, false));
+            record.AddPlayerTrade(1, second.Market, Fish, 5, PlayerTradeKind.Sell);
+            record.AddPlayerTrade(1, second.Market, Timber, 6, PlayerTradeKind.Construction);
             var received = new long[2];
             var shipped = new long[2];
 
@@ -127,7 +127,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void ATradeInACityNotRecorded_IsIgnored()
         {
-            record.AddPlayerTrade(1, Market(), Fish, 5, PlayerTradeKind.Buy);
+            record.AddPlayerTrade(1, NewCity().Market, Fish, 5, PlayerTradeKind.Buy);
 
             Assert.AreEqual(0, record.Trades.Count);
         }

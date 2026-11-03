@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// The player's workshops in a city, held by its <see cref="CityMarket"/>: their jobs, their workers, hired from the
-    /// beggars after the city's workshops and never laid off, and what they make by the market's
+    /// The player's workshops in a city, held by its <see cref="City"/>: their jobs, their workers, hired from the
+    /// beggars after the city's workshops and never laid off, and what they make by the city's
     /// <see cref="MerchantOutputRule"/> into the player's trading post of the city, from its inputs, never touching the
     /// market. Without the rule or the post they make nothing.
     /// </summary>
@@ -24,7 +24,7 @@ namespace DarkFantasyMerchant.Core
         private readonly double[] pending;
         private readonly double[][] inputDebts;
 
-        /// <param name="goods">The market's goods, by index.</param>
+        /// <param name="goods">The city's goods, by index.</param>
         /// <param name="output">Null for workshops that hire but make nothing.</param>
         public PlayerWorkshops(IReadOnlyList<MarketGood> goods, int daysPerWeek, MerchantOutputRule output)
         {
@@ -67,7 +67,7 @@ namespace DarkFantasyMerchant.Core
 
             if (TradingPost != null)
             {
-                throw new InvalidOperationException("The market already has the player's trading post.");
+                throw new InvalidOperationException("The city already has the player's trading post.");
             }
 
             TradingPost = post;

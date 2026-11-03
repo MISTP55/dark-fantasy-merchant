@@ -544,13 +544,13 @@ namespace DarkFantasyMerchant.Game
 
             foreach (CityDefinition city in mapView.Cities)
             {
-                CityMarket market = worldEconomy.MarketOf(city);
+                City cityState = worldEconomy.CityOf(city);
 
-                if (market != null)
+                if (cityState != null)
                 {
-                    citiesTable.AddCity(city.DisplayName, market);
-                    populationTable.AddCity(city.DisplayName, market);
-                    goodTable.AddCity(city.DisplayName, market, good => aiMerchants != null ? aiMerchants.UnderWayTo(city, good) : 0);
+                    citiesTable.AddCity(city.DisplayName, cityState);
+                    populationTable.AddCity(city.DisplayName, cityState);
+                    goodTable.AddCity(city.DisplayName, cityState, good => aiMerchants != null ? aiMerchants.UnderWayTo(city, good) : 0);
                 }
             }
 

@@ -8,7 +8,7 @@ namespace DarkFantasyMerchant.Game
     /// <summary>
     /// The catalogue of the buildings the player can build: exactly one house per class, which
     /// also makes the houses the cities build of their own, and one workshop per good at most.
-    /// Holds no runtime state: what a city has built is in its <see cref="CityMarket"/>.
+    /// Holds no runtime state: what a city has built is in its <see cref="City"/>.
     /// </summary>
     [CreateAssetMenu(fileName = "Buildings", menuName = "Dark Fantasy Merchant/Buildings")]
     public sealed class BuildingsDefinition : ScriptableObject

@@ -28,21 +28,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
             table = new DebugPopulationTable(header, rows, totals);
         }
 
-        private static CityMarket Market(int inhabitants)
+        private static City NewCity(int inhabitants)
         {
-            return new CityMarket(new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, TestMarkets.Workforce, 30,
+            return new City(new[] { new MarketGood(10, 2, 0, 0) }, TestMarkets.Thresholds, TestMarkets.Workforce, 30,
                 TestMarkets.Pricing, 7, new CityPopulation(inhabitants));
         }
 
         // A city of 960 in 1 000 places, with the stock of a house of 100 places.
-        private static CityMarket CrowdedMarket()
+        private static City CrowdedCity()
         {
             var material = new MarketGood(10, 0, 0, 0);
             var housing = new CityHousingRule(SocialClass.Poor, 0.95, 100, new[] { new MaterialCost(0, 10) });
-            var market = new CityMarket(new[] { material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0,
+            var city = new City(new[] { material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0,
                 TestMarkets.Pricing, 7, new CityPopulation(960, 0, 1000), TestMarkets.Labour, new[] { housing });
-            market.Put(0, 25);
-            return market;
+            city.Market.Put(0, 25);
+            return city;
         }
 
         private string Text(int row, int cell)
@@ -62,12 +62,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void Population_HasTheCityHousesColumn()
         {
-            CityMarket market = CrowdedMarket();
-            table.AddCity("Cologne", market);
+            City city = CrowdedCity();
+            table.AddCity("Cologne", city);
             table.Show();
             Assert.AreEqual("0", Text(0, HousesCell));
 
-            market.StartDay();
+            city.StartDay();
             table.WriteChanges();
 
             Assert.AreEqual("1", Text(0, HousesCell));
@@ -77,9 +77,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void Population_RowsAreAlphabetical()
         {
-            table.AddCity("Lübeck", Market(1000));
-            table.AddCity("Édimbourg", Market(500));
-            table.AddCity("Cologne", Market(800));
+            table.AddCity("Lübeck", NewCity(1000));
+            table.AddCity("Édimbourg", NewCity(500));
+            table.AddCity("Cologne", NewCity(800));
 
             Assert.AreEqual("Cologne", Text(0, NameCell));
             Assert.AreEqual("Édimbourg", Text(1, NameCell));
@@ -90,8 +90,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TheTotals_AddTheCitiesUp()
         {
-            table.AddCity("Cologne", Market(1000));
-            table.AddCity("Lübeck", Market(500));
+            table.AddCity("Cologne", NewCity(1000));
+            table.AddCity("Lübeck", NewCity(500));
 
             Assert.AreEqual(NumberText.Format(1500), ((Label)totals[0][PopulationCell]).text);
             Assert.AreEqual("Total", ((Label)totals[0][NameCell]).text);
@@ -100,11 +100,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void WhileShown_AChange_IsWrittenByWriteChanges_NotAtOnce()
         {
-            CityMarket market = CrowdedMarket();
-            table.AddCity("Cologne", market);
+            City city = CrowdedCity();
+            table.AddCity("Cologne", city);
             table.Show();
 
-            market.StartDay();
+            city.StartDay();
             Assert.AreEqual("0", Text(0, HousesCell));
 
             table.WriteChanges();
@@ -116,10 +116,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AHiddenTable_DoesNotFollowTheMarkets()
         {
-            CityMarket market = CrowdedMarket();
-            table.AddCity("Cologne", market);
+            City city = CrowdedCity();
+            table.AddCity("Cologne", city);
 
-            market.StartDay();
+            city.StartDay();
             table.WriteChanges();
 
             Assert.AreEqual("0", Text(0, HousesCell));

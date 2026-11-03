@@ -10,9 +10,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         // of T0 and T1 is 40 and the target point 20 + 3/8 × 40 = 35. Factors: the curves of TestMarkets.
 
         /// <summary>One good, 10 gold, consumed by the day; its stock set by the days it starts with.</summary>
-        private static CityMarket Market(double stock, double dailyConsumption = 2, int maxWorkers = 0, double output = 0)
+        private static City NewCity(double stock, double dailyConsumption = 2, int maxWorkers = 0, double output = 0)
         {
-            var market = new CityMarket(
+            var city = new City(
                 new[] { new MarketGood(10, dailyConsumption, maxWorkers, output) },
                 TestMarkets.Thresholds,
                 TestMarkets.Workforce,
@@ -23,16 +23,16 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             if (dailyConsumption <= 0 && stock > 0)
             {
-                market.Put(0, (int)stock);
+                city.Market.Put(0, (int)stock);
             }
 
-            return market;
+            return city;
         }
 
         /// <summary>Two goods, 2 consumed a day of each, with the given stocks.</summary>
-        private static CityMarket MarketOf(double first, double second)
+        private static City CityOf(double first, double second)
         {
-            var market = new CityMarket(
+            var city = new City(
                 new[] { new MarketGood(10, 2, 0, 0), new MarketGood(10, 2, 0, 0) },
                 TestMarkets.Thresholds,
                 TestMarkets.Workforce,
@@ -43,21 +43,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             if (first > 0)
             {
-                market.Put(0, (int)first);
+                city.Market.Put(0, (int)first);
             }
 
             if (second > 0)
             {
-                market.Put(1, (int)second);
+                city.Market.Put(1, (int)second);
             }
 
-            return market;
+            return city;
         }
 
         /// <summary>An empty market of the same good, on other curves.</summary>
-        private static CityMarket MarketPricedBy(MarketPricing pricing)
+        private static City CityPricedBy(MarketPricing pricing)
         {
-            return new CityMarket(
+            return new City(
                 new[] { new MarketGood(10, 2, 0, 0) },
                 TestMarkets.Thresholds,
                 TestMarkets.Workforce,
@@ -89,21 +89,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
             days[b, a] = value;
         }
 
-        private static SupplyPlanner Planner(params CityMarket[] markets)
+        private static SupplyPlanner Planner(params City[] cities)
         {
-            return new SupplyPlanner(markets, Days(markets.Length, 1));
+            return new SupplyPlanner(cities, Days(cities.Length, 1));
         }
 
-        private static SupplyPlanner Planner(CityMarket[] markets, double[,] days, GoodUnits units = null, int[] weights = null)
+        private static SupplyPlanner Planner(City[] cities, double[,] days, GoodUnits units = null, int[] weights = null)
         {
-            return new SupplyPlanner(markets, days, units, weights);
+            return new SupplyPlanner(cities, days, units, weights);
         }
 
         [Test]
         public void TheProjectedStock_AddsWhatIsUnderWay_AndTheDaysOfTheTrip()
         {
             // 2 consumed a day; 40 in stock; 4 under way; 5 days: 40 + 4 − 10.
-            var planner = Planner(Market(40), Market(0));
+            var planner = Planner(NewCity(40), NewCity(0));
             Assert.AreEqual(34d, planner.ProjectedStockOf(0, 0, 5, 4), 1e-9);
         }
 
@@ -111,7 +111,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TheProjectedStock_CountsTheProductionOfTheDays()
         {
             // A workshop of 30 workers making 0.1 a day: 3 a day, 2 consumed.
-            var planner = Planner(Market(40, 2, 30, 0.1), Market(0));
+            var planner = Planner(NewCity(40, 2, 30, 0.1), NewCity(0));
             Assert.AreEqual(45d, planner.ProjectedStockOf(0, 0, 5, 0), 1e-9);
         }
 
@@ -120,7 +120,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // Grain, 2 a day for the inhabitants, and a brewery of 30 workers making 3 barrels a
             // day out of half a unit of grain each: 3.5 a day, 105 in stock after 30 days of it.
-            CityMarket Brewing() => new CityMarket(
+            City Brewing() => new City(
                 new[]
                 {
                     new MarketGood(10, 2, 0, 0),
@@ -141,7 +141,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TheProjectedStock_IsNeverBelowNothing()
         {
-            var planner = Planner(Market(6), Market(0));
+            var planner = Planner(NewCity(6), NewCity(0));
             Assert.AreEqual(0d, planner.ProjectedStockOf(0, 0, 5, 0));
         }
 
@@ -149,7 +149,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TheScore_IsTheGapOfFactors_TimesTheWeight()
         {
             // A at 120 (above T3: buys at 0.6), B empty (sells at 2.0); weight 16.
-            var planner = Planner(new[] { Market(120), Market(0) }, Days(2, 1), weights: new[] { 16 });
+            var planner = Planner(new[] { NewCity(120), NewCity(0) }, Days(2, 1), weights: new[] { 16 });
 
             Assert.IsTrue(planner.TryEvaluate(0, 1, 0, null, out int units, out double score));
             Assert.AreEqual(60, units);
@@ -159,7 +159,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AWeightOfZero_IsNeverCarried()
         {
-            var planner = Planner(new[] { Market(120), Market(0) }, Days(2, 1), weights: new[] { 0 });
+            var planner = Planner(new[] { NewCity(120), NewCity(0) }, Days(2, 1), weights: new[] { 0 });
             Assert.IsFalse(planner.TryEvaluate(0, 1, 0, null, out _, out _));
         }
 
@@ -167,8 +167,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AScoreOfZeroOrBelow_IsNoTransport()
         {
             // The destination pays 0.5 at any stock: under the 0.6 the source sells at.
-            CityMarket flat = MarketPricedBy(new MarketPricing(TestMarkets.BuyCurve, new PriceCurve(0.5, 0.5, 0.5, 0.5, 0.5)));
-            var planner = Planner(Market(120), flat);
+            City flat = CityPricedBy(new MarketPricing(TestMarkets.BuyCurve, new PriceCurve(0.5, 0.5, 0.5, 0.5, 0.5)));
+            var planner = Planner(NewCity(120), flat);
             Assert.IsFalse(planner.TryEvaluate(0, 1, 0, null, out _, out _));
         }
 
@@ -176,7 +176,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void UnderTheSmallestLot_IsNoTransport()
         {
             // B projected at 56: 4 short of T1, under 5 barrels.
-            var planner = Planner(new[] { Market(120), Market(58) }, Days(2, 1));
+            var planner = Planner(new[] { NewCity(120), NewCity(58) }, Days(2, 1));
             Assert.IsFalse(planner.TryEvaluate(0, 1, 0, null, out _, out _));
         }
 
@@ -186,7 +186,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // B projected at 0 + 30 − 2 = 28: 32 short of T1.
             var underWay = new int[2, 1];
             underWay[1, 0] = 30;
-            var planner = Planner(new[] { Market(120), Market(0) }, Days(2, 1));
+            var planner = Planner(new[] { NewCity(120), NewCity(0) }, Days(2, 1));
 
             Assert.IsTrue(planner.TryEvaluate(0, 1, 0, underWay, out int units, out _));
             Assert.AreEqual(32, units);
@@ -197,7 +197,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // Two goods; home (0) holds 120 of both. C1 is empty of the first only: 2.0 − 0.6 = 1.4.
             // C2 is empty of both: 1.4 + 1.4 = 2.8. C1 holds 100 of the second, which it needs no more of.
-            var planner = Planner(MarketOf(120, 120), MarketOf(0, 100), MarketOf(0, 0));
+            var planner = Planner(CityOf(120, 120), CityOf(0, 100), CityOf(0, 0));
             Assert.AreEqual(2, planner.ChooseDestination(0, null));
         }
 
@@ -206,7 +206,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // Home (0) is empty and has nothing to send; C1 is empty too; C2 holds 120, which home, projected
             // at 0, lacks: 2.0 − 0.6 = 1.4 for what C2 sends back.
-            var planner = Planner(Market(0), Market(0), Market(120));
+            var planner = Planner(NewCity(0), NewCity(0), NewCity(120));
             Assert.AreEqual(2, planner.ChooseDestination(0, null));
         }
 
@@ -216,7 +216,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // Home holds 120 and has no need; the only city that has one is unreachable.
             double[,] days = Days(2, 1);
             SetDays(days, 0, 1, double.PositiveInfinity);
-            var planner = Planner(new[] { Market(120), Market(0) }, days);
+            var planner = Planner(new[] { NewCity(120), NewCity(0) }, days);
 
             Assert.AreEqual(-1, planner.ChooseDestination(0, null));
         }
@@ -225,7 +225,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void WithNothingWorthItAnywhere_ThereIsNoDestination()
         {
             // Every market at 15 days: 30, under the middle of T0 and T1 (40), so nobody gives.
-            var planner = Planner(Market(30), Market(30), Market(30));
+            var planner = Planner(NewCity(30), NewCity(30), NewCity(30));
             Assert.AreEqual(-1, planner.ChooseDestination(0, null));
         }
 
@@ -238,7 +238,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             double[,] days = Days(3, 1);
             SetDays(days, 0, 2, 10);
             SetDays(days, 1, 2, 10);
-            var planner = Planner(new[] { Market(120), Market(1, 0), Market(0, 0) }, days);
+            var planner = Planner(new[] { NewCity(120), NewCity(1, 0), NewCity(0, 0) }, days);
 
             Assert.AreEqual(2, planner.ChooseDestination(0, null));
         }
@@ -251,7 +251,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             SetDays(days, 0, 2, 1);
             SetDays(days, 1, 2, candidateToHome);
 
-            return Planner(new[] { Market(120), Market(0), Market(0) }, days);
+            return Planner(new[] { NewCity(120), NewCity(0), NewCity(0) }, days);
         }
 
         [Test]
@@ -269,7 +269,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // candidate 3 is empty (1.4). Both detours are 2 (under 2.4); the higher value wins over the lower index.
             double[,] days = Days(4, 1);
             SetDays(days, 0, 1, 2);
-            var planner = Planner(new[] { Market(120), Market(0), Market(20), Market(0) }, days);
+            var planner = Planner(new[] { NewCity(120), NewCity(0), NewCity(20), NewCity(0) }, days);
 
             Assert.AreEqual(3, planner.ChooseStopover(0, 1, null, null));
         }
@@ -283,7 +283,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             SetDays(days, 0, 1, 2);
             SetDays(days, 1, 2, 1.2);
             SetDays(days, 1, 3, 1.1);
-            var planner = Planner(new[] { Market(120), Market(0), Market(0), Market(0) }, days);
+            var planner = Planner(new[] { NewCity(120), NewCity(0), NewCity(0), NewCity(0) }, days);
 
             Assert.AreEqual(3, planner.ChooseStopover(0, 1, null, null));
         }
@@ -299,7 +299,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void WithoutACandidate_ThereIsNoStopover()
         {
             // Only port and home.
-            var planner = Planner(Market(120), Market(0));
+            var planner = Planner(NewCity(120), NewCity(0));
             Assert.AreEqual(-1, planner.ChooseStopover(0, 1, null, null));
         }
 
@@ -307,7 +307,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void Load_TakesTheGoods_ByDecreasingScore_WithinTheRoom()
         {
             // Weights 16 and 9, same stocks (120 → empty) and needs (60 each); room 80: 60 of the first, 20 of the second.
-            var planner = Planner(new[] { MarketOf(120, 120), MarketOf(0, 0) }, Days(2, 1), weights: new[] { 16, 9 });
+            var planner = Planner(new[] { CityOf(120, 120), CityOf(0, 0) }, Days(2, 1), weights: new[] { 16, 9 });
             var units = new int[2];
 
             Assert.AreEqual(80, planner.Load(0, 1, 80, null, units));
@@ -319,7 +319,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void Load_TakesTheBetterScoreFirst_WhateverTheIndex()
         {
             // The same, with the heavier good second: it fills the room first.
-            var planner = Planner(new[] { MarketOf(120, 120), MarketOf(0, 0) }, Days(2, 1), weights: new[] { 9, 16 });
+            var planner = Planner(new[] { CityOf(120, 120), CityOf(0, 0) }, Days(2, 1), weights: new[] { 9, 16 });
             var units = new int[2];
 
             Assert.AreEqual(80, planner.Load(0, 1, 80, null, units));
@@ -331,7 +331,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void Load_CountsABushelForTenBarrels()
         {
             // Bushels of 10 barrels; a surplus of 60 bushels, room 25: 2 bushels, 20 barrels.
-            var planner = Planner(new[] { Market(120), Market(0) }, Days(2, 1), new GoodUnits(new[] { 10 }));
+            var planner = Planner(new[] { NewCity(120), NewCity(0) }, Days(2, 1), new GoodUnits(new[] { 10 }));
             var units = new int[1];
 
             Assert.AreEqual(20, planner.Load(0, 1, 25, null, units));
@@ -343,7 +343,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // The bushel good (weight 16) scores higher than the barrel one (9), but room 9 holds no bushel: 9 barrels.
             var planner = Planner(
-                new[] { MarketOf(120, 120), MarketOf(0, 0) }, Days(2, 1), new GoodUnits(new[] { 10, 1 }), new[] { 16, 9 });
+                new[] { CityOf(120, 120), CityOf(0, 0) }, Days(2, 1), new GoodUnits(new[] { 10, 1 }), new[] { 16, 9 });
             var units = new int[2];
 
             Assert.AreEqual(9, planner.Load(0, 1, 9, null, units));
@@ -355,7 +355,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void Load_TakesTheUnitsThatFit_EvenUnderTheSmallestLot()
         {
             // Quantity 60, room 3 → 3, under the lot of 5.
-            var planner = Planner(Market(120), Market(0));
+            var planner = Planner(NewCity(120), NewCity(0));
             var units = new int[1];
 
             Assert.AreEqual(3, planner.Load(0, 1, 3, null, units));
@@ -365,7 +365,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void Load_ClearsTheUnitsFirst()
         {
-            var planner = Planner(Market(30), Market(0));
+            var planner = Planner(NewCity(30), NewCity(0));
             var units = new int[] { 7 };
 
             Assert.AreEqual(0, planner.Load(0, 1, 50, null, units));
@@ -375,13 +375,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void ANegativeWeight_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => Planner(new[] { Market(0), Market(0) }, Days(2, 1), weights: new[] { -1 }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Planner(new[] { NewCity(0), NewCity(0) }, Days(2, 1), weights: new[] { -1 }));
         }
 
         [Test]
         public void TheArguments_AreChecked()
         {
-            SupplyPlanner planner = Planner(Market(0), Market(0), Market(0));
+            SupplyPlanner planner = Planner(NewCity(0), NewCity(0), NewCity(0));
 
             Assert.Throws<ArgumentOutOfRangeException>(() => planner.TryEvaluate(3, 0, 0, null, out _, out _));
             Assert.Throws<ArgumentOutOfRangeException>(() => planner.Load(0, 1, -1, null, new int[1]));

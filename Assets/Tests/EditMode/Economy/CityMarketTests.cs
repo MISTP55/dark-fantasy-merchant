@@ -26,227 +26,73 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static MarketGood Efficient => new MarketGood(10, 2, 30, 0.1);
         private static MarketGood Inefficient => new MarketGood(10, 2, 22, 0.1);
 
-        private static CityMarket MarketOf(params MarketGood[] goods)
+        private static City CityOf(params MarketGood[] goods)
         {
-            return new CityMarket(goods, Thresholds, Workforce, StartingDays, Pricing, DaysPerWeek, new CityPopulation(1000));
+            return new City(goods, Thresholds, Workforce, StartingDays, Pricing, DaysPerWeek, new CityPopulation(1000));
+        }
+
+        [Test]
+        public void AMarket_StartsWithTheDaysOfTheDemandItIsGiven()
+        {
+            var market = new CityMarket(new[] { NotProduced }, Thresholds, Pricing, good => 3d, StartingDays);
+
+            Assert.AreEqual(90, market.StockOf(0), Tolerance);
+            Assert.AreEqual(90, market.ThresholdsOf(0).T1, Tolerance);
+        }
+
+        [Test]
+        public void TheThresholds_FollowTheDemand_OnlyAtTheEndOfADay()
+        {
+            double demand = 3d;
+            var market = new CityMarket(new[] { NotProduced }, Thresholds, Pricing, good => demand, StartingDays);
+            int changes = 0;
+            market.Changed += () => changes++;
+
+            demand = 6d;
+            Assert.AreEqual(90, market.ThresholdsOf(0).T1, Tolerance);
+            Assert.AreEqual(0, changes);
+
+            market.EndDay();
+
+            Assert.AreEqual(180, market.ThresholdsOf(0).T1, Tolerance);
+            Assert.AreEqual(90, market.StockOf(0), Tolerance);
+            Assert.AreEqual(1, changes);
+        }
+
+        [Test]
+        public void Withdraw_TakesAtMostTheStock_AndTellsNobody()
+        {
+            var market = new CityMarket(new[] { NotProduced }, Thresholds, Pricing, good => 1d, StartingDays);
+            int changes = 0;
+            market.Changed += () => changes++;
+
+            Assert.AreEqual(10.5, market.Withdraw(0, 10.5), Tolerance);
+            Assert.AreEqual(19.5, market.Withdraw(0, 100), Tolerance);
+            Assert.AreEqual(0, market.StockOf(0));
+            Assert.AreEqual(0, changes);
+        }
+
+        [Test]
+        public void RejectsADemandThatIsMissing()
+        {
+            Assert.Throws<ArgumentNullException>(() => new CityMarket(new[] { NotProduced }, Thresholds, Pricing, null, StartingDays));
         }
 
         [Test]
         public void AGood_StartsWithTheStartingDaysOfItsConsumption()
         {
-            CityMarket market = MarketOf(NotProduced);
+            CityMarket market = CityOf(NotProduced).Market;
 
             Assert.AreEqual(1, market.GoodCount);
             Assert.AreEqual(60, market.ThresholdsOf(0).T1, Tolerance);
             Assert.AreEqual(60, market.StockOf(0), Tolerance);
         }
 
-        [Test]
-        public void EveryGood_StartsWithTheSameDays_ProducedOrNot()
-        {
-            // A week of two barrels a day, whatever the city makes of the good.
-            var market = new CityMarket(new[] { NotProduced, Efficient, Inefficient }, Thresholds, Workforce, 7, Pricing, DaysPerWeek, new CityPopulation(1000));
-
-            Assert.AreEqual(14, market.StockOf(0), Tolerance);
-            Assert.AreEqual(14, market.StockOf(1), Tolerance);
-            Assert.AreEqual(14, market.StockOf(2), Tolerance);
-            Assert.AreEqual(60, market.ThresholdsOf(0).T1, Tolerance);
-        }
-
-        [Test]
-        public void AMarketCanStartEmpty()
-        {
-            var market = new CityMarket(new[] { NotProduced }, Thresholds, Workforce, 0, Pricing, DaysPerWeek, new CityPopulation(1000));
-
-            Assert.AreEqual(0, market.AvailableOf(0));
-        }
-
-        [TestCase(-1)]
-        [TestCase(double.NaN)]
-        [TestCase(double.PositiveInfinity)]
-        public void RejectsStartingDaysThatMakeNoSense(double startingDays)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new CityMarket(new[] { NotProduced }, Thresholds, Workforce, startingDays, Pricing, DaysPerWeek, new CityPopulation(1000)));
-        }
-
-        [Test]
-        public void StartDay_ConsumesWhatIsNotProduced_DownToNothing()
-        {
-            CityMarket market = MarketOf(NotProduced);
-
-            market.StartDay();
-            Assert.AreEqual(58, market.StockOf(0), Tolerance);
-
-            for (int day = 0; day < 40; day++)
-            {
-                market.StartDay();
-            }
-
-            Assert.AreEqual(0, market.StockOf(0), Tolerance);
-        }
-
-        [Test]
-        public void AboveT3_AProducerStops_AndKeepsOneWorker()
-        {
-            CityMarket market = MarketOf(Efficient);
-            market.Put(0, 60);
-
-            market.StartDay();
-
-            // 120, then 118 once consumed: above T3, nothing produced.
-            Assert.AreEqual(118, market.StockOf(0), Tolerance);
-            Assert.AreEqual(1, market.WorkersOf(0));
-            Assert.AreEqual(0, market.RecentProductionOf(0), Tolerance);
-        }
-
-        [Test]
-        public void StartDay_RefillsAProducedGoodByItsSurplus()
-        {
-            CityMarket market = MarketOf(Efficient);
-            market.Put(0, 10);
-
-            market.StartDay();
-
-            // 70 + 3 produced - 2 consumed.
-            Assert.AreEqual(71, market.StockOf(0), Tolerance);
-        }
-
-        [Test]
-        public void StartDay_ConsumesBeforeItProduces()
-        {
-            // 111 in stock: above T3 before the day's consumption, 109 after it, so it produces.
-            CityMarket market = MarketOf(Efficient);
-            market.Put(0, 51);
-
-            market.StartDay();
-
-            Assert.AreEqual(112, market.StockOf(0), Tolerance);
-            Assert.AreEqual(30, market.WorkersOf(0));
-        }
-
-        [Test]
-        public void AWorkshop_HiresByTheStock_AndProducesWithTheWorkersOfTheDay()
-        {
-            // Two workers to start with; 58 once consumed is above T0 (20), so 8 more are hired.
-            var market = new CityMarket(
-                new[] { Efficient }, Thresholds, new WorkforceRule(16, 8, 4, 1, 1, 2), StartingDays, Pricing, DaysPerWeek,
-                new CityPopulation(1000));
-
-            Assert.AreEqual(2, market.WorkersOf(0));
-
-            market.StartDay();
-
-            Assert.AreEqual(10, market.WorkersOf(0));
-            Assert.AreEqual(59, market.StockOf(0), Tolerance);
-        }
-
-        [Test]
-        public void TheStartingWorkforce_IsSpreadOverTheWorkshops()
-        {
-            // 50 workers over two workshops: 25 each, cut to 22 in the smaller one.
-            var market = new CityMarket(
-                new[] { Efficient, Inefficient, NotProduced }, Thresholds, new WorkforceRule(16, 8, 4, 1, 1, 50), StartingDays,
-                Pricing, DaysPerWeek, new CityPopulation(1000));
-
-            Assert.AreEqual(25, market.WorkersOf(0));
-            Assert.AreEqual(22, market.WorkersOf(1));
-            Assert.AreEqual(0, market.WorkersOf(2));
-            Assert.AreEqual(30, market.MaxWorkersOf(0));
-            Assert.AreEqual(22, market.MaxWorkersOf(1));
-            Assert.AreEqual(0, market.MaxWorkersOf(2));
-        }
-
-        [Test]
-        public void AGoodNotProduced_HasNoWorkers_AndKeepsThem()
-        {
-            CityMarket market = MarketOf(NotProduced);
-
-            market.StartDay();
-
-            Assert.AreEqual(0, market.WorkersOf(0));
-            Assert.AreEqual(0, market.NominalWeeklyProductionOf(0), Tolerance);
-        }
-
-        [Test]
-        public void AStockAboveT3_IsOnlyConsumed()
-        {
-            CityMarket market = MarketOf(Efficient);
-            market.Put(0, 160);
-
-            market.StartDay();
-
-            Assert.AreEqual(218, market.StockOf(0), Tolerance);
-        }
-
-        [Test]
-        public void AProducerLeftAlone_StaysBetweenT2AndT3()
-        {
-            CityMarket market = MarketOf(Efficient);
-
-            for (int day = 0; day < 200; day++)
-            {
-                market.StartDay();
-            }
-
-            // It drops to one worker above T3 (110) and hires again under it; T2 is 90.
-            for (int day = 0; day < 200; day++)
-            {
-                market.StartDay();
-                Assert.GreaterOrEqual(market.StockOf(0), 90d, $"day {day}");
-                Assert.LessOrEqual(market.StockOf(0), 113d, $"day {day}");
-            }
-        }
-
-        [Test]
-        public void AvailableOf_IsTheWholeBarrels()
-        {
-            // A village: 0.3 barrel a day, 9 in stock.
-            CityMarket market = MarketOf(new MarketGood(40, 0.3, 0, 0));
-
-            market.StartDay();
-
-            Assert.AreEqual(8.7, market.StockOf(0), Tolerance);
-            Assert.AreEqual(8, market.AvailableOf(0));
-        }
-
-        [Test]
-        public void AvailableOf_CountsABarrelThatFloatingPointLeavesAHairShort()
-        {
-            // 72 in stock, 2.4 a day: 60 after five days, but 59.999999999999986 in floating point.
-            CityMarket market = MarketOf(new MarketGood(10, 2.4, 0, 0));
-
-            for (int day = 0; day < 5; day++)
-            {
-                market.StartDay();
-            }
-
-            Assert.AreEqual(60, market.AvailableOf(0));
-
-            market.Take(0, 60);
-
-            Assert.AreEqual(0, market.AvailableOf(0));
-            Assert.GreaterOrEqual(market.StockOf(0), 0d);
-        }
-
-        [Test]
-        public void AStockUnderOneBarrel_HasNoneAvailable()
-        {
-            CityMarket market = MarketOf(new MarketGood(40, 0.3, 0, 0));
-
-            for (int day = 0; day < 28; day++)
-            {
-                market.StartDay();
-            }
-
-            Assert.Greater(market.StockOf(0), 0d);
-            Assert.AreEqual(0, market.AvailableOf(0));
-        }
 
         [Test]
         public void Prices_AreThoseOfTheNextBarrel()
         {
-            CityMarket market = MarketOf(NotProduced);
+            CityMarket market = CityOf(NotProduced).Market;
 
             // Stock 60, the threshold T1. Bought: 10 x 1.00625, the average buy factor over [59, 60].
             Assert.AreEqual(11, market.BuyPriceOf(0));
@@ -256,10 +102,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(6, market.SellPriceOf(0));
         }
 
+
         [Test]
         public void Prices_OfLaterBarrels_FollowTheStockTheyWouldLeave()
         {
-            CityMarket market = MarketOf(NotProduced);
+            CityMarket market = CityOf(NotProduced).Market;
 
             // The last of the 60 barrels: 10 x 3.9375, the average over [0, 1].
             Assert.AreEqual(40, market.BuyPriceOf(0, 59));
@@ -268,10 +115,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(5, market.SellPriceOf(0, 60));
         }
 
+
         [Test]
         public void AGoodTheCityDoesNotConsume_IsPricedAgainstTheFloors()
         {
-            CityMarket market = MarketOf(new MarketGood(10, 0, 0, 0));
+            CityMarket market = CityOf(new MarketGood(10, 0, 0, 0)).Market;
             StockThresholds thresholds = market.ThresholdsOf(0);
 
             Assert.AreEqual(5, thresholds.T0, Tolerance);
@@ -285,10 +133,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(19, market.SellPriceOf(0));
         }
 
+
         [Test]
         public void ThresholdsOf_FollowTheProduction()
         {
-            CityMarket market = MarketOf(NotProduced, Efficient, Inefficient);
+            CityMarket market = CityOf(NotProduced, Efficient, Inefficient).Market;
 
             // Two barrels a day consumed; 0, 3 and 2.2 produced: T2 adds 10 days of production.
             StockThresholds notProduced = market.ThresholdsOf(0);
@@ -305,10 +154,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(102, inefficient.T3, Tolerance);
         }
 
+
         [Test]
         public void TakeAndPut_MoveWholeBarrels()
         {
-            CityMarket market = MarketOf(NotProduced);
+            CityMarket market = CityOf(NotProduced).Market;
 
             market.Take(0, 25);
             Assert.AreEqual(35, market.StockOf(0), Tolerance);
@@ -317,61 +167,39 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(335, market.StockOf(0), Tolerance);
         }
 
+
         [Test]
         public void Take_MoreThanAvailable_Throws()
         {
-            CityMarket market = MarketOf(NotProduced);
+            CityMarket market = CityOf(NotProduced).Market;
 
             Assert.Throws<ArgumentOutOfRangeException>(() => market.Take(0, 61));
             Assert.AreEqual(60, market.StockOf(0), Tolerance);
         }
 
+
         [TestCase(0)]
         [TestCase(-1)]
         public void RejectsAQuantityThatIsNotPositive(int barrels)
         {
-            CityMarket market = MarketOf(NotProduced);
+            CityMarket market = CityOf(NotProduced).Market;
 
             Assert.Throws<ArgumentOutOfRangeException>(() => market.Take(0, barrels));
             Assert.Throws<ArgumentOutOfRangeException>(() => market.Put(0, barrels));
         }
 
+
         [TestCase(-1)]
         [TestCase(1)]
         public void RejectsAGoodOutsideTheCatalogue(int good)
         {
-            CityMarket market = MarketOf(NotProduced);
+            CityMarket market = CityOf(NotProduced).Market;
 
             Assert.Throws<ArgumentOutOfRangeException>(() => market.StockOf(good));
             Assert.Throws<ArgumentOutOfRangeException>(() => market.BuyPriceOf(good));
             Assert.Throws<ArgumentOutOfRangeException>(() => market.Put(good, 1));
         }
 
-        [Test]
-        public void Changed_IsRaisedOnceByADay_ATakeAndAPut()
-        {
-            CityMarket market = MarketOf(NotProduced, Efficient);
-            int changes = 0;
-            market.Changed += () => changes++;
-
-            market.StartDay();
-            Assert.AreEqual(1, changes);
-
-            market.Take(0, 5);
-            Assert.AreEqual(2, changes);
-
-            market.Put(1, 5);
-            Assert.AreEqual(3, changes);
-        }
-
-        [Test]
-        public void AMarketWithoutGoods_IsValid()
-        {
-            CityMarket market = MarketOf();
-
-            Assert.AreEqual(0, market.GoodCount);
-            Assert.DoesNotThrow(() => market.StartDay());
-        }
 
         [Test]
         public void MarketGood_RejectsFiguresThatMakeNoSense()
@@ -389,6 +217,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(10, 2, 30, 0.1, double.NaN));
         }
 
+
         [Test]
         public void MarketGood_RefusesANegativeConsumptionOrWeight()
         {
@@ -398,6 +227,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 () => new MarketGood(10, PerClass<double>.All(1), 0, 0, 0, new PerClass<int>(0, 0, -1)));
             Assert.DoesNotThrow(() => new MarketGood(10, PerClass<double>.All(1), 0, 0, 0, new PerClass<int>(5, 4, 8)));
         }
+
 
         [Test]
         public void AUniformRate_IsTheSameForEveryClass_WithNoWeight()
@@ -410,180 +240,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(0, good.SatisfactionWeights.Poor);
         }
 
-        [Test]
-        public void DailyConsumptionOf_AddsUpTheClasses_AndLeavesOutTheBeggars()
-        {
-            // Wine, per thousand and per day: rich 7.5, wealthy 1.9, poor 0.
-            var good = new MarketGood(220, new PerClass<double>(7.5, 1.9, 0), 0, 0, 0, PerClass<int>.All(0));
-            var population = new CityPopulation(new PerClass<int>(110, 330, 660), 64, new PerClass<int>(120, 350, 700));
-            var market = new CityMarket(new[] { good }, Thresholds, Workforce, StartingDays, Pricing, DaysPerWeek, population);
-
-            Assert.AreEqual(1.452, market.DailyConsumptionOf(0), Tolerance);
-        }
-
-        [Test]
-        public void NominalWeeklyFigures_AreTheDailyOnesOverAWeek()
-        {
-            // Two barrels a day consumed, and three produced by the efficient good.
-            CityMarket market = MarketOf(NotProduced, Efficient);
-
-            Assert.AreEqual(14, market.NominalWeeklyConsumptionOf(0), Tolerance);
-            Assert.AreEqual(0, market.NominalWeeklyProductionOf(0), Tolerance);
-            Assert.AreEqual(14, market.NominalWeeklyConsumptionOf(1), Tolerance);
-            Assert.AreEqual(21, market.NominalWeeklyProductionOf(1), Tolerance);
-        }
-
-        [Test]
-        public void NominalWeeklyFigures_FollowTheDaysOfTheWeek()
-        {
-            var market = new CityMarket(new[] { Efficient }, Thresholds, Workforce, StartingDays, Pricing, 10, new CityPopulation(1000));
-
-            Assert.AreEqual(20, market.NominalWeeklyConsumptionOf(0), Tolerance);
-            Assert.AreEqual(30, market.NominalWeeklyProductionOf(0), Tolerance);
-        }
-
-        [Test]
-        public void BeforeTheFirstDay_NothingWasProducedOrConsumed()
-        {
-            CityMarket market = MarketOf(Efficient);
-
-            Assert.AreEqual(0, market.RecentProductionOf(0), Tolerance);
-            Assert.AreEqual(0, market.RecentConsumptionOf(0), Tolerance);
-        }
-
-        [Test]
-        public void RecentFigures_AreWhatTheDaysProducedAndConsumed()
-        {
-            CityMarket market = MarketOf(NotProduced, Efficient);
-
-            for (int day = 0; day < 3; day++)
-            {
-                market.StartDay();
-            }
-
-            Assert.AreEqual(0, market.RecentProductionOf(0), Tolerance);
-            Assert.AreEqual(6, market.RecentConsumptionOf(0), Tolerance);
-            Assert.AreEqual(9, market.RecentProductionOf(1), Tolerance);
-            Assert.AreEqual(6, market.RecentConsumptionOf(1), Tolerance);
-        }
-
-        [Test]
-        public void RecentProduction_IsNothingWhileAboveT3()
-        {
-            // 119 in stock: 117, 115 and 113 after the days' consumption, all above T3.
-            CityMarket market = MarketOf(Efficient);
-            market.Put(0, 59);
-
-            for (int day = 0; day < 3; day++)
-            {
-                market.StartDay();
-            }
-
-            Assert.AreEqual(0, market.RecentProductionOf(0), Tolerance);
-            Assert.AreEqual(6, market.RecentConsumptionOf(0), Tolerance);
-        }
-
-        [Test]
-        public void RecentProduction_IsNothingAboveT3()
-        {
-            CityMarket market = MarketOf(Efficient);
-            market.Put(0, 160);
-
-            market.StartDay();
-
-            Assert.AreEqual(0, market.RecentProductionOf(0), Tolerance);
-            Assert.AreEqual(2, market.RecentConsumptionOf(0), Tolerance);
-        }
-
-        [Test]
-        public void AtT3Itself_TheWorkshopStillProduces()
-        {
-            // 112 in stock, 110 once consumed: T3 itself.
-            CityMarket market = MarketOf(Efficient);
-            market.Put(0, 52);
-
-            market.StartDay();
-
-            Assert.AreEqual(113, market.StockOf(0), Tolerance);
-            Assert.AreEqual(3, market.RecentProductionOf(0), Tolerance);
-        }
-
-        [Test]
-        public void RecentConsumption_StopsAtAnEmptyStock()
-        {
-            // Three barrels in stock for two a day.
-            var market = new CityMarket(new[] { NotProduced }, Thresholds, Workforce, 1.5, Pricing, DaysPerWeek, new CityPopulation(1000));
-
-            for (int day = 0; day < 4; day++)
-            {
-                market.StartDay();
-            }
-
-            Assert.AreEqual(3, market.RecentConsumptionOf(0), Tolerance);
-        }
-
-        [Test]
-        public void RecentFigures_CoverOneWeekOnly()
-        {
-            CityMarket market = MarketOf(Efficient);
-
-            for (int day = 0; day < 10; day++)
-            {
-                market.StartDay();
-            }
-
-            Assert.AreEqual(21, market.RecentProductionOf(0), Tolerance);
-            Assert.AreEqual(14, market.RecentConsumptionOf(0), Tolerance);
-        }
-
-        [Test]
-        public void RecentFigures_DoNotCountWhatThePlayerTrades()
-        {
-            CityMarket market = MarketOf(NotProduced);
-            market.StartDay();
-
-            market.Take(0, 20);
-            market.Put(0, 50);
-
-            Assert.AreEqual(0, market.RecentProductionOf(0), Tolerance);
-            Assert.AreEqual(2, market.RecentConsumptionOf(0), Tolerance);
-        }
-
-        [Test]
-        public void RejectsMissingArguments()
-        {
-            Assert.Throws<ArgumentNullException>(() => new CityMarket(new[] { NotProduced }, null, Workforce, StartingDays, Pricing, DaysPerWeek, new CityPopulation(1000)));
-            Assert.Throws<ArgumentNullException>(() => new CityMarket(null, Thresholds, Workforce, StartingDays, Pricing, DaysPerWeek, new CityPopulation(1000)));
-            Assert.Throws<ArgumentNullException>(() => new CityMarket(new[] { NotProduced }, Thresholds, Workforce, StartingDays, null, DaysPerWeek, new CityPopulation(1000)));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new CityMarket(new[] { NotProduced }, Thresholds, Workforce, StartingDays, Pricing, 0, new CityPopulation(1000)));
-            Assert.Throws<ArgumentNullException>(() => new CityMarket(new[] { NotProduced }, Thresholds, Workforce, StartingDays, Pricing, DaysPerWeek, null));
-            Assert.Throws<ArgumentNullException>(() => new CityMarket(new[] { NotProduced }, Thresholds, null, StartingDays, Pricing, DaysPerWeek, new CityPopulation(1000)));
-        }
-
-        [Test]
-        public void WhatACityConsumes_FollowsItsInhabitants()
-        {
-            var market = new CityMarket(
-                new[] { Efficient }, Thresholds, Workforce, StartingDays, Pricing, DaysPerWeek, new CityPopulation(2500));
-
-            // Two barrels a day per thousand: five for 2 500. The workshop makes 3 whatever the size.
-            Assert.AreEqual(5, market.DailyConsumptionOf(0), Tolerance);
-            Assert.AreEqual(150, market.StockOf(0), Tolerance);
-            Assert.AreEqual(150, market.ThresholdsOf(0).T1, Tolerance);
-            Assert.AreEqual(35, market.NominalWeeklyConsumptionOf(0), Tolerance);
-            Assert.AreEqual(21, market.NominalWeeklyProductionOf(0), Tolerance);
-
-            market.StartDay();
-
-            // 150 - 5 consumed + 3 produced.
-            Assert.AreEqual(148, market.StockOf(0), Tolerance);
-        }
 
         [Test]
         public void TheFactors_AreReadOnTheCurves_AtTheGivenStock()
         {
             // Two barrels a day: T0 20, T1 60, T2 60, T3 80.
-            CityMarket market = MarketOf(NotProduced);
+            CityMarket market = CityOf(NotProduced).Market;
 
             Assert.AreEqual(4.0, market.BuyFactorAt(0, 0), Tolerance);
             Assert.AreEqual(1.25, market.BuyFactorAt(0, 40), Tolerance);
@@ -591,26 +253,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(2.0, market.SellFactorAt(0, 0), Tolerance);
             Assert.AreEqual(1.2, market.SellFactorAt(0, 40), Tolerance);
             Assert.AreEqual(1.0, market.SellFactorAt(0, 60), Tolerance);
-        }
-
-        [Test]
-        public void DailyProduction_IsTheWorkersOfTheMomentTimesTheirOutput()
-        {
-            CityMarket market = MarketOf(NotProduced, Efficient);
-
-            Assert.AreEqual(0d, market.DailyProductionOf(0), Tolerance);
-            Assert.AreEqual(3d, market.DailyProductionOf(1), Tolerance);
-            Assert.AreEqual(market.NominalWeeklyProductionOf(1) / DaysPerWeek, market.DailyProductionOf(1), Tolerance);
-        }
-
-        [Test]
-        public void TheFactorsAndTheProduction_RejectAGoodOutOfRange()
-        {
-            CityMarket market = MarketOf(NotProduced);
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => market.BuyFactorAt(1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => market.SellFactorAt(-1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => market.DailyProductionOf(1));
         }
     }
 }

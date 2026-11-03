@@ -6,7 +6,7 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// Owns the market of every city of the map and makes the cities produce and consume,
+    /// Owns every city of the map, with its market, and makes the cities produce and consume,
     /// and their populations grow or decline, every day of the world clock. Owns the player's trading posts too.
     /// </summary>
     public sealed class WorldEconomy : MonoBehaviour
@@ -16,7 +16,7 @@ namespace DarkFantasyMerchant.Game
         [SerializeField] private WorldMapView mapView;
         [SerializeField] private WorldClock worldClock;
 
-        private readonly Dictionary<CityDefinition, CityMarket> markets = new Dictionary<CityDefinition, CityMarket>();
+        private readonly Dictionary<CityDefinition, City> cities = new Dictionary<CityDefinition, City>();
         private readonly Dictionary<CityDefinition, CityGrid> grids = new Dictionary<CityDefinition, CityGrid>();
         private readonly Dictionary<CityDefinition, Harbour> harbours = new Dictionary<CityDefinition, Harbour>();
 
@@ -48,8 +48,8 @@ namespace DarkFantasyMerchant.Game
         /// <summary>The trading post the player can build in a city, on its reserved site; a null cost when it cannot be built.</summary>
         public TradingPostOffer TradingPostOffer { get; private set; }
 
-        /// <summary>The market of every city of the map, in no particular order; none before the markets exist.</summary>
-        public IEnumerable<CityMarket> Markets => markets.Values;
+        /// <summary>Every city of the map, in no particular order; none before the markets exist.</summary>
+        public IEnumerable<City> Cities => cities.Values;
 
         /// <summary>The warehouses of the player's trading posts, one per city that has one; none before the markets exist.</summary>
         public IEnumerable<Warehouse> TradingPosts => tradingPosts != null ? tradingPosts.All : Array.Empty<Warehouse>();
@@ -63,10 +63,16 @@ namespace DarkFantasyMerchant.Game
         /// <summary>Raised once every city's day has been played, with the date of the day that started.</summary>
         public event Action<GameDate> DayEnded;
 
+        /// <returns>The city in play of a city of the map, or null for another city or before the markets exist.</returns>
+        public City CityOf(CityDefinition city)
+        {
+            return city != null && cities.TryGetValue(city, out City found) ? found : null;
+        }
+
         /// <returns>The market of a city of the map, or null for another city or before the markets exist.</returns>
         public CityMarket MarketOf(CityDefinition city)
         {
-            return city != null && markets.TryGetValue(city, out CityMarket market) ? market : null;
+            return CityOf(city)?.Market;
         }
 
         /// <returns>The grid of a city's market, or null for a city without one (no usable layout) and before the markets exist.</returns>
@@ -150,9 +156,9 @@ namespace DarkFantasyMerchant.Game
             RoadOffer = buildings.CreateRoadOffer(economy, WarnUnavailable);
             TradingPostOffer = buildings.CreateTradingPostOffer(economy, WarnUnavailable);
 
-            if (!TryCreateMarkets())
+            if (!TryCreateCities())
             {
-                markets.Clear();
+                cities.Clear();
                 grids.Clear();
                 harbours.Clear();
                 tradingPosts = null;
@@ -177,7 +183,7 @@ namespace DarkFantasyMerchant.Game
             Debug.LogWarning($"BuildingsDefinition '{buildings.name}': {problem}. The player cannot build '{building.name}'.", building);
         }
 
-        private bool TryCreateMarkets()
+        private bool TryCreateCities()
         {
             try
             {
@@ -219,9 +225,9 @@ namespace DarkFantasyMerchant.Game
                         CreateHarbourOf(city, grid);
                     }
 
-                    markets[city] = grid == null
-                        ? economy.CreateMarket(city, pricing, daysPerWeek, labour, rooms, housing, social)
-                        : economy.CreateMarket(city, pricing, daysPerWeek, labour, rooms, housing, social, grid, placement);
+                    cities[city] = grid == null
+                        ? economy.CreateCity(city, pricing, daysPerWeek, labour, rooms, housing, social)
+                        : economy.CreateCity(city, pricing, daysPerWeek, labour, rooms, housing, social, grid, placement);
                 }
             }
             catch (ArgumentOutOfRangeException exception)
@@ -343,18 +349,18 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        // The city's market learns of the post first: its workshops deliver into it from the next day.
+        // The city learns of the post first: its workshops deliver into it from the next day.
         private void OnTradingPostOpened(CityDefinition city)
         {
-            MarketOf(city)?.SetPlayerTradingPost(tradingPosts.Of(city));
+            CityOf(city)?.SetPlayerTradingPost(tradingPosts.Of(city));
             TradingPostOpened?.Invoke(city);
         }
 
         private void OnDayStarted(GameDate date)
         {
-            foreach (CityMarket market in markets.Values)
+            foreach (City city in cities.Values)
             {
-                market.StartDay();
+                city.StartDay();
             }
 
             DayEnded?.Invoke(date);
