@@ -1,6 +1,7 @@
 ---
 paths:
   - "Assets/Scripts/*/Population/**"
+  - "Assets/Scripts/Core/City/**"
   - "Assets/Tests/EditMode/Population/**"
   - "Assets/Data/Buildings/**"
 ---
