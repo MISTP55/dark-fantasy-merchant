@@ -57,7 +57,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void EveryGood_IsConsumedBeforeAnyWorkshopHires()
         {
-            // The first good's workshop hires 16 workers from the beggars: 64 more poor. The
+            // The first good's workshop hires 16 workers from the beggars: 64 more housed. The
             // second good, after it in the catalogue, is still consumed by the 1 000 of the morning.
             var goods = new[] { Good, new MarketGood(10, 2, 0, 0) };
             var cityState = new City(goods, TestMarkets.Thresholds, Workforce, 0, TestMarkets.Pricing, 7,
@@ -74,7 +74,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void EveryWorkshop_DecidesOnTheThresholdsOfTheMorning()
         {
             // T0 is 10 days of 2 barrels for 1 000: 20. The first workshop hires 16 from the
-            // beggars (64 more poor), which would raise the second good's T0 to 21.28; its stock
+            // beggars (64 more housed), which would raise the second good's T0 to 21.28; its stock
             // of 21 stays above the T0 of the morning, so it hires 8 (up to T1), not 16.
             City cityState = TwoGoodsCity(0, new CityPopulation(1000, 100, 1100));
             cityState.Market.Put(1, 23);
@@ -203,14 +203,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void OverManyDays_TheHousedAreFourPerWorkerOrReserve_WithinTheRoom()
         {
             // A workshop under 30 (it leaks), one of 60, and a good the city does not produce.
-            // 60 workers spread over two workshops: 20 (cut) and 30. 200 housed (20 rich, 60 wealthy, 120 poor), 11 beggars, 200 places.
+            // 60 workers spread over two workshops: 20 (cut) and 30. 200 housed, 11 beggars, 200 places.
             MarketGood[] goods = { new MarketGood(10, 2, 20, 0.1), new MarketGood(10, 2, 60, 0.1), new MarketGood(10, 2, 0, 0) };
             var workforce = new WorkforceRule(16, 8, 4, 1, 1, 60);
             int startingWorkers = City.StartingWorkforceOf(goods, workforce);
-            CityPopulation population = CityPopulation.AtStart(startingWorkers, 4, 4d / 17d, new PerClass<int>(20, 60, 120));
+            CityPopulation population = CityPopulation.AtStart(startingWorkers, 4, 4d / 17d, 100);
             var cityState = new City(goods, TestMarkets.Thresholds, workforce, 7, TestMarkets.Pricing, 7,
                 population, TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
-            TestMarkets.AddPlayerHouse(cityState, SocialClass.Poor, 100);
+            TestMarkets.AddPlayerHouse(cityState, 100);
             TestMarkets.AddPlayerWorkshop(cityState, 0, 30);
 
             int leaks = 0;
@@ -378,10 +378,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int changes = 0;
             cityState.Changed += () => changes++;
 
-            TestMarkets.AddPlayerHouse(cityState, SocialClass.Poor, 100);
+            TestMarkets.AddPlayerHouse(cityState, 100);
 
             Assert.AreEqual(1100, cityState.Population.Room);
-            Assert.AreEqual(1, cityState.PlayerHousesOf(SocialClass.Poor));
+            Assert.AreEqual(1, cityState.PlayerHouses);
             Assert.AreEqual(1, changes);
         }
 
@@ -430,7 +430,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             City cityState = CityWithoutLabour(100, new CityPopulation(1000, 50, 1100));
             TestMarkets.AddPlayerWorkshop(cityState, 0, 30);
-            TestMarkets.AddPlayerHouse(cityState, SocialClass.Poor, 100);
+            TestMarkets.AddPlayerHouse(cityState, 100);
 
             cityState.StartDay();
 

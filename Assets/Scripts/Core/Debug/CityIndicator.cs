@@ -4,12 +4,8 @@ namespace DarkFantasyMerchant.Core
     public enum CityIndicator
     {
         Inhabitants,
-        Rich,
-        Wealthy,
-        Poor,
-        RichRoom,
-        WealthyRoom,
-        PoorRoom,
+        Housed,
+        HousedRoom,
         Beggars,
         BeggarTarget,
         CityHouses,

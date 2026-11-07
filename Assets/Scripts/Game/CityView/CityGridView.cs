@@ -496,7 +496,7 @@ namespace DarkFantasyMerchant.Game
         {
             if (kind.IsHouse)
             {
-                return HouseColors.Of(kind.HousedClass);
+                return HouseColors.House;
             }
 
             if (kind.IsWorkshop)

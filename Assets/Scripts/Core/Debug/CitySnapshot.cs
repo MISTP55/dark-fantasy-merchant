@@ -48,12 +48,8 @@ namespace DarkFantasyMerchant.Core
 
             CityPopulation population = city.Population;
             Set(into, CityIndicator.Inhabitants, population.Inhabitants);
-            Set(into, CityIndicator.Rich, population.CountOf(SocialClass.Rich));
-            Set(into, CityIndicator.Wealthy, population.CountOf(SocialClass.Wealthy));
-            Set(into, CityIndicator.Poor, population.CountOf(SocialClass.Poor));
-            Set(into, CityIndicator.RichRoom, population.RoomOf(SocialClass.Rich));
-            Set(into, CityIndicator.WealthyRoom, population.RoomOf(SocialClass.Wealthy));
-            Set(into, CityIndicator.PoorRoom, population.RoomOf(SocialClass.Poor));
+            Set(into, CityIndicator.Housed, population.Housed);
+            Set(into, CityIndicator.HousedRoom, population.Room);
             Set(into, CityIndicator.Beggars, population.Beggars);
             Set(into, CityIndicator.BeggarTarget, city.BeggarTarget);
             Set(into, CityIndicator.CityHouses, city.CityHouses);

@@ -33,8 +33,8 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentNullException(nameof(population));
             }
 
-            int housed = population.CountOf(SocialClass.Poor);
-            int excess = housed - population.RoomOf(SocialClass.Poor);
+            int housed = population.Housed;
+            int excess = housed - population.Room;
             int leaving = excess > 0 ? excess / ExcessDivisor + 1 : 0;
 
             return Math.Max(0, Math.Min(leaving, housed - 1));

@@ -13,7 +13,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void OfferText_GivesTheNameAndTheGold()
         {
-            Assert.AreEqual("Maison de pauvres\n5 000 or", BuildBarController.OfferText("Maison de pauvres", 5000));
+            Assert.AreEqual("Maison d'ouvriers\n5 000 or", BuildBarController.OfferText("Maison d'ouvriers", 5000));
         }
 
         [Test]

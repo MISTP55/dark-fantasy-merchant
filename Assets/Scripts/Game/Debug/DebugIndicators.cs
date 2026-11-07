@@ -34,7 +34,7 @@ namespace DarkFantasyMerchant.Game
 
         public string Name { get; }
 
-        /// <summary>The figures of every city add up into the world's: not a satisfaction nor a price.</summary>
+        /// <summary>The figures of every city add up into the world's: not a price.</summary>
         public bool AddsUp { get; }
     }
 
@@ -45,12 +45,8 @@ namespace DarkFantasyMerchant.Game
         public static IReadOnlyList<DebugIndicator> All { get; } = Sorted(new[]
         {
             new DebugIndicator(CityIndicator.Inhabitants, "Habitants", true),
-            new DebugIndicator(CityIndicator.Rich, "Riches", true),
-            new DebugIndicator(CityIndicator.Wealthy, "Aisés", true),
-            new DebugIndicator(CityIndicator.Poor, "Pauvres", true),
-            new DebugIndicator(CityIndicator.RichRoom, "Place des riches", true),
-            new DebugIndicator(CityIndicator.WealthyRoom, "Place des aisés", true),
-            new DebugIndicator(CityIndicator.PoorRoom, "Place des pauvres", true),
+            new DebugIndicator(CityIndicator.Housed, "Ouvriers logés", true),
+            new DebugIndicator(CityIndicator.HousedRoom, "Place des ouvriers", true),
             new DebugIndicator(CityIndicator.Beggars, "Mendiants", true),
             new DebugIndicator(CityIndicator.BeggarTarget, "Cible des mendiants", true),
             new DebugIndicator(CityIndicator.CityHouses, "Maisons bâties par la ville", true),

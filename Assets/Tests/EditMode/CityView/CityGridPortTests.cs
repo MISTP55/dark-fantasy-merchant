@@ -159,7 +159,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             grid.BuildingConnected += connected.Add;
 
             grid.Place(BuildingKind.Road(), BuildingOwner.City, new Footprint(1, 1), At(1, 6));
-            PlacedBuilding house = grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, new Footprint(2, 1), At(1, 5));
+            PlacedBuilding house = grid.Place(BuildingKind.House(), BuildingOwner.City, new Footprint(2, 1), At(1, 5));
 
             Assert.IsFalse(grid.IsNetworkRoad(new Vector2Int(1, 6)));
             Assert.IsFalse(grid.JoinsNetwork(new Vector2Int(2, 6)));

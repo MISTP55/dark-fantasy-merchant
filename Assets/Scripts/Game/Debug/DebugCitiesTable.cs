@@ -8,7 +8,7 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// The table of the cities debug panel: one row per city with its population,
-    /// its beggars over the number they tend to, its rich, wealthy and poor over the room of their houses, how much it has grown or declined since the game started and, for every good, its stock and what it produces, consumes, takes as inputs and
+    /// its beggars over the number they tend to, its housed over the room of the houses, how much it has grown or declined since the game started and, for every good, its stock and what it produces, consumes, takes as inputs and
     /// gains in a week, the nominal figure first and the one of the last days in brackets,
     /// the workers of its workshop over their maximum and its reserve,
     /// and a last row with the total of every column. Follows the markets while it is shown, writing what changed at most once a frame.
@@ -34,7 +34,7 @@ namespace DarkFantasyMerchant.Game
         private const string NameCellClass = "debug-cities__cell--name";
         private const string PopulationCellClass = "debug-cities__cell--population";
         private const string BeggarsCellClass = "debug-cities__cell--beggars";
-        private const string ClassCellClass = "debug-cities__cell--class";
+        private const string HousedCellClass = "debug-cities__cell--housed";
         private const string GrowthSinceStartCellClass = "debug-cities__cell--growth-since-start";
         private const string StockCellClass = "debug-cities__cell--stock";
         private const string FigureCellClass = "debug-cities__cell--figure";
@@ -66,9 +66,7 @@ namespace DarkFantasyMerchant.Game
             public string Name;
             public Label Population;
             public Label Beggars;
-            public Label Rich;
-            public Label Wealthy;
-            public Label Poor;
+            public Label Housed;
             public Label GrowthSinceStart;
             public City City;
             public GoodCells[] Goods;
@@ -85,9 +83,7 @@ namespace DarkFantasyMerchant.Game
         private readonly List<Row> rows = new List<Row>();
         private readonly Label totalPopulation;
         private readonly Label totalBeggars;
-        private readonly Label totalRich;
-        private readonly Label totalWealthy;
-        private readonly Label totalPoor;
+        private readonly Label totalHoused;
         private readonly Label totalGrowthSinceStart;
         private readonly GoodCells[] totalGoods;
 
@@ -154,9 +150,7 @@ namespace DarkFantasyMerchant.Game
             AddLabel(totalRow, NameCellClass).text = "Total";
             totalPopulation = AddLabel(totalRow, PopulationCellClass);
             totalBeggars = AddLabel(totalRow, BeggarsCellClass);
-            totalRich = AddLabel(totalRow, ClassCellClass);
-            totalWealthy = AddLabel(totalRow, ClassCellClass);
-            totalPoor = AddLabel(totalRow, ClassCellClass);
+            totalHoused = AddLabel(totalRow, HousedCellClass);
             totalGrowthSinceStart = AddLabel(totalRow, GrowthSinceStartCellClass);
             totalContainer.Add(totalRow);
 
@@ -207,9 +201,9 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// A class's inhabitants over the room of its houses: "110 / 120", or "1 108 / 1 400" for a total.
+        /// The housed over the room of the houses: "110 / 120", or "1 108 / 1 400" for a total.
         /// </summary>
-        public static string FormatClass(long count, long room)
+        public static string FormatHoused(long count, long room)
         {
             return $"{NumberText.Format(count)} / {NumberText.Format(room)}";
         }
@@ -250,9 +244,7 @@ namespace DarkFantasyMerchant.Game
                 Name = cityName,
                 Population = AddLabel(element, PopulationCellClass),
                 Beggars = AddLabel(element, BeggarsCellClass),
-                Rich = AddLabel(element, ClassCellClass),
-                Wealthy = AddLabel(element, ClassCellClass),
-                Poor = AddLabel(element, ClassCellClass),
+                Housed = AddLabel(element, HousedCellClass),
                 GrowthSinceStart = AddLabel(element, GrowthSinceStartCellClass),
                 City = city,
                 Goods = AddGoodCells(goodElement, goodCount),
@@ -369,9 +361,7 @@ namespace DarkFantasyMerchant.Game
 
             row.Population.text = NumberText.Format(city.Population.Inhabitants);
             row.Beggars.text = FormatBeggars(city.Population.Beggars, city.BeggarTarget);
-            row.Rich.text = FormatClassOf(city.Population, SocialClass.Rich);
-            row.Wealthy.text = FormatClassOf(city.Population, SocialClass.Wealthy);
-            row.Poor.text = FormatClassOf(city.Population, SocialClass.Poor);
+            row.Housed.text = FormatHoused(city.Population.Housed, city.Population.Room);
             row.GrowthSinceStart.text = FormatRate(city.Population.GrowthSinceStart);
 
             for (int column = 0; column < row.Goods.Length; column++)
@@ -406,32 +396,25 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        private static string FormatClassOf(CityPopulation population, SocialClass housedClass)
-        {
-            return FormatClass(population.CountOf(housedClass), population.RoomOf(housedClass));
-        }
-
-        // The classes of every city together.
-        private string FormatClassTotal(SocialClass housedClass)
+        // The housed of every city together.
+        private string FormatHousedTotal()
         {
             long count = 0;
             long room = 0;
 
             foreach (Row row in rows)
             {
-                count += row.City.Population.CountOf(housedClass);
-                room += row.City.Population.RoomOf(housedClass);
+                count += row.City.Population.Housed;
+                room += row.City.Population.Room;
             }
 
-            return FormatClass(count, room);
+            return FormatHoused(count, room);
         }
 
         // Summed again at most once a frame: a handful of cities.
         private void WriteTotals()
         {
-            totalRich.text = FormatClassTotal(SocialClass.Rich);
-            totalWealthy.text = FormatClassTotal(SocialClass.Wealthy);
-            totalPoor.text = FormatClassTotal(SocialClass.Poor);
+            totalHoused.text = FormatHousedTotal();
 
             long inhabitants = 0;
             long startingInhabitants = 0;
@@ -573,9 +556,7 @@ namespace DarkFantasyMerchant.Game
             AddLabel(columns, NameCellClass).text = "Ville";
             AddLabel(columns, PopulationCellClass).text = "Population";
             AddLabel(columns, BeggarsCellClass).text = "Mendiants";
-            AddLabel(columns, ClassCellClass).text = "Riches";
-            AddLabel(columns, ClassCellClass).text = "Aisés";
-            AddLabel(columns, ClassCellClass).text = "Pauvres";
+            AddLabel(columns, HousedCellClass).text = "Ouvriers logés";
             AddLabel(columns, GrowthSinceStartCellClass).text = "Croiss. totale";
 
             VisualElement goodGroups = NewRow(HeaderRowClass);

@@ -5,17 +5,14 @@ namespace DarkFantasyMerchant.Game
     /// <summary>A house the player can build, as the city panel shows it. A null cost: it cannot be built.</summary>
     public sealed class HouseOffer
     {
-        public HouseOffer(SocialClass housedClass, string name, int room, BuildingCost cost, string costText, Footprint footprint = default)
+        public HouseOffer(string name, int room, BuildingCost cost, string costText, Footprint footprint = default)
         {
             Footprint = footprint;
-            HousedClass = housedClass;
             Name = name;
             Room = room;
             Cost = cost;
             CostText = costText;
         }
-
-        public SocialClass HousedClass { get; }
 
         public string Name { get; }
 

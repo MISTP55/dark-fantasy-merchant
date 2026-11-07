@@ -6,16 +6,16 @@ namespace DarkFantasyMerchant.Tests.EditMode
 {
     public class CityPopulationTests
     {
-        // The houses: 40 rich, 70 wealthy, 140 poor.
-        private static PerClass<int> HouseRooms => new PerClass<int>(40, 70, 140);
+        // A house shelters 140.
+        private const int HouseRoom = 140;
 
         [TestCase(252, 1008, 59, 1100)] // 4 × W, 4 × W ÷ 17, houses rounded up
         [TestCase(250, 1000, 58, 1000)]
-        [TestCase(17, 68, 4, 300)]
+        [TestCase(17, 68, 4, 100)]
         [TestCase(0, 0, 0, 0)]
-        public void AtStart_SplitsTheWorkersFamilies(int workers, int housed, int beggars, int room)
+        public void AtStart_HousesTheWorkersFamilies(int workers, int housed, int beggars, int room)
         {
-            CityPopulation population = CityPopulation.AtStart(workers, 4, 4d / 17d, PerClass<int>.All(100));
+            CityPopulation population = CityPopulation.AtStart(workers, 4, 4d / 17d, 100);
             Assert.AreEqual(housed, population.Housed);
             Assert.AreEqual(beggars, population.Beggars);
             Assert.AreEqual(room, population.Room);
@@ -24,44 +24,30 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void AtStart_SplitsTheHousedIntoClasses()
+        public void AtStart_HousesEveryFamily_InWholeHouses()
         {
-            CityPopulation population = CityPopulation.AtStart(275, 4, 4d / 17d, HouseRooms);
+            CityPopulation population = CityPopulation.AtStart(250, 4, 4d / 17d, HouseRoom);
 
-            Assert.AreEqual(110, population.CountOf(SocialClass.Rich));
-            Assert.AreEqual(330, population.CountOf(SocialClass.Wealthy));
-            Assert.AreEqual(660, population.CountOf(SocialClass.Poor));
-            Assert.AreEqual(64, population.Beggars);
-            Assert.AreEqual(120, population.RoomOf(SocialClass.Rich));
-            Assert.AreEqual(350, population.RoomOf(SocialClass.Wealthy));
-            Assert.AreEqual(700, population.RoomOf(SocialClass.Poor));
-            Assert.AreEqual(1100, population.Housed);
-            Assert.AreEqual(1170, population.Room);
+            Assert.AreEqual(1000, population.Housed);
+            Assert.AreEqual(58, population.Beggars);
+            Assert.AreEqual(1120, population.Room);
         }
 
         [Test]
         public void RoomAtStart_IsWholeHouses()
         {
-            PerClass<int> room = CityPopulation.RoomAtStart(275, 4, HouseRooms);
-
-            Assert.AreEqual(120, room.Rich);
-            Assert.AreEqual(350, room.Wealthy);
-            Assert.AreEqual(700, room.Poor);
+            Assert.AreEqual(1120, CityPopulation.RoomAtStart(250, 4, HouseRoom));
+            Assert.AreEqual(0, CityPopulation.RoomAtStart(0, 4, HouseRoom));
         }
 
         [Test]
         public void AtStart_WithRoom_KeepsTheInhabitants_AndTakesTheRoom()
         {
-            var given = new PerClass<int>(40, 70, 280);
-            CityPopulation population = CityPopulation.AtStart(275, 4, 4d / 17d, HouseRooms, given);
+            CityPopulation population = CityPopulation.AtStart(275, 4, 4d / 17d, HouseRoom, 280);
 
-            Assert.AreEqual(110, population.CountOf(SocialClass.Rich));
-            Assert.AreEqual(330, population.CountOf(SocialClass.Wealthy));
-            Assert.AreEqual(660, population.CountOf(SocialClass.Poor));
+            Assert.AreEqual(1100, population.Housed);
             Assert.AreEqual(64, population.Beggars);
-            Assert.AreEqual(40, population.RoomOf(SocialClass.Rich));
-            Assert.AreEqual(70, population.RoomOf(SocialClass.Wealthy));
-            Assert.AreEqual(280, population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(280, population.Room);
         }
 
         [Test]
@@ -70,28 +56,27 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var population = new CityPopulation(2100);
 
             Assert.AreEqual(2100, population.Housed);
-            Assert.AreEqual(2100, population.CountOf(SocialClass.Poor));
-            Assert.AreEqual(0, population.CountOf(SocialClass.Rich));
-            Assert.AreEqual(0, population.CountOf(SocialClass.Wealthy));
             Assert.AreEqual(0, population.Beggars);
             Assert.AreEqual(2100, population.Room);
-            Assert.AreEqual(2100, population.RoomOf(SocialClass.Poor));
             Assert.AreEqual(2100, population.Inhabitants);
-            Assert.AreEqual(0, population.FreeRoomOf(SocialClass.Poor));
+            Assert.AreEqual(0, population.FreeRoom);
         }
 
-        [Test] public void FreeRoom_IsNeverNegative() => Assert.AreEqual(0, new CityPopulation(1000, 0, 800).FreeRoomOf(SocialClass.Poor));
+        [Test]
+        public void FreeRoom_IsWhatIsLeft_NeverNegative()
+        {
+            Assert.AreEqual(100, new CityPopulation(900, 0, 1000).FreeRoom);
+            Assert.AreEqual(0, new CityPopulation(1000, 0, 800).FreeRoom);
+        }
 
         [Test]
-        public void Hire_TurnsBeggarsIntoPoor()
+        public void Hire_TurnsBeggarsIntoHoused()
         {
-            var population = new CityPopulation(new PerClass<int>(10, 20, 100), 20, HouseRooms);
+            var population = new CityPopulation(130, 20, 200);
             population.Hire(2, 4);
 
             Assert.AreEqual(12, population.Beggars);
-            Assert.AreEqual(108, population.CountOf(SocialClass.Poor));
-            Assert.AreEqual(10, population.CountOf(SocialClass.Rich));
-            Assert.AreEqual(20, population.CountOf(SocialClass.Wealthy));
+            Assert.AreEqual(138, population.Housed);
             Assert.Throws<ArgumentOutOfRangeException>(() => population.Hire(4, 4));
         }
 
@@ -106,23 +91,38 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void SendToBeggars_SharesTheFamiliesByCount()
+        public void SendToBeggars_TakesEveryFamilyAsked_WhenItCan()
         {
-            var population = new CityPopulation(new PerClass<int>(11, 31, 61), 0, HouseRooms);
+            var population = new CityPopulation(100, 0, 200);
 
-            Assert.AreEqual(0, population.SendToBeggars(1, 4));
-            Assert.AreEqual(11, population.CountOf(SocialClass.Rich));
-            Assert.AreEqual(30, population.CountOf(SocialClass.Wealthy));
-            Assert.AreEqual(58, population.CountOf(SocialClass.Poor));
-            Assert.AreEqual(4, population.Beggars);
+            Assert.AreEqual(0, population.SendToBeggars(5, 4));
+            Assert.AreEqual(80, population.Housed);
+            Assert.AreEqual(20, population.Beggars);
+        }
+
+        [Test]
+        public void SendToBeggars_NeverTakesTheLastHousedInhabitant()
+        {
+            // Two families out of nine: one is left.
+            var population = new CityPopulation(9, 0, 200);
+
+            Assert.AreEqual(0, population.SendToBeggars(2, 4));
+            Assert.AreEqual(1, population.Housed);
+            Assert.AreEqual(8, population.Beggars);
+
+            var whole = new CityPopulation(8, 0, 200);
+
+            Assert.AreEqual(1, whole.SendToBeggars(2, 4));
+            Assert.AreEqual(4, whole.Housed);
+            Assert.AreEqual(4, whole.Beggars);
         }
 
         [Test]
         public void SendToBeggars_KeepsTheWorkersWhoseFamiliesCannotBeTaken()
         {
-            // No class goes below one inhabitant: the four cannot all come, so the worker stays
-            // with his whole family, still four housed per worker.
-            var population = new CityPopulation(new PerClass<int>(1, 1, 2), 0, HouseRooms);
+            // The housed never fall to nothing: the four cannot all come, so the worker stays with his whole
+            // family, still four housed per worker.
+            var population = new CityPopulation(4, 0, 200);
 
             Assert.AreEqual(1, population.SendToBeggars(1, 4));
             Assert.AreEqual(4, population.Housed);
@@ -133,36 +133,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void SendToBeggars_SendsOnlyWholeFamilies()
-        {
-            // Two workers' families out of three classes near one: whatever is kept, the housed
-            // who are left are whole families.
-            var population = new CityPopulation(new PerClass<int>(2, 3, 4), 0, HouseRooms);
-
-            int kept = population.SendToBeggars(2, 4);
-
-            Assert.AreEqual(9 - 4 * (2 - kept), population.Housed);
-            Assert.AreEqual(4 * (2 - kept), population.Beggars);
-        }
-
-        [Test]
         public void Leave_TakesInhabitantsOutOfTheCity()
         {
-            var population = new CityPopulation(new PerClass<int>(10, 20, 100), 5, HouseRooms);
+            var population = new CityPopulation(130, 5, 200);
 
-            population.Leave(SocialClass.Poor, 8);
-            Assert.AreEqual(92, population.CountOf(SocialClass.Poor));
+            population.Leave(8);
+            Assert.AreEqual(122, population.Housed);
             Assert.AreEqual(127, population.Inhabitants);
             Assert.AreEqual(5, population.Beggars);
         }
 
         [Test]
-        public void Leave_MoreThanTheClassHas_Throws()
+        public void Leave_MoreThanTheHoused_Throws()
         {
-            var population = new CityPopulation(new PerClass<int>(10, 20, 100), 0, HouseRooms);
+            var population = new CityPopulation(130, 0, 200);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => population.Leave(SocialClass.Wealthy, 21));
-            Assert.Throws<ArgumentOutOfRangeException>(() => population.Leave(SocialClass.Poor, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => population.Leave(131));
+            Assert.Throws<ArgumentOutOfRangeException>(() => population.Leave(-1));
         }
 
         [Test]
@@ -175,15 +162,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void AddRoom_AddsToTheClassOnly()
+        public void AddRoom_AddsToTheRoom()
         {
             var population = new CityPopulation(1000);
-            population.AddRoom(SocialClass.Rich, 40);
+            population.AddRoom(140);
 
-            Assert.AreEqual(40, population.RoomOf(SocialClass.Rich));
-            Assert.AreEqual(1000, population.RoomOf(SocialClass.Poor));
-            Assert.AreEqual(1040, population.Room);
-            Assert.Throws<ArgumentOutOfRangeException>(() => population.AddRoom(SocialClass.Poor, 0));
+            Assert.AreEqual(1140, population.Room);
+            Assert.Throws<ArgumentOutOfRangeException>(() => population.AddRoom(0));
         }
 
         [Test]
@@ -193,13 +178,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.Throws<ArgumentOutOfRangeException>(() => new CityPopulation(-1, 0, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => new CityPopulation(0, -1, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => new CityPopulation(0, 0, -1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new CityPopulation(new PerClass<int>(0, -1, 0), 0, HouseRooms));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new CityPopulation(new PerClass<int>(0, 0, 0), 0, new PerClass<int>(-1, 0, 0)));
-            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(-1, 4, 0.2, HouseRooms));
-            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(10, 0, 0.2, HouseRooms));
-            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(10, 4, 0.2, new PerClass<int>(40, 0, 140)));
-            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(10, 4, double.NaN, HouseRooms));
-            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(10, 4, -0.1, HouseRooms));
+            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(-1, 4, 0.2, HouseRoom));
+            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(10, 0, 0.2, HouseRoom));
+            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(10, 4, 0.2, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(10, 4, double.NaN, HouseRoom));
+            Assert.Throws<ArgumentOutOfRangeException>(() => CityPopulation.AtStart(10, 4, -0.1, HouseRoom));
         }
     }
 }

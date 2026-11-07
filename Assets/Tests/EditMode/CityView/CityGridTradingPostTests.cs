@@ -78,7 +78,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void CanReserveTradingPostSite_RefusesWaterBuildingOffGridAndSecondSite()
         {
             CityGrid grid = Grid(new[] { new Vector2Int(2, 2) });
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, House, At(8, 8));
+            grid.Place(BuildingKind.House(), BuildingOwner.City, House, At(8, 8));
 
             Assert.IsFalse(grid.CanReserveTradingPostSite(Post, At(1, 1)), "water");
             Assert.IsFalse(grid.CanReserveTradingPostSite(Post, At(7, 7)), "building");
@@ -183,7 +183,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityGrid grid = Grid();
             grid.Place(BuildingKind.TownHall(), BuildingOwner.City, TownHall, At(1, 5));
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, House, At(9, 5));
+            grid.Place(BuildingKind.House(), BuildingOwner.City, House, At(9, 5));
             grid.ReserveTradingPostSite(new Footprint(3, 8), At(5, 2));
             var roads = new List<Vector2Int>();
             var houseCells = new List<Vector2Int> { new Vector2Int(9, 5), new Vector2Int(10, 5) };

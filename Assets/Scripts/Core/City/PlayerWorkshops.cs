@@ -150,7 +150,7 @@ namespace DarkFantasyMerchant.Core
         // while it is connected.
         public void FillVacancies(CityPopulation population, LabourRule labour)
         {
-            int fillable = labour.VacanciesFillable(population.Beggars, population.FreeRoomOf(SocialClass.Poor));
+            int fillable = labour.VacanciesFillable(population.Beggars, population.FreeRoom);
 
             foreach (Workshop workshop in workshops)
             {

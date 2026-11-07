@@ -17,8 +17,6 @@ namespace DarkFantasyMerchant.Game
         [Serializable]
         public sealed class StartingHouse
         {
-            [SerializeField] public SocialClass socialClass;
-
             [Tooltip("The covered cell of smallest x and y.")]
             [SerializeField] public Vector2Int origin;
 
@@ -28,9 +26,8 @@ namespace DarkFantasyMerchant.Game
             {
             }
 
-            public StartingHouse(SocialClass socialClass, Vector2Int origin, BuildingOrientation orientation)
+            public StartingHouse(Vector2Int origin, BuildingOrientation orientation)
             {
-                this.socialClass = socialClass;
                 this.origin = origin;
                 this.orientation = orientation;
             }
@@ -275,11 +272,11 @@ namespace DarkFantasyMerchant.Game
 
             foreach (StartingHouse house in startingHouses)
             {
-                HouseDefinition definition = buildings.HouseOf(house.socialClass);
+                HouseDefinition definition = buildings.House;
 
                 if (definition == null || definition.FootprintSize.x < 1 || definition.FootprintSize.y < 1)
                 {
-                    problem = $"the {house.socialClass} house at ({house.origin.x}, {house.origin.y}) has no house with a footprint in the buildings";
+                    problem = $"the house at ({house.origin.x}, {house.origin.y}) has no house with a footprint in the buildings";
                     return false;
                 }
 
@@ -287,11 +284,11 @@ namespace DarkFantasyMerchant.Game
 
                 if (!created.CanPlace(definition.Footprint, place))
                 {
-                    problem = $"the {house.socialClass.ToString().ToLowerInvariant()} house at ({house.origin.x}, {house.origin.y}) cannot stand: it is outside the grid or on a forbidden cell or another house";
+                    problem = $"the house at ({house.origin.x}, {house.origin.y}) cannot stand: it is outside the grid or on a forbidden cell or another house";
                     return false;
                 }
 
-                created.Place(BuildingKind.House(house.socialClass), BuildingOwner.City, definition.Footprint, place);
+                created.Place(BuildingKind.House(), BuildingOwner.City, definition.Footprint, place);
             }
 
             if (!created.TryValidateWalls(out problem) || !HarbourPaths.TryValidate(created, out problem))
@@ -333,7 +330,7 @@ namespace DarkFantasyMerchant.Game
             {
                 if (building.Kind.IsHouse)
                 {
-                    houses.Add(new StartingHouse(building.Kind.HousedClass, building.Place.Origin, building.Place.Orientation));
+                    houses.Add(new StartingHouse(building.Place.Origin, building.Place.Orientation));
                 }
                 else if (building.Kind.IsRoad)
                 {

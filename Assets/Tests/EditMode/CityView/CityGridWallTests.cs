@@ -178,7 +178,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // A wall of houses between the town hall and the cells on its left.
             for (int y = 2; y <= 7; y++)
             {
-                grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, new Footprint(1, 1), At(3, y));
+                grid.Place(BuildingKind.House(), BuildingOwner.City, new Footprint(1, 1), At(3, y));
             }
 
             Assert.IsTrue(grid.IsEnclosed(new Vector2Int(2, 5)));
@@ -231,7 +231,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TryValidateWalls_Passes_WhenEverythingIsInside()
         {
             CityGrid grid = Walled();
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, House, At(2, 2));
+            grid.Place(BuildingKind.House(), BuildingOwner.City, House, At(2, 2));
 
             Assert.IsTrue(grid.TryValidateWalls(out string problem), problem);
             Assert.IsNull(problem);
@@ -241,7 +241,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TryValidateWalls_NamesTheBuildingOutside()
         {
             CityGrid grid = Walled();
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, new Footprint(1, 1), At(0, 3));
+            grid.Place(BuildingKind.House(), BuildingOwner.City, new Footprint(1, 1), At(0, 3));
 
             Assert.IsFalse(grid.TryValidateWalls(out string problem));
             StringAssert.Contains("house", problem);

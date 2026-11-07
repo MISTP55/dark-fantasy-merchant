@@ -18,9 +18,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         // Consumed by no one and produced nowhere: only the houses take them.
         private static MarketGood Material => new MarketGood(10, 0, 0, 0);
 
-        // A house of 140 places for the poor that takes 10 timber and 10 metal, built above 95 % of the room.
-        private static CityHousingRule PoorHousing => new CityHousingRule(
-            SocialClass.Poor,
+        // A house of 140 places that takes 10 timber and 10 metal, built above 95 % of the room.
+        private static CityHousingRule Housing => new CityHousingRule(
             0.95,
             140,
             new[] { new MaterialCost(Timber, 10), new MaterialCost(Metal, 10) },
@@ -53,13 +52,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 7,
                 population,
                 TestMarkets.Labour,
-                new[] { PoorHousing },
+                Housing,
                 null,
                 grid,
                 placement ?? new RoadsidePlacement(new System.Random(1)));
         }
 
-        // 100 poor in room for 1 000, and 400 beggars ready to be hired.
+        // 100 housed in room for 1 000, and 400 beggars ready to be hired.
         private static CityPopulation Roomy => new CityPopulation(100, 400, 1000);
 
         [Test]
@@ -68,10 +67,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityGrid grid = TestMarkets.GridWithTownHall(12, 12);
             City city = NewCity(grid, Roomy);
 
-            city.AddPlayerHouse(SocialClass.Poor, 77, HouseFootprint, At(8, 8));
+            city.AddPlayerHouse(77, HouseFootprint, At(8, 8));
 
-            Assert.AreEqual(1000, city.Population.RoomOf(SocialClass.Poor));
-            Assert.AreEqual(1, city.PlayerHousesOf(SocialClass.Poor));
+            Assert.AreEqual(1000, city.Population.Room);
+            Assert.AreEqual(1, city.PlayerHouses);
             Assert.IsFalse(grid.BuildingAt(new Vector2Int(8, 8)).IsConnected);
         }
 
@@ -80,19 +79,19 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityGrid grid = TestMarkets.GridWithTownHall(12, 12);
             City city = NewCity(grid, Roomy);
-            city.AddPlayerHouse(SocialClass.Poor, 77, HouseFootprint, At(5, 0));
+            city.AddPlayerHouse(77, HouseFootprint, At(5, 0));
             int changes = 0;
             city.Changed += () => changes++;
 
             city.AddPlayerRoads(Cells((3, 0), (4, 0)));
 
-            Assert.AreEqual(1077, city.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(1077, city.Population.Room);
             Assert.AreEqual(1, changes);
             Assert.AreEqual(BuildingOwner.Player, grid.BuildingAt(new Vector2Int(4, 0)).Owner);
 
             city.AddPlayerRoads(Cells((4, 1), (5, 1)));
 
-            Assert.AreEqual(1077, city.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(1077, city.Population.Room);
         }
 
         [Test]
@@ -102,23 +101,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = NewCity(grid, Roomy);
             city.AddPlayerRoads(Cells((3, 0)));
 
-            city.AddPlayerHouse(SocialClass.Poor, 77, HouseFootprint, At(4, 0));
+            city.AddPlayerHouse(77, HouseFootprint, At(4, 0));
 
-            Assert.AreEqual(1077, city.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(1077, city.Population.Room);
         }
 
         [Test]
         public void StartingHouseUnconnected_GetsTheRoomOfItsClassRuleWhenConnected()
         {
             CityGrid grid = TestMarkets.GridWithTownHall(12, 12);
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, HouseFootprint, At(5, 0));
+            grid.Place(BuildingKind.House(), BuildingOwner.City, HouseFootprint, At(5, 0));
             City city = NewCity(grid, Roomy);
 
-            Assert.AreEqual(1000, city.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(1000, city.Population.Room);
 
             city.AddPlayerRoads(Cells((3, 0), (4, 0)));
 
-            Assert.AreEqual(1140, city.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(1140, city.Population.Room);
         }
 
         [Test]
@@ -126,21 +125,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityGrid grid = TestMarkets.GridWithTownHall(12, 12);
             grid.PlaceRoads(Cells((3, 0)), BuildingOwner.City);
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, HouseFootprint, At(4, 0));
+            grid.Place(BuildingKind.House(), BuildingOwner.City, HouseFootprint, At(4, 0));
             City city = NewCity(grid, Roomy);
 
             city.AddPlayerRoads(Cells((5, 0)));
 
-            Assert.AreEqual(1000, city.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(1000, city.Population.Room);
         }
 
         [Test]
-        public void StartingHouseUnconnected_OfAClassWithoutHousingRule_Throws()
+        public void StartingHouseUnconnected_WithoutHousingRule_Throws()
         {
             CityGrid grid = TestMarkets.GridWithTownHall(12, 12);
-            grid.Place(BuildingKind.House(SocialClass.Rich), BuildingOwner.City, HouseFootprint, At(5, 0));
+            grid.Place(BuildingKind.House(), BuildingOwner.City, HouseFootprint, At(5, 0));
 
-            Assert.Throws<ArgumentException>(() => NewCity(grid, Roomy));
+            Assert.Throws<ArgumentException>(() => new City(
+                new[] { Material, Material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0, TestMarkets.Pricing, 7,
+                Roomy, TestMarkets.Labour, null, null, grid, new RoadsidePlacement(new System.Random(1))));
         }
 
         [Test]
@@ -183,7 +184,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             city.StartDay();
 
             Assert.AreEqual(1, city.CityHouses);
-            Assert.AreEqual(1140, city.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(1140, city.Population.Room);
             Assert.AreEqual(15, city.Market.AvailableOf(Timber));
             Assert.AreEqual(2, city.Market.AvailableOf(Metal));
 
@@ -252,7 +253,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static void AssertNothingBuilt(City city, CityGrid grid)
         {
             Assert.AreEqual(0, city.CityHouses);
-            Assert.AreEqual(1000, city.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(1000, city.Population.Room);
             Assert.AreEqual(25, city.Market.AvailableOf(Timber));
             Assert.AreEqual(12, city.Market.AvailableOf(Metal));
             Assert.AreEqual(1, grid.Buildings.Count);
@@ -292,7 +293,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityGrid grid = TestMarkets.GridWithTownHall(12, 12);
             City city = NewCity(grid, Roomy);
-            city.AddPlayerHouse(SocialClass.Poor, 77, HouseFootprint, At(5, 0));
+            city.AddPlayerHouse(77, HouseFootprint, At(5, 0));
 
             Assert.Throws<InvalidOperationException>(() => city.AddPlayerRoads(Cells((3, 0), (4, 0), (5, 0))));
 

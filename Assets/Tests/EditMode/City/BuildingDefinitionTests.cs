@@ -25,7 +25,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             metal = Track(TestEconomy.CreateGood("Métal", 255, 3));
             economy = Track(TestEconomy.CreateEconomy(wheat, timber, metal));
             workshop = Track(TestBuildings.CreateWorkshop("Bûcheron", timber, 10000, 30, (timber, 10), (metal, 30)));
-            house = Track(TestBuildings.CreateHouse("Maison de pauvres", SocialClass.Poor, 5000, 140, (timber, 10), (metal, 10)));
+            house = Track(TestBuildings.CreateHouse("Maison d'ouvriers", 5000, 140, (timber, 10), (metal, 10)));
         }
 
         [TearDown]
@@ -70,7 +70,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(200, Track(ScriptableObject.CreateInstance<WorkshopDefinition>()).WeeklyRunningCost);
 
             HouseDefinition fresh = Track(ScriptableObject.CreateInstance<HouseDefinition>());
-            Assert.AreEqual(SocialClass.Poor, fresh.SocialClass);
             Assert.AreEqual(140, fresh.Room);
         }
 
@@ -82,7 +81,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreSame(timber, workshop.Good);
             Assert.AreEqual(30, workshop.Jobs);
             Assert.AreEqual(2, workshop.Materials.Count);
-            Assert.AreEqual(SocialClass.Poor, house.SocialClass);
             Assert.AreEqual(140, house.Room);
         }
 
@@ -149,7 +147,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.IsFalse(house.TryCreateCost(economy, out BuildingCost cost, out string problem));
             Assert.IsNull(cost);
-            StringAssert.Contains("Maison de pauvres", problem);
+            StringAssert.Contains("Maison d'ouvriers", problem);
             StringAssert.Contains("gold", problem);
         }
 
@@ -193,7 +191,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             StringAssert.Contains("no good", problem);
             Assert.IsFalse(Track(TestBuildings.CreateWorkshop("Bûcheron", timber, 10000, 0)).TryValidate(out problem));
             StringAssert.Contains("jobs", problem);
-            Assert.IsFalse(Track(TestBuildings.CreateHouse("Maison", SocialClass.Rich, 1, 0)).TryValidate(out problem));
+            Assert.IsFalse(Track(TestBuildings.CreateHouse("Maison", 1, 0)).TryValidate(out problem));
             StringAssert.Contains("room", problem);
 
             var costly = new UnityEditor.SerializedObject(workshop);

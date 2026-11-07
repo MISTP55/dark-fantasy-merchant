@@ -1231,42 +1231,19 @@ MonoBehaviour:
   - {x: 35, y: 23}
   - {x: 35, y: 22}
   startingHouses:
-  - socialClass: 0
-    origin: {x: 32, y: 50}
+  - origin: {x: 39, y: 56}
     orientation: 0
-  - socialClass: 0
-    origin: {x: 19, y: 57}
+  - origin: {x: 47, y: 48}
     orientation: 1
-  - socialClass: 0
-    origin: {x: 21, y: 29}
+  - origin: {x: 36, y: 39}
     orientation: 1
-  - socialClass: 1
-    origin: {x: 39, y: 56}
+  - origin: {x: 42, y: 37}
+    orientation: 1
+  - origin: {x: 41, y: 35}
     orientation: 0
-  - socialClass: 1
-    origin: {x: 47, y: 48}
+  - origin: {x: 24, y: 32}
     orientation: 1
-  - socialClass: 1
-    origin: {x: 36, y: 39}
+  - origin: {x: 18, y: 33}
     orientation: 1
-  - socialClass: 1
-    origin: {x: 35, y: 20}
-    orientation: 1
-  - socialClass: 1
-    origin: {x: 47, y: 31}
-    orientation: 0
-  - socialClass: 2
-    origin: {x: 42, y: 37}
-    orientation: 1
-  - socialClass: 2
-    origin: {x: 41, y: 35}
-    orientation: 0
-  - socialClass: 2
-    origin: {x: 24, y: 32}
-    orientation: 1
-  - socialClass: 2
-    origin: {x: 18, y: 33}
-    orientation: 1
-  - socialClass: 2
-    origin: {x: 46, y: 35}
+  - origin: {x: 46, y: 35}
     orientation: 1

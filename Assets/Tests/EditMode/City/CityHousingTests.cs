@@ -15,7 +15,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
         // A house of 100 places that takes 10 timber and 10 metal, built above 95 % of the room.
         private static CityHousingRule Housing => new CityHousingRule(
-            SocialClass.Poor,
             0.95,
             100,
             new[] { new MaterialCost(Timber, 10), new MaterialCost(Metal, 10) });
@@ -23,7 +22,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static City NewCity(CityPopulation population, CityHousingRule housing, LabourRule labour)
         {
             return new City(new[] { Material, Material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0,
-                TestMarkets.Pricing, 7, population, labour, housing == null ? null : new[] { housing });
+                TestMarkets.Pricing, 7, population, labour, housing);
         }
 
         private static City NewCity(CityPopulation population, CityHousingRule housing = null)
@@ -127,7 +126,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AHouseWithoutMaterials_IsBuiltWhateverTheStock()
         {
-            var housing = new CityHousingRule(SocialClass.Poor, 0.95, 100, Array.Empty<MaterialCost>());
+            var housing = new CityHousingRule(0.95, 100, Array.Empty<MaterialCost>());
             City city = NewCity(new CityPopulation(1000, 0, 1000), housing);
 
             city.StartDay();
@@ -155,14 +154,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             city.StartDay();
 
-            Assert.AreEqual(0, city.PlayerHousesOf(SocialClass.Poor));
+            Assert.AreEqual(0, city.PlayerHouses);
         }
 
         [Test]
         public void AMarketWithoutLabour_NeverBuilds()
         {
             City city = new City(new[] { Material, Material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0,
-                TestMarkets.Pricing, 7, new CityPopulation(1000), null, new[] { Housing });
+                TestMarkets.Pricing, 7, new CityPopulation(1000), null, Housing);
             Stock(city, 10, 10);
 
             city.StartDay();
@@ -186,7 +185,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void AMaterialOutsideTheCatalogue_IsRefused()
         {
-            var housing = new CityHousingRule(SocialClass.Poor, 0.95, 100, new[] { new MaterialCost(2, 10) });
+            var housing = new CityHousingRule(0.95, 100, new[] { new MaterialCost(2, 10) });
 
             Assert.Throws<ArgumentOutOfRangeException>(() => NewCity(new CityPopulation(1000), housing));
         }
@@ -197,27 +196,26 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AnOccupancyOutsideZeroToOne_IsRefused(double occupancy)
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new CityHousingRule(SocialClass.Poor, occupancy, 100, Array.Empty<MaterialCost>()));
+                () => new CityHousingRule(occupancy, 100, Array.Empty<MaterialCost>()));
         }
 
         [Test]
         public void ARoomUnderOne_IsRefused()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new CityHousingRule(SocialClass.Poor, 0.95, 0, Array.Empty<MaterialCost>()));
+                () => new CityHousingRule(0.95, 0, Array.Empty<MaterialCost>()));
         }
 
         [Test]
         public void AGoodTwiceAmongTheMaterials_IsRefused()
         {
             Assert.Throws<ArgumentException>(
-                () => new CityHousingRule(SocialClass.Poor, 0.95, 100, new[] { new MaterialCost(Timber, 1), new MaterialCost(Timber, 2) }));
+                () => new CityHousingRule(0.95, 100, new[] { new MaterialCost(Timber, 1), new MaterialCost(Timber, 2) }));
         }
 
         private static readonly Footprint HouseFootprint = new Footprint(1, 1);
 
         private static CityHousingRule GridHousing => new CityHousingRule(
-            SocialClass.Poor,
             0.95,
             140,
             new[] { new MaterialCost(Timber, 10), new MaterialCost(Metal, 10) },
@@ -226,7 +224,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static City GridCity(CityPopulation population, CityGrid grid, IPlacementStrategy placement)
         {
             return new City(new[] { Material, Material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0,
-                TestMarkets.Pricing, 7, population, TestMarkets.Labour, new[] { GridHousing }, null, grid, placement);
+                TestMarkets.Pricing, 7, population, TestMarkets.Labour, GridHousing, null, grid, placement);
         }
 
         private static CityGrid Grid(int width, int height) => new CityGrid(width, height, new Vector2Int[0]);
@@ -240,8 +238,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             city.StartDay();
 
-            Assert.AreEqual(1, grid.HousesOf(SocialClass.Poor));
-            Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Poor));
+            Assert.AreEqual(1, grid.CountHouses());
+            Assert.AreEqual(1, grid.CountConnectedHouses());
             Assert.AreEqual(BuildingOwner.City, grid.Buildings[1].Owner);
             Assert.AreEqual(1, city.CityHouses);
             Assert.AreEqual(1140, city.Population.Room);
@@ -251,7 +249,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void BuildCityHouses_BuildsNothing_WhenTheGridHasNoPlace()
         {
             CityGrid grid = Grid(1, 1);
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, HouseFootprint,
+            grid.Place(BuildingKind.House(), BuildingOwner.City, HouseFootprint,
                 new GridPlace(Vector2Int.zero, BuildingOrientation.Along));
             City city = GridCity(new CityPopulation(960, 0, 1000), grid, new RandomPlacement(new System.Random(1)));
             Stock(city, 25, 12);
@@ -271,7 +269,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void BuildCityHouses_TakesNoMaterial_WhenThereIsNoPlace()
         {
             CityGrid grid = Grid(1, 1);
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, HouseFootprint,
+            grid.Place(BuildingKind.House(), BuildingOwner.City, HouseFootprint,
                 new GridPlace(Vector2Int.zero, BuildingOrientation.Along));
             City city = GridCity(new CityPopulation(960, 0, 1000), grid, new RandomPlacement(new System.Random(1)));
             Stock(city, 10, 10);
@@ -288,23 +286,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // A road along x = 3 joins the town hall; the two starting houses touch it, a third does not yet.
             CityGrid grid = TestMarkets.GridWithTownHall(8, 8);
             grid.PlaceRoads(new[] { new Vector2Int(3, 0), new Vector2Int(3, 1), new Vector2Int(3, 2) }, BuildingOwner.City);
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, HouseFootprint,
+            grid.Place(BuildingKind.House(), BuildingOwner.City, HouseFootprint,
                 new GridPlace(new Vector2Int(4, 0), BuildingOrientation.Along));
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, HouseFootprint,
+            grid.Place(BuildingKind.House(), BuildingOwner.City, HouseFootprint,
                 new GridPlace(new Vector2Int(4, 1), BuildingOrientation.Along));
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, HouseFootprint,
+            grid.Place(BuildingKind.House(), BuildingOwner.City, HouseFootprint,
                 new GridPlace(new Vector2Int(7, 7), BuildingOrientation.Along));
-            var population = new CityPopulation(new PerClass<int>(0, 0, 270), 0, new PerClass<int>(0, 0, 280));
+            var population = new CityPopulation(270, 0, 280);
             City city = GridCity(population, grid, new RoadsidePlacement(new System.Random(1)));
             Stock(city, 10, 10);
 
             city.StartDay();
-            city.AddPlayerHouse(SocialClass.Poor, 140, HouseFootprint, new GridPlace(new Vector2Int(4, 3), BuildingOrientation.Along));
+            city.AddPlayerHouse(140, HouseFootprint, new GridPlace(new Vector2Int(4, 3), BuildingOrientation.Along));
 
             Assert.AreEqual(1, city.CityHouses);
-            Assert.AreEqual(5, grid.HousesOf(SocialClass.Poor));
-            Assert.AreEqual(4, grid.ConnectedHousesOf(SocialClass.Poor));
-            Assert.AreEqual(grid.ConnectedHousesOf(SocialClass.Poor) * 140, city.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(5, grid.CountHouses());
+            Assert.AreEqual(4, grid.CountConnectedHouses());
+            Assert.AreEqual(grid.CountConnectedHouses() * 140, city.Population.Room);
         }
 
         [Test]
@@ -314,7 +312,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.Throws<ArgumentException>(() => GridCity(population, Grid(2, 2), null));
             Assert.Throws<ArgumentException>(() => new City(new[] { Material, Material }, TestMarkets.Thresholds,
-                TestMarkets.Workforce, 0, TestMarkets.Pricing, 7, population, TestMarkets.Labour, new[] { GridHousing }, null,
+                TestMarkets.Workforce, 0, TestMarkets.Pricing, 7, population, TestMarkets.Labour, GridHousing, null,
                 null, new RandomPlacement(new System.Random(1))));
         }
 
@@ -323,7 +321,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             Assert.Throws<ArgumentException>(() => new City(new[] { Material, Material }, TestMarkets.Thresholds,
                 TestMarkets.Workforce, 0, TestMarkets.Pricing, 7, new CityPopulation(960, 0, 1000), TestMarkets.Labour,
-                new[] { Housing }, null, Grid(2, 2), new RandomPlacement(new System.Random(1))));
+                Housing, null, Grid(2, 2), new RandomPlacement(new System.Random(1))));
         }
 
         [Test]

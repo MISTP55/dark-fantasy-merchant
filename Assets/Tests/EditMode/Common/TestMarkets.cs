@@ -70,9 +70,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public static IPlacementStrategy Placement => new RandomPlacement(new System.Random(1));
 
         /// <summary>Builds a player's house of 1 by 1 on the first free cell along the road of <see cref="GridWithRoad"/>: it is connected at once.</summary>
-        public static void AddPlayerHouse(City city, SocialClass housedClass, int room)
+        public static void AddPlayerHouse(City city, int room)
         {
-            city.AddPlayerHouse(housedClass, room, new Footprint(1, 1), PlaceOnTheRoad(city.Grid));
+            city.AddPlayerHouse(room, new Footprint(1, 1), PlaceOnTheRoad(city.Grid));
         }
 
         /// <summary>Builds a player's workshop of 1 by 1 on the first free cell along the road of <see cref="GridWithRoad"/>: it is connected at once.</summary>

@@ -6,8 +6,8 @@ namespace DarkFantasyMerchant.Core
 {
     /// <summary>
     /// The houses of a city, held by its <see cref="City"/>: the player's, and those the city builds of its own
-    /// for each crowded class by its <see cref="CityHousingRule"/>s. On a grid, a house gives its room to its class only
-    /// once connected to the road network, and the city builds one only with the roads that connect it.
+    /// when it is crowded, by its <see cref="CityHousingRule"/>. On a grid, a house gives its room only once
+    /// connected to the road network, and the city builds one only with the roads that connect it.
     /// </summary>
     internal sealed class CityHousing
     {
@@ -15,20 +15,19 @@ namespace DarkFantasyMerchant.Core
         private readonly IPlacementStrategy placement;
         private readonly List<Vector2Int> roadsToLay = new List<Vector2Int>();
         private readonly List<Vector2Int> houseCells = new List<Vector2Int>();
-        private readonly int[] playerHouses = new int[3];
 
-        // The room of each house on the grid that is not connected yet, given to its class when it connects.
+        // The room of each house on the grid that is not connected yet, given when it connects.
         private readonly Dictionary<PlacedBuilding, int> roomUntilConnected = new Dictionary<PlacedBuilding, int>();
 
         // The room of the house being placed, set only for the time of the placement.
         private int roomOfPlacedHouse;
 
-        /// <param name="housing">One rule per class at most; null for a city that never builds.</param>
-        /// <param name="grid">With its placement strategy (both or neither); null for a city whose houses have no place. Every rule then has a footprint, and a house of the grid not connected yet needs the rule of its class, which gives its room.</param>
-        public CityHousing(CityPopulation population, IReadOnlyList<CityHousingRule> housing, CityGrid grid, IPlacementStrategy placement)
+        /// <param name="housing">Null for a city that never builds.</param>
+        /// <param name="grid">With its placement strategy (both or neither); null for a city whose houses have no place. The rule then has a footprint, and a house of the grid not connected yet needs the rule, which gives its room.</param>
+        public CityHousing(CityPopulation population, CityHousingRule housing, CityGrid grid, IPlacementStrategy placement)
         {
             this.population = population;
-            Rules = CopyOf(housing);
+            Rule = housing;
 
             if ((grid == null) != (placement == null))
             {
@@ -37,22 +36,22 @@ namespace DarkFantasyMerchant.Core
 
             if (grid != null)
             {
-                foreach (CityHousingRule rule in Rules)
+                if (Rule != null && Rule.Footprint == null)
                 {
-                    if (rule.Footprint == null)
-                    {
-                        throw new ArgumentException("A city with a grid needs a footprint for every housing rule.", nameof(housing));
-                    }
+                    throw new ArgumentException("A city with a grid needs a footprint for its housing rule.", nameof(housing));
                 }
 
                 foreach (PlacedBuilding building in grid.Buildings)
                 {
                     if (building.Kind.IsHouse && !building.IsConnected)
                     {
-                        CityHousingRule rule = RuleOf(Rules, building.Kind.HousedClass)
-                            ?? throw new ArgumentException(
-                                "A house of the grid is not connected and its class has no housing rule to give its room.", nameof(grid));
-                        roomUntilConnected[building] = rule.Room;
+                        if (Rule == null)
+                        {
+                            throw new ArgumentException(
+                                "A house of the grid is not connected and there is no housing rule to give its room.", nameof(grid));
+                        }
+
+                        roomUntilConnected[building] = Rule.Room;
                     }
                 }
             }
@@ -61,8 +60,8 @@ namespace DarkFantasyMerchant.Core
             this.placement = placement;
         }
 
-        /// <summary>When the city builds a house of its own for each class; empty when it never does.</summary>
-        public IReadOnlyList<CityHousingRule> Rules { get; }
+        /// <summary>When the city builds a house of its own; null when it never does.</summary>
+        public CityHousingRule Rule { get; }
 
         /// <summary>Null for a city whose houses have no place.</summary>
         public CityGrid Grid { get; }
@@ -70,11 +69,8 @@ namespace DarkFantasyMerchant.Core
         /// <summary>Houses the city has built of its own since the game started, not the player's.</summary>
         public int CityHouses { get; private set; }
 
-        /// <summary>Houses of a class the player has built in the city.</summary>
-        public int PlayerHousesOf(SocialClass housedClass)
-        {
-            return playerHouses[(int)housedClass];
-        }
+        /// <summary>Houses the player has built in the city.</summary>
+        public int PlayerHouses { get; private set; }
 
         /// <summary>
         /// From now on, a house the grid places takes its room when it connects. Apart from the constructor, so that a
@@ -90,32 +86,26 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>A house of the player on the grid, at a place it can stand: its room is given when it connects.</summary>
-        public void AddPlayerHouse(SocialClass housedClass, int room, Footprint footprint, GridPlace place)
+        public void AddPlayerHouse(int room, Footprint footprint, GridPlace place)
         {
-            PlaceHouse(housedClass, BuildingOwner.Player, room, footprint, place);
-            playerHouses[(int)housedClass]++;
+            PlaceHouse(BuildingOwner.Player, room, footprint, place);
+            PlayerHouses++;
         }
 
         /// <summary>
-        /// One house a day at most for each crowded class, with every material or none taken. What it takes is not
+        /// One house a day at most when the city is crowded, with every material or none taken. What it takes is not
         /// consumption: the week's log does not count it.
         /// </summary>
         /// <param name="availableOf">The whole units of a good in the city's stock.</param>
         /// <param name="take">Takes units of a good out of the city's stock, not below nothing.</param>
-        public void BuildCityHouses(Func<int, int> availableOf, Action<int, int> take)
+        public void BuildCityHouse(Func<int, int> availableOf, Action<int, int> take)
         {
-            foreach (CityHousingRule rule in Rules)
+            if (Rule == null || !Rule.IsCrowded(population))
             {
-                if (rule.IsCrowded(population))
-                {
-                    BuildCityHouse(rule, availableOf, take);
-                }
+                return;
             }
-        }
 
-        private void BuildCityHouse(CityHousingRule rule, Func<int, int> availableOf, Action<int, int> take)
-        {
-            foreach (MaterialCost material in rule.Materials)
+            foreach (MaterialCost material in Rule.Materials)
             {
                 if (availableOf(material.Good) < material.Units)
                 {
@@ -129,20 +119,20 @@ namespace DarkFantasyMerchant.Core
 
             if (Grid != null)
             {
-                if (!placement.TryChoose(Grid, rule.Footprint.Value, out place, roadsToLay))
+                if (!placement.TryChoose(Grid, Rule.Footprint.Value, out place, roadsToLay))
                 {
                     return;
                 }
 
-                CellsOf(rule.Footprint.Value, place, houseCells);
+                CellsOf(Rule.Footprint.Value, place, houseCells);
 
-                if (!Grid.CanPlace(rule.Footprint.Value, place) || !RoadPlanner.Connects(Grid, houseCells, roadsToLay))
+                if (!Grid.CanPlace(Rule.Footprint.Value, place) || !RoadPlanner.Connects(Grid, houseCells, roadsToLay))
                 {
                     return;
                 }
             }
 
-            foreach (MaterialCost material in rule.Materials)
+            foreach (MaterialCost material in Rule.Materials)
             {
                 take(material.Good, material.Units);
             }
@@ -150,25 +140,25 @@ namespace DarkFantasyMerchant.Core
             if (Grid != null)
             {
                 // Its room comes when it connects: at once or through its roads.
-                PlaceHouse(rule.HousedClass, BuildingOwner.City, rule.Room, rule.Footprint.Value, place);
+                PlaceHouse(BuildingOwner.City, Rule.Room, Rule.Footprint.Value, place);
                 Grid.PlaceRoads(roadsToLay, BuildingOwner.City);
             }
             else
             {
-                population.AddRoom(rule.HousedClass, rule.Room);
+                population.AddRoom(Rule.Room);
             }
 
             CityHouses++;
         }
 
         // Places a house whose room waits for its connection, which may come at once.
-        private void PlaceHouse(SocialClass housedClass, BuildingOwner owner, int room, Footprint footprint, GridPlace place)
+        private void PlaceHouse(BuildingOwner owner, int room, Footprint footprint, GridPlace place)
         {
             roomOfPlacedHouse = room;
 
             try
             {
-                Grid.Place(BuildingKind.House(housedClass), owner, footprint, place);
+                Grid.Place(BuildingKind.House(), owner, footprint, place);
             }
             finally
             {
@@ -192,7 +182,7 @@ namespace DarkFantasyMerchant.Core
             if (roomUntilConnected.TryGetValue(building, out int room))
             {
                 roomUntilConnected.Remove(building);
-                population.AddRoom(building.Kind.HousedClass, room);
+                population.AddRoom(room);
             }
         }
 
@@ -208,46 +198,6 @@ namespace DarkFantasyMerchant.Core
                     cells.Add(new Vector2Int(place.Origin.x + x, place.Origin.y + y));
                 }
             }
-        }
-
-        private static CityHousingRule RuleOf(IReadOnlyList<CityHousingRule> housing, SocialClass housedClass)
-        {
-            foreach (CityHousingRule rule in housing)
-            {
-                if (rule.HousedClass == housedClass)
-                {
-                    return rule;
-                }
-            }
-
-            return null;
-        }
-
-        private static IReadOnlyList<CityHousingRule> CopyOf(IReadOnlyList<CityHousingRule> housing)
-        {
-            var copy = new List<CityHousingRule>();
-
-            if (housing == null)
-            {
-                return copy;
-            }
-
-            foreach (CityHousingRule rule in housing)
-            {
-                if (rule == null)
-                {
-                    throw new ArgumentNullException(nameof(housing));
-                }
-
-                if (copy.Exists(other => other.HousedClass == rule.HousedClass))
-                {
-                    throw new ArgumentException("A class has two housing rules.", nameof(housing));
-                }
-
-                copy.Add(rule);
-            }
-
-            return copy;
         }
     }
 }

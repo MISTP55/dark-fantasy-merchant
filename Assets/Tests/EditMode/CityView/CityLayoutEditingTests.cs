@@ -52,21 +52,21 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryAddHouse_RefusesAPlaceThatIsTaken()
         {
-            Assert.IsTrue(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(2, 2)));
+            Assert.IsTrue(CityLayoutEditing.TryAddHouse(layout, buildings, Along(2, 2)));
 
-            Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(3, 2)));
+            Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, Along(3, 2)));
             Assert.AreEqual(1, layout.StartingHouses.Count);
 
             Forbid(new Vector2Int(6, 6));
-            Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(5, 6)));
-            Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(9, 9)));
+            Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, Along(5, 6)));
+            Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, Along(9, 9)));
             Assert.AreEqual(1, layout.StartingHouses.Count);
         }
 
         [Test]
         public void SetForbidden_SkipsTheCellsUnderAHouseAndOutsideTheGrid()
         {
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(2, 2));
+            CityLayoutEditing.TryAddHouse(layout, buildings, Along(2, 2));
 
             CityLayoutEditing.SetForbidden(
                 layout, buildings, new[] { new Vector2Int(3, 2), new Vector2Int(5, 5), new Vector2Int(10, 5) }, true);
@@ -113,8 +113,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void Resize_DropsTheHousesThatNoLongerFit()
         {
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(0, 0));
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(7, 7));
+            CityLayoutEditing.TryAddHouse(layout, buildings, Along(0, 0));
+            CityLayoutEditing.TryAddHouse(layout, buildings, Along(7, 7));
             Forbid(new Vector2Int(9, 9));
             Forbid(new Vector2Int(1, 5));
 
@@ -132,29 +132,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void RemoveHouses_RemovesTheHousesCoveringTheCells()
         {
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(2, 2));
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(5, 5));
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(0, 8));
+            CityLayoutEditing.TryAddHouse(layout, buildings, Along(2, 2));
+            CityLayoutEditing.TryAddHouse(layout, buildings, Along(5, 5));
+            CityLayoutEditing.TryAddHouse(layout, buildings, Along(0, 8));
 
             CityLayoutEditing.RemoveHouses(layout, buildings, new[] { new Vector2Int(3, 2), new Vector2Int(1, 8) });
 
             Assert.AreEqual(1, layout.StartingHouses.Count);
-            Assert.AreEqual(SocialClass.Rich, layout.StartingHouses[0].socialClass);
+            Assert.AreEqual(new Vector2Int(5, 5), layout.StartingHouses[0].origin);
 
             CityLayoutEditing.RemoveHouses(layout, buildings, new[] { new Vector2Int(5, 5) });
             Assert.AreEqual(0, layout.StartingHouses.Count);
-        }
-
-        [Test]
-        public void RemoveHouses_OfAClassLeavesTheOthers()
-        {
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(2, 2));
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(4, 2));
-
-            CityLayoutEditing.RemoveHouses(layout, buildings, new[] { new Vector2Int(3, 2), new Vector2Int(4, 2) }, SocialClass.Rich);
-
-            Assert.AreEqual(1, layout.StartingHouses.Count);
-            Assert.AreEqual(SocialClass.Poor, layout.StartingHouses[0].socialClass);
         }
 
         [Test]
@@ -177,7 +165,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void SetTownHall_OnAHouse_ReturnsFalse()
         {
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(2, 5));
+            CityLayoutEditing.TryAddHouse(layout, buildings, Along(2, 5));
 
             Assert.IsFalse(CityLayoutEditing.SetTownHall(layout, buildings, Along(1, 4)));
             Assert.AreEqual(new Vector2Int(4, 0), layout.TownHallPlace.Origin);
@@ -197,7 +185,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void SetRoads_SkipsHousesAndForbidden()
         {
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(2, 5));
+            CityLayoutEditing.TryAddHouse(layout, buildings, Along(2, 5));
             Forbid(new Vector2Int(0, 0));
 
             CityLayoutEditing.SetRoads(

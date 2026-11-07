@@ -5,9 +5,7 @@ namespace DarkFantasyMerchant.Game
     /// <summary>The colours of the debug charts, those of the mockups.</summary>
     public static class DebugChartColors
     {
-        public static readonly Color Rich = Hex(0xD6B85A);
-        public static readonly Color Wealthy = Hex(0x7AB0E0);
-        public static readonly Color Poor = Hex(0xE0705A);
+        public static readonly Color Housed = Hex(0xE0705A);
         public static readonly Color Beggars = Hex(0x8F7F69);
         public static readonly Color Workers = Hex(0x8FCB7A);
         public static readonly Color Reserve = Hex(0xBFAE94);

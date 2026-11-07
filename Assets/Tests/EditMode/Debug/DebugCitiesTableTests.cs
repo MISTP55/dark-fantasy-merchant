@@ -10,16 +10,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private const int Fish = 0;
         private const int Iron = 1;
 
-        // Children of a row of the city's columns, in order: the city, its population, its beggars, its rich,
-        // wealthy and poor, its growth since the start. A row of the goods' columns has six cells per good.
+        // Children of a row of the city's columns, in order: the city, its population, its beggars, its housed,
+        // its growth since the start. A row of the goods' columns has six cells per good.
         private const int NameCell = 0;
         private const int PopulationCell = 1;
         private const int BeggarsCell = 2;
-        private const int RichCell = 3;
-        private const int WealthyCell = 4;
-        private const int PoorCell = 5;
-        private const int GrowthSinceStartCell = 6;
-        private const int CityCells = 7;
+        private const int HousedCell = 3;
+        private const int GrowthSinceStartCell = 4;
+        private const int CityCells = 5;
         private const int CellsPerGood = 6;
 
         // The goods' columns in alphabetical order: "Fer" before "Poisson".
@@ -126,9 +124,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("Ville", ((Label)header[1][NameCell]).text);
             Assert.AreEqual("Population", ((Label)header[1][PopulationCell]).text);
             Assert.AreEqual("Mendiants", ((Label)header[1][BeggarsCell]).text);
-            Assert.AreEqual("Riches", ((Label)header[1][RichCell]).text);
-            Assert.AreEqual("Aisés", ((Label)header[1][WealthyCell]).text);
-            Assert.AreEqual("Pauvres", ((Label)header[1][PoorCell]).text);
+            Assert.AreEqual("Ouvriers logés", ((Label)header[1][HousedCell]).text);
             Assert.AreEqual("Croiss. totale", ((Label)header[1][GrowthSinceStartCell]).text);
 
             Assert.AreEqual(2 * CellsPerGood, goodHeader[1].childCount);
@@ -549,8 +545,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void FormatClass_WritesTheCountOverTheRoom()
         {
-            Assert.AreEqual("110 / 120", DebugCitiesTable.FormatClass(110, 120));
-            Assert.AreEqual("1 108 / 1 400", DebugCitiesTable.FormatClass(1108, 1400));
+            Assert.AreEqual("110 / 120", DebugCitiesTable.FormatHoused(110, 120));
+            Assert.AreEqual("1 108 / 1 400", DebugCitiesTable.FormatHoused(1108, 1400));
         }
 
         [Test]
@@ -589,11 +585,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(
                 DebugCitiesTable.FormatBeggars(city.Population.Beggars, city.BeggarTarget), Text(0, BeggarsCell));
             Assert.AreEqual(
-                DebugCitiesTable.FormatClass(
-                    city.Population.CountOf(SocialClass.Poor),
-                    city.Population.RoomOf(SocialClass.Poor)),
-                Text(0, PoorCell));
-            Assert.AreEqual(DebugCitiesTable.FormatClass(0, 0), Text(0, RichCell));
+                DebugCitiesTable.FormatHoused(
+                    city.Population.Housed,
+                    city.Population.Room),
+                Text(0, HousedCell));
             Assert.AreEqual(
                 $"{city.WorkersOf(Iron)}/{city.MaxWorkersOf(Iron)} +{city.ReserveOf(Iron)}", Text(0, Iron, Workers));
             Assert.AreEqual(DebugCitiesTable.NoFigure, Text(0, Fish, Workers));
@@ -617,10 +612,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
                     first.Population.Beggars + second.Population.Beggars, first.BeggarTarget + second.BeggarTarget),
                 Total(BeggarsCell));
             Assert.AreEqual(
-                DebugCitiesTable.FormatClass(
-                    first.Population.CountOf(SocialClass.Poor) + second.Population.CountOf(SocialClass.Poor),
-                    first.Population.RoomOf(SocialClass.Poor) + second.Population.RoomOf(SocialClass.Poor)),
-                Total(PoorCell));
+                DebugCitiesTable.FormatHoused(
+                    first.Population.Housed + second.Population.Housed,
+                    first.Population.Room + second.Population.Room),
+                Total(HousedCell));
             Assert.AreEqual(
                 $"{first.WorkersOf(Iron) + second.WorkersOf(Iron)}/{first.MaxWorkersOf(Iron) + second.MaxWorkersOf(Iron)}"
                 + $" +{first.ReserveOf(Iron) + second.ReserveOf(Iron)}",

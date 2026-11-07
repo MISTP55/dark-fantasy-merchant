@@ -15,11 +15,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
         // The workshop of a one-good market starts with 10 workers.
         private static WorkforceRule Workforce => new WorkforceRule(16, 8, 4, 1, 1, 10);
 
-        private static CityPopulation Population(int rich, int wealthy, int poor, int beggars, int richRoom, int wealthyRoom, int poorRoom)
-        {
-            return new CityPopulation(new PerClass<int>(rich, wealthy, poor), beggars, new PerClass<int>(richRoom, wealthyRoom, poorRoom));
-        }
-
         // Fish: 2 barrels a day for a thousand, not produced. Iron: 2 barrels a day, and a full workshop of 30 workers making 3.
         private static City FishAndIron(double startingDays)
         {
@@ -87,8 +82,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void Report_ChangesNoFigureOfTheSimulation()
         {
-            City watched = LabourCity(3, Population(60, 180, 600, 50, 200, 400, 700), true);
-            City alone = LabourCity(3, Population(60, 180, 600, 50, 200, 400, 700), true);
+            City watched = LabourCity(3, new CityPopulation(840, 50, 1300), true);
+            City alone = LabourCity(3, new CityPopulation(840, 50, 1300), true);
             double read = 0d;
 
             for (int day = 0; day < 60; day++)
@@ -103,10 +98,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(alone.ReserveOf(0), watched.ReserveOf(0));
             Assert.AreEqual(alone.Population.Beggars, watched.Population.Beggars);
 
-            foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
-            {
-                Assert.AreEqual(alone.Population.CountOf(housedClass), watched.Population.CountOf(housedClass));
-            }
+            Assert.AreEqual(alone.Population.Housed, watched.Population.Housed);
 
             Assert.IsFalse(double.IsNaN(read));
         }

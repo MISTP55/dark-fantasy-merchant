@@ -7,8 +7,7 @@ namespace DarkFantasyMerchant.Game
 {
     /// <summary>
     /// The population of every city, for the debug panel: its inhabitants, its beggars over the
-    /// number they tend to, its rich, wealthy and poor over the room of their houses with their
-    /// satisfaction, how much it has grown since the game started and the houses it built of its
+    /// number they tend to, its housed over the room of the houses, how much it has grown since the game started and the houses it built of its
     /// own, and a last row with the totals. The cities are in alphabetical order. Follows the
     /// markets while it is shown, writing what changed at most once a frame.
     /// </summary>
@@ -21,11 +20,9 @@ namespace DarkFantasyMerchant.Game
         private const string NameCellClass = "debug-cities__cell--name";
         private const string PopulationCellClass = "debug-cities__cell--population";
         private const string BeggarsCellClass = "debug-cities__cell--beggars";
-        private const string ClassCellClass = "debug-cities__cell--class";
+        private const string HousedCellClass = "debug-cities__cell--housed";
         private const string GrowthSinceStartCellClass = "debug-cities__cell--growth-since-start";
         private const string HousesCellClass = "debug-cities__cell--houses";
-
-        private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
 
         private sealed class Row
         {
@@ -63,7 +60,7 @@ namespace DarkFantasyMerchant.Game
             totalContainer.Clear();
 
             VisualElement headerRow = NewRow(HeaderRowClass);
-            string[] titles = { "Ville", "Population", "Mendiants", "Riches", "Aisés", "Pauvres", "Croiss. totale", "Maisons de la ville" };
+            string[] titles = { "Ville", "Population", "Mendiants", "Ouvriers logés", "Croiss. totale", "Maisons de la ville" };
             Label[] titleCells = AddCells(headerRow);
 
             for (int i = 0; i < titles.Length; i++)
@@ -188,14 +185,9 @@ namespace DarkFantasyMerchant.Game
             cells[1].text = NumberText.Format(population.Inhabitants);
             cells[2].text = DebugCitiesTable.FormatBeggars(population.Beggars, city.BeggarTarget);
 
-            for (int i = 0; i < Classes.Length; i++)
-            {
-                SocialClass housedClass = Classes[i];
-                cells[3 + i].text = DebugCitiesTable.FormatClass(population.CountOf(housedClass), population.RoomOf(housedClass));
-            }
-
-            cells[6].text = DebugCitiesTable.FormatRate(population.GrowthSinceStart);
-            cells[7].text = NumberText.Format(city.CityHouses);
+            cells[3].text = DebugCitiesTable.FormatHoused(population.Housed, population.Room);
+            cells[4].text = DebugCitiesTable.FormatRate(population.GrowthSinceStart);
+            cells[5].text = NumberText.Format(city.CityHouses);
         }
 
         // Summed again at most once a frame: a handful of cities.
@@ -206,8 +198,8 @@ namespace DarkFantasyMerchant.Game
             long beggars = 0;
             long beggarTargets = 0;
             long houses = 0;
-            var counts = new long[Classes.Length];
-            var rooms = new long[Classes.Length];
+            long housed = 0;
+            long room = 0;
 
             foreach (Row row in rows)
             {
@@ -218,33 +210,26 @@ namespace DarkFantasyMerchant.Game
                 beggarTargets += row.City.BeggarTarget;
                 houses += row.City.CityHouses;
 
-                for (int i = 0; i < Classes.Length; i++)
-                {
-                    counts[i] += population.CountOf(Classes[i]);
-                    rooms[i] += population.RoomOf(Classes[i]);
-                }
+                housed += population.Housed;
+                room += population.Room;
             }
 
             totals[1].text = NumberText.Format(inhabitants);
             totals[2].text = DebugCitiesTable.FormatBeggars(beggars, beggarTargets);
 
-            // The classes of every city together.
-            for (int i = 0; i < Classes.Length; i++)
-            {
-                totals[3 + i].text = DebugCitiesTable.FormatClass(counts[i], rooms[i]);
-            }
+            totals[3].text = DebugCitiesTable.FormatHoused(housed, room);
 
             // The growth of the world: all its inhabitants together, against all those it started with.
-            totals[6].text = DebugCitiesTable.FormatRate(
+            totals[4].text = DebugCitiesTable.FormatRate(
                 startingInhabitants > 0 ? (double)inhabitants / startingInhabitants - 1d : 0d);
-            totals[7].text = NumberText.Format(houses);
+            totals[5].text = NumberText.Format(houses);
         }
 
         private static Label[] AddCells(VisualElement row)
         {
             string[] cellClasses =
             {
-                NameCellClass, PopulationCellClass, BeggarsCellClass, ClassCellClass, ClassCellClass, ClassCellClass,
+                NameCellClass, PopulationCellClass, BeggarsCellClass, HousedCellClass,
                 GrowthSinceStartCellClass, HousesCellClass,
             };
             var cells = new Label[cellClasses.Length];

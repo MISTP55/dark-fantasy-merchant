@@ -93,9 +93,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(0, fresh.Goods.Count);
 
             Assert.AreEqual(30, fresh.CreateLeavingRule().ProtectedWorkers);
-            Assert.AreEqual(0.97, fresh.CreateHousingRule(SocialClass.Rich, 40, System.Array.Empty<MaterialCost>()).Occupancy, Tolerance);
-            Assert.AreEqual(0.96, fresh.CreateHousingRule(SocialClass.Wealthy, 70, System.Array.Empty<MaterialCost>()).Occupancy, Tolerance);
-            Assert.AreEqual(0.95, fresh.CreateHousingRule(SocialClass.Poor, 140, System.Array.Empty<MaterialCost>()).Occupancy, Tolerance);
+            Assert.AreEqual(0.95, fresh.CreateHousingRule(140, System.Array.Empty<MaterialCost>()).Occupancy, Tolerance);
         }
 
         [Test]
@@ -247,10 +245,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         // What a worker of the player's workshop for the good makes in a day: one workshop, no bonus.
         private double MerchantOutputOf(EconomyDefinition definition, CityDefinition city, int good)
         {
-            // On a grid without houses, the city starts without room: the player's house gives it to every poor and more.
-            City cityState = definition.CreateCity(city, definition.CreatePricing(), DaysPerWeek, definition.CreateLabourRule(), PerClass<int>.All(100),
+            // On a grid without houses, the city starts without room: the player's house gives it to every housed and more.
+            City cityState = definition.CreateCity(city, definition.CreatePricing(), DaysPerWeek, definition.CreateLabourRule(), 100,
                 grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
-            TestMarkets.AddPlayerHouse(cityState, SocialClass.Poor, 100000);
+            TestMarkets.AddPlayerHouse(cityState, 100000);
             TestMarkets.AddPlayerWorkshop(cityState, good, 30);
 
             // Full stocks: the city's workshops hire nobody and leave the beggars to the player.
@@ -328,7 +326,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void CreateMarket_WithLabour_SplitsThePopulationIntoClasses()
+        public void CreateMarket_WithLabour_HousesTheStartingFamilies()
         {
             var serialized = new SerializedObject(economy);
             serialized.FindProperty("startingWorkforce").intValue = 250;
@@ -338,16 +336,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             // 125 workers a workshop, cut to the 60 of each: 120 workers.
             City cityState = economy.CreateCity(
-                city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), new PerClass<int>(40, 70, 140));
+                city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), 140);
 
+            // 480 housed in four whole houses of 140.
             Assert.AreEqual(480, cityState.Population.Housed);
-            Assert.AreEqual(48, cityState.Population.CountOf(SocialClass.Rich));
-            Assert.AreEqual(144, cityState.Population.CountOf(SocialClass.Wealthy));
-            Assert.AreEqual(288, cityState.Population.CountOf(SocialClass.Poor));
             Assert.AreEqual(28, cityState.Population.Beggars);
-            Assert.AreEqual(80, cityState.Population.RoomOf(SocialClass.Rich));
-            Assert.AreEqual(210, cityState.Population.RoomOf(SocialClass.Wealthy));
-            Assert.AreEqual(420, cityState.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(560, cityState.Population.Room);
             Assert.IsNotNull(cityState.Labour);
         }
 
@@ -364,15 +358,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             UseStartingWorkforce();
             CityDefinition city = City(new[] { wheat }, new[] { fish });
-            var roomPerHouse = new PerClass<int>(40, 70, 140);
+            const int roomPerHouse = 140;
 
             City cityState = economy.CreateCity(city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), roomPerHouse);
-            PerClass<int> room = economy.StartingRoomOf(city, roomPerHouse);
+            int room = economy.StartingRoomOf(city, roomPerHouse);
 
-            Assert.AreEqual(cityState.Population.RoomOf(SocialClass.Rich), room.Rich);
-            Assert.AreEqual(cityState.Population.RoomOf(SocialClass.Wealthy), room.Wealthy);
-            Assert.AreEqual(cityState.Population.RoomOf(SocialClass.Poor), room.Poor);
-            Assert.AreEqual(420, room.Poor);
+            Assert.AreEqual(cityState.Population.Room, room);
+            Assert.AreEqual(560, room);
         }
 
         [Test]
@@ -380,30 +372,24 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             UseStartingWorkforce();
             CityDefinition city = City(new[] { wheat }, new[] { fish });
-            var roomPerHouse = new PerClass<int>(40, 70, 140);
-            var footprints = new PerClass<Footprint>(new Footprint(2, 1), new Footprint(2, 1), new Footprint(2, 1));
+            const int roomPerHouse = 140;
+            var footprint = new Footprint(2, 1);
             var grid = new CityGrid(20, 20, new Vector2Int[0]);
             grid.Place(BuildingKind.TownHall(), BuildingOwner.City, new Footprint(3, 2),
                 new GridPlace(new Vector2Int(8, 9), BuildingOrientation.Along));
             var placement = new RoadsidePlacement(new System.Random(1));
-            Assert.IsTrue(StartingHouses.TryPlace(grid, new PerClass<int>(2, 3, 5), footprints, new System.Random(1)));
+            Assert.IsTrue(StartingHouses.TryPlace(grid, 10, footprint, new System.Random(1)));
 
             // A house off the network: its room comes only when it connects.
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, footprints.Poor,
+            grid.Place(BuildingKind.House(), BuildingOwner.City, footprint,
                 new GridPlace(new Vector2Int(0, 0), BuildingOrientation.Along));
-            var housing = new List<CityHousingRule>();
-            foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
-            {
-                housing.Add(economy.CreateHousingRule(housedClass, roomPerHouse[housedClass], System.Array.Empty<MaterialCost>(), footprints[housedClass]));
-            }
+            CityHousingRule housing = economy.CreateHousingRule(roomPerHouse, System.Array.Empty<MaterialCost>(), footprint);
 
             City without = economy.CreateCity(city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), roomPerHouse);
             City cityState = economy.CreateCity(
                 city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), roomPerHouse, housing, economy.CreateLeavingRule(), grid, placement);
 
-            Assert.AreEqual(2 * 40, cityState.Population.RoomOf(SocialClass.Rich));
-            Assert.AreEqual(3 * 70, cityState.Population.RoomOf(SocialClass.Wealthy));
-            Assert.AreEqual(5 * 140, cityState.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(10 * 140, cityState.Population.Room);
             Assert.AreEqual(without.Population.Housed, cityState.Population.Housed);
             Assert.AreEqual(without.Population.Beggars, cityState.Population.Beggars);
             Assert.AreSame(grid, cityState.Grid);
@@ -415,14 +401,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityDefinition city = City(new[] { wheat }, new[] { fish });
 
             Assert.Throws<System.ArgumentOutOfRangeException>(
-                () => economy.CreateCity(city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), new PerClass<int>(40, 0, 140)));
+                () => economy.CreateCity(city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), 0));
         }
 
         [Test]
         public void TryValidateSettings_SaysWhenTheCityHouseOccupancyIsWrong()
         {
             var serialized = new SerializedObject(economy);
-            serialized.FindProperty("cityWealthyHouseOccupancy").doubleValue = 1.5;
+            serialized.FindProperty("cityHouseOccupancy").doubleValue = 1.5;
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             Assert.IsFalse(economy.TryValidateSettings(out string problem));
@@ -434,9 +420,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             EconomyDefinition fresh = Track(ScriptableObject.CreateInstance<EconomyDefinition>());
 
-            CityHousingRule rule = fresh.CreateHousingRule(SocialClass.Poor, 100, new[] { new MaterialCost(0, 10) });
+            CityHousingRule rule = fresh.CreateHousingRule(100, new[] { new MaterialCost(0, 10) });
 
-            Assert.AreEqual(SocialClass.Poor, rule.HousedClass);
             Assert.AreEqual(0.95, rule.Occupancy, Tolerance);
             Assert.AreEqual(100, rule.Room);
             Assert.AreEqual(1, rule.Materials.Count);
@@ -446,13 +431,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void CreateMarket_GivesTheMarketItsHousing()
         {
             CityDefinition city = City(new[] { wheat }, new[] { fish });
-            CityHousingRule housing = economy.CreateHousingRule(SocialClass.Rich, 40, System.Array.Empty<MaterialCost>());
+            CityHousingRule housing = economy.CreateHousingRule(40, System.Array.Empty<MaterialCost>());
             LeavingRule leaving = economy.CreateLeavingRule();
 
             City cityState = economy.CreateCity(
-                city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), PerClass<int>.All(100), new[] { housing }, leaving);
+                city, economy.CreatePricing(), DaysPerWeek, economy.CreateLabourRule(), 100, housing, leaving);
 
-            Assert.AreSame(housing, cityState.Housing[0]);
+            Assert.AreSame(housing, cityState.Housing);
             Assert.AreSame(leaving, cityState.Leaving);
         }
 

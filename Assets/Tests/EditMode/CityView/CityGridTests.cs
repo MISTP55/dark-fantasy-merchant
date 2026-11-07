@@ -47,7 +47,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var grid = new CityGrid(4, 4, new[] { new Vector2Int(1, 1) });
             Assert.IsFalse(grid.CanPlace(new Footprint(2, 2), At(0, 0)));
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, new Footprint(2, 1), At(2, 2));
+            grid.Place(BuildingKind.House(), BuildingOwner.City, new Footprint(2, 1), At(2, 2));
             Assert.IsFalse(grid.CanPlace(new Footprint(2, 2), At(1, 2)));
             Assert.IsTrue(grid.CanPlace(new Footprint(2, 2), At(2, 0)));
         }
@@ -58,7 +58,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var grid = Empty(4);
             Assert.IsFalse(grid.CanPlace(default, At(1, 1)));
             Assert.Throws<InvalidOperationException>(() =>
-                grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, default, At(1, 1)));
+                grid.Place(BuildingKind.House(), BuildingOwner.City, default, At(1, 1)));
             Assert.AreEqual(0, grid.Buildings.Count);
         }
 
@@ -80,9 +80,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void Place_Throws_WhenThePlaceIsTaken()
         {
             var grid = Empty(4);
-            grid.Place(BuildingKind.House(SocialClass.Rich), BuildingOwner.City, new Footprint(2, 2), At(0, 0));
+            grid.Place(BuildingKind.House(), BuildingOwner.City, new Footprint(2, 2), At(0, 0));
             Assert.Throws<InvalidOperationException>(() =>
-                grid.Place(BuildingKind.House(SocialClass.Rich), BuildingOwner.City, new Footprint(1, 1), At(1, 1)));
+                grid.Place(BuildingKind.House(), BuildingOwner.City, new Footprint(1, 1), At(1, 1)));
             Assert.AreEqual(1, grid.Buildings.Count);
         }
 
@@ -92,7 +92,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var grid = Empty(4);
             var raised = new List<PlacedBuilding>();
             grid.BuildingPlaced += raised.Add;
-            PlacedBuilding building = grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, new Footprint(1, 1), At(1, 1));
+            PlacedBuilding building = grid.Place(BuildingKind.House(), BuildingOwner.City, new Footprint(1, 1), At(1, 1));
             Assert.AreEqual(1, raised.Count);
             Assert.AreSame(building, raised[0]);
         }
@@ -111,16 +111,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void HousesOf_CountsTheHousesOfAClass()
+        public void CountHouses_CountsTheHouses_TheCitysAndThePlayers()
         {
             var grid = Empty(4);
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, new Footprint(1, 1), At(0, 0));
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.Player, new Footprint(1, 1), At(1, 0));
-            grid.Place(BuildingKind.House(SocialClass.Rich), BuildingOwner.City, new Footprint(1, 1), At(2, 0));
+            grid.Place(BuildingKind.House(), BuildingOwner.City, new Footprint(1, 1), At(0, 0));
+            grid.Place(BuildingKind.House(), BuildingOwner.Player, new Footprint(1, 1), At(1, 0));
+            grid.Place(BuildingKind.House(), BuildingOwner.City, new Footprint(1, 1), At(2, 0));
             grid.Place(BuildingKind.Workshop(0), BuildingOwner.City, new Footprint(1, 1), At(3, 0));
-            Assert.AreEqual(2, grid.HousesOf(SocialClass.Poor));
-            Assert.AreEqual(1, grid.HousesOf(SocialClass.Rich));
-            Assert.AreEqual(0, grid.HousesOf(SocialClass.Wealthy));
+            Assert.AreEqual(3, grid.CountHouses());
         }
 
         [Test]

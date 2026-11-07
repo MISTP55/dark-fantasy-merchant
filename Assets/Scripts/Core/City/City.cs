@@ -11,9 +11,9 @@ namespace DarkFantasyMerchant.Core
     /// <see cref="LabourRule"/>, its workshops hire from their reserves and the beggars within the free room of the
     /// houses, lay off into a reserve that leaks back to the beggars, the player's workshops fill their vacancies from
     /// the beggars, and the beggars come or go; without one, hiring is immediate, layoffs vanish and the population
-    /// stays as it is. Given <see cref="CityHousingRule"/>s as well, a city builds a house of its own for each crowded
-    /// class from its stock. Given a <see cref="LeavingRule"/> with the labour, the poor without room leave with their
-    /// jobs; without one, nobody leaves. The classes never move. On a grid, a house gives its room and a player's workshop hires only once connected to the road network.
+    /// stays as it is. Given a <see cref="CityHousingRule"/> as well, a city builds a house of its own when it is
+    /// crowded, from its stock. Given a <see cref="LeavingRule"/> with the labour, the housed without room leave with
+    /// their jobs; without one, nobody leaves. On a grid, a house gives its room and a player's workshop hires only once connected to the road network.
     /// </summary>
     public sealed class City
     {
@@ -36,9 +36,9 @@ namespace DarkFantasyMerchant.Core
         /// <param name="daysPerWeek">Days of the calendar's week, over which the weekly figures are given.</param>
         /// <param name="population">The inhabitants of the city, who set what it consumes.</param>
         /// <param name="labour">How the workshops take their workers from the population; null for immediate hiring and a population that stays.</param>
-        /// <param name="housing">When the city builds a house of its own for a class, each class once at most, only with labour; null for a city that never does.</param>
+        /// <param name="housing">When the city builds a house of its own, only with labour; null for a city that never does.</param>
         /// <param name="leaving">Who leaves the city for want of room, only with labour; null for a city nobody leaves.</param>
-        /// <param name="grid">The city grid the houses stand on, with its placement strategy (both or neither); null for a city whose houses have no place. Every housing rule then has a footprint. The houses already connected are in the population's room; one not connected yet gives the room of its class's housing rule when it connects, and needs that rule.</param>
+        /// <param name="grid">The city grid the houses stand on, with its placement strategy (both or neither); null for a city whose houses have no place. The housing rule then has a footprint. The houses already connected are in the population's room; one not connected yet gives the room of the housing rule when it connects, and needs that rule.</param>
         /// <param name="placement">Where the city builds its own houses on the grid.</param>
         /// <param name="merchantOutput">What the player's workshops make; null for workshops that hire but make nothing.</param>
         public City(
@@ -50,7 +50,7 @@ namespace DarkFantasyMerchant.Core
             int daysPerWeek,
             CityPopulation population,
             LabourRule labour = null,
-            IReadOnlyList<CityHousingRule> housing = null,
+            CityHousingRule housing = null,
             LeavingRule leaving = null,
             CityGrid grid = null,
             IPlacementStrategy placement = null,
@@ -109,9 +109,9 @@ namespace DarkFantasyMerchant.Core
             // Every good first: the demand the market reads of one looks at the workshops of the others.
             Market = new CityMarket(this.goods, thresholdRule, pricing, DailyDemandOf, startingDays);
 
-            foreach (CityHousingRule rule in Housing)
+            if (Housing != null)
             {
-                foreach (MaterialCost material in rule.Materials)
+                foreach (MaterialCost material in Housing.Materials)
                 {
                     RequireGood(material.Good);
                 }
@@ -132,8 +132,8 @@ namespace DarkFantasyMerchant.Core
         /// <summary>The beggars the city draws towards: 0 without labour.</summary>
         public int BeggarTarget => Labour?.BeggarTargetFor(Population.Inhabitants) ?? 0;
 
-        /// <summary>When the city builds a house of its own for each class; empty when it never does.</summary>
-        public IReadOnlyList<CityHousingRule> Housing => cityHousing.Rules;
+        /// <summary>When the city builds a house of its own; null when it never does.</summary>
+        public CityHousingRule Housing => cityHousing.Rule;
 
         /// <summary>The grid the houses and the player's workshops stand on; null for a city whose buildings have no place.</summary>
         public CityGrid Grid { get; }
@@ -157,11 +157,8 @@ namespace DarkFantasyMerchant.Core
             playerWorkshops.SetTradingPost(post);
         }
 
-        /// <summary>Houses of a class the player has built in the city.</summary>
-        public int PlayerHousesOf(SocialClass housedClass)
-        {
-            return cityHousing.PlayerHousesOf(housedClass);
-        }
+        /// <summary>Houses the player has built in the city.</summary>
+        public int PlayerHouses => cityHousing.PlayerHouses;
 
         /// <summary>Houses the city has built of its own since the game started, not the player's.</summary>
         public int CityHouses => cityHousing.CityHouses;
@@ -317,17 +314,12 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
-        /// Adds a house of the player on the grid for a class: its room is the city's, open to any inhabitant of the
-        /// class, given only when it connects to the road network: at once when it touches a network road.
+        /// Adds a house of the player on the grid: its room is the city's, open to any housed inhabitant, given only
+        /// when it connects to the road network: at once when it touches a network road.
         /// </summary>
         /// <exception cref="InvalidOperationException">The city has no grid, or the footprint cannot stand at the place; nothing has changed then.</exception>
-        public void AddPlayerHouse(SocialClass housedClass, int room, Footprint footprint, GridPlace place)
+        public void AddPlayerHouse(int room, Footprint footprint, GridPlace place)
         {
-            if (housedClass < SocialClass.Rich || housedClass > SocialClass.Poor)
-            {
-                throw new ArgumentOutOfRangeException(nameof(housedClass));
-            }
-
             RequireStandable(footprint, place);
 
             if (room < 1)
@@ -335,7 +327,7 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentOutOfRangeException(nameof(room));
             }
 
-            cityHousing.AddPlayerHouse(housedClass, room, footprint, place);
+            cityHousing.AddPlayerHouse(room, footprint, place);
             Changed?.Invoke();
         }
 
@@ -499,11 +491,9 @@ namespace DarkFantasyMerchant.Core
         /// One day of the city: the inhabitants consume every good, down to nothing; then every
         /// workshop hires or lays off by where the stock left stands against the thresholds, takes
         /// its inputs, in proportion to the scarcest, and produces as much, unless that stock is
-        /// above T3, where the inputs are taken all the same. With labour,
-        /// the classes' satisfactions follow the stocks (with a social rule), the player's
-        /// workshops fill their vacancies from the beggars, the poor rise and fall between the
-        /// classes and some leave (with a social rule), the beggars come or go, and the city
-        /// builds a house for each crowded class.
+        /// above T3, where the inputs are taken all the same. With labour, the player's
+        /// workshops fill their vacancies from the beggars, the housed without room leave (with a
+        /// leaving rule), the beggars come or go, and the city builds a house when it is crowded.
         /// </summary>
         public void StartDay()
         {
@@ -511,7 +501,7 @@ namespace DarkFantasyMerchant.Core
             LastDay.Clear();
 
             // Every good first, by the inhabitants of the morning: a workshop that hires
-            // changes the poor, so it must not change what the goods after it consume.
+            // changes the housed, so it must not change what the goods after it consume.
             var consumed = new double[goods.Length];
 
             for (int i = 0; i < goods.Length; i++)
@@ -552,11 +542,11 @@ namespace DarkFantasyMerchant.Core
 
                 if (Leaving != null)
                 {
-                    LetThePoorLeave();
+                    LetTheHousedLeave();
                 }
 
                 Population.SetBeggars(Labour.NextBeggars(Population.Beggars, Population.Inhabitants));
-                cityHousing.BuildCityHouses(Market.AvailableOf, TakeMaterial);
+                cityHousing.BuildCityHouse(Market.AvailableOf, TakeMaterial);
             }
 
             // Last, so that the next day starts on the thresholds of the population this day leaves.
@@ -616,8 +606,8 @@ namespace DarkFantasyMerchant.Core
             return Array.ConvertAll(consumers, list => list.ToArray());
         }
 
-        // The poor who leave take their jobs with them, a worker for every family.
-        private void LetThePoorLeave()
+        // The housed who leave take their jobs with them, a worker for every family.
+        private void LetTheHousedLeave()
         {
             int workers = Leaving.LeavingOf(Population) / Labour.InhabitantsPerWorker;
 
@@ -627,7 +617,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             int removed = TakeWorkersAway(workers);
-            Population.Leave(SocialClass.Poor, removed * Labour.InhabitantsPerWorker);
+            Population.Leave(removed * Labour.InhabitantsPerWorker);
         }
 
         // The reserves first, in the catalogue's order; then the workers above the protected ones

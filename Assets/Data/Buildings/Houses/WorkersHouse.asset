@@ -10,17 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a35f5af144fec9b47a09a3804b002764, type: 3}
-  m_Name: RichHouse
+  m_Name: WorkersHouse
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.HouseDefinition
-  displayName: Maison de riches
-  gold: 25000
+  displayName: Maison d'ouvriers
+  gold: 5000
   materials:
   - good: {fileID: 11400000, guid: c1aee0a6d45237f4f98a31437e2602e4, type: 2}
-    units: 25
+    units: 10
   - good: {fileID: 11400000, guid: 4aa4ecf3894e5d34b8ade5228cde2e48, type: 2}
-    units: 30
+    units: 10
   - good: {fileID: 11400000, guid: 4ca27dedb2f7085448acb00de4c9761a, type: 2}
-    units: 50
+    units: 40
   footprint: {x: 2, y: 1}
-  socialClass: 0
-  room: 40
+  viewSprite: {fileID: 0}
+  viewSpriteOrientation: 1
+  room: 140

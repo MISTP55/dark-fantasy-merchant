@@ -33,7 +33,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
         private static PlacedBuilding NewHouse(CityGrid grid, int x, int y)
         {
-            return grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, House, At(x, y));
+            return grid.Place(BuildingKind.House(), BuildingOwner.City, House, At(x, y));
         }
 
         [Test]
@@ -81,7 +81,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Hall(grid, 4, 4);
             PlacedBuilding house = NewHouse(grid, 6, 4);
             Assert.IsFalse(house.IsConnected);
-            Assert.AreEqual(0, grid.ConnectedHousesOf(SocialClass.Poor));
+            Assert.AreEqual(0, grid.CountConnectedHouses());
         }
 
         [Test]
@@ -150,16 +150,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void ConnectedHousesOf_CountsOnlyConnectedHouses()
+        public void CountConnectedHouses_CountsOnlyConnectedHouses()
         {
             var grid = Empty();
             Hall(grid, 4, 4);
             Road(grid, 6, 4);
             NewHouse(grid, 7, 4);
             NewHouse(grid, 0, 0);
-            Assert.AreEqual(2, grid.HousesOf(SocialClass.Poor));
-            Assert.AreEqual(1, grid.ConnectedHousesOf(SocialClass.Poor));
-            Assert.AreEqual(0, grid.ConnectedHousesOf(SocialClass.Rich));
+            Assert.AreEqual(2, grid.CountHouses());
+            Assert.AreEqual(1, grid.CountConnectedHouses());
         }
 
         [Test]

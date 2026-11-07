@@ -18,9 +18,7 @@ namespace DarkFantasyMerchant.Editor
         {
             Water,
             Wall,
-            RichHouse,
-            WealthyHouse,
-            PoorHouse,
+            House,
             TownHall,
             Port,
             Berth,
@@ -29,7 +27,7 @@ namespace DarkFantasyMerchant.Editor
             Erase,
         }
 
-        private static readonly string[] ToolLabels = { "Water", "Wall", "Rich house", "Wealthy house", "Poor house", "Town hall", "Port", "Berth", "Trading post site", "Road", "Erase" };
+        private static readonly string[] ToolLabels = { "Water", "Wall", "House", "Town hall", "Port", "Berth", "Trading post site", "Road", "Erase" };
 
         private static readonly Color FreeCell = new Color32(0x3B, 0x4A, 0x3A, 0xFF);
         private static readonly Color ForbiddenCell = new Color32(0x24, 0x43, 0x5E, 0xFF);
@@ -355,8 +353,8 @@ namespace DarkFantasyMerchant.Editor
 
         private void DrawRooms(CityGrid grid)
         {
-            PerClass<int> roomPerHouse = buildings.HouseRooms;
-            PerClass<int> needed = economy.StartingRoomOf(city, roomPerHouse);
+            int perHouse = buildings.House.Room;
+            int need = economy.StartingRoomOf(city, perHouse);
 
             int unconnected = 0;
 
@@ -377,23 +375,15 @@ namespace DarkFantasyMerchant.Editor
 
             EditorGUILayout.LabelField($"Starting houses not connected to the town hall: {unconnected}", unconnectedStyle);
 
-            foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
+            int placed = grid.CountConnectedHouses() * perHouse;
+            var style = new GUIStyle(EditorStyles.label);
+
+            if (placed < need)
             {
-                int perHouse = roomPerHouse[housedClass];
-                int placed = grid.ConnectedHousesOf(housedClass) * perHouse;
-                int need = needed[housedClass];
-                int housesNeeded = perHouse > 0 ? need / perHouse : 0;
-                bool isShort = placed < need;
-
-                var style = new GUIStyle(EditorStyles.label);
-
-                if (isShort)
-                {
-                    style.normal.textColor = ShortageColor;
-                }
-
-                EditorGUILayout.LabelField($"{housedClass}: rooms {placed} / {need} ({housesNeeded} houses needed)", style);
+                style.normal.textColor = ShortageColor;
             }
+
+            EditorGUILayout.LabelField($"Rooms {placed} / {need} ({need / perHouse} houses needed)", style);
         }
 
         private void DrawGrid(CityLayoutDefinition layout, CityGrid grid)
@@ -484,7 +474,7 @@ namespace DarkFantasyMerchant.Editor
                 }
                 else
                 {
-                    EditorGUI.DrawRect(rect, HouseColors.Of(building.Kind.HousedClass));
+                    EditorGUI.DrawRect(rect, HouseColors.House);
 
                     if (!building.IsConnected)
                     {
@@ -549,9 +539,9 @@ namespace DarkFantasyMerchant.Editor
                 return;
             }
 
-            if (HouseClassOf(tool, out SocialClass housedClass))
+            if (tool == Tool.House)
             {
-                Footprint footprint = CityLayoutEditing.HouseFootprint(buildings, housedClass);
+                Footprint footprint = CityLayoutEditing.HouseFootprint(buildings);
                 Vector2Int size = footprint.SizeFor(orientation);
                 bool valid = grid.CanPlace(footprint, new GridPlace(hovered, orientation));
                 Rect low = cellRect(hovered.x, hovered.y);
@@ -620,15 +610,15 @@ namespace DarkFantasyMerchant.Editor
                 return;
             }
 
-            if (HouseClassOf(tool, out SocialClass housedClass))
+            if (tool == Tool.House)
             {
                 if (erases)
                 {
-                    CityLayoutEditing.RemoveHouses(layout, buildings, new[] { hovered }, housedClass);
+                    CityLayoutEditing.RemoveHouses(layout, buildings, new[] { hovered });
                 }
                 else if (down)
                 {
-                    CityLayoutEditing.TryAddHouse(layout, buildings, housedClass, new GridPlace(hovered, orientation));
+                    CityLayoutEditing.TryAddHouse(layout, buildings, new GridPlace(hovered, orientation));
                 }
             }
             else if (tool == Tool.TownHall)
@@ -794,25 +784,6 @@ namespace DarkFantasyMerchant.Editor
         private List<Vector2Int> BrushCells(CityLayoutDefinition layout, Vector2Int hovered)
         {
             return CityLayoutEditing.BrushCells(hovered, brushSize, roundBrush, layout.Width, layout.Height);
-        }
-
-        private static bool HouseClassOf(Tool tool, out SocialClass housedClass)
-        {
-            switch (tool)
-            {
-                case Tool.RichHouse:
-                    housedClass = SocialClass.Rich;
-                    return true;
-                case Tool.WealthyHouse:
-                    housedClass = SocialClass.Wealthy;
-                    return true;
-                case Tool.PoorHouse:
-                    housedClass = SocialClass.Poor;
-                    return true;
-                default:
-                    housedClass = SocialClass.Poor;
-                    return false;
-            }
         }
 
         // The seed of the default layout is the city's index in the map, as in Regenerate All City Layouts.

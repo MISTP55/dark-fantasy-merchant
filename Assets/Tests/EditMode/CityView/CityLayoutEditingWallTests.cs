@@ -92,7 +92,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void SetWalls_SkipsWaterBuildingsPortBerthsAndOutside()
         {
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(1, 3));
+            CityLayoutEditing.TryAddHouse(layout, buildings, Along(1, 3));
             CityLayoutEditing.SetRoads(layout, buildings, new[] { new Vector2Int(8, 0) }, true);
 
             CityLayoutEditing.SetWalls(layout, buildings, new[]
@@ -128,7 +128,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityLayoutEditing.SetRoads(layout, buildings, new[] { new Vector2Int(8, 5) }, true);
             Assert.AreEqual(0, layout.Roads.Count);
 
-            Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(7, 5)));
+            Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, Along(7, 5)));
             Assert.IsFalse(CityLayoutEditing.SetTownHall(layout, buildings, Along(7, 4)));
             Assert.AreEqual(new Vector2Int(4, 0), layout.TownHallPlace.Origin);
 
@@ -156,7 +156,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             CityLayoutEditing.SetWalls(layout, buildings, ring, true);
 
-            Assert.IsTrue(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(8, 6)));
+            Assert.IsTrue(CityLayoutEditing.TryAddHouse(layout, buildings, Along(8, 6)));
             Assert.AreEqual(1, layout.StartingHouses.Count);
         }
 
@@ -176,7 +176,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityLayoutEditing.SetWalls(layout, buildings, new[] { new Vector2Int(8, 5) }, true);
 
             CityLayoutEditing.SetRoads(layout, buildings, new[] { new Vector2Int(8, 0) }, true);
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(1, 3));
+            CityLayoutEditing.TryAddHouse(layout, buildings, Along(1, 3));
             CityLayoutEditing.SetForbidden(layout, buildings, new[] { new Vector2Int(9, 9) }, true);
             CityLayoutEditing.SetTownHall(layout, buildings, Along(4, 1));
             CityLayoutEditing.RemoveTownHall(layout);

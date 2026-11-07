@@ -9,8 +9,8 @@ namespace DarkFantasyMerchant.Core
         /// <summary>
         /// A grid with a band of water along the shore's edge, the port on the middle of that shore facing the water,
         /// the town hall inland of the port, walls on the outline of the square of wallSide cells centred on it, the trading post site inside them nearest the town hall
-        /// (<see cref="TradingPostPlacement.TryNear"/>), then houses[c] houses of each class drawn around it, each connected by
-        /// roads (<see cref="StartingHouses.TryPlace(CityGrid, PerClass{int}, PerClass{Footprint}, RectInt, System.Random)"/>).
+        /// (<see cref="TradingPostPlacement.TryNear"/>), then the houses drawn around it, each connected by
+        /// roads (<see cref="StartingHouses.TryPlace(CityGrid, int, Footprint, RectInt, System.Random)"/>).
         /// </summary>
         /// <param name="berths">How many berths to place on the water nearest the port (<see cref="StartingBerths.Place"/>).</param>
         /// <param name="shore">The edge the water runs along.</param>
@@ -32,7 +32,7 @@ namespace DarkFantasyMerchant.Core
         /// <returns>False, and no grid, when the port, a berth, the town hall, the trading post site or a house does not fit, or the walls do not close.</returns>
         public static bool TryBuild(
             int width, int height, PortFacing shore, int waterRows, int townHallDistance, int houseArea, int wallSide,
-            PortFootprint port, int berths, Footprint townHall, Footprint tradingPost, PerClass<int> houses, PerClass<Footprint> houseFootprints,
+            PortFootprint port, int berths, Footprint townHall, Footprint tradingPost, int houses, Footprint houseFootprint,
             RoadContact contact, System.Random random,
             out CityGrid grid, out string problem)
         {
@@ -101,7 +101,7 @@ namespace DarkFantasyMerchant.Core
 
             created.ReserveTradingPostSite(tradingPost, postSite);
 
-            if (!StartingHouses.TryPlace(created, houses, houseFootprints, SquareAround(created.TownHall, houseArea), random))
+            if (!StartingHouses.TryPlace(created, houses, houseFootprint, SquareAround(created.TownHall, houseArea), random))
             {
                 problem = $"its starting houses do not fit on a {width} by {height} grid";
                 return false;

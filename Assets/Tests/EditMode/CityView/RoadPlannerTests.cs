@@ -157,7 +157,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var grid = Grid(8, 8);
             Hall(grid, 0, 0);
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, new Footprint(2, 1), At(4, 0));
+            grid.Place(BuildingKind.House(), BuildingOwner.City, new Footprint(2, 1), At(4, 0));
             var distances = new int[64];
 
             RoadPlanner.DistancesFromNetwork(grid, distances);
@@ -217,7 +217,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var grid = Grid(8, 8, new Vector2Int(3, 0));
             Hall(grid, 0, 0);
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, One, At(3, 1));
+            grid.Place(BuildingKind.House(), BuildingOwner.City, One, At(3, 1));
 
             // Forbidden, under a building, under the building itself, twice, off the grid.
             Assert.IsFalse(RoadPlanner.Connects(grid, Cells((4, 0)), Cells((2, 0), (3, 0))));

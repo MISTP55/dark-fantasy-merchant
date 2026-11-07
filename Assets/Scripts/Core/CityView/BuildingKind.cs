@@ -3,7 +3,7 @@ using System;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// What a building is: the house of a class, the workshop of a good, a road, the town hall, the port, a wall or the
+    /// What a building is: a house, the workshop of a good, a road, the town hall, the port, a wall or the
     /// trading post, and what it does on the grid. The grid asks what a building does (<see cref="CarriesNetwork"/>,
     /// <see cref="NeedsConnection"/>, <see cref="CoversOneCell"/>, <see cref="ClosesWalls"/>), never which one it is,
     /// so that a new kind of building is given its behaviour here, in <see cref="TraitsOf"/>, and nowhere else.
@@ -34,54 +34,53 @@ namespace DarkFantasyMerchant.Core
         };
 
         private readonly Type type;
-        private readonly SocialClass housedClass;
         private readonly int good;
 
-        private BuildingKind(Type type, SocialClass housedClass, int good)
+        private BuildingKind(Type type, int good)
         {
             this.type = type;
-            this.housedClass = housedClass;
             this.good = good;
         }
 
-        public static BuildingKind House(SocialClass housedClass)
+        /// <summary>A house, whose room shelters the city's housed inhabitants.</summary>
+        public static BuildingKind House()
         {
-            return new BuildingKind(Type.House, housedClass, -1);
+            return new BuildingKind(Type.House, -1);
         }
 
         public static BuildingKind Workshop(int good)
         {
-            return new BuildingKind(Type.Workshop, default, good);
+            return new BuildingKind(Type.Workshop, good);
         }
 
         /// <summary>A road: one cell, part of the network when joined to the town hall.</summary>
         public static BuildingKind Road()
         {
-            return new BuildingKind(Type.Road, default, -1);
+            return new BuildingKind(Type.Road, -1);
         }
 
         /// <summary>The town hall: the root of the network, at most one per grid.</summary>
         public static BuildingKind TownHall()
         {
-            return new BuildingKind(Type.TownHall, default, -1);
+            return new BuildingKind(Type.TownHall, -1);
         }
 
         /// <summary>The port: half on water, at most one per grid; not part of the network.</summary>
         public static BuildingKind Port()
         {
-            return new BuildingKind(Type.Port, default, -1);
+            return new BuildingKind(Type.Port, -1);
         }
 
         /// <summary>A wall: one cell, closing in with the water the space where the other buildings stand.</summary>
         public static BuildingKind Wall()
         {
-            return new BuildingKind(Type.Wall, default, -1);
+            return new BuildingKind(Type.Wall, -1);
         }
 
         /// <summary>The player's trading post: at most one per grid, on the reserved site; not part of the network.</summary>
         public static BuildingKind TradingPost()
         {
-            return new BuildingKind(Type.TradingPost, default, -1);
+            return new BuildingKind(Type.TradingPost, -1);
         }
 
         public bool IsHouse => type == Type.House;
@@ -97,9 +96,6 @@ namespace DarkFantasyMerchant.Core
         public bool IsWall => type == Type.Wall;
 
         public bool IsTradingPost => type == Type.TradingPost;
-
-        /// <summary>The class a house lodges; only for a house.</summary>
-        public SocialClass HousedClass => IsHouse ? housedClass : throw new InvalidOperationException("Not a house.");
 
         /// <summary>The index of the good a workshop makes; only for a workshop.</summary>
         public int Good => IsWorkshop ? good : throw new InvalidOperationException("Not a workshop.");

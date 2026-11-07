@@ -6,17 +6,15 @@ using UnityEngine;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The catalogue of the buildings the player can build: exactly one house per class, which
-    /// also makes the houses the cities build of their own, and one workshop per good at most.
+    /// The catalogue of the buildings the player can build: exactly one house, which also makes
+    /// the houses the cities build of their own, and one workshop per good at most.
     /// Holds no runtime state: what a city has built is in its <see cref="City"/>.
     /// </summary>
     [CreateAssetMenu(fileName = "Buildings", menuName = "Dark Fantasy Merchant/Buildings")]
     public sealed class BuildingsDefinition : ScriptableObject
     {
-        private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
-
-        [Tooltip("The houses, exactly one per class.")]
-        [SerializeField] private List<HouseDefinition> houses = new List<HouseDefinition>();
+        [Tooltip("The house, which the player builds and the cities build of their own.")]
+        [SerializeField] private HouseDefinition house;
 
         [Tooltip("The workshops, one per good at most. A workshop of a good that is not active is ignored.")]
         [SerializeField] private List<WorkshopDefinition> workshops = new List<WorkshopDefinition>();
@@ -57,15 +55,10 @@ namespace DarkFantasyMerchant.Game
 
         public TradingPostDefinition TradingPost => tradingPost;
 
-        public IReadOnlyList<HouseDefinition> Houses => houses;
+        /// <summary>The one house; null in a catalogue that <see cref="TryValidate"/> refuses.</summary>
+        public HouseDefinition House => house;
 
         public IReadOnlyList<WorkshopDefinition> Workshops => workshops;
-
-        /// <returns>The house of a class, or null when the catalogue has none.</returns>
-        public HouseDefinition HouseOf(SocialClass housedClass)
-        {
-            return houses.Find(house => house != null && house.SocialClass == housedClass);
-        }
 
         /// <returns>The workshop of a good, or null when the catalogue has none.</returns>
         public WorkshopDefinition WorkshopOf(GoodDefinition good)
@@ -79,7 +72,7 @@ namespace DarkFantasyMerchant.Game
         {
             if (kind.IsHouse)
             {
-                return HouseOf(kind.HousedClass);
+                return house;
             }
 
             if (kind.IsWorkshop)
@@ -91,12 +84,8 @@ namespace DarkFantasyMerchant.Game
             return kind.IsRoad ? road : kind.IsPort ? port : kind.IsWall ? wall : kind.IsTradingPost ? tradingPost : townHall;
         }
 
-        /// <summary>The places of the house of each class. Only for a catalogue that <see cref="TryValidate"/> accepts.</summary>
-        public PerClass<int> HouseRooms => new PerClass<int>(
-            HouseOf(SocialClass.Rich).Room, HouseOf(SocialClass.Wealthy).Room, HouseOf(SocialClass.Poor).Room);
-
         /// <summary>
-        /// Whether the buildings can be used at all: every definition is usable, each class has
+        /// Whether the buildings can be used at all: every definition is usable, there is
         /// exactly one house, which also sets the houses of every city at the start, and each good
         /// one workshop at most, active or not. A cost that cannot be worked out does not count
         /// here: it only makes its building unavailable (<see cref="BuildingDefinition.TryCreateCost"/>).
@@ -104,10 +93,22 @@ namespace DarkFantasyMerchant.Game
         /// <param name="problem">What is wrong, for the console; null when nothing is.</param>
         public bool TryValidate(out string problem)
         {
-            problem = ProblemOfEntries(houses, "houses") ?? ProblemOfEntries(workshops, "workshops");
+            problem = ProblemOfEntries(workshops, "workshops");
 
             if (problem != null)
             {
+                return false;
+            }
+
+            if (house == null)
+            {
+                problem = "it has no house";
+                return false;
+            }
+
+            if (!house.TryValidate(out string houseProblem))
+            {
+                problem = $"'{house.name}': {houseProblem}";
                 return false;
             }
 
@@ -177,23 +178,6 @@ namespace DarkFantasyMerchant.Game
                 return false;
             }
 
-            foreach (SocialClass housedClass in Classes)
-            {
-                List<HouseDefinition> ofClass = houses.FindAll(house => house.SocialClass == housedClass);
-
-                if (ofClass.Count == 0)
-                {
-                    problem = $"the {ClassName(housedClass)} have no house";
-                    return false;
-                }
-
-                if (ofClass.Count > 1)
-                {
-                    problem = $"the {ClassName(housedClass)} have {ofClass.Count} houses: '{ofClass[0].name}' and '{ofClass[1].name}'";
-                    return false;
-                }
-            }
-
             foreach (WorkshopDefinition workshop in workshops)
             {
                 List<WorkshopDefinition> ofGood = workshops.FindAll(other => other.Good == workshop.Good);
@@ -208,19 +192,13 @@ namespace DarkFantasyMerchant.Game
             return true;
         }
 
-        /// <summary>The houses as the player can build them, in the catalogue's order.</summary>
-        /// <param name="unavailable">Told of each house whose cost cannot be worked out, with why; may be null.</param>
+        /// <summary>The house as the player can build it, alone in its list. Only for a catalogue that <see cref="TryValidate"/> accepts.</summary>
+        /// <param name="unavailable">Told when the house's cost cannot be worked out, with why; may be null.</param>
         public IReadOnlyList<HouseOffer> CreateHouseOffers(EconomyDefinition economy, Action<BuildingDefinition, string> unavailable)
         {
-            var offers = new List<HouseOffer>();
+            BuildingCost cost = CostOf(house, economy, unavailable);
 
-            foreach (HouseDefinition house in houses)
-            {
-                BuildingCost cost = CostOf(house, economy, unavailable);
-                offers.Add(new HouseOffer(house.SocialClass, house.DisplayName, house.Room, cost, house.CostText(economy), house.Footprint));
-            }
-
-            return offers;
+            return new[] { new HouseOffer(house.DisplayName, house.Room, cost, house.CostText(economy), house.Footprint) };
         }
 
         /// <summary>The road as the player can build it. Only for a catalogue that <see cref="TryValidate"/> accepts.</summary>
@@ -292,21 +270,6 @@ namespace DarkFantasyMerchant.Game
             }
 
             return null;
-        }
-
-        private static string ClassName(SocialClass housedClass)
-        {
-            switch (housedClass)
-            {
-                case SocialClass.Rich:
-                    return "rich";
-                case SocialClass.Wealthy:
-                    return "wealthy";
-                case SocialClass.Poor:
-                    return "poor";
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(housedClass));
-            }
         }
     }
 }

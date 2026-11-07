@@ -32,7 +32,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             layout = Track(ScriptableObject.CreateInstance<CityLayoutDefinition>());
             layout.SetContent(80, 80, new[] { new Vector2Int(20, 20) }, new[]
             {
-                new CityLayoutDefinition.StartingHouse(SocialClass.Rich, new Vector2Int(30, 30), BuildingOrientation.Along),
+                new CityLayoutDefinition.StartingHouse(new Vector2Int(30, 30), BuildingOrientation.Along),
             }, null, new Vector2Int[0], null, new Vector2Int[0]);
         }
 
@@ -93,13 +93,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.IsTrue(layout.TryCreateGrid(buildings, out CityGrid grid, out problem), problem);
             Assert.AreEqual(CityLayoutEditing.GeneratedBerths, layout.Berths.Count);
-            PerClass<int> needed = economy.StartingRoomOf(city, buildings.HouseRooms);
+            int needed = economy.StartingRoomOf(city, buildings.House.Room);
 
-            foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
-            {
-                Assert.GreaterOrEqual(grid.ConnectedHousesOf(housedClass) * buildings.HouseRooms[housedClass], needed[housedClass], housedClass.ToString());
-                Assert.AreEqual(grid.HousesOf(housedClass), grid.ConnectedHousesOf(housedClass), housedClass.ToString());
-            }
+            Assert.GreaterOrEqual(grid.CountConnectedHouses() * buildings.House.Room, needed);
+            Assert.AreEqual(grid.CountHouses(), grid.CountConnectedHouses());
         }
 
         // The layouts are connected by sides, so that they work under either contact.

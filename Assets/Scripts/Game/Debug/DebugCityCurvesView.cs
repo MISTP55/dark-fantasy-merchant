@@ -6,8 +6,8 @@ using UnityEngine.UIElements;
 namespace DarkFantasyMerchant.Game
 {
     /// <summary>
-    /// The curves of one city, chosen in a list: its inhabitants per class and its beggars, its
-    /// satisfactions, its workers and their reserve, then, for every good, its stock over the
+    /// The curves of one city, chosen in a list: its housed and its beggars, its workers and
+    /// their reserve, then, for every good, its stock over the
     /// bands of its thresholds and its price, the charts of the goods it produces framed.
     /// </summary>
     public sealed class DebugCityCurvesView : IDebugView
@@ -26,7 +26,7 @@ namespace DarkFantasyMerchant.Game
         private readonly List<Button> cityButtons = new List<Button>();
         private readonly int[] goodOrder;
 
-        private readonly TimeSeriesChart classesChart;
+        private readonly TimeSeriesChart populationChart;
         private readonly TimeSeriesChart workersChart;
         private readonly TimeSeriesChart[] goodCharts;
 
@@ -78,7 +78,7 @@ namespace DarkFantasyMerchant.Game
             charts.Add(Section("Population"));
             VisualElement populationGrid = Grid();
             charts.Add(populationGrid);
-            classesChart = AddChart(populationGrid, "Habitants par classe et mendiants", ThirdClass, recorder.ChartCalendar);
+            populationChart = AddChart(populationGrid, "Ouvriers logés et mendiants", ThirdClass, recorder.ChartCalendar);
             workersChart = AddChart(populationGrid, "Ouvriers et réserve", ThirdClass, recorder.ChartCalendar);
 
             // One legend for every good: their charts are too small for one each.
@@ -132,11 +132,9 @@ namespace DarkFantasyMerchant.Game
             int count = history.DayCount;
             int first = history.FirstDay;
 
-            classesChart.SetData(first, count, new[]
+            populationChart.SetData(first, count, new[]
             {
-                Series("Riches", DebugChartColors.Rich, ChartSeriesStyle.StackedArea, Fill("rich", history, CityIndicator.Rich)),
-                Series("Aisés", DebugChartColors.Wealthy, ChartSeriesStyle.StackedArea, Fill("wealthy", history, CityIndicator.Wealthy)),
-                Series("Pauvres", DebugChartColors.Poor, ChartSeriesStyle.StackedArea, Fill("poor", history, CityIndicator.Poor)),
+                Series("Ouvriers logés", DebugChartColors.Housed, ChartSeriesStyle.StackedArea, Fill("housed", history, CityIndicator.Housed)),
                 Series("Mendiants", DebugChartColors.Beggars, ChartSeriesStyle.StackedArea, Fill("beggars", history, CityIndicator.Beggars)),
             }, null);
 

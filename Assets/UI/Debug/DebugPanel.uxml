@@ -28,7 +28,7 @@
                     <ui:Button name="markets-tab" text="Marchés" class="debug-panel__tab debug-panel__subtab" />
                 </ui:VisualElement>
                 <ui:VisualElement name="population-page" class="debug-panel__page">
-                    <ui:Label text="Habitants de chaque classe sur la place de leurs maisons, satisfaction entre parenthèses." class="debug-cities__legend" />
+                    <ui:Label text="Ouvriers logés sur la place des maisons." class="debug-cities__legend" />
                     <ui:ScrollView mode="VerticalAndHorizontal" class="debug-cities__scroll">
                         <ui:VisualElement name="population-header" />
                         <ui:VisualElement name="population-rows" />

@@ -190,10 +190,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TheEconomy_HasItsDepartureAndHousingSettings()
         {
             Assert.AreEqual(30, LoadEconomy().CreateLeavingRule().ProtectedWorkers);
-            Assert.AreEqual(0.97, LoadEconomy().CreateHousingRule(SocialClass.Rich, 40, new MaterialCost[0]).Occupancy, 1e-9);
+            Assert.AreEqual(0.95, LoadEconomy().CreateHousingRule(140, new MaterialCost[0]).Occupancy, 1e-9);
         }
 
-        // 0.1 x rich + 0.3 x wealthy + 0.6 x poor of the rates the classes had: a city consumes as much as it did.
+        // The average of the three rates a good once had, weighted 0.1, 0.3 and 0.6 as the starting population was split:
+        // a city consumes as much as it did.
         [TestCase("Beer", 29.575)]
         [TestCase("Cloth", 8.575)]
         [TestCase("Fish", 3.08)]
@@ -260,10 +261,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsNotNull(buildings, BuildingsPath);
             Assert.IsTrue(buildings.TryValidate(out string problem), problem);
 
-            Assert.AreEqual(3, buildings.Houses.Count);
-            AssertHouse(buildings.HouseOf(SocialClass.Rich), "Maison de riches", 25000, 40, ("Bois", 25), ("Métal", 30), ("Tuiles", 50));
-            AssertHouse(buildings.HouseOf(SocialClass.Wealthy), "Maison d'aisés", 10000, 70, ("Bois", 15), ("Métal", 20), ("Tuiles", 50));
-            AssertHouse(buildings.HouseOf(SocialClass.Poor), "Maison de pauvres", 5000, 140, ("Bois", 10), ("Métal", 10), ("Tuiles", 40));
+            AssertHouse(buildings.House, "Maison d'ouvriers", 5000, 140, ("Bois", 10), ("Métal", 10), ("Tuiles", 40));
 
             EconomyDefinition economy = LoadEconomy();
             Assert.AreEqual(20, buildings.Workshops.Count);

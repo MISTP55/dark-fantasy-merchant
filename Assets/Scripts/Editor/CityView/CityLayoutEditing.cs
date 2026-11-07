@@ -12,10 +12,10 @@ namespace DarkFantasyMerchant.Editor
     /// </summary>
     public static class CityLayoutEditing
     {
-        /// <summary>The footprint of the house of the class in the catalogue.</summary>
-        public static Footprint HouseFootprint(BuildingsDefinition buildings, SocialClass housedClass)
+        /// <summary>The footprint of the catalogue's house.</summary>
+        public static Footprint HouseFootprint(BuildingsDefinition buildings)
         {
-            return buildings.HouseOf(housedClass).Footprint;
+            return buildings.House.Footprint;
         }
 
         /// <summary>Gives the layout the size; the water cells, the houses, the town hall, the port, the roads and the walls that fall outside are dropped.</summary>
@@ -38,7 +38,7 @@ namespace DarkFantasyMerchant.Editor
 
             foreach (CityLayoutDefinition.StartingHouse house in layout.StartingHouses)
             {
-                Vector2Int size = HouseFootprint(buildings, house.socialClass).SizeFor(house.orientation);
+                Vector2Int size = HouseFootprint(buildings).SizeFor(house.orientation);
 
                 if (house.origin.x + size.x <= width && house.origin.y + size.y <= height)
                 {
@@ -445,22 +445,14 @@ namespace DarkFantasyMerchant.Editor
             CityDefinition city, EconomyDefinition economy, BuildingsDefinition buildings, NavigationGrid mask, int seed,
             int width, int height, out CityGrid grid, out string problem)
         {
-            PerClass<int> roomPerHouse = buildings.HouseRooms;
-            PerClass<int> room = economy.StartingRoomOf(city, roomPerHouse);
-            var houses = new PerClass<int>(
-                room[SocialClass.Rich] / roomPerHouse[SocialClass.Rich],
-                room[SocialClass.Wealthy] / roomPerHouse[SocialClass.Wealthy],
-                room[SocialClass.Poor] / roomPerHouse[SocialClass.Poor]);
-            var footprints = new PerClass<Footprint>(
-                HouseFootprint(buildings, SocialClass.Rich),
-                HouseFootprint(buildings, SocialClass.Wealthy),
-                HouseFootprint(buildings, SocialClass.Poor));
+            int roomPerHouse = buildings.House.Room;
+            int houses = economy.StartingRoomOf(city, roomPerHouse) / roomPerHouse;
             PortFacing shore = ShoreSide.Of(mask, city.MapPosition, ShoreRadius);
 
             return StartingLayout.TryBuild(
                 width, height, shore, GeneratedWaterRows, GeneratedTownHallDistance, GeneratedHouseArea, GeneratedWallSide,
                 PortFootprintOf(buildings), GeneratedBerths, buildings.TownHall.Footprint, buildings.TradingPost.Footprint,
-                houses, footprints, RoadContact.SidesOnly, new System.Random(seed),
+                houses, HouseFootprint(buildings), RoadContact.SidesOnly, new System.Random(seed),
                 out grid, out problem);
         }
 
@@ -584,17 +576,17 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <summary>Adds a starting house; false when it does not fit, or the layout cannot make its grid.</summary>
-        public static bool TryAddHouse(CityLayoutDefinition layout, BuildingsDefinition buildings, SocialClass housedClass, GridPlace place)
+        public static bool TryAddHouse(CityLayoutDefinition layout, BuildingsDefinition buildings, GridPlace place)
         {
             if (!TryMakeGrid(layout, buildings, out CityGrid grid)
-                || !grid.CanPlace(HouseFootprint(buildings, housedClass), place))
+                || !grid.CanPlace(HouseFootprint(buildings), place))
             {
                 return false;
             }
 
             var houses = new List<CityLayoutDefinition.StartingHouse>(layout.StartingHouses)
             {
-                new CityLayoutDefinition.StartingHouse(housedClass, place.Origin, place.Orientation),
+                new CityLayoutDefinition.StartingHouse(place.Origin, place.Orientation),
             };
 
             Apply(layout, "Add starting house", layout.Width, layout.Height, layout.ForbiddenCells, houses, buildings);
@@ -602,11 +594,10 @@ namespace DarkFantasyMerchant.Editor
         }
 
         /// <summary>
-        /// Removes the starting houses covering any of the cells, whichever of their cells it is; only those of
-        /// <paramref name="onlyClass"/> when it is given. Records nothing when no house is removed.
+        /// Removes the starting houses covering any of the cells, whichever of their cells it is. Records nothing
+        /// when no house is removed.
         /// </summary>
-        public static void RemoveHouses(
-            CityLayoutDefinition layout, BuildingsDefinition buildings, IEnumerable<Vector2Int> cells, SocialClass? onlyClass = null)
+        public static void RemoveHouses(CityLayoutDefinition layout, BuildingsDefinition buildings, IEnumerable<Vector2Int> cells)
         {
             var removed = new HashSet<int>();
 
@@ -614,7 +605,7 @@ namespace DarkFantasyMerchant.Editor
             {
                 int index = HouseIndexAt(layout, buildings, cell);
 
-                if (index >= 0 && (onlyClass == null || layout.StartingHouses[index].socialClass == onlyClass.Value))
+                if (index >= 0)
                 {
                     removed.Add(index);
                 }
@@ -739,7 +730,7 @@ namespace DarkFantasyMerchant.Editor
 
             foreach (CityLayoutDefinition.StartingHouse house in layout.StartingHouses)
             {
-                Footprint footprint = HouseFootprint(buildings, house.socialClass);
+                Footprint footprint = HouseFootprint(buildings);
                 var housePlace = new GridPlace(house.origin, house.orientation);
 
                 if (!grid.CanPlace(footprint, housePlace))
@@ -747,7 +738,7 @@ namespace DarkFantasyMerchant.Editor
                     return false;
                 }
 
-                grid.Place(BuildingKind.House(house.socialClass), BuildingOwner.City, footprint, housePlace);
+                grid.Place(BuildingKind.House(), BuildingOwner.City, footprint, housePlace);
             }
 
             return true;
@@ -759,7 +750,7 @@ namespace DarkFantasyMerchant.Editor
             for (int i = 0; i < layout.StartingHouses.Count; i++)
             {
                 CityLayoutDefinition.StartingHouse house = layout.StartingHouses[i];
-                Vector2Int size = HouseFootprint(buildings, house.socialClass).SizeFor(house.orientation);
+                Vector2Int size = HouseFootprint(buildings).SizeFor(house.orientation);
 
                 if (cell.x >= house.origin.x && cell.x < house.origin.x + size.x
                     && cell.y >= house.origin.y && cell.y < house.origin.y + size.y)

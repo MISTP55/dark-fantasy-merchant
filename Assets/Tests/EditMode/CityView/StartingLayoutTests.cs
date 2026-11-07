@@ -11,10 +11,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static readonly PortFootprint Port = new PortFootprint(new Footprint(4, 3), 2);
         private static readonly Footprint TownHall = new Footprint(3, 2);
         private static readonly Footprint TradingPost = new Footprint(2, 3);
-        private static readonly PerClass<Footprint> Houses = new PerClass<Footprint>(new Footprint(2, 1), new Footprint(2, 1), new Footprint(2, 1));
+        private static readonly Footprint Houses = new Footprint(2, 1);
 
         private static bool TryBuild(
-            PortFacing shore, PerClass<int> houses, out CityGrid grid, out string problem, int size = 40, int wallSide = 25)
+            PortFacing shore, int houses, out CityGrid grid, out string problem, int size = 40, int wallSide = 25)
         {
             return StartingLayout.TryBuild(
                 size, size, shore, 4, 6, 20, wallSide, Port, 10, TownHall, TradingPost, houses, Houses, RoadContact.SidesOnly,
@@ -59,7 +59,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase(PortFacing.West)]
         public void TryBuild_PutsTheWaterThePortTheTownHallAndConnectedHouses(PortFacing shore)
         {
-            Assert.IsTrue(TryBuild(shore, new PerClass<int>(2, 3, 5), out CityGrid grid, out string problem), problem);
+            Assert.IsTrue(TryBuild(shore, 10, out CityGrid grid, out string problem), problem);
 
             for (int y = 0; y < 40; y++)
             {
@@ -73,9 +73,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsNotNull(grid.Port);
             Assert.AreEqual(shore, grid.Port.PortFacing);
             Assert.IsNotNull(grid.TownHall);
-            Assert.AreEqual(2, grid.ConnectedHousesOf(SocialClass.Rich));
-            Assert.AreEqual(3, grid.ConnectedHousesOf(SocialClass.Wealthy));
-            Assert.AreEqual(5, grid.ConnectedHousesOf(SocialClass.Poor));
+            Assert.AreEqual(10, grid.CountConnectedHouses());
             Assert.IsNull(problem);
         }
 
@@ -85,7 +83,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase(PortFacing.West)]
         public void TryBuild_PlacesTenBerthsAndPasses(PortFacing shore)
         {
-            Assert.IsTrue(TryBuild(shore, new PerClass<int>(2, 3, 5), out CityGrid grid, out string problem), problem);
+            Assert.IsTrue(TryBuild(shore, 10, out CityGrid grid, out string problem), problem);
 
             Assert.AreEqual(10, grid.Berths.Count);
             Assert.IsTrue(HarbourPaths.TryValidate(grid, out string berthProblem), berthProblem);
@@ -94,7 +92,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryBuild_PutsThePortInTheMiddleOfTheShore()
         {
-            Assert.IsTrue(TryBuild(PortFacing.South, new PerClass<int>(0, 0, 0), out CityGrid grid, out _));
+            Assert.IsTrue(TryBuild(PortFacing.South, 0, out CityGrid grid, out _));
 
             // Its land row on the first row of land, its centre on the middle of the edge.
             Assert.AreEqual(2, grid.Port.Place.Origin.y);
@@ -109,7 +107,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase(PortFacing.West, 10, 18)]
         public void TryBuild_PutsTheTownHallInlandOfTheShore(PortFacing shore, int x, int y)
         {
-            Assert.IsTrue(TryBuild(shore, new PerClass<int>(0, 0, 0), out CityGrid grid, out string problem), problem);
+            Assert.IsTrue(TryBuild(shore, 0, out CityGrid grid, out string problem), problem);
 
             Assert.AreEqual(new Vector2Int(x, y), grid.TownHall.Place.Origin);
             Assert.AreEqual(PortFacings.OrientationOf(shore), grid.TownHall.Place.Orientation);
@@ -121,7 +119,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase(PortFacing.West)]
         public void TryBuild_WallsTheOutlineOfTheSquare(PortFacing shore)
         {
-            Assert.IsTrue(TryBuild(shore, new PerClass<int>(2, 3, 5), out CityGrid grid, out string problem), problem);
+            Assert.IsTrue(TryBuild(shore, 10, out CityGrid grid, out string problem), problem);
 
             HashSet<Vector2Int> outline = Outline(grid.TownHall, 25);
             for (int y = 0; y < 40; y++)
@@ -144,7 +142,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase(PortFacing.West)]
         public void TryBuild_PutsEveryBuildingInsideTheWalls(PortFacing shore)
         {
-            Assert.IsTrue(TryBuild(shore, new PerClass<int>(2, 3, 5), out CityGrid grid, out string problem), problem);
+            Assert.IsTrue(TryBuild(shore, 10, out CityGrid grid, out string problem), problem);
 
             Assert.IsTrue(grid.TryValidateWalls(out string wallProblem), wallProblem);
             Assert.IsTrue(grid.KeepsInsideWalls);
@@ -156,7 +154,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [TestCase(PortFacing.West)]
         public void TryBuild_ReservesASiteInsideTheWallsThatNoHouseOrRoadCovers(PortFacing shore)
         {
-            Assert.IsTrue(TryBuild(shore, new PerClass<int>(2, 3, 5), out CityGrid grid, out string problem), problem);
+            Assert.IsTrue(TryBuild(shore, 10, out CityGrid grid, out string problem), problem);
 
             Assert.IsNotNull(grid.TradingPostSite);
             Assert.AreEqual(TradingPost, grid.TradingPostFootprint);
@@ -178,7 +176,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TryBuild_Fails_WhenTheWallsDoNotClose()
         {
             // The square leaves the 40 by 40 grid on its land sides.
-            Assert.IsFalse(TryBuild(PortFacing.South, new PerClass<int>(0, 0, 0), out CityGrid grid, out string problem, wallSide: 45));
+            Assert.IsFalse(TryBuild(PortFacing.South, 0, out CityGrid grid, out string problem, wallSide: 45));
             Assert.IsNull(grid);
             StringAssert.Contains("walls", problem);
         }
@@ -187,7 +185,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TryBuild_Fails_WhenThePortStandsOutsideTheWalls()
         {
             // A 7-side square around the town hall, 6 rows inland, closes on land, short of the port's land row.
-            Assert.IsFalse(TryBuild(PortFacing.South, new PerClass<int>(0, 0, 0), out CityGrid grid, out string problem, wallSide: 7));
+            Assert.IsFalse(TryBuild(PortFacing.South, 0, out CityGrid grid, out string problem, wallSide: 7));
             Assert.IsNull(grid);
             StringAssert.Contains("port", problem);
             StringAssert.Contains("outside the walls", problem);
@@ -196,7 +194,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryBuild_Fails_WhenTheHousesDoNotFit()
         {
-            Assert.IsFalse(TryBuild(PortFacing.South, new PerClass<int>(0, 0, 500), out CityGrid grid, out string problem));
+            Assert.IsFalse(TryBuild(PortFacing.South, 500, out CityGrid grid, out string problem));
             Assert.IsNull(grid);
             StringAssert.Contains("houses", problem);
         }
@@ -206,7 +204,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // 15 by 15 cells inside, the port's land row and the town hall among them: no room for 100 houses and their
             // roads, which the 40 by 40 grid would hold.
-            Assert.IsFalse(TryBuild(PortFacing.South, new PerClass<int>(0, 0, 100), out CityGrid grid, out string problem, wallSide: 17));
+            Assert.IsFalse(TryBuild(PortFacing.South, 100, out CityGrid grid, out string problem, wallSide: 17));
             Assert.IsNull(grid);
             StringAssert.Contains("houses", problem);
         }
@@ -215,7 +213,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void TryBuild_Fails_WhenThePortHasNoRoom()
         {
             // A grid narrower than the port.
-            Assert.IsFalse(TryBuild(PortFacing.South, new PerClass<int>(0, 0, 0), out CityGrid grid, out string problem, 3));
+            Assert.IsFalse(TryBuild(PortFacing.South, 0, out CityGrid grid, out string problem, 3));
             Assert.IsNull(grid);
             StringAssert.Contains("port", problem);
         }

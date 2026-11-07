@@ -151,7 +151,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 CityGrid grid = PocketGrid();
                 Assert.IsTrue(new RoadsidePlacement(new System.Random(seed)).TryChoose(grid, House, out GridPlace place, roads));
                 Assert.AreEqual(1, roads.Count, $"seed {seed}");
-                PlacedBuilding house = grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, House, place);
+                PlacedBuilding house = grid.Place(BuildingKind.House(), BuildingOwner.City, House, place);
                 Assert.IsFalse(house.IsConnected);
                 grid.PlaceRoads(roads, BuildingOwner.City);
                 Assert.IsTrue(house.IsConnected, $"seed {seed}");

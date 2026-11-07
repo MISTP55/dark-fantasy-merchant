@@ -107,15 +107,9 @@ namespace DarkFantasyMerchant.Game
         [SerializeField, Min(0)] private int protectedWorkers = 30;
 
         [Header("Cities' houses")]
-        [Tooltip("A city builds a rich house of its own, with the materials of the player's, once its rich are above this share of their room.")]
-        [SerializeField, Range(0f, 1f)] private double cityRichHouseOccupancy = 0.97d;
-
-        [Tooltip("A city builds a wealthy house once its wealthy are above this share of their room.")]
-        [SerializeField, Range(0f, 1f)] private double cityWealthyHouseOccupancy = 0.96d;
-
-        [Tooltip("A city builds a poor house once its poor are above this share of their room.")]
-        [FormerlySerializedAs("cityHouseOccupancy")]
-        [SerializeField, Range(0f, 1f)] private double cityPoorHouseOccupancy = 0.95d;
+        [Tooltip("A city builds a house of its own, with the materials of the player's, once its housed are above this share of their room.")]
+        [FormerlySerializedAs("cityPoorHouseOccupancy")]
+        [SerializeField, Range(0f, 1f)] private double cityHouseOccupancy = 0.95d;
 
         [Header("Stock thresholds T0 to T3 of a good in a city, at which its prices are given")]
         [Tooltip("T0: days of the city's consumption.")]
@@ -333,10 +327,8 @@ namespace DarkFantasyMerchant.Game
                 ?? ProblemOf(() => new CityPopulation(StartingPopulation), "the starting population (workforce times inhabitants per worker)")
                 ?? ProblemOf(() => CreateLabourRule(), "the labour")
                 ?? ProblemOf(() => CreateLeavingRule(), "the departures")
-                ?? ProblemOf(() => CreateHousingRule(SocialClass.Rich, 1, Array.Empty<MaterialCost>()), "the cities' houses")
-                ?? ProblemOf(() => CreateHousingRule(SocialClass.Wealthy, 1, Array.Empty<MaterialCost>()), "the cities' houses")
-                ?? ProblemOf(() => CreateHousingRule(SocialClass.Poor, 1, Array.Empty<MaterialCost>()), "the cities' houses")
-                ?? ProblemOf(() => CityPopulation.AtStart(0, inhabitantsPerWorker, startingBeggarsPerWorker, PerClass<int>.All(1)), "the starting beggars per worker");
+                ?? ProblemOf(() => CreateHousingRule(1, Array.Empty<MaterialCost>()), "the cities' houses")
+                ?? ProblemOf(() => CityPopulation.AtStart(0, inhabitantsPerWorker, startingBeggarsPerWorker, 1), "the starting beggars per worker");
 
             return problem == null;
         }
@@ -455,19 +447,15 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// When a city builds a house of its own for a class, from these settings. Throws when the
-        /// occupancy or the room is unusable.
+        /// When a city builds a house of its own, from these settings. Throws when the occupancy or
+        /// the room is unusable.
         /// </summary>
-        /// <param name="room">Places of a house of the class, the player's.</param>
+        /// <param name="room">Places of a house, the player's.</param>
         /// <param name="materials">What a house takes from the market (<see cref="BuildingDefinition.MaterialsOf"/>).</param>
         /// <param name="footprint">The cells a house covers on the city grid; null for a market without grid.</param>
-        public CityHousingRule CreateHousingRule(SocialClass housedClass, int room, IReadOnlyList<MaterialCost> materials, Footprint? footprint = null)
+        public CityHousingRule CreateHousingRule(int room, IReadOnlyList<MaterialCost> materials, Footprint? footprint = null)
         {
-            double occupancy = housedClass == SocialClass.Rich
-                ? cityRichHouseOccupancy
-                : housedClass == SocialClass.Wealthy ? cityWealthyHouseOccupancy : cityPoorHouseOccupancy;
-
-            return new CityHousingRule(housedClass, occupancy, room, materials, footprint);
+            return new CityHousingRule(cityHouseOccupancy, room, materials, footprint);
         }
 
         /// <summary>Barrels of room a unit of a good takes in a hold: one, or the barrels per bushel.</summary>
@@ -522,11 +510,11 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// The room the city's starting population needs, class by class: a whole number of houses
+        /// The room the city's starting population needs: a whole number of houses
         /// (<see cref="CityPopulation.RoomAtStart"/>).
         /// </summary>
-        /// <param name="roomPerHouse">Places of a house of each class, each at least 1.</param>
-        public PerClass<int> StartingRoomOf(CityDefinition city, PerClass<int> roomPerHouse)
+        /// <param name="roomPerHouse">Places of a house, at least 1.</param>
+        public int StartingRoomOf(CityDefinition city, int roomPerHouse)
         {
             if (city == null)
             {
@@ -545,18 +533,18 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         /// <param name="daysPerWeek">Days of the calendar's week: goods give their consumption per week.</param>
         /// <param name="labour">The labour of the city, or null to keep the immediate hiring.</param>
-        /// <param name="roomPerHouse">Places of a house of each class, each at least 1 with a labour rule: the city starts with as many houses as each class needs.</param>
-        /// <param name="housing">When the city builds a house of its own for each class, only with a labour rule; null for never.</param>
+        /// <param name="roomPerHouse">Places of a house, at least 1 with a labour rule: the city starts with as many houses as its housed need.</param>
+        /// <param name="housing">When the city builds a house of its own, only with a labour rule; null for never.</param>
         /// <param name="leaving">Who leaves the city for want of room, only with a labour rule; null for a city nobody leaves.</param>
-        /// <param name="grid">The city's grid, only with a labour rule: its connected houses give the room of each class (instead of the whole houses the population needs); the others give theirs when they connect. With a placement strategy and a footprint on every housing rule.</param>
+        /// <param name="grid">The city's grid, only with a labour rule: its connected houses give the room (instead of the whole houses the population needs); the others give theirs when they connect. With a placement strategy and a footprint on the housing rule.</param>
         /// <param name="placement">Where the city's buildings are put on the grid; comes with the grid.</param>
         public City CreateCity(
             CityDefinition city,
             MarketPricing pricing,
             int daysPerWeek,
             LabourRule labour = null,
-            PerClass<int> roomPerHouse = default,
-            IReadOnlyList<CityHousingRule> housing = null,
+            int roomPerHouse = 0,
+            CityHousingRule housing = null,
             LeavingRule leaving = null,
             CityGrid grid = null,
             IPlacementStrategy placement = null)
@@ -571,7 +559,7 @@ namespace DarkFantasyMerchant.Game
                 throw new ArgumentOutOfRangeException(nameof(daysPerWeek));
             }
 
-            if (labour != null && (roomPerHouse.Rich < 1 || roomPerHouse.Wealthy < 1 || roomPerHouse.Poor < 1))
+            if (labour != null && roomPerHouse < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(roomPerHouse), "A house shelters at least one inhabitant.");
             }
@@ -591,10 +579,7 @@ namespace DarkFantasyMerchant.Game
                     roomPerHouse,
                     grid == null
                         ? CityPopulation.RoomAtStart(workers, inhabitantsPerWorker, roomPerHouse)
-                        : new PerClass<int>(
-                            grid.ConnectedHousesOf(SocialClass.Rich) * roomPerHouse.Rich,
-                            grid.ConnectedHousesOf(SocialClass.Wealthy) * roomPerHouse.Wealthy,
-                            grid.ConnectedHousesOf(SocialClass.Poor) * roomPerHouse.Poor));
+                        : grid.CountConnectedHouses() * roomPerHouse);
 
             return new City(
                 marketGoods,

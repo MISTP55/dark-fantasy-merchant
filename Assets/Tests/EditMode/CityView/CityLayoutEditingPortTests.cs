@@ -157,7 +157,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityLayoutEditing.SetPort(layout, buildings, Port);
 
-            CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Poor, Along(8, 4));
+            CityLayoutEditing.TryAddHouse(layout, buildings, Along(8, 4));
             AssertPort(Port);
             CityLayoutEditing.SetRoads(layout, buildings, new[] { new Vector2Int(8, 5) }, true);
             AssertPort(Port);

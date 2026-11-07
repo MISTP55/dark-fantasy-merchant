@@ -16,18 +16,18 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void BuildingBuiltText_NamesTheCityAndTheBuilding()
         {
             Assert.AreEqual("Construction achevée à Lübeck : Bûcheron.", PlayerBuilder.BuildingBuiltText("Lübeck", "Bûcheron"));
-            Assert.AreEqual("Construction achevée à Riga : Maison d'aisés.", PlayerBuilder.BuildingBuiltText("Riga", "Maison d'aisés"));
+            Assert.AreEqual("Construction achevée à Riga : Maison d'ouvriers.", PlayerBuilder.BuildingBuiltText("Riga", "Maison d'ouvriers"));
         }
 
         [Test]
         public void TryBuildRoads_PostsOneNotification()
         {
             CityGrid grid = TestMarkets.GridWithTownHall(10, 6);
-            var house = new CityHousingRule(SocialClass.Poor, 0.95, 100, new MaterialCost[0], new Footprint(1, 1));
+            var house = new CityHousingRule(0.95, 100, new MaterialCost[0], new Footprint(1, 1));
             var cityState = new City(new[] { new MarketGood(10, 2, 0, 0) },
                 TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7,
-                new CityPopulation(new PerClass<int>(0, 0, 100), 0, new PerClass<int>(0, 0, 100)), TestMarkets.Labour,
-                new[] { house }, null, grid, new RandomPlacement(new System.Random(1)));
+                new CityPopulation(100, 0, 100), TestMarkets.Labour,
+                house, null, grid, new RandomPlacement(new System.Random(1)));
             var treasury = new Treasury(1000);
             var feed = new NotificationFeed(5f, 1f);
             var trace = new[] { new Vector2Int(3, 0), new Vector2Int(4, 0), new Vector2Int(5, 0) };
@@ -50,12 +50,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var grid = new CityGrid(8, 8, new Vector2Int[0]);
             grid.ReserveTradingPostSite(new Footprint(3, 2), new GridPlace(new Vector2Int(1, 1), BuildingOrientation.Along));
-            var house = new CityHousingRule(SocialClass.Poor, 0.95, 100, new MaterialCost[0], new Footprint(1, 1));
+            var house = new CityHousingRule(0.95, 100, new MaterialCost[0], new Footprint(1, 1));
 
             return new City(new[] { new MarketGood(10, 2, 0, 0) },
                 TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7,
-                new CityPopulation(new PerClass<int>(0, 0, 100), 0, new PerClass<int>(0, 0, 100)), TestMarkets.Labour,
-                new[] { house }, null, grid, new RandomPlacement(new System.Random(1)));
+                new CityPopulation(100, 0, 100), TestMarkets.Labour,
+                house, null, grid, new RandomPlacement(new System.Random(1)));
         }
 
         private static CityDefinition City(string displayName)

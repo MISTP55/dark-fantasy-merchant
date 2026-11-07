@@ -12,10 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 000e11f6246b48247a06589519aba338, type: 3}
   m_Name: Buildings
   m_EditorClassIdentifier: DarkFantasyMerchant.Game::DarkFantasyMerchant.Game.BuildingsDefinition
-  houses:
-  - {fileID: 11400000, guid: 074c1a03e724920479438e0ec160fc7a, type: 2}
-  - {fileID: 11400000, guid: 4d9a78c723e8edc41b05e75eaaf5660f, type: 2}
-  - {fileID: 11400000, guid: 56e1e493e3cf1c2419b809af85d8e18b, type: 2}
+  house: {fileID: 11400000, guid: 56e1e493e3cf1c2419b809af85d8e18b, type: 2}
   workshops:
   - {fileID: 11400000, guid: 0d5401e848ab96543a99cca9183db3b1, type: 2}
   - {fileID: 11400000, guid: 3bd4607f42e5adf458a36600e6db16e3, type: 2}

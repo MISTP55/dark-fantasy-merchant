@@ -153,7 +153,7 @@ namespace DarkFantasyMerchant.Game
         /// </summary>
         public event Action Refreshed;
 
-        /// <summary>"Maison de pauvres\n5 000 or": the offer's name over its gold.</summary>
+        /// <summary>"Maison d'ouvriers\n5 000 or": the offer's name over its gold.</summary>
         public static string OfferText(string name, long gold)
         {
             return $"{name}\n{NumberText.FormatGold(gold)}";

@@ -158,7 +158,6 @@ namespace DarkFantasyMerchant.Core
             IGoodSource materials,
             Treasury treasury,
             BuildingCost cost,
-            SocialClass housedClass,
             int room,
             Footprint footprint,
             GridPlace place,
@@ -166,7 +165,6 @@ namespace DarkFantasyMerchant.Core
             bool isFree = false)
         {
             RequireAtLeastOne(room, nameof(room));
-            RequireClass(housedClass);
 
             if (!CanStand(city, footprint, place))
             {
@@ -181,7 +179,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             Pay(city, materials, treasury, cost, quote, materialBought, isFree);
-            city.AddPlayerHouse(housedClass, room, footprint, place);
+            city.AddPlayerHouse(room, footprint, place);
             return true;
         }
 
@@ -411,14 +409,6 @@ namespace DarkFantasyMerchant.Core
             int fromSources = materials == null ? 0 : Math.Min(materials.UnitsOf(material.Good), material.Units);
 
             return material.Units - fromSources;
-        }
-
-        private static void RequireClass(SocialClass housedClass)
-        {
-            if (housedClass < SocialClass.Rich || housedClass > SocialClass.Poor)
-            {
-                throw new ArgumentOutOfRangeException(nameof(housedClass));
-            }
         }
 
         private static void RequireAtLeastOne(int value, string name)

@@ -750,13 +750,13 @@ namespace DarkFantasyMerchant.Core
             }
         }
 
-        /// <summary>The houses of the class on the grid, the city's and the player's.</summary>
-        public int HousesOf(SocialClass housedClass)
+        /// <summary>The houses on the grid, the city's and the player's.</summary>
+        public int CountHouses()
         {
             int count = 0;
             foreach (PlacedBuilding building in buildings)
             {
-                if (building.Kind.IsHouse && building.Kind.HousedClass == housedClass)
+                if (building.Kind.IsHouse)
                 {
                     count++;
                 }
@@ -765,13 +765,13 @@ namespace DarkFantasyMerchant.Core
             return count;
         }
 
-        /// <summary>The houses of the class that touch a road of the network.</summary>
-        public int ConnectedHousesOf(SocialClass housedClass)
+        /// <summary>The houses that touch a road of the network.</summary>
+        public int CountConnectedHouses()
         {
             int count = 0;
             foreach (PlacedBuilding building in buildings)
             {
-                if (building.Kind.IsHouse && building.Kind.HousedClass == housedClass && building.IsConnected)
+                if (building.Kind.IsHouse && building.IsConnected)
                 {
                     count++;
                 }

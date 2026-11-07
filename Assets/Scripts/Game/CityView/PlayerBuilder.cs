@@ -83,7 +83,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             bool built = Construction.TryBuildHouse(
-                cityState, MaterialsIn(city), treasury, offer.Cost, offer.HousedClass, offer.Room, offer.Footprint, place,
+                cityState, MaterialsIn(city), treasury, offer.Cost, offer.Room, offer.Footprint, place,
                 (good, units, gold) => MaterialBought?.Invoke(city, good, units, gold), IsFree);
 
             if (built)

@@ -15,9 +15,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private GoodDefinition timber;
         private GoodDefinition metal;
         private EconomyDefinition economy;
-        private HouseDefinition richHouse;
-        private HouseDefinition wealthyHouse;
-        private HouseDefinition poorHouse;
+        private HouseDefinition house;
         private WorkshopDefinition farm;
         private WorkshopDefinition lumberjack;
         private BuildingsDefinition buildings;
@@ -30,9 +28,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             metal = Track(TestEconomy.CreateGood("Métal", 255, 3));
             economy = Track(TestEconomy.CreateEconomy(wheat, timber, metal));
 
-            richHouse = Track(TestBuildings.CreateHouse("Maison de riches", SocialClass.Rich, 25000, 40, (timber, 25), (metal, 30)));
-            wealthyHouse = Track(TestBuildings.CreateHouse("Maison d'aisés", SocialClass.Wealthy, 10000, 70, (timber, 15), (metal, 20)));
-            poorHouse = Track(TestBuildings.CreateHouse("Maison de pauvres", SocialClass.Poor, 5000, 140, (timber, 10), (metal, 10)));
+            house = Track(TestBuildings.CreateHouse("Maison d'ouvriers", 5000, 140, (timber, 10), (metal, 10)));
             farm = Track(TestBuildings.CreateWorkshop("Ferme", wheat, 10000, 30, (timber, 10), (metal, 30)));
             lumberjack = Track(TestBuildings.CreateWorkshop("Bûcheron", timber, 10000, 30, (timber, 10), (metal, 30)));
 
@@ -43,7 +39,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             TestBuildings.SetPort(buildings, Track(TestBuildings.CreatePort()));
             TestBuildings.SetWall(buildings, Track(TestBuildings.CreateWall()));
             TestBuildings.SetTradingPost(buildings, Track(TestBuildings.CreateTradingPost()));
-            SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse }, new[] { farm, lumberjack });
+            TestBuildings.SetHouse(buildings, house);
+            SetWorkshops(new[] { farm, lumberjack });
         }
 
         [TearDown]
@@ -65,10 +62,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
         private static string Gold(long gold) => NumberText.FormatGold(gold);
 
-        private void SetCatalogue(HouseDefinition[] houses, WorkshopDefinition[] workshops)
+        private void SetWorkshops(WorkshopDefinition[] workshops)
         {
             var serialized = new SerializedObject(buildings);
-            SetList(serialized.FindProperty("houses"), houses);
             SetList(serialized.FindProperty("workshops"), workshops);
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
@@ -84,7 +80,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void TryValidate_AcceptsOneHousePerClass()
+        public void TryValidate_AcceptsACompleteCatalogue()
         {
             Assert.IsTrue(buildings.TryValidate(out string problem), problem);
         }
@@ -232,30 +228,32 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void TryValidate_RefusesAClassWithoutHouse()
+        public void TryValidate_RefusesACatalogueWithoutHouse()
         {
-            SetCatalogue(new[] { wealthyHouse, poorHouse }, new[] { farm });
+            TestBuildings.SetHouse(buildings, null);
 
             Assert.IsFalse(buildings.TryValidate(out string problem));
             StringAssert.Contains("no house", problem);
-            StringAssert.Contains("rich", problem);
         }
 
         [Test]
-        public void TryValidate_RefusesTwoHousesOfAClass()
+        public void TryValidate_RefusesAnInvalidHouse()
         {
-            HouseDefinition other = Track(TestBuildings.CreateHouse("Taudis", SocialClass.Poor, 1000, 100));
-            SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse, other }, new[] { farm });
+            HouseDefinition roomless = Track(TestBuildings.CreateHouse("Taudis", 1000, 100));
+            var serialized = new SerializedObject(roomless);
+            serialized.FindProperty("room").intValue = 0;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            TestBuildings.SetHouse(buildings, roomless);
 
             Assert.IsFalse(buildings.TryValidate(out string problem));
-            StringAssert.Contains("houses", problem);
+            StringAssert.Contains("Taudis", problem);
         }
 
         [Test]
         public void TryValidate_RefusesTwoWorkshopsOfAGood_EvenInactive()
         {
             WorkshopDefinition sawmill = Track(TestBuildings.CreateWorkshop("Scierie", timber, 10000, 30));
-            SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse }, new[] { farm, lumberjack, sawmill });
+            SetWorkshops(new[] { farm, lumberjack, sawmill });
             TestEconomy.SetActive(economy, timber, false);
 
             Assert.IsFalse(buildings.TryValidate(out string problem));
@@ -266,13 +264,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryValidate_RefusesAnEmptyEntry_AndAnInvalidDefinition()
         {
-            SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse }, new[] { farm, null });
+            SetWorkshops(new[] { farm, null });
 
             Assert.IsFalse(buildings.TryValidate(out string problem));
             StringAssert.Contains("empty entry", problem);
 
             WorkshopDefinition idle = Track(TestBuildings.CreateWorkshop("Atelier vide", metal, 10000, 0));
-            SetCatalogue(new[] { richHouse, wealthyHouse, poorHouse }, new[] { farm, idle });
+            SetWorkshops(new[] { farm, idle });
 
             Assert.IsFalse(buildings.TryValidate(out problem));
             StringAssert.Contains("Atelier vide", problem);
@@ -282,44 +280,32 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void TryValidate_IgnoresTheCosts()
         {
-            TestBuildings.SetCost(poorHouse, -1, (timber, 10));
+            TestBuildings.SetCost(house, -1, (timber, 10));
 
             Assert.IsTrue(buildings.TryValidate(out string problem), problem);
         }
 
         [Test]
-        public void HouseOf_AndWorkshopOf_FindTheDefinition()
+        public void House_AndWorkshopOf_FindTheDefinition()
         {
-            Assert.AreSame(richHouse, buildings.HouseOf(SocialClass.Rich));
-            Assert.AreSame(poorHouse, buildings.HouseOf(SocialClass.Poor));
+            Assert.AreSame(house, buildings.House);
+            Assert.AreSame(house, buildings.DefinitionOf(BuildingKind.House(), economy));
             Assert.AreSame(lumberjack, buildings.WorkshopOf(timber));
             Assert.IsNull(buildings.WorkshopOf(metal));
             Assert.IsNull(buildings.WorkshopOf(null));
-            Assert.AreEqual(3, buildings.Houses.Count);
             Assert.AreEqual(2, buildings.Workshops.Count);
         }
 
         [Test]
-        public void HouseRooms_AreTheRoomsOfTheHouses()
-        {
-            PerClass<int> rooms = buildings.HouseRooms;
-
-            Assert.AreEqual(40, rooms.Rich);
-            Assert.AreEqual(70, rooms.Wealthy);
-            Assert.AreEqual(140, rooms.Poor);
-        }
-
-        [Test]
-        public void CreateHouseOffers_GivesTheClassNameRoomCostAndCostText()
+        public void CreateHouseOffers_GivesTheOneHouse_ItsNameRoomCostAndCostText()
         {
             IReadOnlyList<HouseOffer> offers = buildings.CreateHouseOffers(economy, null);
 
-            Assert.AreEqual(3, offers.Count);
-            Assert.AreEqual(SocialClass.Poor, offers[2].HousedClass);
-            Assert.AreEqual("Maison de pauvres", offers[2].Name);
-            Assert.AreEqual(140, offers[2].Room);
-            Assert.AreEqual(5000, offers[2].Cost.Gold);
-            Assert.AreEqual($"{Gold(5000)}, 10 bois, 10 métal", offers[2].CostText);
+            Assert.AreEqual(1, offers.Count);
+            Assert.AreEqual("Maison d'ouvriers", offers[0].Name);
+            Assert.AreEqual(140, offers[0].Room);
+            Assert.AreEqual(5000, offers[0].Cost.Gold);
+            Assert.AreEqual($"{Gold(5000)}, 10 bois, 10 métal", offers[0].CostText);
         }
 
         [Test]
@@ -357,19 +343,18 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void CreateOffers_ANegativeGold_GivesANullCost_AndReportsIt()
         {
-            TestBuildings.SetCost(poorHouse, -1, (timber, 10));
+            TestBuildings.SetCost(house, -1, (timber, 10));
             TestBuildings.SetCost(farm, -1);
             var reported = new List<BuildingDefinition>();
 
             IReadOnlyList<HouseOffer> houses = buildings.CreateHouseOffers(economy, (building, problem) => reported.Add(building));
             IReadOnlyList<WorkshopOffer> workshops = buildings.CreateWorkshopOffers(economy, (building, problem) => reported.Add(building));
 
-            Assert.IsNull(houses[2].Cost);
-            Assert.AreEqual("indisponible", houses[2].CostText);
-            Assert.IsNotNull(houses[0].Cost);
+            Assert.IsNull(houses[0].Cost);
+            Assert.AreEqual("indisponible", houses[0].CostText);
             Assert.IsNull(workshops[0].Cost);
             Assert.IsNotNull(workshops[1].Cost);
-            CollectionAssert.AreEqual(new BuildingDefinition[] { poorHouse, farm }, reported);
+            CollectionAssert.AreEqual(new BuildingDefinition[] { house, farm }, reported);
         }
     }
 }

@@ -56,8 +56,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(7f, history.ValueOf(0, 0, GoodIndicator.UnderWay, Fish));
             Assert.AreEqual(0f, history.ValueOf(0, 0, GoodIndicator.UnderWay, Iron));
             Assert.AreEqual(1000f, history.ValueOf(0, 0, CityIndicator.Inhabitants));
-            Assert.AreEqual(1000f, history.ValueOf(0, 0, CityIndicator.Poor));
-            Assert.AreEqual(city.Population.RoomOf(SocialClass.Poor), history.ValueOf(0, 0, CityIndicator.PoorRoom));
+            Assert.AreEqual(1000f, history.ValueOf(0, 0, CityIndicator.Housed));
+            Assert.AreEqual(city.Population.Room, history.ValueOf(0, 0, CityIndicator.HousedRoom));
             Assert.AreEqual(city.BeggarTarget, history.ValueOf(0, 0, CityIndicator.BeggarTarget));
             Assert.AreEqual(0f, history.ValueOf(0, 0, CityIndicator.CityHouses));
         }

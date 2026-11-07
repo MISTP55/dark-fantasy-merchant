@@ -21,7 +21,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             float[][] rows = history.BeginDay(0);
             rows[0][CitySnapshot.IndexOf(GoodIndicator.Stock, Fish)] = first;
             rows[1][CitySnapshot.IndexOf(GoodIndicator.Stock, Fish)] = second;
-            rows[0][CitySnapshot.IndexOf(CityIndicator.Poor)] = 12;
+            rows[0][CitySnapshot.IndexOf(CityIndicator.Housed)] = 12;
             return history;
         }
 
@@ -39,9 +39,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void All_HasEveryIndicatorOnce()
         {
-            Assert.AreEqual(10, DebugIndicators.All.Count(indicator => !indicator.IsGood));
+            Assert.AreEqual(6, DebugIndicators.All.Count(indicator => !indicator.IsGood));
             Assert.AreEqual(17, DebugIndicators.All.Count(indicator => indicator.IsGood));
-            Assert.AreEqual(27, DebugIndicators.All.Select(indicator => indicator.Name).Distinct().Count());
+            Assert.AreEqual(23, DebugIndicators.All.Select(indicator => indicator.Name).Distinct().Count());
         }
 
         [Test]
@@ -59,7 +59,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void ValueOf_ReadsTheHistory()
         {
             Assert.AreEqual(5f, DebugIndicators.ValueOf(History(10, 5), 0, 1, Find("Stock"), Fish));
-            Assert.AreEqual(12f, DebugIndicators.ValueOf(History(10, 5), 0, 0, Find("Pauvres"), Fish));
+            Assert.AreEqual(12f, DebugIndicators.ValueOf(History(10, 5), 0, 0, Find("Ouvriers logés"), Fish));
         }
 
         [Test]

@@ -7,12 +7,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
 {
     public class DebugPopulationTableTests
     {
-        // Children of a row, in order: the city, its population, its beggars, its rich, wealthy and poor,
+        // Children of a row, in order: the city, its population, its beggars, its housed,
         // its growth since the start, the houses it built.
         private const int NameCell = 0;
         private const int PopulationCell = 1;
-        private const int GrowthSinceStartCell = 6;
-        private const int HousesCell = 7;
+        private const int GrowthSinceStartCell = 4;
+        private const int HousesCell = 5;
 
         private VisualElement header;
         private VisualElement rows;
@@ -38,9 +38,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static City CrowdedCity()
         {
             var material = new MarketGood(10, 0, 0, 0);
-            var housing = new CityHousingRule(SocialClass.Poor, 0.95, 100, new[] { new MaterialCost(0, 10) });
+            var housing = new CityHousingRule(0.95, 100, new[] { new MaterialCost(0, 10) });
             var city = new City(new[] { material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0,
-                TestMarkets.Pricing, 7, new CityPopulation(960, 0, 1000), TestMarkets.Labour, new[] { housing });
+                TestMarkets.Pricing, 7, new CityPopulation(960, 0, 1000), TestMarkets.Labour, housing);
             city.Market.Put(0, 25);
             return city;
         }

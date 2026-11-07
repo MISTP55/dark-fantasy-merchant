@@ -63,12 +63,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
         private static City GridCity(CityGrid grid, bool withTradingPost = true)
         {
-            var house = new CityHousingRule(SocialClass.Poor, 0.95, 100, new MaterialCost[0], new Footprint(1, 1));
+            var house = new CityHousingRule(0.95, 100, new MaterialCost[0], new Footprint(1, 1));
 
             return WithTradingPost(new City(new[] { new MarketGood(10, 2, 0, 0), new MarketGood(10, 2, 30, 0.1) },
                 TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7,
-                new CityPopulation(new PerClass<int>(0, 0, 100), 0, new PerClass<int>(0, 0, 100)), TestMarkets.Labour,
-                new[] { house }, null, grid, new RandomPlacement(new System.Random(1))), withTradingPost);
+                new CityPopulation(100, 0, 100), TestMarkets.Labour,
+                house, null, grid, new RandomPlacement(new System.Random(1))), withTradingPost);
         }
 
         [Test]
@@ -81,12 +81,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var treasury = new Treasury(10000);
             var place = new GridPlace(new Vector2Int(4, 1), BuildingOrientation.Along);
 
-            bool built = Construction.TryBuildHouse(city, HoldWith(3), treasury, Cost(), SocialClass.Poor, 100, new Footprint(1, 1), place);
+            bool built = Construction.TryBuildHouse(city, HoldWith(3), treasury, Cost(), 100, new Footprint(1, 1), place);
 
             Assert.IsTrue(built);
-            Assert.AreEqual(1, grid.HousesOf(SocialClass.Poor));
+            Assert.AreEqual(1, grid.CountHouses());
             Assert.AreEqual(BuildingOwner.Player, grid.BuildingAt(new Vector2Int(4, 1)).Owner);
-            Assert.AreEqual(200, city.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(200, city.Population.Room);
             Assert.AreEqual(9900, treasury.Gold);
         }
 
@@ -95,19 +95,19 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var grid = new CityGrid(4, 4, new Vector2Int[0]);
             var place = new GridPlace(new Vector2Int(1, 1), BuildingOrientation.Along);
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, new Footprint(1, 1), place);
+            grid.Place(BuildingKind.House(), BuildingOwner.City, new Footprint(1, 1), place);
             City city = GridCity(grid);
             var treasury = new Treasury(10000);
             CargoHold hold = HoldWith(3);
             double stock = city.Market.AvailableOf(0);
 
-            bool built = Construction.TryBuildHouse(city, hold, treasury, Cost(), SocialClass.Poor, 100, new Footprint(1, 1), place);
+            bool built = Construction.TryBuildHouse(city, hold, treasury, Cost(), 100, new Footprint(1, 1), place);
 
             Assert.IsFalse(built);
             Assert.AreEqual(10000, treasury.Gold);
             Assert.AreEqual(3, hold.UnitsOf(0));
             Assert.AreEqual(stock, city.Market.AvailableOf(0));
-            Assert.AreEqual(100, city.Population.RoomOf(SocialClass.Poor));
+            Assert.AreEqual(100, city.Population.Room);
             Assert.AreEqual(1, grid.Buildings.Count);
         }
 
@@ -116,7 +116,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var grid = new CityGrid(4, 4, new Vector2Int[0]);
             var place = new GridPlace(new Vector2Int(1, 1), BuildingOrientation.Along);
-            grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, new Footprint(1, 1), place);
+            grid.Place(BuildingKind.House(), BuildingOwner.City, new Footprint(1, 1), place);
             City city = GridCity(grid);
             var treasury = new Treasury(10000);
             CargoHold hold = HoldWith(3);
@@ -140,29 +140,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
             double stock = city.Market.AvailableOf(0);
             var place = new GridPlace(Vector2Int.zero, BuildingOrientation.Along);
 
-            bool built = Construction.TryBuildHouse(city, hold, treasury, Cost(), SocialClass.Poor, 100, new Footprint(1, 1), place);
+            bool built = Construction.TryBuildHouse(city, hold, treasury, Cost(), 100, new Footprint(1, 1), place);
 
             Assert.IsFalse(built);
             Assert.AreEqual(10000, treasury.Gold);
             Assert.AreEqual(3, hold.UnitsOf(0));
             Assert.AreEqual(stock, city.Market.AvailableOf(0));
-        }
-
-        [Test]
-        public void PlacedHouse_OfAnUnknownClass_Throws_AndPaysNothing()
-        {
-            var grid = new CityGrid(4, 4, new Vector2Int[0]);
-            City city = GridCity(grid);
-            var treasury = new Treasury(10000);
-            var place = new GridPlace(Vector2Int.zero, BuildingOrientation.Along);
-
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => Construction.TryBuildHouse(city, HoldWith(3), treasury, Cost(), (SocialClass)9, 100, new Footprint(1, 1), place));
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => city.AddPlayerHouse((SocialClass)9, 100, new Footprint(1, 1), place));
-
-            Assert.AreEqual(10000, treasury.Gold);
-            Assert.AreEqual(0, grid.Buildings.Count);
         }
 
         [Test]
@@ -193,11 +176,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int reports = 0;
             var place = new GridPlace(new Vector2Int(1, 1), BuildingOrientation.Along);
 
-            bool built = Construction.TryBuildHouse(city, hold, treasury, Cost(100), SocialClass.Poor, 100, new Footprint(1, 1), place,
+            bool built = Construction.TryBuildHouse(city, hold, treasury, Cost(100), 100, new Footprint(1, 1), place,
                 (good, units, gold) => reports++, isFree: true);
 
             Assert.IsTrue(built);
-            Assert.AreEqual(1, grid.HousesOf(SocialClass.Poor));
+            Assert.AreEqual(1, grid.CountHouses());
             Assert.AreEqual(-500, treasury.Gold);
             Assert.AreEqual(3, hold.UnitsOf(0));
             Assert.AreEqual(stock, city.Market.AvailableOf(0));
@@ -210,9 +193,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var grid = new CityGrid(4, 4, new Vector2Int[0]);
             City city = GridCity(grid);
             var place = new GridPlace(new Vector2Int(1, 1), BuildingOrientation.Along);
-            Construction.TryBuildHouse(city, null, new Treasury(0), Cost(), SocialClass.Poor, 100, new Footprint(1, 1), place, isFree: true);
+            Construction.TryBuildHouse(city, null, new Treasury(0), Cost(), 100, new Footprint(1, 1), place, isFree: true);
 
-            bool built = Construction.TryBuildHouse(city, null, new Treasury(0), Cost(), SocialClass.Poor, 100, new Footprint(1, 1), place, isFree: true);
+            bool built = Construction.TryBuildHouse(city, null, new Treasury(0), Cost(), 100, new Footprint(1, 1), place, isFree: true);
 
             Assert.IsFalse(built);
             Assert.AreEqual(1, grid.Buildings.Count);
@@ -299,7 +282,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             var reports = new System.Collections.Generic.List<(int good, int units, long gold)>();
 
-            bool built = Construction.TryBuildHouse(city, HoldWith(4), new Treasury(10000), Cost(10), SocialClass.Poor, 100, OneCell, OnTheRoad(city),
+            bool built = Construction.TryBuildHouse(city, HoldWith(4), new Treasury(10000), Cost(10), 100, OneCell, OnTheRoad(city),
                 (good, units, gold) => reports.Add((good, units, gold)));
 
             Assert.IsTrue(built);
@@ -313,7 +296,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int reports = 0;
             City city = NewCity();
 
-            Construction.TryBuildHouse(city, HoldWith(10), new Treasury(10000), Cost(10), SocialClass.Poor, 100, OneCell, OnTheRoad(city),
+            Construction.TryBuildHouse(city, HoldWith(10), new Treasury(10000), Cost(10), 100, OneCell, OnTheRoad(city),
                 (good, units, gold) => reports++);
 
             Assert.AreEqual(0, reports);
@@ -340,13 +323,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int stock = city.Market.AvailableOf(0);
             ConstructionQuote quote = Construction.QuoteHouse(city, hold, treasury, Cost());
 
-            bool built = Construction.TryBuildHouse(city, hold, treasury, Cost(), SocialClass.Poor, 100, OneCell, OnTheRoad(city));
+            bool built = Construction.TryBuildHouse(city, hold, treasury, Cost(), 100, OneCell, OnTheRoad(city));
 
             Assert.IsTrue(built);
             Assert.AreEqual(10000 - quote.Gold, treasury.Gold);
             Assert.AreEqual(0, hold.UnitsOf(0));
             Assert.AreEqual(stock - 2, city.Market.AvailableOf(0));
-            Assert.AreEqual(1, city.PlayerHousesOf(SocialClass.Poor));
+            Assert.AreEqual(1, city.PlayerHouses);
             Assert.AreEqual(1100, city.Population.Room);
         }
 
@@ -359,7 +342,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int stock = city.Market.AvailableOf(0);
 
             Assert.AreEqual(100, Construction.QuoteHouse(city, hold, treasury, Cost()).Gold);
-            Assert.IsTrue(Construction.TryBuildHouse(city, hold, treasury, Cost(), SocialClass.Poor, 100, OneCell, OnTheRoad(city)));
+            Assert.IsTrue(Construction.TryBuildHouse(city, hold, treasury, Cost(), 100, OneCell, OnTheRoad(city)));
 
             Assert.AreEqual(2, hold.UnitsOf(0));
             Assert.AreEqual(stock, city.Market.AvailableOf(0));
@@ -384,7 +367,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int stock = city.Market.AvailableOf(0);
 
             Assert.IsFalse(Construction.QuoteHouse(city, hold, treasury, Cost(70)).IsPossible);
-            Assert.IsFalse(Construction.TryBuildHouse(city, hold, treasury, Cost(70), SocialClass.Poor, 100, OneCell, OnTheRoad(city)));
+            Assert.IsFalse(Construction.TryBuildHouse(city, hold, treasury, Cost(70), 100, OneCell, OnTheRoad(city)));
 
             Assert.AreEqual(5, hold.UnitsOf(0));
             Assert.AreEqual(stock, city.Market.AvailableOf(0));
@@ -401,7 +384,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int stock = city.Market.AvailableOf(0);
 
             Assert.IsFalse(Construction.QuoteHouse(city, hold, treasury, Cost()).IsPossible);
-            Assert.IsFalse(Construction.TryBuildHouse(city, hold, treasury, Cost(), SocialClass.Poor, 100, OneCell, OnTheRoad(city)));
+            Assert.IsFalse(Construction.TryBuildHouse(city, hold, treasury, Cost(), 100, OneCell, OnTheRoad(city)));
 
             Assert.AreEqual(1, hold.UnitsOf(0));
             Assert.AreEqual(stock, city.Market.AvailableOf(0));
@@ -418,10 +401,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var cost = new BuildingCost(5000, Array.Empty<MaterialCost>());
 
             Assert.AreEqual(5000, Construction.QuoteHouse(city, null, treasury, cost).Gold);
-            Assert.IsTrue(Construction.TryBuildHouse(city, null, treasury, cost, SocialClass.Poor, 100, OneCell, OnTheRoad(city)));
+            Assert.IsTrue(Construction.TryBuildHouse(city, null, treasury, cost, 100, OneCell, OnTheRoad(city)));
             Assert.AreEqual(5000, treasury.Gold);
             Assert.AreEqual(stock, city.Market.AvailableOf(0));
-            Assert.AreEqual(1, city.PlayerHousesOf(SocialClass.Poor));
+            Assert.AreEqual(1, city.PlayerHouses);
         }
 
         [Test]
@@ -431,8 +414,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var free = new BuildingCost(0, new MaterialCost[0]);
 
             Assert.IsFalse(Construction.QuoteHouse(city, null, new Treasury(-10), free).IsPossible);
-            Assert.IsFalse(Construction.TryBuildHouse(city, null, new Treasury(-10), free, SocialClass.Poor, 100, OneCell, OnTheRoad(city)));
-            Assert.AreEqual(0, city.PlayerHousesOf(SocialClass.Poor));
+            Assert.IsFalse(Construction.TryBuildHouse(city, null, new Treasury(-10), free, 100, OneCell, OnTheRoad(city)));
+            Assert.AreEqual(0, city.PlayerHouses);
         }
 
         [Test]
@@ -510,13 +493,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var treasury = new Treasury(10000);
             int stock = city.Market.AvailableOf(0);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => Construction.TryBuildHouse(city, hold, treasury, Cost(), SocialClass.Poor, 0, OneCell, OnTheRoad(city)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Construction.TryBuildHouse(city, hold, treasury, Cost(), 0, OneCell, OnTheRoad(city)));
             Assert.Throws<ArgumentOutOfRangeException>(() => Construction.TryBuildWorkshop(city, hold, treasury, Cost(), 1, 0, OneCell, OnTheRoad(city)));
 
             Assert.AreEqual(10000, treasury.Gold);
             Assert.AreEqual(1, hold.UnitsOf(0));
             Assert.AreEqual(stock, city.Market.AvailableOf(0));
-            Assert.AreEqual(0, city.PlayerHousesOf(SocialClass.Poor));
+            Assert.AreEqual(0, city.PlayerHouses);
             Assert.AreEqual(0, city.PlayerWorkshopsOf(1));
         }
 
@@ -700,7 +683,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 expected += city.Market.BuyPriceOf(0, i);
             }
 
-            bool built = Construction.TryBuildHouse(city, sources, treasury, cost, SocialClass.Poor, 100, OneCell, OnTheRoad(city));
+            bool built = Construction.TryBuildHouse(city, sources, treasury, cost, 100, OneCell, OnTheRoad(city));
 
             Assert.IsTrue(quote.IsPossible);
             Assert.IsTrue(built);

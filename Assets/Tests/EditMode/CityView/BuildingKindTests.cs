@@ -9,7 +9,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
     {
         private static readonly BuildingKind[] Every =
         {
-            BuildingKind.House(SocialClass.Poor),
+            BuildingKind.House(),
             BuildingKind.Workshop(2),
             BuildingKind.Road(),
             BuildingKind.TownHall(),

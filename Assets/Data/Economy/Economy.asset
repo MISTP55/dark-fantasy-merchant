@@ -80,9 +80,7 @@ MonoBehaviour:
   reserveLeakShare: 0.02
   reserveLeakCeiling: 30
   protectedWorkers: 30
-  cityRichHouseOccupancy: 0.97
-  cityWealthyHouseOccupancy: 0.96
-  cityPoorHouseOccupancy: 0.95
+  cityHouseOccupancy: 0.95
   t0Days: 7
   t1AddedDays: 14
   t2ProductionDays: 10

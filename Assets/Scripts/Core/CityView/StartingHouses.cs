@@ -6,10 +6,8 @@ namespace DarkFantasyMerchant.Core
     /// <summary>Puts a city's starting houses on its grid.</summary>
     public static class StartingHouses
     {
-        private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
-
         /// <summary>
-        /// Places, as the city's, houses[c] houses of each class (Rich, then Wealthy, then Poor) in three steps: every
+        /// Places, as the city's, the given number of houses in three steps: every
         /// house at random on the grid; then roads, the house needing the fewest first, so that later houses reuse
         /// them; then every house no road can reach is taken off, and they are placed again along the roads
         /// (<see cref="RoadsidePlacement"/>) with the roads they need.
@@ -18,38 +16,35 @@ namespace DarkFantasyMerchant.Core
         /// False as soon as a house fits nowhere, or one taken off cannot be connected (always without a town hall);
         /// the grid is then left as it stands, short of the houses taken off and not placed again.
         /// </returns>
-        public static bool TryPlace(CityGrid grid, PerClass<int> houses, PerClass<Footprint> footprints, System.Random random)
+        public static bool TryPlace(CityGrid grid, int houses, Footprint footprint, System.Random random)
         {
-            return TryPlace(grid, houses, footprints, new RandomPlacement(random), random);
+            return TryPlace(grid, houses, footprint, new RandomPlacement(random), random);
         }
 
         /// <summary>
-        /// As <see cref="TryPlace(CityGrid, PerClass{int}, PerClass{Footprint}, System.Random)"/>, the houses drawn at
+        /// As <see cref="TryPlace(CityGrid, int, Footprint, System.Random)"/>, the houses drawn at
         /// random only inside the area; those placed again along the roads may stand outside it, inside the walls of a grid
         /// kept inside them like every building.
         /// </summary>
         public static bool TryPlace(
-            CityGrid grid, PerClass<int> houses, PerClass<Footprint> footprints, RectInt area, System.Random random)
+            CityGrid grid, int houses, Footprint footprint, RectInt area, System.Random random)
         {
-            return TryPlace(grid, houses, footprints, new RandomPlacement(random, area), random);
+            return TryPlace(grid, houses, footprint, new RandomPlacement(random, area), random);
         }
 
         private static bool TryPlace(
-            CityGrid grid, PerClass<int> houses, PerClass<Footprint> footprints, RandomPlacement drawn, System.Random random)
+            CityGrid grid, int houses, Footprint footprint, RandomPlacement drawn, System.Random random)
         {
             var placed = new List<PlacedBuilding>();
             var roads = new List<Vector2Int>();
-            foreach (SocialClass housedClass in Classes)
+            for (int i = 0; i < houses; i++)
             {
-                for (int i = 0; i < houses[housedClass]; i++)
+                if (!drawn.TryChoose(grid, footprint, out GridPlace place, roads))
                 {
-                    if (!drawn.TryChoose(grid, footprints[housedClass], out GridPlace place, roads))
-                    {
-                        return false;
-                    }
-
-                    placed.Add(grid.Place(BuildingKind.House(housedClass), BuildingOwner.City, footprints[housedClass], place));
+                    return false;
                 }
+
+                placed.Add(grid.Place(BuildingKind.House(), BuildingOwner.City, footprint, place));
             }
 
             ConnectByRoads(grid, placed);

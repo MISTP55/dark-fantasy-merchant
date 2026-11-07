@@ -94,7 +94,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsFalse(CityLayoutEditing.SetTradingPostSite(layout, buildings, Along(0, 4)), "on a road");
             CityLayoutEditing.SetWalls(layout, buildings, new[] { new Vector2Int(2, 2) }, true);
             Assert.IsFalse(CityLayoutEditing.SetTradingPostSite(layout, buildings, Along(1, 1)), "on a wall");
-            Assert.IsTrue(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(0, 8)));
+            Assert.IsTrue(CityLayoutEditing.TryAddHouse(layout, buildings, Along(0, 8)));
             Assert.IsFalse(CityLayoutEditing.SetTradingPostSite(layout, buildings, Along(0, 8)), "on a house");
             AssertSite(Site);
         }
@@ -167,8 +167,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityLayoutEditing.SetTradingPostSite(layout, buildings, Site);
 
-            Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(8, 4)));
-            Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, SocialClass.Rich, Along(9, 6)));
+            Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, Along(8, 4)));
+            Assert.IsFalse(CityLayoutEditing.TryAddHouse(layout, buildings, Along(9, 6)));
             Assert.AreEqual(0, layout.StartingHouses.Count);
         }
 

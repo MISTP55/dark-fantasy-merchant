@@ -20,8 +20,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return asset;
         }
 
-        private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
-
         [Test]
         public void EveryActiveCity_HasAUsableGrid()
         {
@@ -40,11 +38,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void EveryActiveCity_HousesItsStartingPopulation()
+        public void EveryCity_StartsWithTheHousesItsPopulationNeeds()
         {
             var buildings = Load<BuildingsDefinition>(BuildingsPath);
             var economy = Load<EconomyDefinition>(EconomyPath);
-            PerClass<int> roomPerHouse = buildings.HouseRooms;
+            int roomPerHouse = buildings.House.Room;
 
             foreach (MapCity entry in Load<WorldMapDefinition>(MapPath).MapCities)
             {
@@ -55,14 +53,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
                 Assert.IsNotNull(entry.City.Layout, entry.City.name);
                 Assert.IsTrue(entry.City.Layout.TryCreateGrid(buildings, out CityGrid grid, out string problem), $"{entry.City.name}: {problem}");
-                PerClass<int> needed = economy.StartingRoomOf(entry.City, roomPerHouse);
+                int needed = economy.StartingRoomOf(entry.City, roomPerHouse);
 
-                foreach (SocialClass housedClass in Classes)
-                {
-                    Assert.GreaterOrEqual(
-                        grid.ConnectedHousesOf(housedClass) * roomPerHouse[housedClass], needed[housedClass],
-                        $"{entry.City.name}, {housedClass}");
-                }
+                // Just the houses the starting housed need, all connected.
+                Assert.AreEqual(needed / roomPerHouse, grid.CountConnectedHouses(), entry.City.name);
+                Assert.AreEqual(grid.CountHouses(), grid.CountConnectedHouses(), entry.City.name);
             }
         }
 
@@ -115,7 +110,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                         {
                             Assert.IsTrue(
                                 building.IsConnected,
-                                $"{entry.City.name}: the {building.Kind.HousedClass} house at {building.Place.Origin}");
+                                $"{entry.City.name}: the house at {building.Place.Origin}");
                         }
                     }
                 }
@@ -131,10 +126,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var buildings = Load<BuildingsDefinition>(BuildingsPath);
 
-            foreach (HouseDefinition house in buildings.Houses)
-            {
-                Assert.AreEqual(new Vector2Int(2, 1), house.FootprintSize, house.name);
-            }
+            Assert.AreEqual(new Vector2Int(2, 1), buildings.House.FootprintSize, buildings.House.name);
 
             foreach (WorkshopDefinition workshop in buildings.Workshops)
             {

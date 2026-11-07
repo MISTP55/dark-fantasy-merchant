@@ -30,7 +30,7 @@ namespace DarkFantasyMerchant.Game
         public BuildingsDefinition Buildings => buildings;
 
         /// <summary>
-        /// The player's house of each class. A house that cannot be built (a negative gold) has a
+        /// The player's house, alone in its list. A house that cannot be built (a negative gold) has a
         /// null cost; a material that is not an active good is left out.
         /// </summary>
         public IReadOnlyList<HouseOffer> HouseOffers { get; private set; }
@@ -198,17 +198,10 @@ namespace DarkFantasyMerchant.Game
                 LabourRule labour = economy.CreateLabourRule();
 
                 LeavingRule leaving = economy.CreateLeavingRule();
-                PerClass<int> rooms = buildings.HouseRooms;
+                int room = buildings.House.Room;
 
-                // A city's house is the player's of its class: the materials switched off are left out.
-                var housing = new List<CityHousingRule>();
-
-                foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
-                {
-                    housing.Add(economy.CreateHousingRule(
-                        housedClass, rooms[housedClass], buildings.HouseOf(housedClass).MaterialsOf(economy),
-                        buildings.HouseOf(housedClass).Footprint));
-                }
+                // A city's house is the player's: the materials switched off are left out.
+                CityHousingRule housing = economy.CreateHousingRule(room, buildings.House.MaterialsOf(economy), buildings.House.Footprint);
 
                 // One chance and one strategy for the whole world.
                 IPlacementStrategy placement = buildings.PlacementStrategy.CreateStrategy(new System.Random());
@@ -221,13 +214,13 @@ namespace DarkFantasyMerchant.Game
                     if (grid != null)
                     {
                         grids[city] = grid;
-                        WarnAboutRoom(city, grid, rooms);
+                        WarnAboutRoom(city, grid, room);
                         CreateHarbourOf(city, grid);
                     }
 
                     cities[city] = grid == null
-                        ? economy.CreateCity(city, pricing, daysPerWeek, labour, rooms, housing, leaving)
-                        : economy.CreateCity(city, pricing, daysPerWeek, labour, rooms, housing, leaving, grid, placement);
+                        ? economy.CreateCity(city, pricing, daysPerWeek, labour, room, housing, leaving)
+                        : economy.CreateCity(city, pricing, daysPerWeek, labour, room, housing, leaving, grid, placement);
                 }
             }
             catch (ArgumentOutOfRangeException exception)
@@ -277,21 +270,17 @@ namespace DarkFantasyMerchant.Game
             }
         }
 
-        // The grid's room is kept, but a class short of the room its inhabitants need starts crowded.
-        private void WarnAboutRoom(CityDefinition city, CityGrid grid, PerClass<int> roomPerHouse)
+        // The grid's room is kept, but a city short of the room its inhabitants need starts crowded.
+        private void WarnAboutRoom(CityDefinition city, CityGrid grid, int roomPerHouse)
         {
-            PerClass<int> needed = economy.StartingRoomOf(city, roomPerHouse);
+            int needed = economy.StartingRoomOf(city, roomPerHouse);
+            int room = grid.CountConnectedHouses() * roomPerHouse;
 
-            foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
+            if (room < needed)
             {
-                int room = grid.ConnectedHousesOf(housedClass) * roomPerHouse[housedClass];
-
-                if (room < needed[housedClass])
-                {
-                    Debug.LogWarning(
-                        $"CityLayoutDefinition '{city.Layout.name}' of '{city.name}' gives the {housedClass} room for {room}, under the {needed[housedClass]} they need at the start.",
-                        city.Layout);
-                }
+                Debug.LogWarning(
+                    $"CityLayoutDefinition '{city.Layout.name}' of '{city.name}' gives room for {room}, under the {needed} its housed need at the start.",
+                    city.Layout);
             }
         }
 

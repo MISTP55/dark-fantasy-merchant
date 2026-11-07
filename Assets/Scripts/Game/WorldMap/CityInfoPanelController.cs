@@ -289,14 +289,13 @@ namespace DarkFantasyMerchant.Game
         public const string NoPopulation = "Habitants : —";
 
         /// <summary>
-        /// The population as the panel writes it, class by class from the top:
-        /// "Riches : 110 · Aisés : 330 · Pauvres : 660 · Mendiants : 64".
+        /// The population as the panel writes it, the housed then the beggars:
+        /// "Ouvriers : 660 · Mendiants : 64".
         /// </summary>
-        public static string FormatPopulation(int rich, int wealthy, int poor, int beggars)
+        public static string FormatPopulation(int housed, int beggars)
         {
-            // No-break spaces but after the dots: a line that wraps breaks only there.
-            return $"Riches\u00A0:\u00A0{NumberText.Format(rich)}\u00A0· Aisés\u00A0:\u00A0{NumberText.Format(wealthy)}\u00A0· "
-                + $"Pauvres\u00A0:\u00A0{NumberText.Format(poor)}\u00A0· Mendiants\u00A0:\u00A0{NumberText.Format(beggars)}";
+            // No-break spaces but after the dot: a line that wraps breaks only there.
+            return $"Ouvriers\u00A0:\u00A0{NumberText.Format(housed)}\u00A0· Mendiants\u00A0:\u00A0{NumberText.Format(beggars)}";
         }
 
         /// <summary>What the market's drop-down list reads when no ship of the player lies in the port.</summary>
@@ -463,11 +462,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             CityPopulation population = populationCity.Population;
-            populationLabel.text = FormatPopulation(
-                population.CountOf(SocialClass.Rich),
-                population.CountOf(SocialClass.Wealthy),
-                population.CountOf(SocialClass.Poor),
-                population.Beggars);
+            populationLabel.text = FormatPopulation(population.Housed, population.Beggars);
         }
 
         /// <param name="keptTradingShip">The ship that trades, kept while it is still in port and the player's.</param>

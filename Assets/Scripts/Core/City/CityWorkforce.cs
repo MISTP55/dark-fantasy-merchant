@@ -163,7 +163,7 @@ namespace DarkFantasyMerchant.Core
         {
             wanted -= TakeFromReserve(good, good, wanted);
 
-            int fromBeggars = Math.Min(wanted, labour.WorkersHireableFrom(population.Beggars, population.FreeRoomOf(SocialClass.Poor)));
+            int fromBeggars = Math.Min(wanted, labour.WorkersHireableFrom(population.Beggars, population.FreeRoom));
             population.Hire(fromBeggars, labour.InhabitantsPerWorker);
             workers[good] += fromBeggars;
             wanted -= fromBeggars;

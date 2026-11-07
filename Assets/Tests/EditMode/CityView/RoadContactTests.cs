@@ -32,7 +32,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
         private static PlacedBuilding NewHouse(CityGrid grid, int x, int y)
         {
-            return grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, House, At(x, y));
+            return grid.Place(BuildingKind.House(), BuildingOwner.City, House, At(x, y));
         }
 
         private static Vector2Int[] CellsOf(int x, int y)
@@ -177,7 +177,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 Road(grid, road.x, road.y);
             }
 
-            PlacedBuilding house = grid.Place(BuildingKind.House(SocialClass.Poor), BuildingOwner.City, House, place);
+            PlacedBuilding house = grid.Place(BuildingKind.House(), BuildingOwner.City, House, place);
             Assert.IsTrue(house.IsConnected);
         }
 
