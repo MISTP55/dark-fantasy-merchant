@@ -221,20 +221,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void MarketGood_RefusesANegativeConsumption()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new MarketGood(10, new PerClass<double>(1, -1, 1), 0, 0, 0));
-            Assert.DoesNotThrow(() => new MarketGood(10, PerClass<double>.All(1), 0, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MarketGood(10, -1, 0, 0));
+            Assert.DoesNotThrow(() => new MarketGood(10, 1, 0, 0));
         }
 
 
         [Test]
-        public void AUniformRate_IsTheSameForEveryClass()
+        public void TheRate_IsKept()
         {
             var good = new MarketGood(10, 2, 0, 0);
 
-            Assert.AreEqual(2, good.DailyConsumptionPerThousand.Rich);
-            Assert.AreEqual(2, good.DailyConsumptionPerThousand.Wealthy);
-            Assert.AreEqual(2, good.DailyConsumptionPerThousand.Poor);
+            Assert.AreEqual(2d, good.DailyConsumptionPerThousand);
         }
 
 

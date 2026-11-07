@@ -638,11 +638,9 @@ namespace DarkFantasyMerchant.Game
                         break;
                 }
 
-                PerClass<double> weekly = good.WeeklyConsumptionPerThousand;
-
                 marketGoods[i] = new MarketGood(
                     good.BasePrice,
-                    new PerClass<double>(weekly.Rich / daysPerWeek, weekly.Wealthy / daysPerWeek, weekly.Poor / daysPerWeek),
+                    good.WeeklyConsumptionPerThousand / daysPerWeek,
                     maxWorkers,
                     outputPerWorker,
                     merchantOutputPerWorker)

@@ -38,15 +38,8 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Gold coins a unit costs, before the factor of the city's stock (see the economy's price factors). It can be a fraction: prices are rounded to whole coins.")]
         [SerializeField, Min(0.01f)] private double basePrice = 10d;
 
-        [Header("Consumption per class, in a week (the beggars consume nothing)")]
-        [Tooltip("Units of the good that 1 000 rich consume in a week.")]
-        [SerializeField, Min(0f)] private double richWeeklyConsumptionPerThousand = 7d;
-
-        [Tooltip("Units of the good that 1 000 wealthy consume in a week.")]
-        [SerializeField, Min(0f)] private double wealthyWeeklyConsumptionPerThousand = 7d;
-
-        [Tooltip("Units of the good that 1 000 poor consume in a week.")]
-        [SerializeField, Min(0f)] private double poorWeeklyConsumptionPerThousand = 7d;
+        [Tooltip("Units of the good that 1 000 housed inhabitants consume in a week; the beggars consume nothing.")]
+        [SerializeField, Min(0f)] private double weeklyConsumptionPerThousand = 7d;
 
         [Header("Workshops")]
         [Tooltip("Most workers a city's workshop for the good can have. The same in every city.")]
@@ -75,9 +68,8 @@ namespace DarkFantasyMerchant.Game
 
         public double BasePrice => basePrice;
 
-        /// <summary>Units 1 000 inhabitants of each class consume in a week.</summary>
-        public PerClass<double> WeeklyConsumptionPerThousand => new PerClass<double>(
-            richWeeklyConsumptionPerThousand, wealthyWeeklyConsumptionPerThousand, poorWeeklyConsumptionPerThousand);
+        /// <summary>Units 1 000 housed inhabitants consume in a week.</summary>
+        public double WeeklyConsumptionPerThousand => weeklyConsumptionPerThousand;
 
         public int MaxWorkers => maxWorkers;
 

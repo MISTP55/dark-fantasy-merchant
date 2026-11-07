@@ -175,16 +175,12 @@ namespace DarkFantasyMerchant.Core
         /// </summary>
         public event Action Changed;
 
-        /// <summary>Units the housed inhabitants consume in a day while the city has them, each class at its rate; the beggars consume nothing.</summary>
+        /// <summary>Units the housed inhabitants consume in a day while the city has them, at the good's rate; the beggars consume nothing.</summary>
         public double DailyConsumptionOf(int good)
         {
             RequireGood(good);
 
-            PerClass<double> rates = goods[good].DailyConsumptionPerThousand;
-
-            return (rates.Rich * Population.CountOf(SocialClass.Rich)
-                + rates.Wealthy * Population.CountOf(SocialClass.Wealthy)
-                + rates.Poor * Population.CountOf(SocialClass.Poor)) / 1000d;
+            return goods[good].DailyConsumptionPerThousand * Population.Housed / 1000d;
         }
 
         /// <summary>

@@ -27,9 +27,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             serialized.FindProperty("displayName").stringValue = displayName;
             serialized.FindProperty("category").enumValueIndex = (int)category;
             serialized.FindProperty("basePrice").doubleValue = basePrice;
-            serialized.FindProperty("richWeeklyConsumptionPerThousand").doubleValue = weeklyConsumptionPerThousand;
-            serialized.FindProperty("wealthyWeeklyConsumptionPerThousand").doubleValue = weeklyConsumptionPerThousand;
-            serialized.FindProperty("poorWeeklyConsumptionPerThousand").doubleValue = weeklyConsumptionPerThousand;
+            serialized.FindProperty("weeklyConsumptionPerThousand").doubleValue = weeklyConsumptionPerThousand;
             serialized.FindProperty("maxWorkers").intValue = maxWorkers;
             serialized.FindProperty("dailyOutputPerWorker").doubleValue = dailyOutputPerWorker;
             serialized.FindProperty("merchantDailyOutputPerWorker").doubleValue = merchantDailyOutputPerWorker;
@@ -39,13 +37,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return good;
         }
 
-        /// <summary>Gives a good a weekly consumption per thousand for each class.</summary>
-        public static void SetConsumption(GoodDefinition good, PerClass<double> weekly)
+        /// <summary>Gives a good a weekly consumption per thousand housed inhabitants.</summary>
+        public static void SetConsumption(GoodDefinition good, double weekly)
         {
             var serialized = new SerializedObject(good);
-            serialized.FindProperty("richWeeklyConsumptionPerThousand").doubleValue = weekly.Rich;
-            serialized.FindProperty("wealthyWeeklyConsumptionPerThousand").doubleValue = weekly.Wealthy;
-            serialized.FindProperty("poorWeeklyConsumptionPerThousand").doubleValue = weekly.Poor;
+            serialized.FindProperty("weeklyConsumptionPerThousand").doubleValue = weekly;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 

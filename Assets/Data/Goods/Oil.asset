@@ -17,9 +17,7 @@ MonoBehaviour:
   category: 0
   unit: 0
   basePrice: 82.5
-  richWeeklyConsumptionPerThousand: 17.5
-  wealthyWeeklyConsumptionPerThousand: 12.25
-  poorWeeklyConsumptionPerThousand: 3.5
+  weeklyConsumptionPerThousand: 7.525
   maxWorkers: 60
   dailyOutputPerWorker: 0.135
   merchantDailyOutputPerWorker: 0.135

@@ -278,14 +278,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
 
         [Test]
-        public void DailyConsumptionOf_AddsUpTheClasses_AndLeavesOutTheBeggars()
+        public void DailyConsumption_IsTheHousedAtTheGoodsRate_TheBeggarsConsumingNothing()
         {
-            // Wine, per thousand and per day: rich 7.5, wealthy 1.9, poor 0.
-            var good = new MarketGood(220, new PerClass<double>(7.5, 1.9, 0), 0, 0, 0);
-            var population = new CityPopulation(new PerClass<int>(110, 330, 660), 64, new PerClass<int>(120, 350, 700));
+            // 7 per thousand a day; 1 000 housed, whatever their class, and 500 beggars.
+            var good = new MarketGood(220, 7, 0, 0);
+            var population = new CityPopulation(new PerClass<int>(100, 300, 600), 500, PerClass<int>.All(1000));
             var city = new City(new[] { good }, Thresholds, Workforce, StartingDays, Pricing, DaysPerWeek, population);
 
-            Assert.AreEqual(1.452, city.DailyConsumptionOf(0), Tolerance);
+            Assert.AreEqual(7d, good.DailyConsumptionPerThousand);
+            Assert.AreEqual(7, city.DailyConsumptionOf(0), Tolerance);
         }
 
 

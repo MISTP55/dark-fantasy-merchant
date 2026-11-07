@@ -63,9 +63,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(unit, good.Unit);
             Assert.AreEqual(basePrice, good.BasePrice, 1e-9);
             Assert.AreEqual(aiWeight, good.AiWeight);
-            Assert.GreaterOrEqual(good.WeeklyConsumptionPerThousand.Rich, 0d);
-            Assert.GreaterOrEqual(good.WeeklyConsumptionPerThousand.Wealthy, 0d);
-            Assert.GreaterOrEqual(good.WeeklyConsumptionPerThousand.Poor, 0d);
+            Assert.GreaterOrEqual(good.WeeklyConsumptionPerThousand, 0d);
             Assert.Greater(good.MaxWorkers, 0);
             Assert.Greater(good.DailyOutputPerWorker, 0d);
             Assert.Greater(good.MerchantDailyOutputPerWorker, 0d);
@@ -195,16 +193,33 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(0.97, LoadEconomy().CreateHousingRule(SocialClass.Rich, 40, new MaterialCost[0]).Occupancy, 1e-9);
         }
 
-        [TestCase(0, 3.15, 4.2, 5.25)]   // Céréales
-        [TestCase(7, 52.5, 13.3, 0)]     // Vin
-        [TestCase(17, 0.175, 0.105, 0.07)] // Chanvre
-        public void AGood_HasItsConsumption(int index, double rich, double wealthy, double poor)
+        // 0.1 x rich + 0.3 x wealthy + 0.6 x poor of the rates the classes had: a city consumes as much as it did.
+        [TestCase("Beer", 29.575)]
+        [TestCase("Cloth", 8.575)]
+        [TestCase("Fish", 3.08)]
+        [TestCase("Grain", 4.725)]
+        [TestCase("Hemp", 0.091)]
+        [TestCase("Honey", 5.425)]
+        [TestCase("Leather", 6.265)]
+        [TestCase("Meat", 1.5505)]
+        [TestCase("Metal", 16.625)]
+        [TestCase("Oil", 7.525)]
+        [TestCase("PigIron", 0d)]
+        [TestCase("Pitch", 0d)]
+        [TestCase("Pottery", 5.46)]
+        [TestCase("Salt", 0.35)]
+        [TestCase("Skins", 5.25)]
+        [TestCase("Spices", 0.77)]
+        [TestCase("Tiles", 0.014)]
+        [TestCase("Timber", 1.96)]
+        [TestCase("Wine", 9.24)]
+        [TestCase("Wool", 0.875)]
+        public void EveryGood_HasTheWeightedAverageOfTheOldRates(string asset, double weekly)
         {
-            GoodDefinition good = LoadEconomy().Catalogue[index].Good;
+            var good = AssetDatabase.LoadAssetAtPath<GoodDefinition>($"Assets/Data/Goods/{asset}.asset");
 
-            Assert.AreEqual(rich, good.WeeklyConsumptionPerThousand.Rich, 1e-9);
-            Assert.AreEqual(wealthy, good.WeeklyConsumptionPerThousand.Wealthy, 1e-9);
-            Assert.AreEqual(poor, good.WeeklyConsumptionPerThousand.Poor, 1e-9);
+            Assert.IsNotNull(good, asset);
+            Assert.AreEqual(weekly, good.WeeklyConsumptionPerThousand, 1e-9);
         }
 
         [Test]

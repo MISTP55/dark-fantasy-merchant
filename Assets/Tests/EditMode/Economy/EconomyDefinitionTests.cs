@@ -99,16 +99,16 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void CreateMarket_ConvertsTheWeeklyConsumptionOfEachClass()
+        public void CreateMarket_ConvertsTheWeeklyConsumption()
         {
             GoodDefinition wine = Track(TestEconomy.CreateGood("Vin", 220, 0));
-            TestEconomy.SetConsumption(wine, new PerClass<double>(52.5, 13.3, 0));
+            TestEconomy.SetConsumption(wine, 9.24);
             EconomyDefinition definition = Track(TestEconomy.CreateEconomy(wine));
             City cityState = definition.CreateCity(City(new GoodDefinition[0], new GoodDefinition[0]), definition.CreatePricing(), 7);
 
-            // 6 000 poor drink no wine: a city of rich and wealthy would.
-            Assert.AreEqual(0, cityState.DailyConsumptionOf(0), Tolerance);
-            Assert.AreEqual(52.5, wine.WeeklyConsumptionPerThousand.Rich, Tolerance);
+            // 6 000 housed, 9.24 a week per thousand.
+            Assert.AreEqual(9.24 / 7 * 6, cityState.DailyConsumptionOf(0), Tolerance);
+            Assert.AreEqual(9.24, wine.WeeklyConsumptionPerThousand, Tolerance);
         }
 
         [Test]

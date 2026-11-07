@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace DarkFantasyMerchant.Core
 {
     /// <summary>
-    /// The figures of one good in one city: its base price, what each housed class consumes
+    /// The figures of one good in one city: its base price, what the housed inhabitants consume
     /// of it, and the workshop that produces it there, if any, with the inputs it takes.
     /// </summary>
     public readonly struct MarketGood
@@ -12,9 +12,8 @@ namespace DarkFantasyMerchant.Core
         // Null for a good without recipe, as the default good has.
         private readonly MarketInput[] inputs;
 
-        /// <summary>A good that every housed class consumes at the same rate.</summary>
         /// <param name="basePrice">Gold per unit that the factors of the price curves multiply, above 0; it can be a fraction.</param>
-        /// <param name="dailyConsumptionPerThousand">Units of the good 1 000 housed inhabitants consume in a day, whatever their class; it can be a fraction.</param>
+        /// <param name="dailyConsumptionPerThousand">Units of the good 1 000 housed inhabitants consume in a day, the beggars consuming nothing; it can be a fraction.</param>
         /// <param name="maxWorkers">Most workers of the city's workshop for the good; 0 for a good the city does not produce.</param>
         /// <param name="dailyOutputPerWorker">Units of the good a worker of that workshop makes in a day, its efficiency included.</param>
         /// <param name="merchantDailyOutputPerWorker">Units a worker of a merchant's workshop for the good (the player's) makes in a day, the city's efficiency included, before the bonus of <see cref="MerchantOutputRule"/>; 0 where the city does not produce the good.</param>
@@ -24,22 +23,6 @@ namespace DarkFantasyMerchant.Core
             int maxWorkers,
             double dailyOutputPerWorker,
             double merchantDailyOutputPerWorker = 0d)
-            : this(
-                basePrice,
-                PerClass<double>.All(dailyConsumptionPerThousand),
-                maxWorkers,
-                dailyOutputPerWorker,
-                merchantDailyOutputPerWorker)
-        {
-        }
-
-        /// <param name="dailyConsumptionPerThousand">Units of the good 1 000 inhabitants of each housed class consume in a day; the beggars consume nothing.</param>
-        public MarketGood(
-            double basePrice,
-            PerClass<double> dailyConsumptionPerThousand,
-            int maxWorkers,
-            double dailyOutputPerWorker,
-            double merchantDailyOutputPerWorker)
         {
             // The negated comparison also rejects NaN.
             if (!(basePrice > 0d) || double.IsInfinity(basePrice))
@@ -52,9 +35,7 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentOutOfRangeException(nameof(maxWorkers));
             }
 
-            RequireNotNegative(dailyConsumptionPerThousand.Rich, nameof(dailyConsumptionPerThousand));
-            RequireNotNegative(dailyConsumptionPerThousand.Wealthy, nameof(dailyConsumptionPerThousand));
-            RequireNotNegative(dailyConsumptionPerThousand.Poor, nameof(dailyConsumptionPerThousand));
+            RequireNotNegative(dailyConsumptionPerThousand, nameof(dailyConsumptionPerThousand));
             RequireNotNegative(dailyOutputPerWorker, nameof(dailyOutputPerWorker));
             RequireNotNegative(merchantDailyOutputPerWorker, nameof(merchantDailyOutputPerWorker));
 
@@ -102,8 +83,8 @@ namespace DarkFantasyMerchant.Core
 
         public double BasePrice { get; }
 
-        /// <summary>Units 1 000 inhabitants of each class consume in a day.</summary>
-        public PerClass<double> DailyConsumptionPerThousand { get; }
+        /// <summary>Units 1 000 housed inhabitants consume in a day.</summary>
+        public double DailyConsumptionPerThousand { get; }
 
         public int MaxWorkers { get; }
 
