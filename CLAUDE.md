@@ -35,7 +35,7 @@ Inside each assembly folder, scripts are in one subfolder per subsystem, with th
 | `Time` | `time.md` | Clock, calendar, fast forward |
 | `Player` | `player.md` | Treasury, notifications, weekly expenses |
 | `Economy` | `economy.md` | Goods, markets, prices, trade, holds, market tab |
-| `Population` (`City` in `Core`) | `city.md` | Labour, beggars, houses, buildings and construction |
+| `City` | `city.md` | Cities in play, labour, beggars, houses, buildings and construction |
 | `AiMerchants` | `ai-merchants.md` | AI merchant ships and their planning |
 | `CityView` | `city-view.md` | City grid, placement, city view scene, build bar, layout Editor tool |
 | `Debug` | `debug-tools.md` | In-game debug tools |

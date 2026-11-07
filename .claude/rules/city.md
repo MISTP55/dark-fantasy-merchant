@@ -1,12 +1,11 @@
 ---
 paths:
-  - "Assets/Scripts/*/Population/**"
-  - "Assets/Scripts/Core/City/**"
-  - "Assets/Tests/EditMode/Population/**"
+  - "Assets/Scripts/*/City/**"
+  - "Assets/Tests/EditMode/City/**"
   - "Assets/Data/Buildings/**"
 ---
 
-# Population and buildings
+# City, population and buildings
 
 ## Population
 
