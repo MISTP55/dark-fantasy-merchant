@@ -1,0 +1,32 @@
+.ship-count-hud {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* Placed by ShipCountHudController at the point above its city: that point is its bottom centre. */
+.ship-count-hud__item {
+    position: absolute;
+    width: 98px;
+    height: 48px;
+    translate: -50% -100%;
+    background-image: url("project://database/Assets/Art/UI/ship-at-port-tooltip_AI.png?fileID=-871677931609405918&guid=4d32701f843124c41944b8174d072ef3&type=3#ship-at-port-tooltip_AI_0");
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+/* On the blank part of the scroll, right of the ship drawn on it. */
+.ship-count-hud__count {
+    position: absolute;
+    left: 47%;
+    width: 36%;
+    top: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 0;
+    color: rgb(46, 28, 14);
+    font-size: 24px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}

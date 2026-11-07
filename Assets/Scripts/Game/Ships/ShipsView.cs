@@ -222,6 +222,12 @@ namespace DarkFantasyMerchant.Game
             return Fleet.IsPlayerShip(ship);
         }
 
+        /// <returns>How many of the player's ships are in the city, in any state (see <see cref="ShipFleet{TPort}.CountPlayerShipsInCity"/>).</returns>
+        public int CountPlayerShipsInCity(CityDefinition city)
+        {
+            return Fleet.CountPlayerShipsInCity(city);
+        }
+
         /// <returns>Whether the ship is one of this map's: false once it was removed.</returns>
         public bool Contains(Ship ship)
         {

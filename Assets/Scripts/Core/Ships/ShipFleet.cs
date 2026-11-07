@@ -133,6 +133,30 @@ namespace DarkFantasyMerchant.Core
             return ship != null && playerShips.Contains(ship);
         }
 
+        /// <returns>
+        /// How many of the player's ships are in the city, in any state: queued, crossing its harbour, in port or
+        /// leaving. 0 for a null city.
+        /// </returns>
+        public int CountPlayerShipsInCity(TPort city)
+        {
+            if (city == null)
+            {
+                return 0;
+            }
+
+            int count = 0;
+
+            foreach (Ship playerShip in playerShips)
+            {
+                if (Docking.IsInCity(playerShip) && ReferenceEquals(Docking.CityOf(playerShip), city))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
         /// <returns>Whether the ship is in the fleet: false once it was removed.</returns>
         public bool Contains(Ship ship)
         {

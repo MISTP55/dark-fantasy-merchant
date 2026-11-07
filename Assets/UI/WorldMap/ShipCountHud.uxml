@@ -1,0 +1,4 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="ShipCountHud.uss" />
+    <ui:VisualElement name="ship-count-list" picking-mode="Ignore" class="ship-count-hud" />
+</ui:UXML>

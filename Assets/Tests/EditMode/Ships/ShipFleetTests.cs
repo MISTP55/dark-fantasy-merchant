@@ -218,6 +218,56 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void CountPlayerShipsInCity_CountsThePlayersShipsInThatCityAlone()
+        {
+            Ship atSea = NewShip(Center);
+            Ship other = NewShip(Center);
+            fleet.Add(ship, "Le Marchand", true);
+            fleet.Add(atSea, "Le Hardi", true);
+            fleet.Add(other, "Aurore", false);
+            docking.OrderToPort(ship, Port, Center);
+            docking.OrderToPort(other, Port, Center);
+            fleet.Step(0f);
+
+            Assert.AreEqual(1, fleet.CountPlayerShipsInCity(Port));
+            Assert.AreEqual(0, fleet.CountPlayerShipsInCity("Elsewhere"));
+            Assert.AreEqual(0, fleet.CountPlayerShipsInCity(null));
+        }
+
+        [Test]
+        public void CountPlayerShipsInCity_CountsTheShipsInEveryState()
+        {
+            // One berth: the first ship crosses the harbour to it, the second queues.
+            Harbour harbour = TestHarbours.OneBerth(2f);
+            var harbourDocking = new ShipDocking<string>(city => city == Port ? harbour : null);
+            var harbourFleet = new ShipFleet<string>(harbourDocking);
+            Ship second = NewShip(Center);
+            harbourFleet.Add(ship, "Le Marchand", true);
+            harbourFleet.Add(second, "Le Hardi", true);
+            harbourDocking.OrderToPort(ship, Port, Center);
+            harbourDocking.OrderToPort(second, Port, Center);
+            harbourFleet.Step(0f);
+
+            Assert.AreEqual(HarbourState.Arriving, harbourDocking.StateOf(ship));
+            Assert.AreEqual(HarbourState.Waiting, harbourDocking.StateOf(second));
+            Assert.AreEqual(2, harbourFleet.CountPlayerShipsInCity(Port));
+        }
+
+        [Test]
+        public void CountPlayerShipsInCity_LeavesOutARemovedShip()
+        {
+            fleet.Add(ship, "Le Marchand", true);
+            EnterThePort();
+            int countWhenLeaving = -1;
+            docking.CityStateChanged += (s, city) => countWhenLeaving = fleet.CountPlayerShipsInCity(city);
+
+            fleet.Remove(ship);
+
+            Assert.AreEqual(0, countWhenLeaving);
+            Assert.AreEqual(0, fleet.CountPlayerShipsInCity(Port));
+        }
+
+        [Test]
         public void Remove_IsFalse_ForAShipNotInTheFleet()
         {
             Assert.IsFalse(fleet.Remove(ship));
