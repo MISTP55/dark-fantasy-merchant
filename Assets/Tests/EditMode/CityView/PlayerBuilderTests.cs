@@ -202,7 +202,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 var posts = new PlayerTradingPosts(2000, null);
                 CityDefinition opened = null;
                 posts.Opened += openedCity => opened = openedCity;
-                int stock = cityState.Market.AvailableOf(0);
+                int stock = cityState.Market.UnitsOf(0);
 
                 Assert.IsTrue(posts.TryGive(city, cityState.Grid));
 
@@ -210,7 +210,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 Assert.AreEqual(BuildingOwner.Player, cityState.Grid.TradingPost.Owner);
                 Assert.AreSame(city, opened);
                 Assert.AreEqual(0, posts.Of(city).Used);
-                Assert.AreEqual(stock, cityState.Market.AvailableOf(0));
+                Assert.AreEqual(stock, cityState.Market.UnitsOf(0));
                 Assert.IsFalse(posts.TryGive(city, cityState.Grid), "already given");
                 Assert.IsFalse(posts.TryGive(city, null), "no grid");
                 CollectionAssert.AreEqual(new[] { posts.Of(city) }, posts.All);

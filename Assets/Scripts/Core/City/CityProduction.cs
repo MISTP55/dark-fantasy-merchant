@@ -82,13 +82,13 @@ namespace DarkFantasyMerchant.Core
                 }
 
                 StockThresholds thresholds = market.ThresholdsOf(i);
-                workforce.MoveTo(i, rule.NextWorkers(workforce.WorkersOf(i), good.MaxWorkers, market.StockOf(i), thresholds));
+                workforce.MoveTo(i, rule.NextWorkers(workforce.WorkersOf(i), good.MaxWorkers, market.AmountOf(i), thresholds));
 
                 double potential = workforce.WorkersOf(i) * good.DailyOutputPerWorker;
                 double made = potential * TakeInputs(market, weekLog, report, good, potential);
 
                 // Above T3 the inputs are taken all the same, and lost.
-                if (WorkforceRule.ProducesAt(market.StockOf(i), thresholds))
+                if (WorkforceRule.ProducesAt(market.AmountOf(i), thresholds))
                 {
                     produced[i] = made;
                     market.Deposit(i, made);
@@ -108,9 +108,9 @@ namespace DarkFantasyMerchant.Core
             {
                 double needed = units * inputs[k].UnitsPerUnit;
 
-                if (needed > 0d && market.StockOf(inputs[k].Good) / needed < factor)
+                if (needed > 0d && market.AmountOf(inputs[k].Good) / needed < factor)
                 {
-                    factor = market.StockOf(inputs[k].Good) / needed;
+                    factor = market.AmountOf(inputs[k].Good) / needed;
                     scarcest = k;
                 }
             }
@@ -121,7 +121,7 @@ namespace DarkFantasyMerchant.Core
                 double needed = units * inputs[k].UnitsPerUnit;
 
                 // The scarcest is taken whole, so that no rounding leaves a crumb of it.
-                double taken = market.Withdraw(input, k == scarcest ? market.StockOf(input) : needed * factor);
+                double taken = market.Withdraw(input, k == scarcest ? market.AmountOf(input) : needed * factor);
                 weekLog.AddInputs(input, taken);
                 report.AddInputs(input, needed, taken);
             }

@@ -216,7 +216,7 @@ namespace DarkFantasyMerchant.Game
             }
 
             StockThresholds thresholds = city.Market.ThresholdsOf(good);
-            cells[1].text = NumberText.Format(city.Market.AvailableOf(good));
+            cells[1].text = NumberText.Format(city.Market.UnitsOf(good));
             cells[2].text = DebugCitiesTable.FormatQuantity(thresholds.T0);
             cells[3].text = DebugCitiesTable.FormatQuantity(thresholds.T1);
             cells[4].text = DebugCitiesTable.FormatQuantity(thresholds.T2);
@@ -261,7 +261,7 @@ namespace DarkFantasyMerchant.Game
                     continue;
                 }
 
-                stock += city.Market.AvailableOf(good);
+                stock += city.Market.UnitsOf(good);
                 nominalProduction += city.NominalWeeklyProductionOf(good);
                 nominalConsumption += city.NominalWeeklyConsumptionOf(good);
                 nominalInputs += city.NominalWeeklyInputNeedOf(good);

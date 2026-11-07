@@ -36,7 +36,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var market = new CityMarket(new[] { NotProduced }, Thresholds, Pricing, good => 3d, StartingDays);
 
-            Assert.AreEqual(90, market.StockOf(0), Tolerance);
+            Assert.AreEqual(90, market.AmountOf(0), Tolerance);
             Assert.AreEqual(90, market.ThresholdsOf(0).T1, Tolerance);
         }
 
@@ -55,7 +55,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             market.EndDay();
 
             Assert.AreEqual(180, market.ThresholdsOf(0).T1, Tolerance);
-            Assert.AreEqual(90, market.StockOf(0), Tolerance);
+            Assert.AreEqual(90, market.AmountOf(0), Tolerance);
             Assert.AreEqual(1, changes);
         }
 
@@ -68,7 +68,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(10.5, market.Withdraw(0, 10.5), Tolerance);
             Assert.AreEqual(19.5, market.Withdraw(0, 100), Tolerance);
-            Assert.AreEqual(0, market.StockOf(0));
+            Assert.AreEqual(0, market.AmountOf(0));
             Assert.AreEqual(0, changes);
         }
 
@@ -85,7 +85,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(1, market.GoodCount);
             Assert.AreEqual(60, market.ThresholdsOf(0).T1, Tolerance);
-            Assert.AreEqual(60, market.StockOf(0), Tolerance);
+            Assert.AreEqual(60, market.AmountOf(0), Tolerance);
         }
 
 
@@ -126,7 +126,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(10, thresholds.T1, Tolerance);
             Assert.AreEqual(15, thresholds.T2, Tolerance);
             Assert.AreEqual(20, thresholds.T3, Tolerance);
-            Assert.AreEqual(0, market.AvailableOf(0));
+            Assert.AreEqual(0, market.UnitsOf(0));
 
             // An empty stock: 10 x 4 to buy, 10 x 1.94 (the average over [0, 1]) to sell.
             Assert.AreEqual(40, market.BuyPriceOf(0));
@@ -156,25 +156,54 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
 
         [Test]
-        public void TakeAndPut_MoveWholeBarrels()
+        public void TryRemoveAndTryAdd_MoveWholeBarrels_AndTellOnce()
         {
             CityMarket market = CityOf(NotProduced).Market;
+            int changes = 0;
+            market.Changed += () => changes++;
 
-            market.Take(0, 25);
-            Assert.AreEqual(35, market.StockOf(0), Tolerance);
+            Assert.IsTrue(market.TryRemove(0, 25));
+            Assert.AreEqual(35, market.AmountOf(0), Tolerance);
 
-            market.Put(0, 300);
-            Assert.AreEqual(335, market.StockOf(0), Tolerance);
+            Assert.IsTrue(market.TryAdd(0, 300));
+            Assert.AreEqual(335, market.AmountOf(0), Tolerance);
+            Assert.AreEqual(2, changes);
         }
 
 
         [Test]
-        public void Take_MoreThanAvailable_Throws()
+        public void TryRemove_MoreThanAvailable_IsRefused_AndChangesNothing()
         {
             CityMarket market = CityOf(NotProduced).Market;
+            int changes = 0;
+            market.Changed += () => changes++;
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => market.Take(0, 61));
-            Assert.AreEqual(60, market.StockOf(0), Tolerance);
+            Assert.IsFalse(market.TryRemove(0, 61));
+            Assert.AreEqual(60, market.AmountOf(0), Tolerance);
+            Assert.AreEqual(0, changes);
+        }
+
+
+        [Test]
+        public void TryRemove_TakesTheLastUnitAHairShort_AndLeavesNothing()
+        {
+            var market = new CityMarket(new[] { NotProduced }, Thresholds, Pricing, good => 1d, StartingDays);
+            market.Withdraw(0, 1e-12);
+
+            Assert.AreEqual(30, market.UnitsOf(0));
+            Assert.IsTrue(market.TryRemove(0, 30));
+            Assert.AreEqual(0d, market.AmountOf(0));
+        }
+
+
+        [Test]
+        public void UnitsOf_IsTheWholePartOfTheStock()
+        {
+            var market = new CityMarket(new[] { NotProduced }, Thresholds, Pricing, good => 1d, StartingDays);
+            market.Withdraw(0, 0.5);
+
+            Assert.AreEqual(29.5, market.AmountOf(0), Tolerance);
+            Assert.AreEqual(29, market.UnitsOf(0));
         }
 
 
@@ -184,8 +213,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityMarket market = CityOf(NotProduced).Market;
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => market.Take(0, barrels));
-            Assert.Throws<ArgumentOutOfRangeException>(() => market.Put(0, barrels));
+            Assert.Throws<ArgumentOutOfRangeException>(() => market.TryRemove(0, barrels));
+            Assert.Throws<ArgumentOutOfRangeException>(() => market.TryAdd(0, barrels));
         }
 
 
@@ -195,9 +224,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityMarket market = CityOf(NotProduced).Market;
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => market.StockOf(good));
+            Assert.Throws<ArgumentOutOfRangeException>(() => market.AmountOf(good));
             Assert.Throws<ArgumentOutOfRangeException>(() => market.BuyPriceOf(good));
-            Assert.Throws<ArgumentOutOfRangeException>(() => market.Put(good, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => market.TryAdd(good, 1));
         }
 
 

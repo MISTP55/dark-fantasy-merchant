@@ -431,8 +431,8 @@ namespace DarkFantasyMerchant.Core
                     continue;
                 }
 
-                double keep = Math.Ceiling(Math.Max(0d, home.ThresholdsOf(good).T1 - home.StockOf(good)) - WholeUnitMargin);
-                double lack = Math.Max(0d, market.ThresholdsOf(good).T1 - market.StockOf(good));
+                double keep = Math.Ceiling(Math.Max(0d, home.ThresholdsOf(good).T1 - home.AmountOf(good)) - WholeUnitMargin);
+                double lack = Math.Max(0d, market.ThresholdsOf(good).T1 - market.AmountOf(good));
                 double units = Math.Floor(Math.Min(aboard - keep, lack) + WholeUnitMargin);
 
                 if (units > 0d)

@@ -91,8 +91,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(10, post.UnitsOf(Made));
             Assert.AreEqual(80, post.UnitsOf(Input));
-            Assert.AreEqual(withoutPlayer.Market.StockOf(Input), cityState.Market.StockOf(Input), 1e-9);
-            Assert.AreEqual(withoutPlayer.Market.StockOf(Made), cityState.Market.StockOf(Made), 1e-9);
+            Assert.AreEqual(withoutPlayer.Market.AmountOf(Input), cityState.Market.AmountOf(Input), 1e-9);
+            Assert.AreEqual(withoutPlayer.Market.AmountOf(Made), cityState.Market.AmountOf(Made), 1e-9);
         }
 
         [Test]

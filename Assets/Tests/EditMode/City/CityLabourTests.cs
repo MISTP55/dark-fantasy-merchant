@@ -63,7 +63,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var goods = new[] { Good, new MarketGood(10, 2, 0, 0) };
             var cityState = new City(goods, TestMarkets.Thresholds, Workforce, 0, TestMarkets.Pricing, 7,
                 new CityPopulation(1000, 100, 1100), TestMarkets.LabourRules);
-            cityState.Market.Put(1, 100);
+            cityState.Market.TryAdd(1, 100);
 
             cityState.StartDay();
 
@@ -78,7 +78,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // beggars (64 more housed), which would raise the second good's T0 to 21.28; its stock
             // of 21 stays above the T0 of the morning, so it hires 8 (up to T1), not 16.
             City cityState = TwoGoodsCity(0, new CityPopulation(1000, 100, 1100));
-            cityState.Market.Put(1, 23);
+            cityState.Market.TryAdd(1, 23);
 
             cityState.StartDay();
 
@@ -130,7 +130,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             City cityState = NewCity(100, new CityPopulation(1000));
             cityState.StartDay();
-            cityState.Market.Take(0, cityState.Market.AvailableOf(0));
+            cityState.Market.TryRemove(0, cityState.Market.UnitsOf(0));
 
             cityState.StartDay();
 
@@ -143,7 +143,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AWorkshop_TakesOtherReserves_AfterTheBeggars()
         {
             City cityState = TwoGoodsCity(100, new CityPopulation(1000, 8, 1008));
-            cityState.Market.Take(1, cityState.Market.AvailableOf(1));
+            cityState.Market.TryRemove(1, cityState.Market.UnitsOf(1));
 
             cityState.StartDay();
 
@@ -172,7 +172,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             // An empty stock: 1 + 16, cut to the maximum of 3, so 2 wanted, with 100 beggars and
             // 1 000 free places that could give them.
-            cityState.Market.Take(0, cityState.Market.AvailableOf(0));
+            cityState.Market.TryRemove(0, cityState.Market.UnitsOf(0));
             cityState.StartDay();
 
             Assert.AreEqual(3, cityState.WorkersOf(0));
@@ -189,7 +189,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var cityState = new City(new[] { Good, new MarketGood(10, 2, 12, 0.1) }, TestMarkets.Thresholds,
                 TwoWorkshopsWorkforce, 100, TestMarkets.Pricing, 7, new CityPopulation(1000, 100, 2000),
                 TestMarkets.LabourRules);
-            cityState.Market.Take(1, cityState.Market.AvailableOf(1));
+            cityState.Market.TryRemove(1, cityState.Market.UnitsOf(1));
 
             cityState.StartDay();
 
@@ -227,11 +227,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 {
                     if (day % 6 == 0)
                     {
-                        cityState.Market.Put(good, 10000);
+                        cityState.Market.TryAdd(good, 10000);
                     }
-                    else if (day % 6 == 3 && cityState.Market.AvailableOf(good) > 0)
+                    else if (day % 6 == 3 && cityState.Market.UnitsOf(good) > 0)
                     {
-                        cityState.Market.Take(good, cityState.Market.AvailableOf(good));
+                        cityState.Market.TryRemove(good, cityState.Market.UnitsOf(good));
                     }
                 }
 

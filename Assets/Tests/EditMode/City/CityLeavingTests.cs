@@ -58,9 +58,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 city.StartDay();
                 Assert.GreaterOrEqual(city.Population.Housed, starting, $"on day {day}");
 
-                if (city.Market.AvailableOf(0) > 0)
+                if (city.Market.UnitsOf(0) > 0)
                 {
-                    city.Market.Take(0, city.Market.AvailableOf(0));
+                    city.Market.TryRemove(0, city.Market.UnitsOf(0));
                 }
             }
 
@@ -133,13 +133,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var material = new MarketGood(10, 0, 0, 0);
             var housing = new CityHousingRule(0.95, 140, new[] { new MaterialCost(Timber, 10) });
             City city = NewCity(new CityPopulation(666, 0, 700), 7, new[] { Good, material }, housing: housing);
-            city.Market.Put(Timber, 30);
+            city.Market.TryAdd(Timber, 30);
 
             city.StartDay();
 
             Assert.AreEqual(840, city.Population.Room);
             Assert.AreEqual(1, city.CityHouses);
-            Assert.AreEqual(20, city.Market.AvailableOf(Timber));
+            Assert.AreEqual(20, city.Market.UnitsOf(Timber));
         }
 
         [Test]
@@ -164,11 +164,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 {
                     if (day % 6 == 0)
                     {
-                        city.Market.Put(good, 10000);
+                        city.Market.TryAdd(good, 10000);
                     }
-                    else if (day % 6 == 3 && city.Market.AvailableOf(good) > 0)
+                    else if (day % 6 == 3 && city.Market.UnitsOf(good) > 0)
                     {
-                        city.Market.Take(good, city.Market.AvailableOf(good));
+                        city.Market.TryRemove(good, city.Market.UnitsOf(good));
                     }
                 }
 

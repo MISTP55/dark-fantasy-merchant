@@ -65,6 +65,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
+        public void UnitsOf_FarAboveIntRange_IsCapped_AndRemovingStaysExact()
+        {
+            var warehouse = new Warehouse(0);
+
+            warehouse.TryAdd(Wine, int.MaxValue);
+            warehouse.TryAdd(Wine, int.MaxValue);
+            warehouse.TryAdd(Wine, 7);
+
+            Assert.AreEqual(int.MaxValue, warehouse.UnitsOf(Wine));
+            Assert.IsTrue(warehouse.TryRemove(Wine, int.MaxValue));
+            Assert.IsTrue(warehouse.TryRemove(Wine, int.MaxValue));
+
+            Assert.AreEqual(7, warehouse.UnitsOf(Wine));
+            Assert.AreEqual(7L, warehouse.Used);
+        }
+
+        [Test]
         public void TryRemove_RefusesMoreThanStored_AndChangesNothing()
         {
             var warehouse = new Warehouse(100);

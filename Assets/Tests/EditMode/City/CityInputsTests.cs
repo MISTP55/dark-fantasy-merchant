@@ -48,10 +48,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // 10 and 30 days of 3.5 a day.
             Assert.AreEqual(35, city.Market.ThresholdsOf(0).T0, Tolerance);
             Assert.AreEqual(105, city.Market.ThresholdsOf(0).T1, Tolerance);
-            Assert.AreEqual(105, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(105, city.Market.AmountOf(0), Tolerance);
 
             // Nothing takes beer as an input: its inhabitants only.
-            Assert.AreEqual(60, city.Market.StockOf(1), Tolerance);
+            Assert.AreEqual(60, city.Market.AmountOf(1), Tolerance);
         }
 
         [Test]
@@ -105,8 +105,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             city.StartDay();
 
-            Assert.AreEqual(61, city.Market.StockOf(1), Tolerance);
-            Assert.AreEqual(101.5, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(61, city.Market.AmountOf(1), Tolerance);
+            Assert.AreEqual(101.5, city.Market.AmountOf(0), Tolerance);
             Assert.AreEqual(1.5, city.RecentInputsOf(0), Tolerance);
             Assert.AreEqual(2, city.RecentConsumptionOf(0), Tolerance);
             Assert.AreEqual(1.5, city.LastDay.InputNeedOf(0), Tolerance);
@@ -118,13 +118,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AShortInput_BringsProductionDownToItsProportion()
         {
             City city = CityOf(Grain, Beer);
-            city.Market.Take(0, 102);
+            city.Market.TryRemove(0, 102);
 
             city.StartDay();
 
             // One grain left after the inhabitants, for 1.5 needed.
-            Assert.AreEqual(60, city.Market.StockOf(1), Tolerance);
-            Assert.AreEqual(0, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(60, city.Market.AmountOf(1), Tolerance);
+            Assert.AreEqual(0, city.Market.AmountOf(0), Tolerance);
             Assert.AreEqual(2, city.RecentProductionOf(1), Tolerance);
             Assert.AreEqual(1.5, city.LastDay.InputNeedOf(0), Tolerance);
             Assert.AreEqual(1, city.LastDay.InputsConsumedOf(0), Tolerance);
@@ -140,25 +140,25 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // Grain and timber, half a unit of each per barrel: both start at 105.
             MarketGood beer = new MarketGood(10, 2, 30, 0.1).WithInputs(new[] { new MarketInput(0, 0.5), new MarketInput(1, 0.5) });
             City city = CityOf(Grain, Grain, beer);
-            city.Market.Take(1, 102);
+            city.Market.TryRemove(1, 102);
 
             city.StartDay();
 
-            Assert.AreEqual(60, city.Market.StockOf(2), Tolerance);
-            Assert.AreEqual(102, city.Market.StockOf(0), Tolerance);
-            Assert.AreEqual(0, city.Market.StockOf(1), Tolerance);
+            Assert.AreEqual(60, city.Market.AmountOf(2), Tolerance);
+            Assert.AreEqual(102, city.Market.AmountOf(0), Tolerance);
+            Assert.AreEqual(0, city.Market.AmountOf(1), Tolerance);
         }
 
         [Test]
         public void AnInputAtZero_StopsTheWorkshop()
         {
             City city = CityOf(Grain, Beer);
-            city.Market.Take(0, 105);
+            city.Market.TryRemove(0, 105);
 
             city.StartDay();
 
-            Assert.AreEqual(58, city.Market.StockOf(1), Tolerance);
-            Assert.AreEqual(0, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(58, city.Market.AmountOf(1), Tolerance);
+            Assert.AreEqual(0, city.Market.AmountOf(0), Tolerance);
             Assert.AreEqual(0, city.RecentInputsOf(0), Tolerance);
         }
 
@@ -166,14 +166,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AboveT3_NothingIsProduced_ButTheInputsAreTaken()
         {
             City city = CityOf(Grain, Beer);
-            city.Market.Put(1, 100);
+            city.Market.TryAdd(1, 100);
 
             city.StartDay();
 
             // 158 beer after the inhabitants: the workshop keeps one worker, who takes his grain.
-            Assert.AreEqual(158, city.Market.StockOf(1), Tolerance);
+            Assert.AreEqual(158, city.Market.AmountOf(1), Tolerance);
             Assert.AreEqual(0, city.RecentProductionOf(1), Tolerance);
-            Assert.AreEqual(103 - 0.05, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(103 - 0.05, city.Market.AmountOf(0), Tolerance);
             Assert.AreEqual(0.05, city.RecentInputsOf(0), Tolerance);
             Assert.AreEqual(0.05, city.DailyInputNeedOf(0), Tolerance);
         }
@@ -183,30 +183,30 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // 150 grain for a demand of 5; 2 left after the inhabitants, for 1.5 and 1.5.
             City city = CityOf(Grain, Beer, Beer);
-            city.Market.Take(0, 146);
+            city.Market.TryRemove(0, 146);
 
             city.StartDay();
 
-            Assert.AreEqual(61, city.Market.StockOf(1), Tolerance);
-            Assert.AreEqual(59, city.Market.StockOf(2), Tolerance);
-            Assert.AreEqual(0, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(61, city.Market.AmountOf(1), Tolerance);
+            Assert.AreEqual(59, city.Market.AmountOf(2), Tolerance);
+            Assert.AreEqual(0, city.Market.AmountOf(0), Tolerance);
         }
 
         [Test]
         public void AnInputTakenWhole_LeavesAStockOfZero_NotBelow()
         {
             City city = CityOf(Grain, Beer);
-            city.Market.Take(0, 102);
+            city.Market.TryRemove(0, 102);
 
             for (int day = 0; day < 30; day++)
             {
                 city.StartDay();
 
-                Assert.GreaterOrEqual(city.Market.StockOf(0), 0d);
+                Assert.GreaterOrEqual(city.Market.AmountOf(0), 0d);
 
                 if (day == 0)
                 {
-                    Assert.AreEqual(0d, city.Market.StockOf(0));
+                    Assert.AreEqual(0d, city.Market.AmountOf(0));
                 }
             }
         }
@@ -216,17 +216,17 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             MarketGood idle = new MarketGood(10, 2, 0, 0).WithInputs(new[] { new MarketInput(0, 0.5) });
             City city = CityOf(Grain, idle);
-            city.Market.Take(0, 60);
+            city.Market.TryRemove(0, 60);
 
             city.StartDay();
 
-            Assert.AreEqual(0, city.Market.StockOf(0), Tolerance);
-            Assert.AreEqual(58, city.Market.StockOf(1), Tolerance);
+            Assert.AreEqual(0, city.Market.AmountOf(0), Tolerance);
+            Assert.AreEqual(58, city.Market.AmountOf(1), Tolerance);
 
             city.StartDay();
 
-            Assert.IsFalse(double.IsNaN(city.Market.StockOf(0)));
-            Assert.IsFalse(double.IsNaN(city.Market.StockOf(1)));
+            Assert.IsFalse(double.IsNaN(city.Market.AmountOf(0)));
+            Assert.IsFalse(double.IsNaN(city.Market.AmountOf(1)));
             Assert.AreEqual(0, city.RecentInputsOf(0), Tolerance);
         }
 
@@ -241,7 +241,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             City city = CityOf(Grain, Beer);
             city.StartDay();
-            city.Market.Take(0, 101);
+            city.Market.TryRemove(0, 101);
 
             city.StartDay();
 

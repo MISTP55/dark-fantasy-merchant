@@ -38,9 +38,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // A week of two barrels a day, whatever the city makes of the good.
             var city = new City(new[] { NotProduced, Efficient, Inefficient }, Thresholds, Workforce, 7, Pricing, DaysPerWeek, new CityPopulation(1000));
 
-            Assert.AreEqual(14, city.Market.StockOf(0), Tolerance);
-            Assert.AreEqual(14, city.Market.StockOf(1), Tolerance);
-            Assert.AreEqual(14, city.Market.StockOf(2), Tolerance);
+            Assert.AreEqual(14, city.Market.AmountOf(0), Tolerance);
+            Assert.AreEqual(14, city.Market.AmountOf(1), Tolerance);
+            Assert.AreEqual(14, city.Market.AmountOf(2), Tolerance);
             Assert.AreEqual(60, city.Market.ThresholdsOf(0).T1, Tolerance);
         }
 
@@ -50,7 +50,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var city = new City(new[] { NotProduced }, Thresholds, Workforce, 0, Pricing, DaysPerWeek, new CityPopulation(1000));
 
-            Assert.AreEqual(0, city.Market.AvailableOf(0));
+            Assert.AreEqual(0, city.Market.UnitsOf(0));
         }
 
 
@@ -70,14 +70,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = CityOf(NotProduced);
 
             city.StartDay();
-            Assert.AreEqual(58, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(58, city.Market.AmountOf(0), Tolerance);
 
             for (int day = 0; day < 40; day++)
             {
                 city.StartDay();
             }
 
-            Assert.AreEqual(0, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(0, city.Market.AmountOf(0), Tolerance);
         }
 
 
@@ -85,12 +85,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AboveT3_AProducerStops_AndKeepsOneWorker()
         {
             City city = CityOf(Efficient);
-            city.Market.Put(0, 60);
+            city.Market.TryAdd(0, 60);
 
             city.StartDay();
 
             // 120, then 118 once consumed: above T3, nothing produced.
-            Assert.AreEqual(118, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(118, city.Market.AmountOf(0), Tolerance);
             Assert.AreEqual(1, city.WorkersOf(0));
             Assert.AreEqual(0, city.RecentProductionOf(0), Tolerance);
         }
@@ -100,12 +100,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void StartDay_RefillsAProducedGoodByItsSurplus()
         {
             City city = CityOf(Efficient);
-            city.Market.Put(0, 10);
+            city.Market.TryAdd(0, 10);
 
             city.StartDay();
 
             // 70 + 3 produced - 2 consumed.
-            Assert.AreEqual(71, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(71, city.Market.AmountOf(0), Tolerance);
         }
 
 
@@ -114,11 +114,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // 111 in stock: above T3 before the day's consumption, 109 after it, so it produces.
             City city = CityOf(Efficient);
-            city.Market.Put(0, 51);
+            city.Market.TryAdd(0, 51);
 
             city.StartDay();
 
-            Assert.AreEqual(112, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(112, city.Market.AmountOf(0), Tolerance);
             Assert.AreEqual(30, city.WorkersOf(0));
         }
 
@@ -136,7 +136,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             city.StartDay();
 
             Assert.AreEqual(10, city.WorkersOf(0));
-            Assert.AreEqual(59, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(59, city.Market.AmountOf(0), Tolerance);
         }
 
 
@@ -173,11 +173,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AStockAboveT3_IsOnlyConsumed()
         {
             City city = CityOf(Efficient);
-            city.Market.Put(0, 160);
+            city.Market.TryAdd(0, 160);
 
             city.StartDay();
 
-            Assert.AreEqual(218, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(218, city.Market.AmountOf(0), Tolerance);
         }
 
 
@@ -195,8 +195,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             for (int day = 0; day < 200; day++)
             {
                 city.StartDay();
-                Assert.GreaterOrEqual(city.Market.StockOf(0), 90d, $"day {day}");
-                Assert.LessOrEqual(city.Market.StockOf(0), 113d, $"day {day}");
+                Assert.GreaterOrEqual(city.Market.AmountOf(0), 90d, $"day {day}");
+                Assert.LessOrEqual(city.Market.AmountOf(0), 113d, $"day {day}");
             }
         }
 
@@ -209,8 +209,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             city.StartDay();
 
-            Assert.AreEqual(8.7, city.Market.StockOf(0), Tolerance);
-            Assert.AreEqual(8, city.Market.AvailableOf(0));
+            Assert.AreEqual(8.7, city.Market.AmountOf(0), Tolerance);
+            Assert.AreEqual(8, city.Market.UnitsOf(0));
         }
 
 
@@ -225,12 +225,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 city.StartDay();
             }
 
-            Assert.AreEqual(60, city.Market.AvailableOf(0));
+            Assert.AreEqual(60, city.Market.UnitsOf(0));
 
-            city.Market.Take(0, 60);
+            city.Market.TryRemove(0, 60);
 
-            Assert.AreEqual(0, city.Market.AvailableOf(0));
-            Assert.GreaterOrEqual(city.Market.StockOf(0), 0d);
+            Assert.AreEqual(0, city.Market.UnitsOf(0));
+            Assert.GreaterOrEqual(city.Market.AmountOf(0), 0d);
         }
 
 
@@ -244,8 +244,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 city.StartDay();
             }
 
-            Assert.Greater(city.Market.StockOf(0), 0d);
-            Assert.AreEqual(0, city.Market.AvailableOf(0));
+            Assert.Greater(city.Market.AmountOf(0), 0d);
+            Assert.AreEqual(0, city.Market.UnitsOf(0));
         }
 
 
@@ -259,10 +259,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
             city.StartDay();
             Assert.AreEqual(1, changes);
 
-            city.Market.Take(0, 5);
+            city.Market.TryRemove(0, 5);
             Assert.AreEqual(2, changes);
 
-            city.Market.Put(1, 5);
+            city.Market.TryAdd(1, 5);
             Assert.AreEqual(3, changes);
         }
 
@@ -345,7 +345,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // 119 in stock: 117, 115 and 113 after the days' consumption, all above T3.
             City city = CityOf(Efficient);
-            city.Market.Put(0, 59);
+            city.Market.TryAdd(0, 59);
 
             for (int day = 0; day < 3; day++)
             {
@@ -361,7 +361,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void RecentProduction_IsNothingAboveT3()
         {
             City city = CityOf(Efficient);
-            city.Market.Put(0, 160);
+            city.Market.TryAdd(0, 160);
 
             city.StartDay();
 
@@ -375,11 +375,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             // 112 in stock, 110 once consumed: T3 itself.
             City city = CityOf(Efficient);
-            city.Market.Put(0, 52);
+            city.Market.TryAdd(0, 52);
 
             city.StartDay();
 
-            Assert.AreEqual(113, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(113, city.Market.AmountOf(0), Tolerance);
             Assert.AreEqual(3, city.RecentProductionOf(0), Tolerance);
         }
 
@@ -420,8 +420,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = CityOf(NotProduced);
             city.StartDay();
 
-            city.Market.Take(0, 20);
-            city.Market.Put(0, 50);
+            city.Market.TryRemove(0, 20);
+            city.Market.TryAdd(0, 50);
 
             Assert.AreEqual(0, city.RecentProductionOf(0), Tolerance);
             Assert.AreEqual(2, city.RecentConsumptionOf(0), Tolerance);
@@ -448,7 +448,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             // Two barrels a day per thousand: five for 2 500. The workshop makes 3 whatever the size.
             Assert.AreEqual(5, city.DailyConsumptionOf(0), Tolerance);
-            Assert.AreEqual(150, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(150, city.Market.AmountOf(0), Tolerance);
             Assert.AreEqual(150, city.Market.ThresholdsOf(0).T1, Tolerance);
             Assert.AreEqual(35, city.NominalWeeklyConsumptionOf(0), Tolerance);
             Assert.AreEqual(21, city.NominalWeeklyProductionOf(0), Tolerance);
@@ -456,7 +456,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             city.StartDay();
 
             // 150 - 5 consumed + 3 produced.
-            Assert.AreEqual(148, city.Market.StockOf(0), Tolerance);
+            Assert.AreEqual(148, city.Market.AmountOf(0), Tolerance);
         }
 
 

@@ -468,7 +468,7 @@ namespace DarkFantasyMerchant.Core
                 }
 
                 Population.SetBeggars(Labour.NextBeggars(Population.Beggars, Population.Inhabitants));
-                cityHousing.BuildCityHouse(Market.AvailableOf, TakeMaterial);
+                cityHousing.BuildCityHouse(Market.UnitsOf, TakeMaterial);
             }
 
             // Last, so that the next day starts on the thresholds of the population this day leaves.

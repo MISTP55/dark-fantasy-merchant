@@ -304,7 +304,7 @@ namespace DarkFantasyMerchant.Game
 
                 // A market made from another catalogue than the rows: nothing to show there.
                 bool isInMarket = i < market.GoodCount;
-                int available = isInMarket ? market.AvailableOf(i) : 0;
+                int available = isInMarket ? market.UnitsOf(i) : 0;
                 long buyPrice = isInMarket ? market.BuyPriceOf(i) : 0;
                 int held = hold != null ? hold.UnitsOf(i) : 0;
 

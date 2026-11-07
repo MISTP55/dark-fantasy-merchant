@@ -167,7 +167,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // One good, so one purchase changes the market once.
             Assert.AreEqual(1, purchases);
             Assert.AreSame(ports[D], docking.DestinationPortOf(ship));
-            Assert.AreEqual(120 - ship.Cargo.Used, markets[H].AvailableOf(Fish));
+            Assert.AreEqual(120 - ship.Cargo.Used, markets[H].UnitsOf(Fish));
         }
 
         [Test]
@@ -237,7 +237,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Arrive(ship);
 
             Assert.AreSame(ports[D], docking.PortOf(ship));
-            Assert.AreEqual(60, markets[D].AvailableOf(Fish));
+            Assert.AreEqual(60, markets[D].UnitsOf(Fish));
             Assert.AreEqual(0, ship.Cargo.Used);
             Assert.AreEqual(0, fleet.UnderWayTo(D, Fish));
             Assert.AreEqual(H, fleet.FinalDestinationOf(ship));
@@ -317,7 +317,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Arrive(ship);
             Assert.AreSame(ports[S], docking.PortOf(ship));
-            Assert.AreEqual(49, markets[S].AvailableOf(Fish));
+            Assert.AreEqual(49, markets[S].UnitsOf(Fish));
 
             Depart();
             Assert.AreSame(ports[H], docking.DestinationPortOf(ship));
@@ -367,7 +367,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             // Keeps 60 for home, sells 20.
             Assert.AreSame(ports[S], docking.PortOf(ship));
-            Assert.AreEqual(60, markets[S].AvailableOf(Fish));
+            Assert.AreEqual(60, markets[S].UnitsOf(Fish));
             Assert.AreEqual(62, ship.Cargo.UnitsOf(Fish));
         }
 
@@ -386,7 +386,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreSame(ports[H], docking.DestinationPortOf(ship));
             Assert.AreEqual(62, ship.Cargo.UnitsOf(Fish));
-            Assert.AreEqual(60, markets[S].AvailableOf(Fish));
+            Assert.AreEqual(60, markets[S].UnitsOf(Fish));
         }
 
         [Test]
@@ -406,7 +406,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreSame(ports[H], docking.PortOf(ship));
             Assert.AreEqual(0, ship.Cargo.Used);
-            Assert.AreEqual(62, markets[H].AvailableOf(Fish));
+            Assert.AreEqual(62, markets[H].UnitsOf(Fish));
             Assert.AreEqual(0, fleet.UnderWayTo(H, Fish));
         }
 
@@ -421,11 +421,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(82, ship.Cargo.UnitsOf(Fish));
 
             // Nothing lacks at home any more, and S is empty.
-            markets[H].Put(Fish, 60);
-            markets[S].Take(Fish, 40);
+            markets[H].TryAdd(Fish, 60);
+            markets[S].TryRemove(Fish, 40);
             Arrive(ship);
 
-            Assert.AreEqual(60, markets[S].AvailableOf(Fish));
+            Assert.AreEqual(60, markets[S].UnitsOf(Fish));
             Assert.AreEqual(22, ship.Cargo.UnitsOf(Fish));
             Assert.AreEqual(22, fleet.UnderWayTo(H, Fish));
         }
@@ -472,7 +472,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsTrue(docking.IsDocked(ship));
 
             // A surplus appears: not acted on before the next stopover has passed.
-            markets[H].Put(Fish, 200);
+            markets[H].TryAdd(Fish, 200);
             fleet.Advance(Stopover - 1d);
             Assert.IsTrue(docking.IsDocked(ship));
 
@@ -495,7 +495,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreSame(ports[H], docking.DestinationPortOf(ship));
             Assert.AreEqual(180, ship.Cargo.UnitsOf(Fish));
             Assert.AreEqual(0, fleet.UnderWayTo(S, Fish));
-            Assert.AreEqual(0, markets[S].AvailableOf(Fish));
+            Assert.AreEqual(0, markets[S].UnitsOf(Fish));
         }
 
         [Test]
@@ -521,11 +521,11 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // S sold up to its T1 (60), then gave 20 of them for S2.
             Depart();
             Assert.AreSame(ports[S2], docking.DestinationPortOf(ship));
-            Assert.AreEqual(40, markets[S].AvailableOf(Fish));
+            Assert.AreEqual(40, markets[S].UnitsOf(Fish));
 
             // S empty again is worth a stopover from S2 (1.4) and passes the detour (0.5 + 3.5 < 4.2).
-            markets[S2].Put(Fish, 200);
-            markets[S].Take(Fish, 40);
+            markets[S2].TryAdd(Fish, 200);
+            markets[S].TryRemove(Fish, 40);
             Arrive(ship);
             Assert.AreSame(ports[S2], docking.PortOf(ship));
 
@@ -601,7 +601,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(0, fleet.Count);
             Assert.IsTrue(docking.IsDocked(ship));
             Assert.AreEqual(0, ship.Cargo.Used);
-            Assert.AreEqual(120, markets[H].AvailableOf(Fish));
+            Assert.AreEqual(120, markets[H].UnitsOf(Fish));
         }
 
         [Test]
@@ -617,7 +617,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreSame(ports[D], docking.PortOf(ship));
             Assert.AreEqual(5, ship.Cargo.Used);
-            Assert.AreEqual(0, markets[D].AvailableOf(Fish));
+            Assert.AreEqual(0, markets[D].UnitsOf(Fish));
             Assert.AreEqual(0, fleet.ProfitOf(ship));
         }
 

@@ -318,7 +318,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             table.AddCity("Sparia", city);
             table.Show();
 
-            city.Market.Take(Fish, 25);
+            city.Market.TryRemove(Fish, 25);
             table.WriteChanges();
 
             Assert.AreEqual("35", Text(0, Fish, Stock));
@@ -330,8 +330,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             table.AddCity("Sparia", city);
             table.Show();
 
-            city.Market.Take(Fish, 25);
-            city.Market.Take(Fish, 5);
+            city.Market.TryRemove(Fish, 25);
+            city.Market.TryRemove(Fish, 5);
             Assert.AreEqual("60", Text(0, Fish, Stock));
             Assert.AreEqual("60", Total(Fish, Stock));
 
@@ -507,7 +507,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             table.AddCity("Sparia", city);
             table.Show();
-            city.Market.Put(Iron, 100);
+            city.Market.TryAdd(Iron, 100);
 
             city.StartDay();
             table.WriteChanges();

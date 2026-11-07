@@ -344,7 +344,7 @@ namespace DarkFantasyMerchant.Core
             foreach (MaterialCost material in cost.Materials)
             {
                 int toBuy = ToBuy(materials, material);
-                int available = city.Market.AvailableOf(material.Good);
+                int available = city.Market.UnitsOf(material.Good);
 
                 if (toBuy > available)
                 {
@@ -396,7 +396,7 @@ namespace DarkFantasyMerchant.Core
                         gold += city.Market.BuyPriceOf(material.Good, i);
                     }
 
-                    city.Market.Take(material.Good, toBuy);
+                    city.Market.TryRemove(material.Good, toBuy);
                     materialBought?.Invoke(material.Good, toBuy, gold);
                 }
             }

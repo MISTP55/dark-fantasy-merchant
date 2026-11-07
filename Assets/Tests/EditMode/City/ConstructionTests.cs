@@ -99,14 +99,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = GridCity(grid);
             var treasury = new Treasury(10000);
             CargoHold hold = HoldWith(3);
-            double stock = city.Market.AvailableOf(0);
+            double stock = city.Market.UnitsOf(0);
 
             bool built = Construction.TryBuildHouse(city, hold, treasury, Cost(), 100, new Footprint(1, 1), place);
 
             Assert.IsFalse(built);
             Assert.AreEqual(10000, treasury.Gold);
             Assert.AreEqual(3, hold.UnitsOf(0));
-            Assert.AreEqual(stock, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock, city.Market.UnitsOf(0));
             Assert.AreEqual(100, city.Population.Room);
             Assert.AreEqual(1, grid.Buildings.Count);
         }
@@ -120,14 +120,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = GridCity(grid);
             var treasury = new Treasury(10000);
             CargoHold hold = HoldWith(3);
-            double stock = city.Market.AvailableOf(0);
+            double stock = city.Market.UnitsOf(0);
 
             bool built = Construction.TryBuildWorkshop(city, hold, treasury, Cost(), 1, 5, new Footprint(2, 2), place);
 
             Assert.IsFalse(built);
             Assert.AreEqual(10000, treasury.Gold);
             Assert.AreEqual(3, hold.UnitsOf(0));
-            Assert.AreEqual(stock, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock, city.Market.UnitsOf(0));
             Assert.AreEqual(0, city.PlayerWorkshopsOf(1));
         }
 
@@ -137,7 +137,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = PlacelessCity();
             var treasury = new Treasury(10000);
             CargoHold hold = HoldWith(3);
-            double stock = city.Market.AvailableOf(0);
+            double stock = city.Market.UnitsOf(0);
             var place = new GridPlace(Vector2Int.zero, BuildingOrientation.Along);
 
             bool built = Construction.TryBuildHouse(city, hold, treasury, Cost(), 100, new Footprint(1, 1), place);
@@ -145,7 +145,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsFalse(built);
             Assert.AreEqual(10000, treasury.Gold);
             Assert.AreEqual(3, hold.UnitsOf(0));
-            Assert.AreEqual(stock, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock, city.Market.UnitsOf(0));
         }
 
         [Test]
@@ -172,7 +172,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = GridCity(grid);
             CargoHold hold = HoldWith(3);
             var treasury = new Treasury(-500);
-            int stock = city.Market.AvailableOf(0);
+            int stock = city.Market.UnitsOf(0);
             int reports = 0;
             var place = new GridPlace(new Vector2Int(1, 1), BuildingOrientation.Along);
 
@@ -183,7 +183,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(1, grid.CountHouses());
             Assert.AreEqual(-500, treasury.Gold);
             Assert.AreEqual(3, hold.UnitsOf(0));
-            Assert.AreEqual(stock, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock, city.Market.UnitsOf(0));
             Assert.AreEqual(0, reports);
         }
 
@@ -208,7 +208,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = GridCity(grid);
             CargoHold hold = HoldWith(3);
             var treasury = new Treasury(-500);
-            int stock = city.Market.AvailableOf(0);
+            int stock = city.Market.UnitsOf(0);
             int reports = 0;
             var place = new GridPlace(new Vector2Int(2, 2), BuildingOrientation.Along);
 
@@ -219,7 +219,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(1, city.PlayerWorkshopsOf(1));
             Assert.AreEqual(-500, treasury.Gold);
             Assert.AreEqual(3, hold.UnitsOf(0));
-            Assert.AreEqual(stock, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock, city.Market.UnitsOf(0));
             Assert.AreEqual(0, reports);
         }
 
@@ -320,7 +320,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = NewCity();
             CargoHold hold = HoldWith(1);
             var treasury = new Treasury(10000);
-            int stock = city.Market.AvailableOf(0);
+            int stock = city.Market.UnitsOf(0);
             ConstructionQuote quote = Construction.QuoteHouse(city, hold, treasury, Cost());
 
             bool built = Construction.TryBuildHouse(city, hold, treasury, Cost(), 100, OneCell, OnTheRoad(city));
@@ -328,7 +328,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.IsTrue(built);
             Assert.AreEqual(10000 - quote.Gold, treasury.Gold);
             Assert.AreEqual(0, hold.UnitsOf(0));
-            Assert.AreEqual(stock - 2, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock - 2, city.Market.UnitsOf(0));
             Assert.AreEqual(1, city.PlayerHouses);
             Assert.AreEqual(1100, city.Population.Room);
         }
@@ -339,13 +339,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = NewCity();
             CargoHold hold = HoldWith(5);
             var treasury = new Treasury(10000);
-            int stock = city.Market.AvailableOf(0);
+            int stock = city.Market.UnitsOf(0);
 
             Assert.AreEqual(100, Construction.QuoteHouse(city, hold, treasury, Cost()).Gold);
             Assert.IsTrue(Construction.TryBuildHouse(city, hold, treasury, Cost(), 100, OneCell, OnTheRoad(city)));
 
             Assert.AreEqual(2, hold.UnitsOf(0));
-            Assert.AreEqual(stock, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock, city.Market.UnitsOf(0));
         }
 
         [Test]
@@ -364,13 +364,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = NewCity();
             CargoHold hold = HoldWith(5);
             var treasury = new Treasury(10000);
-            int stock = city.Market.AvailableOf(0);
+            int stock = city.Market.UnitsOf(0);
 
             Assert.IsFalse(Construction.QuoteHouse(city, hold, treasury, Cost(70)).IsPossible);
             Assert.IsFalse(Construction.TryBuildHouse(city, hold, treasury, Cost(70), 100, OneCell, OnTheRoad(city)));
 
             Assert.AreEqual(5, hold.UnitsOf(0));
-            Assert.AreEqual(stock, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock, city.Market.UnitsOf(0));
             Assert.AreEqual(10000, treasury.Gold);
             Assert.AreEqual(1000, city.Population.Room);
         }
@@ -381,13 +381,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = NewCity();
             CargoHold hold = HoldWith(1);
             var treasury = new Treasury(110);
-            int stock = city.Market.AvailableOf(0);
+            int stock = city.Market.UnitsOf(0);
 
             Assert.IsFalse(Construction.QuoteHouse(city, hold, treasury, Cost()).IsPossible);
             Assert.IsFalse(Construction.TryBuildHouse(city, hold, treasury, Cost(), 100, OneCell, OnTheRoad(city)));
 
             Assert.AreEqual(1, hold.UnitsOf(0));
-            Assert.AreEqual(stock, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock, city.Market.UnitsOf(0));
             Assert.AreEqual(110, treasury.Gold);
             Assert.AreEqual(1000, city.Population.Room);
         }
@@ -397,13 +397,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             City city = NewCity();
             var treasury = new Treasury(10000);
-            int stock = city.Market.AvailableOf(0);
+            int stock = city.Market.UnitsOf(0);
             var cost = new BuildingCost(5000, Array.Empty<MaterialCost>());
 
             Assert.AreEqual(5000, Construction.QuoteHouse(city, null, treasury, cost).Gold);
             Assert.IsTrue(Construction.TryBuildHouse(city, null, treasury, cost, 100, OneCell, OnTheRoad(city)));
             Assert.AreEqual(5000, treasury.Gold);
-            Assert.AreEqual(stock, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock, city.Market.UnitsOf(0));
             Assert.AreEqual(1, city.PlayerHouses);
         }
 
@@ -433,13 +433,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = NewCity(withTradingPost: false);
             var treasury = new Treasury(10000);
             CargoHold hold = HoldWith(3);
-            double stock = city.Market.AvailableOf(0);
+            double stock = city.Market.UnitsOf(0);
 
             Assert.IsFalse(Construction.TryBuildWorkshop(city, hold, treasury, Cost(), 1, 30, OneCell, OnTheRoad(city)));
 
             Assert.AreEqual(10000, treasury.Gold);
             Assert.AreEqual(3, hold.UnitsOf(0));
-            Assert.AreEqual(stock, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock, city.Market.UnitsOf(0));
             Assert.AreEqual(0, city.PlayerWorkshopsOf(1));
         }
 
@@ -491,14 +491,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = NewCity();
             CargoHold hold = HoldWith(1);
             var treasury = new Treasury(10000);
-            int stock = city.Market.AvailableOf(0);
+            int stock = city.Market.UnitsOf(0);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => Construction.TryBuildHouse(city, hold, treasury, Cost(), 0, OneCell, OnTheRoad(city)));
             Assert.Throws<ArgumentOutOfRangeException>(() => Construction.TryBuildWorkshop(city, hold, treasury, Cost(), 1, 0, OneCell, OnTheRoad(city)));
 
             Assert.AreEqual(10000, treasury.Gold);
             Assert.AreEqual(1, hold.UnitsOf(0));
-            Assert.AreEqual(stock, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock, city.Market.UnitsOf(0));
             Assert.AreEqual(0, city.PlayerHouses);
             Assert.AreEqual(0, city.PlayerWorkshopsOf(1));
         }
@@ -600,14 +600,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = RoadCity(out CityGrid grid);
             var treasury = new Treasury(-500);
             CargoHold hold = HoldWith(3);
-            int stock = city.Market.AvailableOf(0);
+            int stock = city.Market.UnitsOf(0);
             var cost = new BuildingCost(50, new[] { new MaterialCost(0, 1) });
 
             Assert.IsTrue(Construction.TryBuildRoads(city, hold, treasury, cost, Trace, isFree: true));
 
             Assert.AreEqual(-500, treasury.Gold);
             Assert.AreEqual(3, hold.UnitsOf(0));
-            Assert.AreEqual(stock, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock, city.Market.UnitsOf(0));
             Assert.AreEqual(6, grid.Buildings.Count);
         }
 
@@ -616,13 +616,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             City city = RoadCity(out _);
             CargoHold hold = HoldWith(2);
-            int stock = city.Market.AvailableOf(0);
+            int stock = city.Market.UnitsOf(0);
             var cost = new BuildingCost(50, new[] { new MaterialCost(0, 1) });
 
             Assert.IsTrue(Construction.TryBuildRoads(city, hold, new Treasury(10000), cost, Trace));
 
             Assert.AreEqual(0, hold.UnitsOf(0));
-            Assert.AreEqual(stock - 1, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock - 1, city.Market.UnitsOf(0));
         }
 
         private static City PostCity(bool withSite)
@@ -676,7 +676,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var sources = new MaterialSources(post, hold);
             ConstructionQuote quote = Construction.QuoteHouse(city, sources, treasury, cost);
             long expected = 100;
-            double stock = city.Market.AvailableOf(0);
+            double stock = city.Market.UnitsOf(0);
 
             for (int i = 0; i < 20; i++)
             {
@@ -691,7 +691,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(100000 - expected, treasury.Gold);
             Assert.AreEqual(0, post.UnitsOf(0));
             Assert.AreEqual(0, hold.UnitsOf(0));
-            Assert.AreEqual(stock - 20, city.Market.AvailableOf(0));
+            Assert.AreEqual(stock - 20, city.Market.UnitsOf(0));
         }
 
         [Test]
@@ -764,12 +764,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = PostCity(true);
             var treasury = new Treasury(10000);
             CargoHold hold = HoldWith(3);
-            double otherStock = city.Market.AvailableOf(1);
+            double otherStock = city.Market.UnitsOf(1);
 
             Assert.IsTrue(Construction.TryBuildTradingPost(city, hold, treasury, Cost()));
 
             Assert.AreEqual(9900, treasury.Gold);
-            Assert.AreEqual(otherStock, city.Market.AvailableOf(1));
+            Assert.AreEqual(otherStock, city.Market.UnitsOf(1));
         }
 
         [Test]

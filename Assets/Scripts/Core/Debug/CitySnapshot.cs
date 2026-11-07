@@ -69,7 +69,7 @@ namespace DarkFantasyMerchant.Core
                 }
 
                 StockThresholds thresholds = city.Market.ThresholdsOf(good);
-                Set(into, GoodIndicator.Stock, good, city.Market.StockOf(good));
+                Set(into, GoodIndicator.Stock, good, city.Market.AmountOf(good));
                 Set(into, GoodIndicator.T0, good, thresholds.T0);
                 Set(into, GoodIndicator.T1, good, thresholds.T1);
                 Set(into, GoodIndicator.T2, good, thresholds.T2);

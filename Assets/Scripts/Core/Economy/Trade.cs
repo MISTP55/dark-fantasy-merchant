@@ -29,7 +29,7 @@ namespace DarkFantasyMerchant.Core
         {
             Require(market, hold, treasury, units);
 
-            int limit = Math.Min(units, Math.Min(market.AvailableOf(good), hold.RoomFor(good)));
+            int limit = Math.Min(units, Math.Min(market.UnitsOf(good), hold.RoomFor(good)));
             int bought = 0;
             long gold = 0;
 
@@ -52,7 +52,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             treasury.TryWithdraw(gold);
-            market.Take(good, bought);
+            market.TryRemove(good, bought);
             hold.TryAdd(good, bought);
             return new TradeResult(bought, gold);
         }
@@ -66,7 +66,7 @@ namespace DarkFantasyMerchant.Core
         {
             Require(market, hold, units);
 
-            int bought = Math.Min(units, Math.Min(market.AvailableOf(good), hold.RoomFor(good)));
+            int bought = Math.Min(units, Math.Min(market.UnitsOf(good), hold.RoomFor(good)));
 
             if (bought == 0)
             {
@@ -80,7 +80,7 @@ namespace DarkFantasyMerchant.Core
                 gold += market.BuyPriceOf(good, i);
             }
 
-            market.Take(good, bought);
+            market.TryRemove(good, bought);
             hold.TryAdd(good, bought);
             return new TradeResult(bought, gold);
         }
@@ -124,7 +124,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             hold.TryRemove(good, sold);
-            market.Put(good, sold);
+            market.TryAdd(good, sold);
             return new TradeResult(sold, gold);
         }
 

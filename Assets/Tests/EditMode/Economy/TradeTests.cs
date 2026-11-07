@@ -33,7 +33,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(1, result.Units);
             Assert.AreEqual(price, result.Gold);
-            Assert.AreEqual(59, market.AvailableOf(Good));
+            Assert.AreEqual(59, market.UnitsOf(Good));
             Assert.AreEqual(1, hold.UnitsOf(Good));
             Assert.AreEqual(10000 - price, treasury.Gold);
         }
@@ -63,7 +63,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             TradeResult result = Trade.Buy(market, hold, treasury, Good, 100);
 
             Assert.AreEqual(60, result.Units);
-            Assert.AreEqual(0, market.AvailableOf(Good));
+            Assert.AreEqual(0, market.UnitsOf(Good));
             Assert.AreEqual(60, hold.UnitsOf(Good));
         }
 
@@ -76,7 +76,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(5, result.Units);
             Assert.AreEqual(0, hold.Free);
-            Assert.AreEqual(55, market.AvailableOf(Good));
+            Assert.AreEqual(55, market.UnitsOf(Good));
         }
 
         [Test]
@@ -104,7 +104,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(0, result.Units);
             Assert.AreEqual(0, result.Gold);
             Assert.AreEqual(-50, treasury.Gold);
-            Assert.AreEqual(60, market.AvailableOf(Good));
+            Assert.AreEqual(60, market.UnitsOf(Good));
         }
 
         [Test]
@@ -118,7 +118,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(3, result.Units);
             Assert.AreEqual(expected, result.Gold);
             Assert.AreEqual(2, hold.UnitsOf(Good));
-            Assert.AreEqual(63, market.AvailableOf(Good));
+            Assert.AreEqual(63, market.UnitsOf(Good));
             Assert.AreEqual(10000 + expected, treasury.Gold);
         }
 
@@ -164,7 +164,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Trade.Sell(market, hold, treasury, Good, 20);
 
             Assert.Less(treasury.Gold, 10000);
-            Assert.AreEqual(60, market.AvailableOf(Good));
+            Assert.AreEqual(60, market.UnitsOf(Good));
         }
 
         [Test]
@@ -212,7 +212,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(30, result.Units);
             Assert.AreEqual(expected, result.Gold);
-            Assert.AreEqual(30, market.AvailableOf(Good));
+            Assert.AreEqual(30, market.UnitsOf(Good));
             Assert.AreEqual(30, hold.UnitsOf(Good));
         }
 
@@ -221,7 +221,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             Assert.AreEqual(60, Trade.Buy(market, hold, Good, 100).Units);
 
-            market.Put(Good, 60);
+            market.TryAdd(Good, 60);
             hold = new CargoHold(5);
 
             Assert.AreEqual(5, Trade.Buy(market, hold, Good, 100).Units);
@@ -238,7 +238,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(3, result.Units);
             Assert.AreEqual(expected, result.Gold);
             Assert.AreEqual(2, hold.UnitsOf(Good));
-            Assert.AreEqual(63, market.AvailableOf(Good));
+            Assert.AreEqual(63, market.UnitsOf(Good));
         }
 
         [Test]

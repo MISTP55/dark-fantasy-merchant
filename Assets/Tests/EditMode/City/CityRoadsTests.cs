@@ -176,15 +176,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityGrid grid = TestMarkets.GridWithTownHall(12, 12);
             City city = NewCity(grid, new CityPopulation(960, 0, 1000));
-            city.Market.Put(Timber, 25);
-            city.Market.Put(Metal, 12);
+            city.Market.TryAdd(Timber, 25);
+            city.Market.TryAdd(Metal, 12);
 
             city.StartDay();
 
             Assert.AreEqual(1, city.CityHouses);
             Assert.AreEqual(1140, city.Population.Room);
-            Assert.AreEqual(15, city.Market.AvailableOf(Timber));
-            Assert.AreEqual(2, city.Market.AvailableOf(Metal));
+            Assert.AreEqual(15, city.Market.UnitsOf(Timber));
+            Assert.AreEqual(2, city.Market.UnitsOf(Metal));
 
             int roads = 0;
             foreach (PlacedBuilding building in grid.Buildings)
@@ -226,8 +226,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var grid = new CityGrid(14, 12, forbidden);
             grid.Place(BuildingKind.TownHall(), BuildingOwner.City, new Footprint(3, 2), At(4, 5));
             City city = NewCity(grid, new CityPopulation(960, 0, 1000));
-            city.Market.Put(Timber, 25);
-            city.Market.Put(Metal, 12);
+            city.Market.TryAdd(Timber, 25);
+            city.Market.TryAdd(Metal, 12);
 
             city.StartDay();
 
@@ -240,8 +240,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // A random place and no road: the house would stand off the network.
             CityGrid grid = TestMarkets.GridWithTownHall(12, 12);
             City city = NewCity(grid, new CityPopulation(960, 0, 1000), new RandomPlacement(new System.Random(1)));
-            city.Market.Put(Timber, 25);
-            city.Market.Put(Metal, 12);
+            city.Market.TryAdd(Timber, 25);
+            city.Market.TryAdd(Metal, 12);
 
             city.StartDay();
 
@@ -252,8 +252,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             Assert.AreEqual(0, city.CityHouses);
             Assert.AreEqual(1000, city.Population.Room);
-            Assert.AreEqual(25, city.Market.AvailableOf(Timber));
-            Assert.AreEqual(12, city.Market.AvailableOf(Metal));
+            Assert.AreEqual(25, city.Market.UnitsOf(Timber));
+            Assert.AreEqual(12, city.Market.UnitsOf(Metal));
             Assert.AreEqual(1, grid.Buildings.Count);
         }
 

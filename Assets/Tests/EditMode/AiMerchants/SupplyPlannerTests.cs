@@ -23,7 +23,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             if (dailyConsumption <= 0 && stock > 0)
             {
-                city.Market.Put(0, (int)stock);
+                city.Market.TryAdd(0, (int)stock);
             }
 
             return city;
@@ -43,12 +43,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             if (first > 0)
             {
-                city.Market.Put(0, (int)first);
+                city.Market.TryAdd(0, (int)first);
             }
 
             if (second > 0)
             {
-                city.Market.Put(1, (int)second);
+                city.Market.TryAdd(1, (int)second);
             }
 
             return city;

@@ -158,7 +158,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void GoodMarket_FollowsTheMarkets_WhileShown()
         {
-            city.Market.Take(Fish, 10);
+            city.Market.TryRemove(Fish, 10);
             Assert.AreEqual("60", Text(0, StockCell));
 
             table.WriteChanges();

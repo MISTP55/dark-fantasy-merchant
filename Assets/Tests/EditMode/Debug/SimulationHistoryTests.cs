@@ -44,7 +44,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             CitySnapshot.Capture(city, good => good == Fish ? 7 : 0, history.BeginDay(1)[0]);
 
-            Assert.AreEqual((float)city.Market.StockOf(Iron), history.ValueOf(0, 0, GoodIndicator.Stock, Iron), 1e-4);
+            Assert.AreEqual((float)city.Market.AmountOf(Iron), history.ValueOf(0, 0, GoodIndicator.Stock, Iron), 1e-4);
             Assert.AreEqual((float)city.Market.ThresholdsOf(Fish).T0, history.ValueOf(0, 0, GoodIndicator.T0, Fish), 1e-4);
             Assert.AreEqual((float)city.Market.ThresholdsOf(Fish).T3, history.ValueOf(0, 0, GoodIndicator.T3, Fish), 1e-4);
             Assert.AreEqual(city.Market.BuyPriceOf(Fish), history.ValueOf(0, 0, GoodIndicator.BuyPrice, Fish), 1e-4);

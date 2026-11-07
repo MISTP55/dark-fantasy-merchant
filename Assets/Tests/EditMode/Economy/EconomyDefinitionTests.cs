@@ -187,9 +187,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             // A week of what the city consumes, whatever it produces: wheat 12 barrels a day,
             // fish 9, salt 3.
-            Assert.AreEqual(84, cityState.Market.StockOf(0), Tolerance);
-            Assert.AreEqual(63, cityState.Market.StockOf(1), Tolerance);
-            Assert.AreEqual(21, cityState.Market.StockOf(2), Tolerance);
+            Assert.AreEqual(84, cityState.Market.AmountOf(0), Tolerance);
+            Assert.AreEqual(63, cityState.Market.AmountOf(1), Tolerance);
+            Assert.AreEqual(21, cityState.Market.AmountOf(2), Tolerance);
 
             // Salt is not produced: T0 is 7 days, T1 14 more.
             Assert.AreEqual(21, cityState.Market.ThresholdsOf(2).T0, Tolerance);
@@ -226,8 +226,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             cityState.StartDay();
 
             // Wheat: 84 + 24 - 12. Fish: 63 + 13.5 - 9.
-            Assert.AreEqual(96, cityState.Market.StockOf(0), Tolerance);
-            Assert.AreEqual(67.5, cityState.Market.StockOf(1), Tolerance);
+            Assert.AreEqual(96, cityState.Market.AmountOf(0), Tolerance);
+            Assert.AreEqual(67.5, cityState.Market.AmountOf(1), Tolerance);
         }
 
         [Test]
@@ -254,7 +254,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // Full stocks: the city's workshops hire nobody and leave the beggars to the player.
             for (int i = 0; i < cityState.Market.GoodCount; i++)
             {
-                cityState.Market.Put(i, 100000);
+                cityState.Market.TryAdd(i, 100000);
             }
 
             cityState.StartDay();
@@ -273,8 +273,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(0, cityState.Population.Inhabitants);
             Assert.AreEqual(0, cityState.WorkersOf(0));
-            Assert.AreEqual(0, cityState.Market.AvailableOf(0));
-            Assert.AreEqual(0, cityState.Market.AvailableOf(2));
+            Assert.AreEqual(0, cityState.Market.UnitsOf(0));
+            Assert.AreEqual(0, cityState.Market.UnitsOf(2));
         }
 
         [Test]

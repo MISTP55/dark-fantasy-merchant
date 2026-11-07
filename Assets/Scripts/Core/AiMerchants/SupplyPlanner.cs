@@ -113,7 +113,7 @@ namespace DarkFantasyMerchant.Core
             City city = cities[port];
             double net = city.DailyProductionOf(good) - city.DailyDemandOf(good);
 
-            return Math.Max(0d, city.Market.StockOf(good) + underWay + net * travelDays);
+            return Math.Max(0d, city.Market.AmountOf(good) + underWay + net * travelDays);
         }
 
         /// <summary>
@@ -298,7 +298,7 @@ namespace DarkFantasyMerchant.Core
             {
                 int good = order[i];
                 int unitRoom = goodUnits.RoomOf(good);
-                int loaded = Math.Min(quantities[good], Math.Min(source.AvailableOf(good), (room - taken) / unitRoom));
+                int loaded = Math.Min(quantities[good], Math.Min(source.UnitsOf(good), (room - taken) / unitRoom));
 
                 if (loaded > 0)
                 {
@@ -322,7 +322,7 @@ namespace DarkFantasyMerchant.Core
 
             CityMarket source = cities[from].Market;
             CityMarket destination = cities[to].Market;
-            double sourceStock = source.StockOf(good);
+            double sourceStock = source.AmountOf(good);
             double projected = ProjectedStockOf(to, good, travelDays[from, to], underWay != null ? underWay[to, good] : 0);
 
             double quantity = Math.Floor(

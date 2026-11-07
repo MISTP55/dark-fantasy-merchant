@@ -321,9 +321,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual("Blé", ((TextElement)container[0][NameCell]).text);
             Assert.AreEqual("Vin", ((TextElement)container[1][NameCell]).text);
             Assert.AreEqual(
-                NumberText.Format(swapped.AvailableOf(1)), ((TextElement)container[0][StockCell]).text);
+                NumberText.Format(swapped.UnitsOf(1)), ((TextElement)container[0][StockCell]).text);
             Assert.AreEqual(
-                NumberText.Format(swapped.AvailableOf(0)), ((TextElement)container[1][StockCell]).text);
+                NumberText.Format(swapped.UnitsOf(0)), ((TextElement)container[1][StockCell]).text);
         }
 
         [Test]

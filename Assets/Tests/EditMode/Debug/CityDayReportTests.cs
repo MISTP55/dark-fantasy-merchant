@@ -55,7 +55,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             city.StartDay();
 
             Assert.AreEqual(2d, city.LastDay.MissingOf(Iron), 1e-9);
-            Assert.AreEqual(3d, city.Market.StockOf(Iron), 1e-9);
+            Assert.AreEqual(3d, city.Market.AmountOf(Iron), 1e-9);
         }
 
         [Test]
@@ -64,7 +64,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             City city = FishAndIron(0);
             city.StartDay();
 
-            city.Market.Put(Fish, 100);
+            city.Market.TryAdd(Fish, 100);
             city.StartDay();
 
             Assert.AreEqual(0d, city.LastDay.MissingOf(Fish), 1e-9);
@@ -94,7 +94,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 read += watched.LastDay.MissingOf(0) + watched.LastDay.NeededOf(0);
             }
 
-            Assert.AreEqual(alone.Market.StockOf(0), watched.Market.StockOf(0), 1e-9);
+            Assert.AreEqual(alone.Market.AmountOf(0), watched.Market.AmountOf(0), 1e-9);
             Assert.AreEqual(alone.WorkersOf(0), watched.WorkersOf(0));
             Assert.AreEqual(alone.ReserveOf(0), watched.ReserveOf(0));
             Assert.AreEqual(alone.Population.Beggars, watched.Population.Beggars);

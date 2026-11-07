@@ -34,12 +34,12 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             if (timber > 0)
             {
-                city.Market.Put(Timber, timber);
+                city.Market.TryAdd(Timber, timber);
             }
 
             if (metal > 0)
             {
-                city.Market.Put(Metal, metal);
+                city.Market.TryAdd(Metal, metal);
             }
         }
 
@@ -53,8 +53,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(1100, city.Population.Room);
             Assert.AreEqual(1, city.CityHouses);
-            Assert.AreEqual(15, city.Market.AvailableOf(Timber));
-            Assert.AreEqual(2, city.Market.AvailableOf(Metal));
+            Assert.AreEqual(15, city.Market.UnitsOf(Timber));
+            Assert.AreEqual(2, city.Market.UnitsOf(Metal));
         }
 
         [Test]
@@ -67,7 +67,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(1000, city.Population.Room);
             Assert.AreEqual(0, city.CityHouses);
-            Assert.AreEqual(10, city.Market.AvailableOf(Timber));
+            Assert.AreEqual(10, city.Market.UnitsOf(Timber));
         }
 
         [Test]
@@ -90,8 +90,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             city.StartDay();
 
             Assert.AreEqual(1, city.CityHouses);
-            Assert.AreEqual(0, city.Market.StockOf(Timber));
-            Assert.AreEqual(0, city.Market.StockOf(Metal));
+            Assert.AreEqual(0, city.Market.AmountOf(Timber));
+            Assert.AreEqual(0, city.Market.AmountOf(Metal));
         }
 
         [Test]
@@ -104,8 +104,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(0, city.CityHouses);
             Assert.AreEqual(1000, city.Population.Room);
-            Assert.AreEqual(30, city.Market.AvailableOf(Timber));
-            Assert.AreEqual(9, city.Market.AvailableOf(Metal));
+            Assert.AreEqual(30, city.Market.UnitsOf(Timber));
+            Assert.AreEqual(9, city.Market.UnitsOf(Metal));
         }
 
         [Test]
@@ -262,8 +262,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.AreEqual(1000, city.Population.Room);
             Assert.AreEqual(0, city.CityHouses);
-            Assert.AreEqual(25, city.Market.AvailableOf(Timber));
-            Assert.AreEqual(12, city.Market.AvailableOf(Metal));
+            Assert.AreEqual(25, city.Market.UnitsOf(Timber));
+            Assert.AreEqual(12, city.Market.UnitsOf(Metal));
         }
 
         [Test]
@@ -277,8 +277,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             city.StartDay();
 
-            Assert.AreEqual(10, city.Market.AvailableOf(Timber));
-            Assert.AreEqual(10, city.Market.AvailableOf(Metal));
+            Assert.AreEqual(10, city.Market.UnitsOf(Timber));
+            Assert.AreEqual(10, city.Market.UnitsOf(Metal));
         }
 
         [Test]

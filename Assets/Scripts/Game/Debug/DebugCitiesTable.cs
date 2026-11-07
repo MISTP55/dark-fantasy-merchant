@@ -383,7 +383,7 @@ namespace DarkFantasyMerchant.Game
 
                 Write(
                     cells,
-                    city.Market.AvailableOf(i),
+                    city.Market.UnitsOf(i),
                     city.NominalWeeklyProductionOf(i),
                     city.NominalWeeklyConsumptionOf(i),
                     city.NominalWeeklyInputNeedOf(i),
@@ -461,7 +461,7 @@ namespace DarkFantasyMerchant.Game
                     }
 
                     // The whole units, as the rows write them.
-                    stock += city.Market.AvailableOf(i);
+                    stock += city.Market.UnitsOf(i);
                     nominalProduction += city.NominalWeeklyProductionOf(i);
                     nominalConsumption += city.NominalWeeklyConsumptionOf(i);
                     nominalInputs += city.NominalWeeklyInputNeedOf(i);
