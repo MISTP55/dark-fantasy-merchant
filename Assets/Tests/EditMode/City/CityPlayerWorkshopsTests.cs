@@ -35,7 +35,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static City NewCity(MarketGood[] goods, MerchantOutputRule merchantOutput = null)
         {
             return new City(goods, TestMarkets.Thresholds, Workforce, 100, TestMarkets.Pricing, 7, Roomy,
-                TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement, merchantOutput: merchantOutput ?? Bonus);
+                TestMarkets.LabourRules, grid: TestMarkets.GridSetupWithRoad(), merchantOutput: merchantOutput ?? Bonus);
         }
 
         private static Warehouse PostOf(City cityState, int capacity = 2000)
@@ -219,7 +219,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             CityGrid grid = TestMarkets.GridWithTownHall(12, 12);
             var cityState = new City(Goods(0.1), TestMarkets.Thresholds, Workforce, 100, TestMarkets.Pricing, 7,
-                Roomy, TestMarkets.Labour, null, null, grid, new RoadsidePlacement(new System.Random(1)), Bonus);
+                Roomy, TestMarkets.LabourRules, grid: new CityGridSetup(grid, new RoadsidePlacement(new System.Random(1))),
+                merchantOutput: Bonus);
             Warehouse post = PostOf(cityState);
             cityState.AddPlayerWorkshop(Made, 10, new Footprint(2, 2), new GridPlace(new Vector2Int(5, 0), BuildingOrientation.Along));
 
@@ -244,7 +245,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void WithoutMerchantOutputRule_MakesNothing()
         {
             var cityState = new City(Goods(0.1), TestMarkets.Thresholds, Workforce, 100, TestMarkets.Pricing, 7,
-                Roomy, TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
+                Roomy, TestMarkets.LabourRules, grid: TestMarkets.GridSetupWithRoad());
             Warehouse post = PostOf(cityState);
             TestMarkets.AddPlayerWorkshop(cityState, Made, 10);
 

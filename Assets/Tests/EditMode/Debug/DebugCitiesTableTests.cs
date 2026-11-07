@@ -567,8 +567,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 100,
                 TestMarkets.Pricing,
                 7,
-                new CityPopulation(1000, 100, 1100),
-                TestMarkets.Labour);
+                new CityPopulation(1000, 100, 1100), TestMarkets.LabourRules);
         }
 
         [Test]

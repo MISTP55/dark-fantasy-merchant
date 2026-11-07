@@ -22,7 +22,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static City NewCity(CityPopulation population, CityHousingRule housing, LabourRule labour)
         {
             return new City(new[] { Material, Material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0,
-                TestMarkets.Pricing, 7, population, labour, housing);
+                TestMarkets.Pricing, 7, population, new CityLabourRules(labour), housing);
         }
 
         private static City NewCity(CityPopulation population, CityHousingRule housing = null)
@@ -174,7 +174,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AMarketWithoutHousing_NeverBuilds()
         {
             City city = new City(new[] { Material, Material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0,
-                TestMarkets.Pricing, 7, new CityPopulation(1000, 0, 1000), TestMarkets.Labour);
+                TestMarkets.Pricing, 7, new CityPopulation(1000, 0, 1000), TestMarkets.LabourRules);
             Stock(city, 10, 10);
 
             city.StartDay();
@@ -224,7 +224,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static City GridCity(CityPopulation population, CityGrid grid, IPlacementStrategy placement)
         {
             return new City(new[] { Material, Material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0,
-                TestMarkets.Pricing, 7, population, TestMarkets.Labour, GridHousing, null, grid, placement);
+                TestMarkets.Pricing, 7, population, TestMarkets.LabourRules, GridHousing,
+                new CityGridSetup(grid, placement));
         }
 
         private static CityGrid Grid(int width, int height) => new CityGrid(width, height, new Vector2Int[0]);
@@ -306,22 +307,18 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void Constructor_Throws_ForAGridWithoutStrategy()
+        public void GridSetup_Throws_WithoutAGridOrAStrategy()
         {
-            var population = new CityPopulation(960, 0, 1000);
-
-            Assert.Throws<ArgumentException>(() => GridCity(population, Grid(2, 2), null));
-            Assert.Throws<ArgumentException>(() => new City(new[] { Material, Material }, TestMarkets.Thresholds,
-                TestMarkets.Workforce, 0, TestMarkets.Pricing, 7, population, TestMarkets.Labour, GridHousing, null,
-                null, new RandomPlacement(new System.Random(1))));
+            Assert.Throws<ArgumentNullException>(() => new CityGridSetup(Grid(2, 2), null));
+            Assert.Throws<ArgumentNullException>(() => new CityGridSetup(null, new RandomPlacement(new System.Random(1))));
         }
 
         [Test]
         public void Constructor_Throws_ForAGridWithAHousingRuleWithoutFootprint()
         {
             Assert.Throws<ArgumentException>(() => new City(new[] { Material, Material }, TestMarkets.Thresholds,
-                TestMarkets.Workforce, 0, TestMarkets.Pricing, 7, new CityPopulation(960, 0, 1000), TestMarkets.Labour,
-                Housing, null, Grid(2, 2), new RandomPlacement(new System.Random(1))));
+                TestMarkets.Workforce, 0, TestMarkets.Pricing, 7, new CityPopulation(960, 0, 1000), TestMarkets.LabourRules,
+                Housing, new CityGridSetup(Grid(2, 2), new RandomPlacement(new System.Random(1)))));
         }
 
         [Test]

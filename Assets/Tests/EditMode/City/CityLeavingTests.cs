@@ -23,15 +23,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
             bool onGrid = false)
         {
             return new City(goods ?? new[] { Good }, TestMarkets.Thresholds, workforce ?? Workforce, startingDays,
-                TestMarkets.Pricing, 7, population, TestMarkets.Labour, housing, withLeaving ? TestMarkets.Leaving : null,
-                onGrid ? TestMarkets.GridWithRoad() : null, onGrid ? TestMarkets.Placement : null);
+                TestMarkets.Pricing, 7, population,
+                new CityLabourRules(TestMarkets.Labour, withLeaving ? TestMarkets.Leaving : null),
+                housing, onGrid ? TestMarkets.GridSetupWithRoad() : null);
         }
 
         [Test]
         public void ALeavingRule_NeedsLabour()
         {
-            Assert.Throws<ArgumentException>(() => new City(new[] { Good }, TestMarkets.Thresholds, Workforce, 7,
-                TestMarkets.Pricing, 7, new CityPopulation(1000), null, null, TestMarkets.Leaving));
+            Assert.Throws<ArgumentNullException>(() => new CityLabourRules(null, TestMarkets.Leaving));
         }
 
         [Test]
@@ -152,7 +152,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             CityPopulation population = CityPopulation.AtStart(
                 City.StartingWorkforceOf(goods, workforce), 4, 4d / 17d, 140);
             var city = new City(goods, TestMarkets.Thresholds, workforce, 7, TestMarkets.Pricing, 7,
-                population, TestMarkets.Labour, null, TestMarkets.Leaving, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
+                population, TestMarkets.LabourAndLeaving, grid: TestMarkets.GridSetupWithRoad());
             TestMarkets.AddPlayerHouse(city, 140);
             TestMarkets.AddPlayerWorkshop(city, 0, 30);
             AssertFourPerWorker(city, "at the start");

@@ -40,7 +40,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var material = new MarketGood(10, 0, 0, 0);
             var housing = new CityHousingRule(0.95, 100, new[] { new MaterialCost(0, 10) });
             var city = new City(new[] { material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0,
-                TestMarkets.Pricing, 7, new CityPopulation(960, 0, 1000), TestMarkets.Labour, housing);
+                TestMarkets.Pricing, 7, new CityPopulation(960, 0, 1000), TestMarkets.LabourRules, housing);
             city.Market.Put(0, 25);
             return city;
         }

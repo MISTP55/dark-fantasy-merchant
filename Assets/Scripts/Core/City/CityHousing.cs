@@ -23,16 +23,12 @@ namespace DarkFantasyMerchant.Core
         private int roomOfPlacedHouse;
 
         /// <param name="housing">Null for a city that never builds.</param>
-        /// <param name="grid">With its placement strategy (both or neither); null for a city whose houses have no place. The rule then has a footprint, and a house of the grid not connected yet needs the rule, which gives its room.</param>
-        public CityHousing(CityPopulation population, CityHousingRule housing, CityGrid grid, IPlacementStrategy placement)
+        /// <param name="setup">The grid with its placement strategy; null for a city whose houses have no place. The rule then has a footprint, and a house of the grid not connected yet needs the rule, which gives its room.</param>
+        public CityHousing(CityPopulation population, CityHousingRule housing, CityGridSetup setup)
         {
             this.population = population;
             Rule = housing;
-
-            if ((grid == null) != (placement == null))
-            {
-                throw new ArgumentException("A grid and a placement strategy come together.", nameof(grid));
-            }
+            CityGrid grid = setup?.Grid;
 
             if (grid != null)
             {
@@ -57,7 +53,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             Grid = grid;
-            this.placement = placement;
+            placement = setup?.Placement;
         }
 
         /// <summary>When the city builds a house of its own; null when it never does.</summary>

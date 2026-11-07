@@ -51,11 +51,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 TestMarkets.Pricing,
                 7,
                 population,
-                TestMarkets.Labour,
+                TestMarkets.LabourRules,
                 Housing,
-                null,
-                grid,
-                placement ?? new RoadsidePlacement(new System.Random(1)));
+                new CityGridSetup(grid, placement ?? new RoadsidePlacement(new System.Random(1))));
         }
 
         // 100 housed in room for 1 000, and 400 beggars ready to be hired.
@@ -141,7 +139,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             Assert.Throws<ArgumentException>(() => new City(
                 new[] { Material, Material }, TestMarkets.Thresholds, TestMarkets.Workforce, 0, TestMarkets.Pricing, 7,
-                Roomy, TestMarkets.Labour, null, null, grid, new RoadsidePlacement(new System.Random(1))));
+                Roomy, TestMarkets.LabourRules, grid: new CityGridSetup(grid, new RoadsidePlacement(new System.Random(1)))));
         }
 
         [Test]

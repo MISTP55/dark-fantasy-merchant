@@ -26,8 +26,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             var house = new CityHousingRule(0.95, 100, new MaterialCost[0], new Footprint(1, 1));
             var cityState = new City(new[] { new MarketGood(10, 2, 0, 0) },
                 TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7,
-                new CityPopulation(100, 0, 100), TestMarkets.Labour,
-                house, null, grid, new RandomPlacement(new System.Random(1)));
+                new CityPopulation(100, 0, 100), TestMarkets.LabourRules, house,
+                new CityGridSetup(grid, new RandomPlacement(new System.Random(1))));
             var treasury = new Treasury(1000);
             var feed = new NotificationFeed(5f, 1f);
             var trace = new[] { new Vector2Int(3, 0), new Vector2Int(4, 0), new Vector2Int(5, 0) };
@@ -54,8 +54,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             return new City(new[] { new MarketGood(10, 2, 0, 0) },
                 TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7,
-                new CityPopulation(100, 0, 100), TestMarkets.Labour,
-                house, null, grid, new RandomPlacement(new System.Random(1)));
+                new CityPopulation(100, 0, 100), TestMarkets.LabourRules, house,
+                new CityGridSetup(grid, new RandomPlacement(new System.Random(1))));
         }
 
         private static CityDefinition City(string displayName)

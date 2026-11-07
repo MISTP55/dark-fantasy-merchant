@@ -25,7 +25,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             WorkforceRule workforce = null)
         {
             return new City(Enumerable.Repeat(Good, goods).ToArray(), TestMarkets.Thresholds, workforce ?? Workforce, startingDays,
-                TestMarkets.Pricing, 7, population, labour ?? TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
+                TestMarkets.Pricing, 7, population, new CityLabourRules(labour ?? TestMarkets.Labour),
+                grid: TestMarkets.GridSetupWithRoad());
         }
 
         private static City TwoGoodsCity(double startingDays, CityPopulation population)
@@ -36,7 +37,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static City CityWithoutLabour(double startingDays, CityPopulation population)
         {
             return new City(new[] { Good }, TestMarkets.Thresholds, Workforce, startingDays,
-                TestMarkets.Pricing, 7, population, null, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
+                TestMarkets.Pricing, 7, population, grid: TestMarkets.GridSetupWithRoad());
         }
 
         [Test]
@@ -61,7 +62,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // second good, after it in the catalogue, is still consumed by the 1 000 of the morning.
             var goods = new[] { Good, new MarketGood(10, 2, 0, 0) };
             var cityState = new City(goods, TestMarkets.Thresholds, Workforce, 0, TestMarkets.Pricing, 7,
-                new CityPopulation(1000, 100, 1100), TestMarkets.Labour);
+                new CityPopulation(1000, 100, 1100), TestMarkets.LabourRules);
             cityState.Market.Put(1, 100);
 
             cityState.StartDay();
@@ -161,7 +162,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // T0 20, T1 60, T2 = 60 + 10 days × 0.3 = 63, T3 = 63 + 20 = 83.
             var good = new MarketGood(10, 2, 3, 0.1);
             var cityState = new City(new[] { good }, TestMarkets.Thresholds, Workforce, 100,
-                TestMarkets.Pricing, 7, new CityPopulation(1000, 100, 2000), TestMarkets.Labour);
+                TestMarkets.Pricing, 7, new CityPopulation(1000, 100, 2000), TestMarkets.LabourRules);
 
             // 200 barrels, above T3: 1 worker kept, 2 in the reserve (a leak of 2 × 0.02: none).
             cityState.StartDay();
@@ -186,7 +187,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // (200 barrels, above its T3 of 140; a leak of 9 × 0.02: none). Good 1: a workshop of
             // 12 at most that starts with 10; an empty stock wants 10 + 16, cut to 12: 2 more.
             var cityState = new City(new[] { Good, new MarketGood(10, 2, 12, 0.1) }, TestMarkets.Thresholds,
-                TwoWorkshopsWorkforce, 100, TestMarkets.Pricing, 7, new CityPopulation(1000, 100, 2000), TestMarkets.Labour);
+                TwoWorkshopsWorkforce, 100, TestMarkets.Pricing, 7, new CityPopulation(1000, 100, 2000),
+                TestMarkets.LabourRules);
             cityState.Market.Take(1, cityState.Market.AvailableOf(1));
 
             cityState.StartDay();
@@ -209,7 +211,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             int startingWorkers = City.StartingWorkforceOf(goods, workforce);
             CityPopulation population = CityPopulation.AtStart(startingWorkers, 4, 4d / 17d, 100);
             var cityState = new City(goods, TestMarkets.Thresholds, workforce, 7, TestMarkets.Pricing, 7,
-                population, TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
+                population, TestMarkets.LabourRules, grid: TestMarkets.GridSetupWithRoad());
             TestMarkets.AddPlayerHouse(cityState, 100);
             TestMarkets.AddPlayerWorkshop(cityState, 0, 30);
 
@@ -344,7 +346,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
             // A merchant's worker makes a twentieth. Three workshops of 10 jobs: 3 % more.
             var good = new MarketGood(10, 2, 60, 0.1, 0.05);
             var cityState = new City(new[] { good }, TestMarkets.Thresholds, Workforce, 100,
-                TestMarkets.Pricing, 7, new CityPopulation(1000, 200, 1200), TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
+                TestMarkets.Pricing, 7, new CityPopulation(1000, 200, 1200), TestMarkets.LabourRules,
+                grid: TestMarkets.GridSetupWithRoad());
             var rule = new MerchantOutputRule(3, 1.03, 6, 1.06, 9, 1.1);
 
             Assert.AreEqual(0, cityState.PlayerDailyOutputOf(0, rule));
@@ -404,7 +407,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void AddPlayerWorkshop_RefusesAGoodNotProduced()
         {
             var cityState = new City(new[] { new MarketGood(10, 2, 0, 0), Good }, TestMarkets.Thresholds, Workforce, 30,
-                TestMarkets.Pricing, 7, new CityPopulation(1000), TestMarkets.Labour, grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
+                TestMarkets.Pricing, 7, new CityPopulation(1000), TestMarkets.LabourRules,
+                grid: TestMarkets.GridSetupWithRoad());
 
             Assert.Throws<ArgumentOutOfRangeException>(() => TestMarkets.AddPlayerWorkshop(cityState, 0, 30));
             Assert.Throws<ArgumentOutOfRangeException>(() => TestMarkets.AddPlayerWorkshop(cityState, 1, 0));

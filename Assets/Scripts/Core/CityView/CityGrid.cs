@@ -484,6 +484,39 @@ namespace DarkFantasyMerchant.Core
         }
 
         /// <summary>
+        /// Fills newCells (cleared first) with the distinct cells that are not roads yet, in their order. False, and
+        /// newCells empty, when a cell cannot hold a road: off the grid, forbidden, outside the walls of a grid kept inside
+        /// them (<see cref="IsBuildable"/>) or under a building that is not a road.
+        /// </summary>
+        internal bool TryCollectNewRoads(IReadOnlyList<Vector2Int> cells, List<Vector2Int> newCells)
+        {
+            if (cells == null)
+            {
+                throw new ArgumentNullException(nameof(cells));
+            }
+
+            newCells.Clear();
+
+            foreach (Vector2Int cell in cells)
+            {
+                PlacedBuilding there = BuildingAt(cell);
+
+                if (!IsBuildable(cell) || (there != null && !there.Kind.IsRoad))
+                {
+                    newCells.Clear();
+                    return false;
+                }
+
+                if (there == null && !newCells.Contains(cell))
+                {
+                    newCells.Add(cell);
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Takes a house off the grid. A house carries no network, so nothing else changes; no event is raised, which
         /// is why it is only for a grid still being made, that nobody watches yet.
         /// </summary>

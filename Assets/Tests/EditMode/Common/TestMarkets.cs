@@ -69,6 +69,15 @@ namespace DarkFantasyMerchant.Tests.EditMode
         /// <summary>The placement strategy of a market on <see cref="GridWithRoad"/>, which builds no house of its own.</summary>
         public static IPlacementStrategy Placement => new RandomPlacement(new System.Random(1));
 
+        /// <summary><see cref="GridWithRoad"/> with <see cref="Placement"/>, for a market the player builds in.</summary>
+        public static CityGridSetup GridSetupWithRoad() => new CityGridSetup(GridWithRoad(), Placement);
+
+        /// <summary><see cref="Labour"/> alone: nobody leaves.</summary>
+        public static CityLabourRules LabourRules => new CityLabourRules(Labour);
+
+        /// <summary><see cref="Labour"/> with <see cref="Leaving"/>.</summary>
+        public static CityLabourRules LabourAndLeaving => new CityLabourRules(Labour, Leaving);
+
         /// <summary>Builds a player's house of 1 by 1 on the first free cell along the road of <see cref="GridWithRoad"/>: it is connected at once.</summary>
         public static void AddPlayerHouse(City city, int room)
         {

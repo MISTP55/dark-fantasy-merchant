@@ -563,6 +563,16 @@ namespace DarkFantasyMerchant.Game
                 throw new ArgumentOutOfRangeException(nameof(roomPerHouse), "A house shelters at least one inhabitant.");
             }
 
+            if (leaving != null && labour == null)
+            {
+                throw new ArgumentException("Inhabitants leave only with labour.", nameof(leaving));
+            }
+
+            if ((grid == null) != (placement == null))
+            {
+                throw new ArgumentException("A grid and a placement strategy come together.", nameof(grid));
+            }
+
             MarketGood[] marketGoods = CreateMarketGoods(city, daysPerWeek);
 
             WorkforceRule workforce = CreateWorkforceRule();
@@ -588,11 +598,9 @@ namespace DarkFantasyMerchant.Game
                 pricing,
                 daysPerWeek,
                 population,
-                labour,
+                labour == null ? null : new CityLabourRules(labour, leaving),
                 housing,
-                leaving,
-                grid,
-                placement,
+                grid == null ? null : new CityGridSetup(grid, placement),
                 CreateMerchantOutputRule());
         }
 

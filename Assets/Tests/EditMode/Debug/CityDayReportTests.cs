@@ -31,7 +31,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         private static City LabourCity(double startingDays, CityPopulation population, bool withLeaving = false)
         {
             return new City(new[] { Good }, TestMarkets.Thresholds, Workforce, startingDays,
-                TestMarkets.Pricing, 7, population, TestMarkets.Labour, null, withLeaving ? TestMarkets.Leaving : null);
+                TestMarkets.Pricing, 7, population,
+                new CityLabourRules(TestMarkets.Labour, withLeaving ? TestMarkets.Leaving : null));
         }
 
         [Test]

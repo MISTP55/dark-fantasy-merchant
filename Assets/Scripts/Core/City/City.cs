@@ -19,27 +19,23 @@ namespace DarkFantasyMerchant.Core
     {
         private readonly MarketGood[] goods;
         private readonly CityWorkforce cityWorkforce;
+        private readonly CityProduction cityProduction;
         private readonly PlayerWorkshops playerWorkshops;
         private readonly CityHousing cityHousing;
-        private readonly WorkforceRule workforceRule;
         private readonly int daysPerWeek;
         private readonly MarketWeekLog weekLog;
 
-        // By good, the workshops that take it as an input and how much for every unit they make,
-        // each list in the catalogue's order of its workshops: the recipes never change once the
-        // city exists.
-        private readonly (int consumer, double unitsPerUnit)[][] consumersOf;
+        // What the city's workshops put in the stocks in the day being run, by good.
+        private readonly double[] produced;
 
         /// <param name="thresholdRule">How the stock thresholds of a good, at which its prices are given, follow what the city needs (its inhabitants and its workshops' inputs) and produces of it.</param>
         /// <param name="workforce">How the workshops hire, lay off and start.</param>
         /// <param name="startingDays">Days of its demand (consumption and inputs) the city holds of every good when the game starts.</param>
         /// <param name="daysPerWeek">Days of the calendar's week, over which the weekly figures are given.</param>
         /// <param name="population">The inhabitants of the city, who set what it consumes.</param>
-        /// <param name="labour">How the workshops take their workers from the population; null for immediate hiring and a population that stays.</param>
-        /// <param name="housing">When the city builds a house of its own, only with labour; null for a city that never does.</param>
-        /// <param name="leaving">Who leaves the city for want of room, only with labour; null for a city nobody leaves.</param>
-        /// <param name="grid">The city grid the houses stand on, with its placement strategy (both or neither); null for a city whose houses have no place. The housing rule then has a footprint. The houses already connected are in the population's room; one not connected yet gives the room of the housing rule when it connects, and needs that rule.</param>
-        /// <param name="placement">Where the city builds its own houses on the grid.</param>
+        /// <param name="labour">How the workshops take their workers from the population, and who leaves the city; null for immediate hiring and a population that stays.</param>
+        /// <param name="housing">When the city builds a house of its own, only with labour; null for a city that never does. On a grid, it also gives the room of a house not connected yet when it connects.</param>
+        /// <param name="grid">The city grid the houses stand on, with its placement strategy; null for a city whose houses have no place. The housing rule then has a footprint. The houses already connected are in the population's room; one not connected yet gives the room of the housing rule when it connects, and needs that rule.</param>
         /// <param name="merchantOutput">What the player's workshops make; null for workshops that hire but make nothing.</param>
         public City(
             IReadOnlyList<MarketGood> goods,
@@ -49,11 +45,9 @@ namespace DarkFantasyMerchant.Core
             MarketPricing pricing,
             int daysPerWeek,
             CityPopulation population,
-            LabourRule labour = null,
+            CityLabourRules labour = null,
             CityHousingRule housing = null,
-            LeavingRule leaving = null,
-            CityGrid grid = null,
-            IPlacementStrategy placement = null,
+            CityGridSetup grid = null,
             MerchantOutputRule merchantOutput = null)
         {
             if (goods == null)
@@ -61,7 +55,10 @@ namespace DarkFantasyMerchant.Core
                 throw new ArgumentNullException(nameof(goods));
             }
 
-            workforceRule = workforce ?? throw new ArgumentNullException(nameof(workforce));
+            if (workforce == null)
+            {
+                throw new ArgumentNullException(nameof(workforce));
+            }
 
             if (daysPerWeek < 1)
             {
@@ -69,42 +66,24 @@ namespace DarkFantasyMerchant.Core
             }
 
             Population = population ?? throw new ArgumentNullException(nameof(population));
-
-            if (leaving != null && labour == null)
-            {
-                throw new ArgumentException("Inhabitants leave only with labour.", nameof(leaving));
-            }
-
-            Labour = labour;
-            Leaving = leaving;
-            cityHousing = new CityHousing(Population, housing, grid, placement);
-            Grid = grid;
+            Labour = labour?.Labour;
+            Leaving = labour?.Leaving;
+            cityHousing = new CityHousing(Population, housing, grid);
+            Grid = grid?.Grid;
             this.daysPerWeek = daysPerWeek;
             weekLog = new MarketWeekLog(goods.Count, daysPerWeek);
             LastDay = new CityDayReport(goods.Count);
+            produced = new double[goods.Count];
             this.goods = new MarketGood[goods.Count];
-            cityWorkforce = new CityWorkforce(CityWorkforce.StartingWorkersOf(goods, workforce), Population, labour);
-            playerWorkshops = new PlayerWorkshops(this.goods, daysPerWeek, merchantOutput);
 
             for (int i = 0; i < goods.Count; i++)
             {
                 this.goods[i] = goods[i];
-
-                foreach (MarketInput input in goods[i].Inputs)
-                {
-                    if (input.Good >= goods.Count)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(goods), $"The good {i} takes the good {input.Good}, which the city does not have.");
-                    }
-
-                    if (input.Good == i)
-                    {
-                        throw new ArgumentException($"The good {i} is its own input.", nameof(goods));
-                    }
-                }
             }
 
-            consumersOf = ConsumersOf(goods);
+            cityWorkforce = new CityWorkforce(CityWorkforce.StartingWorkersOf(goods, workforce), Population, Labour);
+            playerWorkshops = new PlayerWorkshops(this.goods, daysPerWeek, merchantOutput);
+            cityProduction = new CityProduction(this.goods, workforce, cityWorkforce);
 
             // Every good first: the demand the market reads of one looks at the workshops of the others.
             Market = new CityMarket(this.goods, thresholdRule, pricing, DailyDemandOf, startingDays);
@@ -188,14 +167,7 @@ namespace DarkFantasyMerchant.Core
         {
             RequireGood(good);
 
-            double need = 0d;
-
-            foreach ((int consumer, double unitsPerUnit) in consumersOf[good])
-            {
-                need += DailyProductionOf(consumer) * unitsPerUnit;
-            }
-
-            return need;
+            return cityProduction.DailyInputNeedOf(good);
         }
 
         /// <summary>What the city needs of a good in a day: what its inhabitants consume and its workshops take as input.</summary>
@@ -348,7 +320,7 @@ namespace DarkFantasyMerchant.Core
 
             var newCells = new List<Vector2Int>();
 
-            if (!TryCollectNewRoads(Grid, cells, newCells))
+            if (!Grid.TryCollectNewRoads(cells, newCells))
             {
                 throw new InvalidOperationException("A cell cannot hold a road.");
             }
@@ -360,39 +332,6 @@ namespace DarkFantasyMerchant.Core
 
             Grid.PlaceRoads(newCells, BuildingOwner.Player);
             Changed?.Invoke();
-        }
-
-        /// <summary>
-        /// Fills newCells (cleared first) with the distinct cells that are not roads yet, in their order. False, and
-        /// newCells empty, when a cell cannot hold a road: off the grid, forbidden, outside the walls of a grid kept inside
-        /// them (<see cref="CityGrid.IsBuildable"/>) or under a building that is not a road.
-        /// </summary>
-        internal static bool TryCollectNewRoads(CityGrid grid, IReadOnlyList<Vector2Int> cells, List<Vector2Int> newCells)
-        {
-            if (cells == null)
-            {
-                throw new ArgumentNullException(nameof(cells));
-            }
-
-            newCells.Clear();
-
-            foreach (Vector2Int cell in cells)
-            {
-                PlacedBuilding there = grid.BuildingAt(cell);
-
-                if (!grid.IsBuildable(cell) || (there != null && !there.Kind.IsRoad))
-                {
-                    newCells.Clear();
-                    return false;
-                }
-
-                if (there == null && !newCells.Contains(cell))
-                {
-                    newCells.Add(cell);
-                }
-            }
-
-            return true;
         }
 
         private void RequireStandable(Footprint footprint, GridPlace place)
@@ -434,7 +373,7 @@ namespace DarkFantasyMerchant.Core
         /// <summary>Units the workshop makes in a week with the workers of the moment, while the stock is not above T3.</summary>
         public double NominalWeeklyProductionOf(int good)
         {
-            return cityWorkforce.WorkersOf(good) * goods[good].DailyOutputPerWorker * daysPerWeek;
+            return cityProduction.DailyProductionOf(good) * daysPerWeek;
         }
 
         /// <summary>Units the city consumes in a week while it has them.</summary>
@@ -451,7 +390,7 @@ namespace DarkFantasyMerchant.Core
         {
             RequireGood(good);
 
-            return cityWorkforce.WorkersOf(good) * goods[good].DailyOutputPerWorker;
+            return cityProduction.DailyProductionOf(good);
         }
 
         /// <summary>
@@ -511,28 +450,11 @@ namespace DarkFantasyMerchant.Core
                 LastDay.RecordConsumption(i, needed, consumed[i]);
             }
 
+            cityProduction.Run(Market, weekLog, LastDay, produced);
+
             for (int i = 0; i < goods.Length; i++)
             {
-                MarketGood good = goods[i];
-                double produced = 0d;
-
-                if (good.IsProduced)
-                {
-                    StockThresholds goodThresholds = Market.ThresholdsOf(i);
-                    cityWorkforce.MoveTo(i, workforceRule.NextWorkers(cityWorkforce.WorkersOf(i), good.MaxWorkers, Market.StockOf(i), goodThresholds));
-
-                    double potential = cityWorkforce.WorkersOf(i) * good.DailyOutputPerWorker;
-                    double made = potential * TakeInputs(good, potential);
-
-                    // Above T3 the inputs are taken all the same, and lost.
-                    if (WorkforceRule.ProducesAt(Market.StockOf(i), goodThresholds))
-                    {
-                        produced = made;
-                        Market.Deposit(i, produced);
-                    }
-                }
-
-                weekLog.Record(i, produced, consumed[i]);
+                weekLog.Record(i, produced[i], consumed[i]);
             }
 
             if (Labour != null)
@@ -551,59 +473,6 @@ namespace DarkFantasyMerchant.Core
 
             // Last, so that the next day starts on the thresholds of the population this day leaves.
             Market.EndDay();
-        }
-
-        // Takes what a workshop needs to make these units, in proportion to its scarcest input, from
-        // the stocks as they stand, and returns that proportion: 1 with all its inputs or none.
-        private double TakeInputs(MarketGood good, double units)
-        {
-            IReadOnlyList<MarketInput> inputs = good.Inputs;
-            double factor = 1d;
-            int scarcest = -1;
-
-            for (int k = 0; k < inputs.Count; k++)
-            {
-                double needed = units * inputs[k].UnitsPerUnit;
-
-                if (needed > 0d && Market.StockOf(inputs[k].Good) / needed < factor)
-                {
-                    factor = Market.StockOf(inputs[k].Good) / needed;
-                    scarcest = k;
-                }
-            }
-
-            for (int k = 0; k < inputs.Count; k++)
-            {
-                int input = inputs[k].Good;
-                double needed = units * inputs[k].UnitsPerUnit;
-
-                // The scarcest is taken whole, so that no rounding leaves a crumb of it.
-                double taken = Market.Withdraw(input, k == scarcest ? Market.StockOf(input) : needed * factor);
-                weekLog.AddInputs(input, taken);
-                LastDay.AddInputs(input, needed, taken);
-            }
-
-            return factor;
-        }
-
-        private static (int consumer, double unitsPerUnit)[][] ConsumersOf(IReadOnlyList<MarketGood> goods)
-        {
-            var consumers = new List<(int consumer, double unitsPerUnit)>[goods.Count];
-
-            for (int i = 0; i < goods.Count; i++)
-            {
-                consumers[i] = new List<(int consumer, double unitsPerUnit)>();
-            }
-
-            for (int i = 0; i < goods.Count; i++)
-            {
-                foreach (MarketInput input in goods[i].Inputs)
-                {
-                    consumers[input.Good].Add((i, input.UnitsPerUnit));
-                }
-            }
-
-            return Array.ConvertAll(consumers, list => list.ToArray());
         }
 
         // The housed who leave take their jobs with them, a worker for every family.

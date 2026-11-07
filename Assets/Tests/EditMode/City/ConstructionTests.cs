@@ -14,7 +14,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         {
             var city = new City(new[] { new MarketGood(10, 2, 0, 0), new MarketGood(10, 2, 30, 0.1) },
                 TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7, new CityPopulation(1000),
-                grid: TestMarkets.GridWithRoad(), placement: TestMarkets.Placement);
+                grid: TestMarkets.GridSetupWithRoad());
             return WithTradingPost(city, withTradingPost);
         }
 
@@ -67,8 +67,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 
             return WithTradingPost(new City(new[] { new MarketGood(10, 2, 0, 0), new MarketGood(10, 2, 30, 0.1) },
                 TestMarkets.Thresholds, TestMarkets.Workforce, 30, TestMarkets.Pricing, 7,
-                new CityPopulation(100, 0, 100), TestMarkets.Labour,
-                house, null, grid, new RandomPlacement(new System.Random(1))), withTradingPost);
+                new CityPopulation(100, 0, 100), TestMarkets.LabourRules, house,
+                new CityGridSetup(grid, new RandomPlacement(new System.Random(1)))), withTradingPost);
         }
 
         [Test]

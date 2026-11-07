@@ -236,7 +236,7 @@ namespace DarkFantasyMerchant.Core
             }
 
             var newCells = new List<Vector2Int>();
-            return City.TryCollectNewRoads(city.Grid, cells, newCells) ? newCells.Count : -1;
+            return city.Grid.TryCollectNewRoads(cells, newCells) ? newCells.Count : -1;
         }
 
         /// <summary>
