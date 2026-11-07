@@ -108,7 +108,6 @@ namespace DarkFantasyMerchant.Game
 
         [Header("Cities' houses")]
         [Tooltip("A city builds a house of its own, with the materials of the player's, once its housed are above this share of their room.")]
-        [FormerlySerializedAs("cityPoorHouseOccupancy")]
         [SerializeField, Range(0f, 1f)] private double cityHouseOccupancy = 0.95d;
 
         [Header("Stock thresholds T0 to T3 of a good in a city, at which its prices are given")]

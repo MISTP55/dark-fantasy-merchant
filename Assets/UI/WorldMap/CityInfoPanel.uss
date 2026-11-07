@@ -22,7 +22,7 @@
     color: rgb(190, 164, 120);
     font-size: 14px;
 
-    /* The four classes of the population do not fit on one line of the column. */
+    /* The housed and the beggars may not fit on one line of a narrow column. */
     white-space: normal;
 }
 
