@@ -39,16 +39,13 @@ namespace DarkFantasyMerchant.Tests.EditMode
             return good;
         }
 
-        /// <summary>Gives a good a weekly consumption per thousand and a satisfaction weight for each class.</summary>
-        public static void SetConsumption(GoodDefinition good, PerClass<double> weekly, PerClass<int> weights)
+        /// <summary>Gives a good a weekly consumption per thousand for each class.</summary>
+        public static void SetConsumption(GoodDefinition good, PerClass<double> weekly)
         {
             var serialized = new SerializedObject(good);
             serialized.FindProperty("richWeeklyConsumptionPerThousand").doubleValue = weekly.Rich;
             serialized.FindProperty("wealthyWeeklyConsumptionPerThousand").doubleValue = weekly.Wealthy;
             serialized.FindProperty("poorWeeklyConsumptionPerThousand").doubleValue = weekly.Poor;
-            serialized.FindProperty("richSatisfactionWeight").intValue = weights.Rich;
-            serialized.FindProperty("wealthySatisfactionWeight").intValue = weights.Wealthy;
-            serialized.FindProperty("poorSatisfactionWeight").intValue = weights.Poor;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 

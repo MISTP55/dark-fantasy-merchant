@@ -16,19 +16,16 @@ namespace DarkFantasyMerchant.Core
         private readonly double[] leakCounters;
         private readonly CityPopulation population;
         private readonly LabourRule labour;
-        private readonly SocialRule social;
 
         /// <param name="startingWorkers">The workers of each good's workshop at the start; kept, not copied.</param>
         /// <param name="labour">Null for immediate hiring.</param>
-        /// <param name="social">Null when the beggars are always hired.</param>
-        public CityWorkforce(int[] startingWorkers, CityPopulation population, LabourRule labour, SocialRule social)
+        public CityWorkforce(int[] startingWorkers, CityPopulation population, LabourRule labour)
         {
             workers = startingWorkers;
             reserves = new int[startingWorkers.Length];
             leakCounters = new double[startingWorkers.Length];
             this.population = population;
             this.labour = labour;
-            this.social = social;
         }
 
         public int WorkersOf(int good)
@@ -166,11 +163,7 @@ namespace DarkFantasyMerchant.Core
         {
             wanted -= TakeFromReserve(good, good, wanted);
 
-            // The beggars are hired only while the poor are satisfied.
-            bool poorSatisfied = social == null || population.SatisfactionOf(SocialClass.Poor) > 0;
-            int fromBeggars = poorSatisfied
-                ? Math.Min(wanted, labour.WorkersHireableFrom(population.Beggars, population.FreeRoomOf(SocialClass.Poor)))
-                : 0;
+            int fromBeggars = Math.Min(wanted, labour.WorkersHireableFrom(population.Beggars, population.FreeRoomOf(SocialClass.Poor)));
             population.Hire(fromBeggars, labour.InhabitantsPerWorker);
             workers[good] += fromBeggars;
             wanted -= fromBeggars;

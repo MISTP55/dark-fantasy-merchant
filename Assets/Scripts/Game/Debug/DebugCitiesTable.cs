@@ -207,14 +207,11 @@ namespace DarkFantasyMerchant.Game
         }
 
         /// <summary>
-        /// A class's inhabitants over the room of its houses, followed by its satisfaction when one
-        /// is given: "110 / 120 (50)", or "1 108 / 1 400" for a total.
+        /// A class's inhabitants over the room of its houses: "110 / 120", or "1 108 / 1 400" for a total.
         /// </summary>
-        public static string FormatClass(long count, long room, int? satisfaction)
+        public static string FormatClass(long count, long room)
         {
-            string text = $"{NumberText.Format(count)} / {NumberText.Format(room)}";
-
-            return satisfaction.HasValue ? $"{text} ({satisfaction.Value.ToString(CultureInfo.InvariantCulture)})" : text;
+            return $"{NumberText.Format(count)} / {NumberText.Format(room)}";
         }
 
         /// <summary>A rate as the table writes it: "+2,5 %" or "-10,0 %", coloured, or a plain "0,0 %".</summary>
@@ -411,10 +408,10 @@ namespace DarkFantasyMerchant.Game
 
         private static string FormatClassOf(CityPopulation population, SocialClass housedClass)
         {
-            return FormatClass(population.CountOf(housedClass), population.RoomOf(housedClass), population.SatisfactionOf(housedClass));
+            return FormatClass(population.CountOf(housedClass), population.RoomOf(housedClass));
         }
 
-        // The classes of every city together; their satisfactions do not add up.
+        // The classes of every city together.
         private string FormatClassTotal(SocialClass housedClass)
         {
             long count = 0;
@@ -426,7 +423,7 @@ namespace DarkFantasyMerchant.Game
                 room += row.City.Population.RoomOf(housedClass);
             }
 
-            return FormatClass(count, room, null);
+            return FormatClass(count, room);
         }
 
         // Summed again at most once a frame: a handful of cities.

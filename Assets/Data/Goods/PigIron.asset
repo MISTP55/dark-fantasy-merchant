@@ -20,10 +20,8 @@ MonoBehaviour:
   richWeeklyConsumptionPerThousand: 0
   wealthyWeeklyConsumptionPerThousand: 0
   poorWeeklyConsumptionPerThousand: 0
-  richSatisfactionWeight: 0
-  wealthySatisfactionWeight: 0
-  poorSatisfactionWeight: 0
   maxWorkers: 70
   dailyOutputPerWorker: 0.01667
   merchantDailyOutputPerWorker: 0.01667
   aiWeight: 8
+  inputs: []

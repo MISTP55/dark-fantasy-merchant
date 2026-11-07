@@ -23,8 +23,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
         /// <summary>The labour rule with the economy's default settings.</summary>
         public static LabourRule Labour => new LabourRule(4, 50, 3, 8, 5, 10, 5, 3, 0.02, 30);
 
-        /// <summary>The social rule with the economy's default settings.</summary>
-        public static SocialRule Social => new SocialRule(50, new PerClass<int>(-13, -18, -27), 2, 1, 9, -40, 80, 40, 320, 160, 10, 100, 30);
+        /// <summary>The leaving rule with the economy's default settings.</summary>
+        public static LeavingRule Leaving => new LeavingRule(30);
 
         /// <summary>The factors at which the player buys, the economy's defaults.</summary>
         public static PriceCurve BuyCurve => new PriceCurve(4, 1.5, 1, 0.8, 0.6);

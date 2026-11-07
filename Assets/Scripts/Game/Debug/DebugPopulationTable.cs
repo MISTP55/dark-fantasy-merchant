@@ -191,8 +191,7 @@ namespace DarkFantasyMerchant.Game
             for (int i = 0; i < Classes.Length; i++)
             {
                 SocialClass housedClass = Classes[i];
-                cells[3 + i].text = DebugCitiesTable.FormatClass(
-                    population.CountOf(housedClass), population.RoomOf(housedClass), population.SatisfactionOf(housedClass));
+                cells[3 + i].text = DebugCitiesTable.FormatClass(population.CountOf(housedClass), population.RoomOf(housedClass));
             }
 
             cells[6].text = DebugCitiesTable.FormatRate(population.GrowthSinceStart);
@@ -229,10 +228,10 @@ namespace DarkFantasyMerchant.Game
             totals[1].text = NumberText.Format(inhabitants);
             totals[2].text = DebugCitiesTable.FormatBeggars(beggars, beggarTargets);
 
-            // The classes of every city together; their satisfactions do not add up.
+            // The classes of every city together.
             for (int i = 0; i < Classes.Length; i++)
             {
-                totals[3 + i].text = DebugCitiesTable.FormatClass(counts[i], rooms[i], null);
+                totals[3 + i].text = DebugCitiesTable.FormatClass(counts[i], rooms[i]);
             }
 
             // The growth of the world: all its inhabitants together, against all those it started with.

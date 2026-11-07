@@ -4,16 +4,11 @@ namespace DarkFantasyMerchant.Core
 {
     /// <summary>
     /// The inhabitants of one city, in whole numbers: the rich, the wealthy and the poor, who
-    /// live in the houses of their class (its room), and the beggars, who have no place; and the
-    /// satisfaction of each housed class. Workers' families are hired from the beggars as poor
-    /// and sent back to them; the poor rise into the other classes and fall back
-    /// (<see cref="SocialRule"/>).
+    /// live in the houses of their class (its room), and the beggars, who have no place. Workers'
+    /// families are hired from the beggars as poor and sent back to them; the classes never move.
     /// </summary>
     public sealed class CityPopulation
     {
-        // The weight of a satisfied class when a family leaves for the beggars.
-        private const int LeavingWeight = 10;
-
         // The weights are shifted down by 4 bits until their total is no more than this. The
         // arithmetic would not overflow without it, but the scaling is kept on purpose: its
         // truncation changes the share each class gives.
@@ -23,7 +18,6 @@ namespace DarkFantasyMerchant.Core
 
         private readonly int[] counts = new int[3];
         private readonly int[] rooms = new int[3];
-        private readonly int[] satisfactions = new int[3];
 
         /// <summary>A city with poor inhabitants only, in houses with exactly their room.</summary>
         public CityPopulation(int housed)
@@ -100,17 +94,6 @@ namespace DarkFantasyMerchant.Core
         public int FreeRoomOf(SocialClass housedClass)
         {
             return Math.Max(0, RoomOf(housedClass) - CountOf(housedClass));
-        }
-
-        /// <summary>How satisfied a class is: 0 until it is set.</summary>
-        public int SatisfactionOf(SocialClass housedClass)
-        {
-            return satisfactions[IndexOf(housedClass)];
-        }
-
-        public void SetSatisfaction(SocialClass housedClass, int satisfaction)
-        {
-            satisfactions[IndexOf(housedClass)] = satisfaction;
         }
 
         /// <summary>
@@ -219,8 +202,8 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>
         /// Sends the families of workers who leave their jobs back to the beggars: they are taken
-        /// from the three classes in proportion to their count, the unhappy ones giving more, and
-        /// no class falls below one inhabitant. A worker whose family cannot be taken in full keeps
+        /// from the three classes in proportion to their count, and no class falls below one
+        /// inhabitant. A worker whose family cannot be taken in full keeps
         /// his job.
         /// </summary>
         /// <returns>The workers who stay, whose families were not taken.</returns>
@@ -239,8 +222,7 @@ namespace DarkFantasyMerchant.Core
             for (int i = 0; i < 3; i++)
             {
                 // An empty class gets no weight rather than a negative one; a city never has an empty class.
-                int factor = satisfactions[i] < 0 ? LeavingWeight - satisfactions[i] : LeavingWeight;
-                weights[i] = Math.Max(0, counts[i] - 1) * factor;
+                weights[i] = Math.Max(0, counts[i] - 1);
                 total += weights[i];
             }
 
@@ -298,21 +280,6 @@ namespace DarkFantasyMerchant.Core
         private bool AnyClassAboveOne()
         {
             return counts[0] > 1 || counts[1] > 1 || counts[2] > 1;
-        }
-
-        /// <summary>Moves inhabitants from one class to another, in the same houses' count.</summary>
-        public void Move(SocialClass from, SocialClass to, int inhabitants)
-        {
-            int source = IndexOf(from);
-            int target = IndexOf(to);
-
-            if (inhabitants < 0 || inhabitants > counts[source])
-            {
-                throw new ArgumentOutOfRangeException(nameof(inhabitants));
-            }
-
-            counts[source] -= inhabitants;
-            counts[target] += inhabitants;
         }
 
         /// <summary>Inhabitants of a class who leave the city: they do not become beggars.</summary>

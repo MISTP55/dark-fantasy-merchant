@@ -197,7 +197,7 @@ namespace DarkFantasyMerchant.Game
                 int daysPerWeek = worldClock.Calendar.DaysPerWeek;
                 LabourRule labour = economy.CreateLabourRule();
 
-                SocialRule social = economy.CreateSocialRule();
+                LeavingRule leaving = economy.CreateLeavingRule();
                 PerClass<int> rooms = buildings.HouseRooms;
 
                 // A city's house is the player's of its class: the materials switched off are left out.
@@ -226,8 +226,8 @@ namespace DarkFantasyMerchant.Game
                     }
 
                     cities[city] = grid == null
-                        ? economy.CreateCity(city, pricing, daysPerWeek, labour, rooms, housing, social)
-                        : economy.CreateCity(city, pricing, daysPerWeek, labour, rooms, housing, social, grid, placement);
+                        ? economy.CreateCity(city, pricing, daysPerWeek, labour, rooms, housing, leaving)
+                        : economy.CreateCity(city, pricing, daysPerWeek, labour, rooms, housing, leaving, grid, placement);
                 }
             }
             catch (ArgumentOutOfRangeException exception)

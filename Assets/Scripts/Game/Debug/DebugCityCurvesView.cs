@@ -27,7 +27,6 @@ namespace DarkFantasyMerchant.Game
         private readonly int[] goodOrder;
 
         private readonly TimeSeriesChart classesChart;
-        private readonly TimeSeriesChart satisfactionChart;
         private readonly TimeSeriesChart workersChart;
         private readonly TimeSeriesChart[] goodCharts;
 
@@ -80,7 +79,6 @@ namespace DarkFantasyMerchant.Game
             VisualElement populationGrid = Grid();
             charts.Add(populationGrid);
             classesChart = AddChart(populationGrid, "Habitants par classe et mendiants", ThirdClass, recorder.ChartCalendar);
-            satisfactionChart = AddChart(populationGrid, "Satisfaction", ThirdClass, recorder.ChartCalendar);
             workersChart = AddChart(populationGrid, "Ouvriers et réserve", ThirdClass, recorder.ChartCalendar);
 
             // One legend for every good: their charts are too small for one each.
@@ -140,13 +138,6 @@ namespace DarkFantasyMerchant.Game
                 Series("Aisés", DebugChartColors.Wealthy, ChartSeriesStyle.StackedArea, Fill("wealthy", history, CityIndicator.Wealthy)),
                 Series("Pauvres", DebugChartColors.Poor, ChartSeriesStyle.StackedArea, Fill("poor", history, CityIndicator.Poor)),
                 Series("Mendiants", DebugChartColors.Beggars, ChartSeriesStyle.StackedArea, Fill("beggars", history, CityIndicator.Beggars)),
-            }, null);
-
-            satisfactionChart.SetData(first, count, new[]
-            {
-                Series("Riches", DebugChartColors.Rich, ChartSeriesStyle.Line, Fill("rich-satisfaction", history, CityIndicator.RichSatisfaction)),
-                Series("Aisés", DebugChartColors.Wealthy, ChartSeriesStyle.Line, Fill("wealthy-satisfaction", history, CityIndicator.WealthySatisfaction)),
-                Series("Pauvres", DebugChartColors.Poor, ChartSeriesStyle.Line, Fill("poor-satisfaction", history, CityIndicator.PoorSatisfaction)),
             }, null);
 
             workersChart.SetData(first, count, new[]

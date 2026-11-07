@@ -102,50 +102,8 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("The reserve leaks only while the workers and the reserve of the workshop stay under this.")]
         [SerializeField, Min(0)] private int reserveLeakCeiling = 30;
 
-        [Header("Satisfaction and classes")]
-        [Tooltip("Satisfaction of every class when the game starts: 50.")]
-        [SerializeField] private int startingSatisfaction = 50;
-
-        [Tooltip("Base of the rich's target satisfaction: -13.")]
-        [SerializeField] private int richSatisfactionBase = -13;
-
-        [Tooltip("Base of the wealthy's target satisfaction: -18.")]
-        [SerializeField] private int wealthySatisfactionBase = -18;
-
-        [Tooltip("Base of the poor's target satisfaction: -27.")]
-        [SerializeField] private int poorSatisfactionBase = -27;
-
-        [Tooltip("Points a satisfaction rises in a day towards twice its target: 2.")]
-        [SerializeField, Min(0)] private int satisfactionRise = 2;
-
-        [Tooltip("Points a satisfaction falls in a day towards twice its target: 1.")]
-        [SerializeField, Min(0)] private int satisfactionFall = 1;
-
-        [Tooltip("The term every class's target shares: 9, as there are no public buildings nor events yet to add to it.")]
-        [SerializeField] private int commonSatisfaction = 9;
-
-        [Tooltip("The lowest a satisfaction falls: -40.")]
-        [SerializeField] private int lowestSatisfaction = -40;
-
-        [Tooltip("The highest a satisfaction rises: 80.")]
-        [SerializeField] private int highestSatisfaction = 80;
-
-        [Tooltip("Added to a class's satisfaction for its share of the poor: 40.")]
-        [SerializeField] private int classTargetOffset = 40;
-
-        [Tooltip("The rich a city tends to are (satisfaction + offset) x poor / this: 320.")]
-        [SerializeField, Min(1)] private int richTargetDivisor = 320;
-
-        [Tooltip("The wealthy a city tends to are (satisfaction + offset) x poor / this: 160.")]
-        [SerializeField, Min(1)] private int wealthyTargetDivisor = 160;
-
-        [Tooltip("A class short of room still takes up to this many: 10.")]
-        [SerializeField, Min(0)] private int classRoomFloor = 10;
-
-        [Tooltip("Unhappy poor leave each day at their number divided by this: 100, a hundredth.")]
-        [SerializeField, Min(1)] private int poorLeavingDivisor = 100;
-
-        [Tooltip("Workers of a city's workshop the leaving poor spare while other jobs can be taken: 30.")]
+        [Header("Departures")]
+        [Tooltip("Workers of a city's workshop the housed who leave spare while other jobs can be taken: 30.")]
         [SerializeField, Min(0)] private int protectedWorkers = 30;
 
         [Header("Cities' houses")]
@@ -374,7 +332,7 @@ namespace DarkFantasyMerchant.Game
                 ?? ProblemOf(() => CreateMerchantOutputRule(), "the merchants' workshops")
                 ?? ProblemOf(() => new CityPopulation(StartingPopulation), "the starting population (workforce times inhabitants per worker)")
                 ?? ProblemOf(() => CreateLabourRule(), "the labour")
-                ?? ProblemOf(() => CreateSocialRule(), "the satisfaction and classes")
+                ?? ProblemOf(() => CreateLeavingRule(), "the departures")
                 ?? ProblemOf(() => CreateHousingRule(SocialClass.Rich, 1, Array.Empty<MaterialCost>()), "the cities' houses")
                 ?? ProblemOf(() => CreateHousingRule(SocialClass.Wealthy, 1, Array.Empty<MaterialCost>()), "the cities' houses")
                 ?? ProblemOf(() => CreateHousingRule(SocialClass.Poor, 1, Array.Empty<MaterialCost>()), "the cities' houses")
@@ -490,23 +448,10 @@ namespace DarkFantasyMerchant.Game
                 reserveLeakCeiling);
         }
 
-        /// <summary>How the classes are satisfied and move, from these settings. Throws when one of them is unusable.</summary>
-        public SocialRule CreateSocialRule()
+        /// <summary>Who leaves a city for want of room, from these settings. Throws when one of them is unusable.</summary>
+        public LeavingRule CreateLeavingRule()
         {
-            return new SocialRule(
-                startingSatisfaction,
-                new PerClass<int>(richSatisfactionBase, wealthySatisfactionBase, poorSatisfactionBase),
-                satisfactionRise,
-                satisfactionFall,
-                commonSatisfaction,
-                lowestSatisfaction,
-                highestSatisfaction,
-                classTargetOffset,
-                richTargetDivisor,
-                wealthyTargetDivisor,
-                classRoomFloor,
-                poorLeavingDivisor,
-                protectedWorkers);
+            return new LeavingRule(protectedWorkers);
         }
 
         /// <summary>
@@ -602,7 +547,7 @@ namespace DarkFantasyMerchant.Game
         /// <param name="labour">The labour of the city, or null to keep the immediate hiring.</param>
         /// <param name="roomPerHouse">Places of a house of each class, each at least 1 with a labour rule: the city starts with as many houses as each class needs.</param>
         /// <param name="housing">When the city builds a house of its own for each class, only with a labour rule; null for never.</param>
-        /// <param name="social">The satisfaction and moves of the classes, only with a labour rule; null for classes that never move.</param>
+        /// <param name="leaving">Who leaves the city for want of room, only with a labour rule; null for a city nobody leaves.</param>
         /// <param name="grid">The city's grid, only with a labour rule: its connected houses give the room of each class (instead of the whole houses the population needs); the others give theirs when they connect. With a placement strategy and a footprint on every housing rule.</param>
         /// <param name="placement">Where the city's buildings are put on the grid; comes with the grid.</param>
         public City CreateCity(
@@ -612,7 +557,7 @@ namespace DarkFantasyMerchant.Game
             LabourRule labour = null,
             PerClass<int> roomPerHouse = default,
             IReadOnlyList<CityHousingRule> housing = null,
-            SocialRule social = null,
+            LeavingRule leaving = null,
             CityGrid grid = null,
             IPlacementStrategy placement = null)
         {
@@ -661,7 +606,7 @@ namespace DarkFantasyMerchant.Game
                 population,
                 labour,
                 housing,
-                social,
+                leaving,
                 grid,
                 placement,
                 CreateMerchantOutputRule());
@@ -700,8 +645,7 @@ namespace DarkFantasyMerchant.Game
                     new PerClass<double>(weekly.Rich / daysPerWeek, weekly.Wealthy / daysPerWeek, weekly.Poor / daysPerWeek),
                     maxWorkers,
                     outputPerWorker,
-                    merchantOutputPerWorker,
-                    good.SatisfactionWeights)
+                    merchantOutputPerWorker)
                     .WithInputs(InputsOf(good));
             }
 

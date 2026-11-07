@@ -547,11 +547,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void FormatClass_WritesTheCountOverTheRoom_AndTheSatisfaction()
+        public void FormatClass_WritesTheCountOverTheRoom()
         {
-            Assert.AreEqual("110 / 120 (50)", DebugCitiesTable.FormatClass(110, 120, 50));
-            Assert.AreEqual("1 008 / 1 300 (-5)", DebugCitiesTable.FormatClass(1008, 1300, -5));
-            Assert.AreEqual("1 108 / 1 400", DebugCitiesTable.FormatClass(1108, 1400, null));
+            Assert.AreEqual("110 / 120", DebugCitiesTable.FormatClass(110, 120));
+            Assert.AreEqual("1 108 / 1 400", DebugCitiesTable.FormatClass(1108, 1400));
         }
 
         [Test]
@@ -592,10 +591,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(
                 DebugCitiesTable.FormatClass(
                     city.Population.CountOf(SocialClass.Poor),
-                    city.Population.RoomOf(SocialClass.Poor),
-                    city.Population.SatisfactionOf(SocialClass.Poor)),
+                    city.Population.RoomOf(SocialClass.Poor)),
                 Text(0, PoorCell));
-            Assert.AreEqual(DebugCitiesTable.FormatClass(0, 0, 0), Text(0, RichCell));
+            Assert.AreEqual(DebugCitiesTable.FormatClass(0, 0), Text(0, RichCell));
             Assert.AreEqual(
                 $"{city.WorkersOf(Iron)}/{city.MaxWorkersOf(Iron)} +{city.ReserveOf(Iron)}", Text(0, Iron, Workers));
             Assert.AreEqual(DebugCitiesTable.NoFigure, Text(0, Fish, Workers));
@@ -621,8 +619,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(
                 DebugCitiesTable.FormatClass(
                     first.Population.CountOf(SocialClass.Poor) + second.Population.CountOf(SocialClass.Poor),
-                    first.Population.RoomOf(SocialClass.Poor) + second.Population.RoomOf(SocialClass.Poor),
-                    null),
+                    first.Population.RoomOf(SocialClass.Poor) + second.Population.RoomOf(SocialClass.Poor)),
                 Total(PoorCell));
             Assert.AreEqual(
                 $"{first.WorkersOf(Iron) + second.WorkersOf(Iron)}/{first.MaxWorkersOf(Iron) + second.MaxWorkersOf(Iron)}"

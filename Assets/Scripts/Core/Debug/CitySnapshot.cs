@@ -54,9 +54,6 @@ namespace DarkFantasyMerchant.Core
             Set(into, CityIndicator.RichRoom, population.RoomOf(SocialClass.Rich));
             Set(into, CityIndicator.WealthyRoom, population.RoomOf(SocialClass.Wealthy));
             Set(into, CityIndicator.PoorRoom, population.RoomOf(SocialClass.Poor));
-            Set(into, CityIndicator.RichSatisfaction, population.SatisfactionOf(SocialClass.Rich));
-            Set(into, CityIndicator.WealthySatisfaction, population.SatisfactionOf(SocialClass.Wealthy));
-            Set(into, CityIndicator.PoorSatisfaction, population.SatisfactionOf(SocialClass.Poor));
             Set(into, CityIndicator.Beggars, population.Beggars);
             Set(into, CityIndicator.BeggarTarget, city.BeggarTarget);
             Set(into, CityIndicator.CityHouses, city.CityHouses);

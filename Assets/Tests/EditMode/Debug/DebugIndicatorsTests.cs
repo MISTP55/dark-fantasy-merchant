@@ -21,7 +21,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
             float[][] rows = history.BeginDay(0);
             rows[0][CitySnapshot.IndexOf(GoodIndicator.Stock, Fish)] = first;
             rows[1][CitySnapshot.IndexOf(GoodIndicator.Stock, Fish)] = second;
-            rows[0][CitySnapshot.IndexOf(CityIndicator.PoorSatisfaction)] = 12;
+            rows[0][CitySnapshot.IndexOf(CityIndicator.Poor)] = 12;
             return history;
         }
 
@@ -39,9 +39,9 @@ namespace DarkFantasyMerchant.Tests.EditMode
         [Test]
         public void All_HasEveryIndicatorOnce()
         {
-            Assert.AreEqual(13, DebugIndicators.All.Count(indicator => !indicator.IsGood));
+            Assert.AreEqual(10, DebugIndicators.All.Count(indicator => !indicator.IsGood));
             Assert.AreEqual(17, DebugIndicators.All.Count(indicator => indicator.IsGood));
-            Assert.AreEqual(30, DebugIndicators.All.Select(indicator => indicator.Name).Distinct().Count());
+            Assert.AreEqual(27, DebugIndicators.All.Select(indicator => indicator.Name).Distinct().Count());
         }
 
         [Test]
@@ -59,7 +59,7 @@ namespace DarkFantasyMerchant.Tests.EditMode
         public void ValueOf_ReadsTheHistory()
         {
             Assert.AreEqual(5f, DebugIndicators.ValueOf(History(10, 5), 0, 1, Find("Stock"), Fish));
-            Assert.AreEqual(12f, DebugIndicators.ValueOf(History(10, 5), 0, 0, Find("Satisfaction des pauvres"), Fish));
+            Assert.AreEqual(12f, DebugIndicators.ValueOf(History(10, 5), 0, 0, Find("Pauvres"), Fish));
         }
 
         [Test]
@@ -69,11 +69,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void WorldValue_OfASatisfaction_IsNaN()
+        public void WorldValue_OfAPrice_IsNaN()
         {
-            Assert.IsFalse(Find("Satisfaction des pauvres").AddsUp);
             Assert.IsFalse(Find("Prix de vente").AddsUp);
-            Assert.IsTrue(float.IsNaN(DebugIndicators.WorldValueOf(History(10, 5), 0, 2, Find("Satisfaction des pauvres"), Fish)));
+            Assert.IsTrue(float.IsNaN(DebugIndicators.WorldValueOf(History(10, 5), 0, 2, Find("Prix de vente"), Fish)));
         }
 
         [Test]

@@ -33,10 +33,10 @@ namespace DarkFantasyMerchant.Tests.EditMode
                 new CityPopulation(1000));
         }
 
-        private static City LabourCity(double startingDays, CityPopulation population, bool withSocial = false)
+        private static City LabourCity(double startingDays, CityPopulation population, bool withLeaving = false)
         {
             return new City(new[] { Good }, TestMarkets.Thresholds, Workforce, startingDays,
-                TestMarkets.Pricing, 7, population, TestMarkets.Labour, null, withSocial ? TestMarkets.Social : null);
+                TestMarkets.Pricing, 7, population, TestMarkets.Labour, null, withLeaving ? TestMarkets.Leaving : null);
         }
 
         [Test]
@@ -106,7 +106,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             foreach (SocialClass housedClass in new[] { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor })
             {
                 Assert.AreEqual(alone.Population.CountOf(housedClass), watched.Population.CountOf(housedClass));
-                Assert.AreEqual(alone.Population.SatisfactionOf(housedClass), watched.Population.SatisfactionOf(housedClass));
             }
 
             Assert.IsFalse(double.IsNaN(read));

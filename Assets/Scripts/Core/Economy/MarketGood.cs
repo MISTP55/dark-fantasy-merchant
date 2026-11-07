@@ -5,15 +5,14 @@ namespace DarkFantasyMerchant.Core
 {
     /// <summary>
     /// The figures of one good in one city: its base price, what each housed class consumes
-    /// of it and how much its stock weighs in their satisfaction, and the workshop that produces it there, if any,
-    /// with the inputs it takes.
+    /// of it, and the workshop that produces it there, if any, with the inputs it takes.
     /// </summary>
     public readonly struct MarketGood
     {
         // Null for a good without recipe, as the default good has.
         private readonly MarketInput[] inputs;
 
-        /// <summary>A good that every housed class consumes at the same rate, and whose stock weighs nothing in their satisfaction.</summary>
+        /// <summary>A good that every housed class consumes at the same rate.</summary>
         /// <param name="basePrice">Gold per unit that the factors of the price curves multiply, above 0; it can be a fraction.</param>
         /// <param name="dailyConsumptionPerThousand">Units of the good 1 000 housed inhabitants consume in a day, whatever their class; it can be a fraction.</param>
         /// <param name="maxWorkers">Most workers of the city's workshop for the good; 0 for a good the city does not produce.</param>
@@ -30,20 +29,17 @@ namespace DarkFantasyMerchant.Core
                 PerClass<double>.All(dailyConsumptionPerThousand),
                 maxWorkers,
                 dailyOutputPerWorker,
-                merchantDailyOutputPerWorker,
-                PerClass<int>.All(0))
+                merchantDailyOutputPerWorker)
         {
         }
 
         /// <param name="dailyConsumptionPerThousand">Units of the good 1 000 inhabitants of each housed class consume in a day; the beggars consume nothing.</param>
-        /// <param name="satisfactionWeights">How much the stock of the good weighs in the satisfaction of each class; 0 or more.</param>
         public MarketGood(
             double basePrice,
             PerClass<double> dailyConsumptionPerThousand,
             int maxWorkers,
             double dailyOutputPerWorker,
-            double merchantDailyOutputPerWorker,
-            PerClass<int> satisfactionWeights)
+            double merchantDailyOutputPerWorker)
         {
             // The negated comparison also rejects NaN.
             if (!(basePrice > 0d) || double.IsInfinity(basePrice))
@@ -62,17 +58,11 @@ namespace DarkFantasyMerchant.Core
             RequireNotNegative(dailyOutputPerWorker, nameof(dailyOutputPerWorker));
             RequireNotNegative(merchantDailyOutputPerWorker, nameof(merchantDailyOutputPerWorker));
 
-            if (satisfactionWeights.Rich < 0 || satisfactionWeights.Wealthy < 0 || satisfactionWeights.Poor < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(satisfactionWeights));
-            }
-
             BasePrice = basePrice;
             DailyConsumptionPerThousand = dailyConsumptionPerThousand;
             MaxWorkers = maxWorkers;
             DailyOutputPerWorker = dailyOutputPerWorker;
             MerchantDailyOutputPerWorker = merchantDailyOutputPerWorker;
-            SatisfactionWeights = satisfactionWeights;
             inputs = null;
         }
 
@@ -107,7 +97,6 @@ namespace DarkFantasyMerchant.Core
             MaxWorkers = good.MaxWorkers;
             DailyOutputPerWorker = good.DailyOutputPerWorker;
             MerchantDailyOutputPerWorker = good.MerchantDailyOutputPerWorker;
-            SatisfactionWeights = good.SatisfactionWeights;
             this.inputs = inputs;
         }
 
@@ -115,9 +104,6 @@ namespace DarkFantasyMerchant.Core
 
         /// <summary>Units 1 000 inhabitants of each class consume in a day.</summary>
         public PerClass<double> DailyConsumptionPerThousand { get; }
-
-        /// <summary>How much the stock weighs in the satisfaction of each class.</summary>
-        public PerClass<int> SatisfactionWeights { get; }
 
         public int MaxWorkers { get; }
 

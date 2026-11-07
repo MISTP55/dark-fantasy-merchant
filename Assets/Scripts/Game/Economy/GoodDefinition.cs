@@ -48,16 +48,7 @@ namespace DarkFantasyMerchant.Game
         [Tooltip("Units of the good that 1 000 poor consume in a week.")]
         [SerializeField, Min(0f)] private double poorWeeklyConsumptionPerThousand = 7d;
 
-        [Header("Weight of the stock in the satisfaction (0: none)")]
-        [Tooltip("How much the stock of the good weighs in the satisfaction of the rich.")]
-        [SerializeField, Min(0)] private int richSatisfactionWeight;
-
-        [Tooltip("How much the stock of the good weighs in the satisfaction of the wealthy.")]
-        [SerializeField, Min(0)] private int wealthySatisfactionWeight;
-
-        [Tooltip("How much the stock of the good weighs in the satisfaction of the poor.")]
-        [SerializeField, Min(0)] private int poorSatisfactionWeight;
-
+        [Header("Workshops")]
         [Tooltip("Most workers a city's workshop for the good can have. The same in every city.")]
         [SerializeField, Min(0)] private int maxWorkers = 60;
 
@@ -87,9 +78,6 @@ namespace DarkFantasyMerchant.Game
         /// <summary>Units 1 000 inhabitants of each class consume in a week.</summary>
         public PerClass<double> WeeklyConsumptionPerThousand => new PerClass<double>(
             richWeeklyConsumptionPerThousand, wealthyWeeklyConsumptionPerThousand, poorWeeklyConsumptionPerThousand);
-
-        /// <summary>How much the stock weighs in the satisfaction of each class.</summary>
-        public PerClass<int> SatisfactionWeights => new PerClass<int>(richSatisfactionWeight, wealthySatisfactionWeight, poorSatisfactionWeight);
 
         public int MaxWorkers => maxWorkers;
 

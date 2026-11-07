@@ -12,10 +12,8 @@ namespace DarkFantasyMerchant.Core
     /// houses, lay off into a reserve that leaks back to the beggars, the player's workshops fill their vacancies from
     /// the beggars, and the beggars come or go; without one, hiring is immediate, layoffs vanish and the population
     /// stays as it is. Given <see cref="CityHousingRule"/>s as well, a city builds a house of its own for each crowded
-    /// class from its stock. Given a <see cref="SocialRule"/> with the labour, its classes have a satisfaction that
-    /// follows the goods, the poor rise into the other classes and fall back, the beggars are hired only while the
-    /// poor are satisfied, and the poor without room or unhappy leave with their jobs; without one, the classes never
-    /// move. On a grid, a house gives its room and a player's workshop hires only once connected to the road network.
+    /// class from its stock. Given a <see cref="LeavingRule"/> with the labour, the poor without room leave with their
+    /// jobs; without one, nobody leaves. The classes never move. On a grid, a house gives its room and a player's workshop hires only once connected to the road network.
     /// </summary>
     public sealed class City
     {
@@ -32,8 +30,6 @@ namespace DarkFantasyMerchant.Core
         // city exists.
         private readonly (int consumer, double unitsPerUnit)[][] consumersOf;
 
-        private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
-
         /// <param name="thresholdRule">How the stock thresholds of a good, at which its prices are given, follow what the city needs (its inhabitants and its workshops' inputs) and produces of it.</param>
         /// <param name="workforce">How the workshops hire, lay off and start.</param>
         /// <param name="startingDays">Days of its demand (consumption and inputs) the city holds of every good when the game starts.</param>
@@ -41,7 +37,7 @@ namespace DarkFantasyMerchant.Core
         /// <param name="population">The inhabitants of the city, who set what it consumes.</param>
         /// <param name="labour">How the workshops take their workers from the population; null for immediate hiring and a population that stays.</param>
         /// <param name="housing">When the city builds a house of its own for a class, each class once at most, only with labour; null for a city that never does.</param>
-        /// <param name="social">The satisfaction and the moves of the classes, only with labour; null for classes that never move.</param>
+        /// <param name="leaving">Who leaves the city for want of room, only with labour; null for a city nobody leaves.</param>
         /// <param name="grid">The city grid the houses stand on, with its placement strategy (both or neither); null for a city whose houses have no place. Every housing rule then has a footprint. The houses already connected are in the population's room; one not connected yet gives the room of its class's housing rule when it connects, and needs that rule.</param>
         /// <param name="placement">Where the city builds its own houses on the grid.</param>
         /// <param name="merchantOutput">What the player's workshops make; null for workshops that hire but make nothing.</param>
@@ -55,7 +51,7 @@ namespace DarkFantasyMerchant.Core
             CityPopulation population,
             LabourRule labour = null,
             IReadOnlyList<CityHousingRule> housing = null,
-            SocialRule social = null,
+            LeavingRule leaving = null,
             CityGrid grid = null,
             IPlacementStrategy placement = null,
             MerchantOutputRule merchantOutput = null)
@@ -74,20 +70,20 @@ namespace DarkFantasyMerchant.Core
 
             Population = population ?? throw new ArgumentNullException(nameof(population));
 
-            if (social != null && labour == null)
+            if (leaving != null && labour == null)
             {
-                throw new ArgumentException("The classes move only with labour.", nameof(social));
+                throw new ArgumentException("Inhabitants leave only with labour.", nameof(leaving));
             }
 
             Labour = labour;
-            Social = social;
+            Leaving = leaving;
             cityHousing = new CityHousing(Population, housing, grid, placement);
             Grid = grid;
             this.daysPerWeek = daysPerWeek;
             weekLog = new MarketWeekLog(goods.Count, daysPerWeek);
             LastDay = new CityDayReport(goods.Count);
             this.goods = new MarketGood[goods.Count];
-            cityWorkforce = new CityWorkforce(CityWorkforce.StartingWorkersOf(goods, workforce), Population, labour, social);
+            cityWorkforce = new CityWorkforce(CityWorkforce.StartingWorkersOf(goods, workforce), Population, labour);
             playerWorkshops = new PlayerWorkshops(this.goods, daysPerWeek, merchantOutput);
 
             for (int i = 0; i < goods.Count; i++)
@@ -121,14 +117,6 @@ namespace DarkFantasyMerchant.Core
                 }
             }
 
-            if (social != null)
-            {
-                foreach (SocialClass housedClass in Classes)
-                {
-                    Population.SetSatisfaction(housedClass, social.StartingSatisfaction);
-                }
-            }
-
             cityHousing.FollowGrid();
             Market.Changed += RaiseChanged;
         }
@@ -150,8 +138,8 @@ namespace DarkFantasyMerchant.Core
         /// <summary>The grid the houses and the player's workshops stand on; null for a city whose buildings have no place.</summary>
         public CityGrid Grid { get; }
 
-        /// <summary>How the classes are satisfied and move; null when they never do.</summary>
-        public SocialRule Social { get; }
+        /// <summary>Who leaves the city for want of room; null when nobody does.</summary>
+        public LeavingRule Leaving { get; }
 
         /// <summary>What the player's workshops make; null when they make nothing.</summary>
         public MerchantOutputRule MerchantOutput => playerWorkshops.Output;
@@ -563,17 +551,11 @@ namespace DarkFantasyMerchant.Core
 
             if (Labour != null)
             {
-                if (Social != null)
-                {
-                    UpdateSatisfactions();
-                }
-
                 playerWorkshops.FillVacancies(Population, Labour);
                 playerWorkshops.Run();
 
-                if (Social != null)
+                if (Leaving != null)
                 {
-                    Social.RiseAndFall(Population);
                     LetThePoorLeave();
                 }
 
@@ -638,33 +620,10 @@ namespace DarkFantasyMerchant.Core
             return Array.ConvertAll(consumers, list => list.ToArray());
         }
 
-        // Each class's satisfaction takes a step towards the target the stocks of the goods it
-        // consumes give.
-        private void UpdateSatisfactions()
-        {
-            foreach (SocialClass housedClass in Classes)
-            {
-                int goodsTerm = 0;
-
-                for (int i = 0; i < goods.Length; i++)
-                {
-                    StockThresholds goodThresholds = Market.ThresholdsOf(i);
-
-                    if (DailyConsumptionOf(i) > 0d && goodThresholds.T0 > 0d)
-                    {
-                        goodsTerm += Social.GoodTerm(goods[i].SatisfactionWeights[housedClass], Market.StockOf(i), goodThresholds.T0);
-                    }
-                }
-
-                int target = Social.TargetOf(housedClass, goodsTerm);
-                Population.SetSatisfaction(housedClass, Social.NextSatisfaction(Population.SatisfactionOf(housedClass), target));
-            }
-        }
-
         // The poor who leave take their jobs with them, a worker for every family.
         private void LetThePoorLeave()
         {
-            int workers = Social.LeavingPoorOf(Population) / Labour.InhabitantsPerWorker;
+            int workers = Leaving.LeavingOf(Population) / Labour.InhabitantsPerWorker;
 
             if (workers < 1)
             {
@@ -687,7 +646,7 @@ namespace DarkFantasyMerchant.Core
                 return removed;
             }
 
-            int protectedWorkers = Social.ProtectedWorkers;
+            int protectedWorkers = Leaving.ProtectedWorkers;
             int takeable = cityWorkforce.TakeableAbove(protectedWorkers) + playerWorkshops.Workers;
             int step = Math.Max(2, takeable / wanted);
             int accumulated = 0;

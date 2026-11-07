@@ -6,17 +6,8 @@ namespace DarkFantasyMerchant.Tests.EditMode
 {
     public class CityPopulationTests
     {
-        private static readonly SocialClass[] Classes = { SocialClass.Rich, SocialClass.Wealthy, SocialClass.Poor };
-
         // The houses: 40 rich, 70 wealthy, 140 poor.
         private static PerClass<int> HouseRooms => new PerClass<int>(40, 70, 140);
-
-        private static void SetSatisfactions(CityPopulation population, int rich, int wealthy, int poor)
-        {
-            population.SetSatisfaction(SocialClass.Rich, rich);
-            population.SetSatisfaction(SocialClass.Wealthy, wealthy);
-            population.SetSatisfaction(SocialClass.Poor, poor);
-        }
 
         [TestCase(252, 1008, 59, 1100)] // 4 × W, 4 × W ÷ 17, houses rounded up
         [TestCase(250, 1000, 58, 1000)]
@@ -89,20 +80,6 @@ namespace DarkFantasyMerchant.Tests.EditMode
             Assert.AreEqual(0, population.FreeRoomOf(SocialClass.Poor));
         }
 
-        [Test]
-        public void TheSatisfactions_StartAtZero()
-        {
-            var population = new CityPopulation(100);
-
-            foreach (SocialClass housedClass in Classes)
-            {
-                Assert.AreEqual(0, population.SatisfactionOf(housedClass));
-            }
-
-            population.SetSatisfaction(SocialClass.Wealthy, -12);
-            Assert.AreEqual(-12, population.SatisfactionOf(SocialClass.Wealthy));
-        }
-
         [Test] public void FreeRoom_IsNeverNegative() => Assert.AreEqual(0, new CityPopulation(1000, 0, 800).FreeRoomOf(SocialClass.Poor));
 
         [Test]
@@ -129,28 +106,14 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void SendToBeggars_SharesTheFamiliesByCountAndSatisfaction()
+        public void SendToBeggars_SharesTheFamiliesByCount()
         {
             var population = new CityPopulation(new PerClass<int>(11, 31, 61), 0, HouseRooms);
-            SetSatisfactions(population, 50, 50, 50);
 
             Assert.AreEqual(0, population.SendToBeggars(1, 4));
             Assert.AreEqual(11, population.CountOf(SocialClass.Rich));
             Assert.AreEqual(30, population.CountOf(SocialClass.Wealthy));
             Assert.AreEqual(58, population.CountOf(SocialClass.Poor));
-            Assert.AreEqual(4, population.Beggars);
-        }
-
-        [Test]
-        public void SendToBeggars_TakesMoreFromAnUnhappyClass()
-        {
-            var population = new CityPopulation(new PerClass<int>(11, 31, 61), 0, HouseRooms);
-            SetSatisfactions(population, 50, 50, -10);
-
-            Assert.AreEqual(0, population.SendToBeggars(1, 4));
-            Assert.AreEqual(11, population.CountOf(SocialClass.Rich));
-            Assert.AreEqual(31, population.CountOf(SocialClass.Wealthy));
-            Assert.AreEqual(57, population.CountOf(SocialClass.Poor));
             Assert.AreEqual(4, population.Beggars);
         }
 
@@ -183,29 +146,23 @@ namespace DarkFantasyMerchant.Tests.EditMode
         }
 
         [Test]
-        public void Move_AndLeave_ChangeTheClasses()
+        public void Leave_TakesInhabitantsOutOfTheCity()
         {
             var population = new CityPopulation(new PerClass<int>(10, 20, 100), 5, HouseRooms);
 
-            population.Move(SocialClass.Poor, SocialClass.Rich, 5);
-            Assert.AreEqual(15, population.CountOf(SocialClass.Rich));
-            Assert.AreEqual(95, population.CountOf(SocialClass.Poor));
-            Assert.AreEqual(130, population.Housed);
-
             population.Leave(SocialClass.Poor, 8);
-            Assert.AreEqual(87, population.CountOf(SocialClass.Poor));
+            Assert.AreEqual(92, population.CountOf(SocialClass.Poor));
             Assert.AreEqual(127, population.Inhabitants);
             Assert.AreEqual(5, population.Beggars);
         }
 
         [Test]
-        public void Move_MoreThanTheClassHas_Throws()
+        public void Leave_MoreThanTheClassHas_Throws()
         {
             var population = new CityPopulation(new PerClass<int>(10, 20, 100), 0, HouseRooms);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => population.Move(SocialClass.Rich, SocialClass.Poor, 11));
             Assert.Throws<ArgumentOutOfRangeException>(() => population.Leave(SocialClass.Wealthy, 21));
-            Assert.Throws<ArgumentOutOfRangeException>(() => population.Move(SocialClass.Poor, SocialClass.Rich, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => population.Leave(SocialClass.Poor, -1));
         }
 
         [Test]
